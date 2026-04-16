@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Security — Magertron</title>
+<meta name="description" content="How to secure MCP server traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #06080c; --bg-card: #0c1018; --bg-card-hover: #111820;
+  --border: #1a2030; --border-accent: #2563eb;
+  --text: #e8ecf4; --text-secondary: #8694a8; --text-tertiary: #4a5568;
+  --accent: #2563eb; --accent-glow: rgba(37,99,235,0.15); --accent-text: #60a5fa;
+  --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 900px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(6,8,12,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+nav .container { max-width: 1200px; display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo span { color: var(--accent-text); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta { background: var(--accent) !important; color: white !important; padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; }
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* Progress bar */
+#progress-bar { position: fixed; top: 64px; left: 0; height: 2px; background: var(--accent); width: 0%; z-index: 99; transition: width 0.1s linear; }
+
+/* Hero */
+.page-hero { padding: 100px 0 32px; text-align: center; position: relative; overflow: hidden; }
+.page-hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(239,68,68,0.08) 0%, transparent 70%); pointer-events: none; }
+.page-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px; border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); font-size: 13px; color: #fca5a5; margin-bottom: 24px; }
+.page-hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(36px,5vw,64px); line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 20px; }
+.page-hero p { font-size: 18px; color: var(--text-secondary); max-width: 620px; margin: 0 auto; line-height: 1.7; }
+
+/* Article */
+.article { padding: 24px 0 96px; }
+
+/* ── Accordion ── */
+.accordion { display: flex; flex-direction: column; gap: 12px; margin-bottom: 64px; }
+.acc-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+.acc-item.open { border-color: var(--border-accent); }
+.acc-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 24px 28px; cursor: pointer; user-select: none;
+  transition: background 0.2s;
+}
+.acc-header:hover { background: var(--bg-card-hover); }
+.acc-header-left { display: flex; align-items: center; gap: 16px; }
+.acc-num { font-family: var(--mono); font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; min-width: 24px; }
+.acc-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.acc-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.acc-tag { font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.acc-tag.danger { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+.acc-tag.warning { background: rgba(245,158,11,0.1); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+.acc-tag.info { background: rgba(37,99,235,0.1); color: var(--accent-text); border: 1px solid rgba(37,99,235,0.2); }
+.acc-chevron { color: var(--text-tertiary); font-size: 18px; transition: transform 0.3s; flex-shrink: 0; }
+.acc-item.open .acc-chevron { transform: rotate(180deg); }
+.acc-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+.acc-body-inner { padding: 0 28px 28px; border-top: 1px solid var(--border); padding-top: 24px; }
+
+/* Shared content styles */
+.acc-body-inner p { font-size: 15px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; }
+.acc-body-inner p strong { color: var(--text); font-weight: 600; }
+.acc-body-inner h4 { font-family: var(--serif); font-weight: 600; font-size: 16px; letter-spacing: -0.01em; margin: 24px 0 10px; color: var(--text); }
+.acc-body-inner ul { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 12px 0 20px; }
+.acc-body-inner ul li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; line-height: 1.6; }
+.acc-body-inner ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; margin-top: 2px; }
+
+.acc-item.compact .acc-header { padding: 16px 20px; }
+.acc-item.compact .acc-title { font-size: 15px; }
+.acc-item.compact .acc-subtitle { font-size: 12px; }
+.acc-item.compact .acc-body-inner { padding: 0 20px 20px; padding-top: 16px; }
+.acc-item.mini .acc-header { padding: 12px 16px; }
+.acc-item.mini .acc-title { font-size: 14px; }
+.acc-item.mini .acc-subtitle { font-size: 11px; }
+.acc-item.mini .acc-num { font-size: 10px; }
+.acc-item.mini .acc-body-inner { padding: 0 16px 16px; padding-top: 14px; }
+
+.diagram { background: #080b10; border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin: 16px 0; font-family: var(--mono); font-size: 13px; line-height: 2; overflow-x: auto; }
+.diagram .dlabel { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 6px; }
+.d-warn { color: var(--warning); }
+.d-block { color: var(--danger); }
+.d-ok { color: var(--success); }
+.d-hi { color: var(--accent-text); }
+
+/* Callout */
+.callout { border-radius: 8px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 14px; align-items: flex-start; }
+.callout-danger { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+.callout-info { background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.2); }
+.callout-success { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); }
+.callout-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout p { font-size: 13px !important; line-height: 1.6 !important; margin: 0 !important; }
+.callout-danger p { color: #fca5a5 !important; }
+.callout-info p { color: #93c5fd !important; }
+.callout-success p { color: #86efac !important; }
+.callout-warning p { color: #fcd34d !important; }
+
+/* Divider */
+.divider { height: 1px; background: var(--border); margin: 56px 0; }
+
+/* Sections below accordion */
+.sec { margin-bottom: 56px; }
+.sec-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent-text); margin-bottom: 12px; }
+.sec h2 { font-family: var(--serif); font-weight: 700; font-size: clamp(24px,3vw,34px); letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 20px; }
+.sec p { font-size: 15px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 14px; }
+.sec p strong { color: var(--text); font-weight: 600; }
+.sec ul { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 14px 0 20px; }
+.sec ul li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; line-height: 1.6; }
+.sec ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; margin-top: 2px; }
+.sec h3 { font-family: var(--serif); font-weight: 600; font-size: 18px; letter-spacing: -0.01em; margin: 28px 0 10px; }
+
+/* Layers */
+.layers { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+.layer { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; display: flex; gap: 18px; align-items: flex-start; transition: border-color 0.2s; }
+.layer:hover { border-color: var(--border-accent); }
+.layer-num { width: 30px; height: 30px; border-radius: 7px; background: var(--accent-glow); border: 1px solid rgba(37,99,235,0.3); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent-text); flex-shrink: 0; }
+.layer-content h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.layer-content p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+.layer-tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); margin-bottom: 5px; }
+.layer-tag.enterprise { background: rgba(245,158,11,0.1); color: #fcd34d; }
+.layer-tag.platform { background: rgba(37,99,235,0.1); color: var(--accent-text); }
+.layer-tag.network { background: rgba(34,197,94,0.1); color: #86efac; }
+
+/* CTA */
+.page-cta { background: linear-gradient(135deg,rgba(37,99,235,0.1),rgba(99,102,241,0.05)); border: 1px solid rgba(37,99,235,0.2); border-radius: 16px; padding: 48px; text-align: center; margin-top: 64px; }
+.page-cta h3 { font-family: var(--serif); font-weight: 700; font-size: 26px; letter-spacing: -0.03em; margin-bottom: 12px; }
+.page-cta p { font-size: 15px; color: var(--text-secondary); margin-bottom: 28px; }
+.btn-primary { background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; transition: all 0.2s; margin: 0 8px; }
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; color: white; }
+.btn-secondary { background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px; font-weight: 500; font-size: 14px; border: 1px solid var(--border); display: inline-block; transition: all 0.2s; margin: 0 8px; }
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* Footer */
+footer { padding: 40px 0; border-top: 1px solid var(--border); margin-top: 64px; }
+footer .container { max-width: 1200px; display: flex; justify-content: space-between; align-items: center; }
+footer p { font-size: 13px; color: var(--text-tertiary); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { font-size: 13px; color: var(--text-tertiary); transition: color 0.2s; }
+.footer-links a:hover { color: var(--text); text-decoration: none; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <div class="nav-logo"><span>▸</span> magertron</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="index.html#features">Features</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Schedule a Demo</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="page-hero">
+  <div class="container">
+    <div class="page-badge">⚠ Enterprise Security</div>
+    <h1>Securing MCP Traffic<br>Inside Your Enterprise</h1>
+    <p>AI agents talking to MCP servers create distinct threat vectors most enterprises haven't planned for. Here's how to think about them — and how to close the gaps.</p>
+  </div>
+</section>
+
+<!-- Article -->
+<article class="article">
+  <div class="container">
+
+    <!-- Accordion: 3 threat vectors -->
+    <div class="accordion">
+
+      <!-- Item 1 -->
+      <div class="acc-item compact" id="acc-1">
+        <div class="acc-header" onclick="toggleAcc(1)">
+          <div class="acc-header-left">
+            <span class="acc-num">01</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">The Rogue Server Problem</span>
+                <span class="acc-tag danger">High risk</span>
+              </div>
+              <div class="acc-subtitle">What enterprises don't know is already running</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-1">
+          <div class="acc-body-inner">
+            <p>Right now, developers inside your enterprise are spinning up MCP servers in places nobody is tracking — on laptops, in personal cloud accounts, as VS Code extensions, in random Docker containers. These servers expose tools: file system access, database queries, API calls, internal service integrations.</p>
+            <p>An AI agent pointed at one of these servers can <strong>execute actions</strong> — not just read data. This is fundamentally different from traditional shadow IT.</p>
+            <div class="callout callout-danger">
+              <div class="callout-icon">⚠</div>
+              <div><p><strong>The blast radius problem:</strong> A rogue SaaS app accesses data. A rogue MCP server lets an AI agent execute actions at scale — file writes, API calls, database mutations — with no audit trail and no governance.</p></div>
+            </div>
+            <p>The platform doesn't automatically discover rogue servers outside it. <strong>What it does is give you a governed chokepoint</strong> — a single gateway that all approved MCP traffic flows through, combined with network controls to enforce that nothing bypasses it.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="acc-item compact" id="acc-2">
+        <div class="acc-header" onclick="toggleAcc(2)">
+          <div class="acc-header-left">
+            <span class="acc-num">02</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">North-South Traffic</span>
+                <span class="acc-tag warning">External agents</span>
+              </div>
+              <div class="acc-subtitle">AI agents outside your perimeter reaching internal MCP servers</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-2">
+          <div class="acc-body-inner">
+            <p>North-south traffic is what most people think about first — an external AI agent trying to reach an MCP server inside your perimeter, or an internal MCP server calling out to unauthorized external services.</p>
+            <div class="diagram">
+              <div class="dlabel">Uncontrolled</div>
+              <span class="d-warn">External AI Agent</span> → Firewall → <span class="d-warn">Any MCP Server (direct)</span><br>
+              <span class="d-warn">Internal MCP Server</span> → Firewall → <span class="d-warn">External APIs (unrestricted)</span>
+            </div>
+            <div class="diagram">
+              <div class="dlabel">With platform</div>
+              <span class="d-ok">External AI Agent</span> → Firewall → <span class="d-hi">Envoy Gateway</span> → <span class="d-ok">Approved MCP Servers only</span><br>
+              <span class="d-block">Direct MCP access</span> → <span class="d-block">Blocked at firewall</span>
+            </div>
+            <h4>How to enforce it</h4>
+            <p>Your network team configures the perimeter firewall to allow MCP traffic <strong>only to and from the platform's Envoy gateway IP</strong>. All other MCP traffic is dropped. Same pattern enterprises use for SaaS allowlists.</p>
+            <ul>
+              <li>All external AI agents point at your gateway hostname (e.g. <code style="font-family:var(--mono);font-size:12px;color:var(--accent-text)">mcp.company.com</code>)</li>
+              <li>Firewall blocks all other inbound MCP traffic</li>
+              <li>Egress filtering prevents MCP servers calling unauthorized external APIs</li>
+              <li>Every request is logged, governed, and auditable</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="acc-item compact" id="acc-3">
+        <div class="acc-header" onclick="toggleAcc(3)">
+          <div class="acc-header-left">
+            <span class="acc-num">03</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">East-West Traffic</span>
+                <span class="acc-tag danger">Harder problem</span>
+              </div>
+              <div class="acc-subtitle">Internal agents bypassing your perimeter entirely</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-3">
+          <div class="acc-body-inner">
+            <p>East-west traffic never crosses your perimeter. A developer's AI agent on their laptop talks directly to an internal MCP server — bypassing the firewall, bypassing the gateway, bypassing every control you have.</p>
+            <div class="callout callout-danger">
+              <div class="callout-icon">⚠</div>
+              <div><p><strong>Perimeter controls don't help here.</strong> The traffic is entirely internal — it looks like normal developer activity from a network perspective.</p></div>
+            </div>
+            <div class="diagram">
+              <div class="dlabel">East-West threat</div>
+              <span class="d-warn">Developer's AI Agent (laptop)</span> → Internal network → <span class="d-warn">Rogue MCP Server (10.0.1.50:3000)</span><br>
+              <span class="d-block">Never touches the gateway. Never logged. Never governed.</span>
+            </div>
+            <div class="diagram">
+              <div class="dlabel">East-West controlled</div>
+              <span class="d-ok">Internal AI Agent</span> → <span class="d-hi">Network policy routes through gateway</span> → <span class="d-ok">Approved MCP Servers only</span><br>
+              <span class="d-block">Direct pod-to-pod MCP access</span> → <span class="d-block">Blocked by Kubernetes NetworkPolicy</span>
+            </div>
+            <h4>Why it's the harder problem</h4>
+            <p>Internal MCP servers often have access to the most sensitive resources — databases, private APIs, file systems, messaging platforms. An AI agent with access to an ungoverned internal server can exfiltrate data and mutate state <strong>entirely within your network perimeter</strong>.</p>
+            <h4>How to enforce it</h4>
+            <ul>
+              <li>Internal network proxy routes all MCP traffic through the gateway</li>
+              <li>AI agent configurations managed centrally — all agents point to the gateway</li>
+              <li>Kubernetes NetworkPolicy blocks direct pod-to-pod MCP connections</li>
+              <li>Port-level controls block direct access to MCP server ports from non-gateway sources</li>
+            </ul>
+            <div class="callout callout-info">
+              <div class="callout-icon">ℹ</div>
+              <div><p><strong>Layer 3 is automatic.</strong> Kubernetes NetworkPolicy ships with every installation — MCP pods reject connections from any source except the Envoy gateway. Layers 1 and 2 require your network team, and we provide the reference architecture.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /accordion -->
+
+    <div class="divider"></div>
+
+    <!-- Three enforcement layers — accordion -->
+    <div class="sec">
+      <div class="sec-label">Enforcement Model</div>
+      <h2>Three layers of control</h2>
+      <p>Complete MCP traffic governance requires enforcement at three distinct layers. The platform handles Layer 3 automatically — Layers 1 and 2 are implemented by your network team using standard enterprise tooling.</p>
+    </div>
+    <div class="accordion">
+      <div class="acc-item mini" id="acc-4">
+        <div class="acc-header" onclick="toggleAcc(4)">
+          <div class="acc-header-left">
+            <span class="acc-num">01</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">Perimeter Firewall</span>
+                <span class="acc-tag warning">Enterprise network team</span>
+              </div>
+              <div class="acc-subtitle">North-South — block everything except the gateway</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-4">
+          <div class="acc-body-inner">
+            <p>Allow inbound MCP traffic only to the platform's Envoy gateway IP. Block all other MCP traffic at the perimeter. Configure egress filtering to prevent MCP servers from calling unauthorized external services.</p>
+            <ul>
+              <li>Add allowlist rule for gateway IP on HTTPS/443</li>
+              <li>Drop all other inbound MCP traffic at the firewall</li>
+              <li>Configure egress filtering for MCP server pods</li>
+              <li>Same pattern enterprises use for SaaS allowlisting</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="acc-item mini" id="acc-5">
+        <div class="acc-header" onclick="toggleAcc(5)">
+          <div class="acc-header-left">
+            <span class="acc-num">02</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">Internal Network Policy</span>
+                <span class="acc-tag network">Network / NAC team</span>
+              </div>
+              <div class="acc-subtitle">East-West — route internal traffic through the gateway</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-5">
+          <div class="acc-body-inner">
+            <p>Route all internal MCP traffic through the gateway via proxy or NAC enforcement. Manage AI agent configurations centrally so agents resolve MCP addresses through the gateway, not directly.</p>
+            <ul>
+              <li>Internal proxy routes MCP traffic through the gateway</li>
+              <li>Centralize AI agent configs — all point to gateway hostname</li>
+              <li>Block direct access to MCP server ports (3000, 8080, 8443) internally</li>
+              <li>NAC enforcement prevents rogue direct connections</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="acc-item mini" id="acc-6">
+        <div class="acc-header" onclick="toggleAcc(6)">
+          <div class="acc-header-left">
+            <span class="acc-num">03</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">Kubernetes NetworkPolicy</span>
+                <span class="acc-tag info">Platform — automatic</span>
+              </div>
+              <div class="acc-subtitle">In-cluster — MCP pods only accept gateway connections</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-6">
+          <div class="acc-body-inner">
+            <p>Deployed automatically with every installation. MCP server pods accept connections only from the Envoy gateway pod — direct pod-to-pod access is dropped at the Kubernetes network layer regardless of what Layers 1 and 2 allow.</p>
+            <ul>
+              <li>NetworkPolicy deployed automatically — no manual config</li>
+              <li>MCP pods reject all connections except from the Envoy gateway pod</li>
+              <li>Every request reaching a server has been authenticated and logged</li>
+              <li>Works independently of perimeter and internal network controls</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Platform controls — accordion -->
+    <div class="sec" style="margin-bottom:20px;">
+      <div class="sec-label">Platform Controls</div>
+      <h2>End to End Management</h2>
+    </div>
+    <div class="accordion">
+      <div class="acc-item" id="acc-7">
+        <div class="acc-header" onclick="toggleAcc(7)">
+          <div class="acc-header-left">
+            <span class="acc-num">04</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">Policy Enforcement</span>
+                <span class="acc-tag info">Full lifecycle</span>
+              </div>
+              <div class="acc-subtitle">End to End Management</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-7">
+          <div class="acc-body-inner">
+            <p>Every MCP request through the Envoy gateway is subject to these controls — no configuration required beyond deployment:</p>
+            <ul>
+              <li><strong>Authentication</strong> — Every request carries a JWT token. Unauthenticated requests are rejected at the gateway.</li>
+              <li><strong>RBAC authorization</strong> — Roles define which users can access which servers in which namespaces.</li>
+              <li><strong>Namespace isolation</strong> — Production, staging, and dev MCP servers are isolated with NetworkPolicy enforcement.</li>
+              <li><strong>Governance policies</strong> — Deployment-time policies block non-compliant servers before they go live.</li>
+              <li><strong>Audit trail</strong> — Every deployment, scale, restart, and config change is logged with actor, timestamp, and full state snapshot.</li>
+              <li><strong>Webhook notifications</strong> — Real-time alerts to Slack, email, or any HTTP endpoint when servers change state.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Network team guidance — accordion -->
+    <div class="sec" style="margin-bottom:20px;">
+      <div class="sec-label">Network Controls</div>
+      <h2>Best Practices for Network Management</h2>
+    </div>
+    <div class="accordion">
+      <div class="acc-item" id="acc-8">
+        <div class="acc-header" onclick="toggleAcc(8)">
+          <div class="acc-header-left">
+            <span class="acc-num">05</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+                <span class="acc-title">Network Team Guidance</span>
+                <span class="acc-tag info">Action required</span>
+              </div>
+              <div class="acc-subtitle">Best practices for network management</div>
+            </div>
+          </div>
+          <span class="acc-chevron">⌄</span>
+        </div>
+        <div class="acc-body" id="body-8">
+          <div class="acc-body-inner">
+            <h4>1. Update your firewall rules</h4>
+            <p>Add an allowlist rule permitting MCP traffic (HTTPS/443) only to the platform's Envoy gateway IP. This IP is static — assigned by MetalLB for on-premises deployments, or your cloud provider's LB for cloud.</p>
+            <div class="callout callout-warning">
+              <div class="callout-icon">⚠</div>
+              <div><p><strong>Don't block before you're ready.</strong> Audit existing MCP traffic for 30 days before enforcing. Use your proxy in logging-only mode first to identify all MCP endpoints currently in use.</p></div>
+            </div>
+            <h4>2. Centralize AI agent configuration</h4>
+            <p>Update your AI agent deployment standard to resolve all MCP server addresses through the gateway. The gateway's hostname (e.g. <code style="font-family:var(--mono);font-size:12px;color:var(--accent-text)">mcp.company.com</code>) becomes the single MCP endpoint in all agent configs.</p>
+            <h4>3. Block direct MCP server ports internally</h4>
+            <p>Once agents are pointed at the gateway, block direct access to common MCP server ports (3000, 8080, 8443) from non-gateway sources on the internal network.</p>
+            <div class="callout callout-success">
+              <div class="callout-icon">✓</div>
+              <div><p><strong>We provide a network reference architecture</strong> with firewall rule templates, proxy config examples, and a 30-day rollout plan. Contact us for the enterprise onboarding package.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="page-cta">
+      <h3>Ready to govern MCP traffic in your enterprise?</h3>
+      <p>Talk to us about your network architecture and we'll walk you through the full deployment model.</p>
+      <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
+      <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
+    </div>
+
+  </div>
+</article>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p>&copy; 2026 Magertron. All rights reserved.</p>
+    <div class="footer-links">
+      <a href="https://github.com/curtismager20/magertron-mcpm">GitHub</a>
+      <a href="mailto:sales@magertron.com">Contact</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Demo Modal -->
+<div class="modal-overlay" id="demoModal" onclick="if(event.target===this)closeDemoModal()">
+  <div style="background:#0c1018;border:1px solid #1a2030;border-radius:16px;padding:40px;width:min(520px,95vw);position:relative;animation:fadeUp 0.25s ease-out;">
+    <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#8694a8;font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
+    <h3 style="font-size:22px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;">Schedule a Demo</h3>
+    <p style="font-size:14px;color:#8694a8;margin-bottom:28px;">Tell us about your use case and we'll reach out within one business day.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Interested in</label>
+      <select id="demo-tier" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+        <option value="Pro">Pro — $499/mo</option>
+        <option value="Enterprise">Enterprise — Custom pricing</option>
+        <option value="Just looking">Just exploring</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Tell us about your use case</label>
+      <textarea id="demo-message" placeholder="How many MCP servers are you planning to deploy?" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;min-height:80px;resize:vertical;font-family:inherit;"></textarea>
+    </div>
+    <button onclick="submitDemoForm()" style="width:100%;padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Send request →</button>
+  </div>
+</div>
+
+<script>
+// Progress bar
+window.addEventListener('scroll', () => {
+  const d = document.documentElement;
+  const pct = d.scrollHeight - d.clientHeight > 0
+    ? ((d.scrollTop || document.body.scrollTop) / (d.scrollHeight - d.clientHeight)) * 100 : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+});
+
+// Accordion — opens one at a time, closes others
+function toggleAcc(n) {
+  const item = document.getElementById('acc-' + n);
+  const body = document.getElementById('body-' + n);
+  const isOpen = item.classList.contains('open');
+  // Close all
+  [1,2,3,4,5,6,7,8].forEach(i => {
+    document.getElementById('acc-' + i).classList.remove('open');
+    document.getElementById('body-' + i).style.maxHeight = '0';
+  });
+  // Open clicked if it was closed
+  if (!isOpen) {
+    item.classList.add('open');
+    body.style.maxHeight = '2000px';
+  }
+}
+
+// Demo modal
+function openDemoModal(e) { if(e) e.preventDefault(); document.getElementById('demoModal').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeDemoModal() { document.getElementById('demoModal').classList.remove('open'); document.body.style.overflow=''; }
+function submitDemoForm() {
+  const fname=document.getElementById('demo-fname').value.trim();
+  const lname=document.getElementById('demo-lname').value.trim();
+  const email=document.getElementById('demo-email').value.trim();
+  const company=document.getElementById('demo-company').value.trim();
+  const tier=document.getElementById('demo-tier').value;
+  const message=document.getElementById('demo-message').value.trim();
+  if(!fname||!email){alert('Please enter your name and email.');return;}
+  const subject=encodeURIComponent(`Demo Request — ${company||fname} (${tier})`);
+  const body=encodeURIComponent(`Name: ${fname} ${lname}\nEmail: ${email}\nCompany: ${company}\nInterested in: ${tier}\n\nMessage:\n${message}`);
+  window.location.href=`mailto:sales@magertron.com?subject=${subject}&body=${body}`;
+  closeDemoModal();
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDemoModal(); });
+</script>
+</body>
+</html>
