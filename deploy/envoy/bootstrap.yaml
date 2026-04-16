@@ -1,0 +1,160 @@
+node:
+  id: mcp-gateway
+  cluster: mcp-gateway-cluster
+
+# Dynamic resources via gRPC ADS — Aggregated Discovery Service.
+# Envoy opens a persistent bidirectional gRPC stream to the orchestrator
+# and receives CDS + LDS updates pushed in real time when MCP servers
+# are deployed or removed. No polling — push-based, sub-second latency.
+dynamic_resources:
+  ads_config:
+    api_type: GRPC
+    transport_api_version: V3
+    grpc_services:
+      - envoy_grpc:
+          cluster_name: mcp_orchestrator_xds
+  cds_config:
+    resource_api_version: V3
+    ads: {}
+  lds_config:
+    resource_api_version: V3
+    ads: {}
+
+static_resources:
+  clusters:
+    # gRPC ADS cluster — connects to orchestrator xDS server on port 18000
+    # Must use HTTP/2 for gRPC — typed_extension_protocol_options required
+    - name: mcp_orchestrator_xds
+      connect_timeout: 5s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: mcp_orchestrator_xds
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: mcp-orchestrator-xds-headless.mcp-system.svc.cluster.local
+                      port_value: 18000
+
+    # Direct cluster to orchestrator REST API (for non-xDS traffic)
+    - name: mcp_orchestrator
+      connect_timeout: 5s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: mcp_orchestrator
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: mcp-orchestrator.mcp-system.svc.cluster.local
+                      port_value: 8080
+
+  listeners:
+    # HTTP listener on 10080 — handles MCP traffic + orchestrator API
+    # Routes /mcp/* to the dynamic xDS listener (port 10000) via internal redirect
+    # Routes /api/* to the orchestrator REST API
+    # Health check endpoints handled inline
+    - name: mcp_http_listener
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 10080
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: mcp_ingress
+                codec_type: AUTO
+                use_remote_address: true
+                # Use RDS to get dynamic routes from xDS — this is how
+                # MCP server routes (with prefix_rewrite) get applied
+                rds:
+                  route_config_name: mcp_route
+                  config_source:
+                    resource_api_version: V3
+                    ads: {}
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                      log_format:
+                        json_format:
+                          ts: "%START_TIME%"
+                          method: "%REQ(:METHOD)%"
+                          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                          status: "%RESPONSE_CODE%"
+                          duration_ms: "%DURATION%"
+                          upstream: "%UPSTREAM_HOST%"
+                          trace_id: "%REQ(X-REQUEST-ID)%"
+
+    # HTTPS listener on 10443 — TLS termination, same dynamic RDS routing
+    - name: mcp_https_listener
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 10443
+      filter_chains:
+        - transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificates:
+                  - certificate_chain:
+                      filename: /etc/envoy/tls/tls.crt
+                    private_key:
+                      filename: /etc/envoy/tls/tls.key
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: mcp_ingress
+                codec_type: AUTO
+                use_remote_address: true
+                rds:
+                  route_config_name: mcp_route
+                  config_source:
+                    resource_api_version: V3
+                    ads: {}
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                      log_format:
+                        json_format:
+                          ts: "%START_TIME%"
+                          method: "%REQ(:METHOD)%"
+                          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                          status: "%RESPONSE_CODE%"
+                          duration_ms: "%DURATION%"
+                          upstream: "%UPSTREAM_HOST%"
+                          trace_id: "%REQ(X-REQUEST-ID)%"
+
+# Envoy admin API (internal only)
+admin:
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901
+  access_log:
+    - name: envoy.access_loggers.stdout
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog

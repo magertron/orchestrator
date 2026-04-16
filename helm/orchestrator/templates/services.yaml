@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.api.httpPort }}
+      targetPort: {{ .Values.api.httpPort }}
+    - name: grpc
+      port: {{ .Values.api.grpcPort }}
+      targetPort: {{ .Values.api.grpcPort }}
+    - name: xds
+      port: {{ .Values.envoy.xds.port }}
+      targetPort: {{ .Values.envoy.xds.port }}
+    - name: metrics
+      port: {{ .Values.observability.metricsPort }}
+      targetPort: {{ .Values.observability.metricsPort }}
+
+---
+# Headless service for xDS gRPC — STRICT_DNS resolves to pod IPs
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-xds-headless
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: xds
+      port: {{ .Values.envoy.xds.port }}
+      targetPort: {{ .Values.envoy.xds.port }}

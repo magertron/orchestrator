@@ -1,0 +1,16 @@
+apiVersion: v2
+name: mcp-orchestrator
+description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
+type: application
+version: 1.0.0
+appVersion: "1.1.0"
+keywords:
+  - mcp
+  - model-context-protocol
+  - orchestrator
+  - kubernetes
+  - ai
+  - llm
+home: https://github.com/mcp-platform/mcp-orchestrator
+maintainers:
+  - name: MCP Platform Team

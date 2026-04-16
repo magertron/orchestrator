@@ -1,0 +1,91 @@
+{{- /*
+  envoy-service.yaml — Envoy gateway Service.
+  Adapts to loadBalancer.provider so the right service type and
+  annotations are rendered for each environment.
+  NOTE: The Deployment is defined in envoy.yaml — this file only manages
+  the Service and optional Ingress.
+*/ -}}
+
+{{- if .Values.envoy.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway
+  annotations:
+    {{- /* Cloud-specific or custom annotations for existing LB integrations */}}
+    {{- if eq .Values.loadBalancer.provider "existing" }}
+    {{- range $k, $v := .Values.loadBalancer.existing.serviceAnnotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+    {{- end }}
+spec:
+  selector:
+    app: {{ include "mcp.fullname" . }}-envoy
+
+  {{- /* ── Service type by provider ───────────────────────────── */}}
+  {{- if eq .Values.loadBalancer.provider "nodeport" }}
+  type: NodePort
+  {{- else }}
+  type: LoadBalancer
+  {{- end }}
+
+  {{- /* ── Static IP (existing provider with pre-assigned IP) ─── */}}
+  {{- if and (eq .Values.loadBalancer.provider "existing") .Values.loadBalancer.existing.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.loadBalancer.existing.loadBalancerIP | quote }}
+  {{- end }}
+
+  ports:
+    - name: http
+      port: {{ .Values.envoy.service.httpPort }}
+      targetPort: 10080
+      protocol: TCP
+      {{- if eq .Values.loadBalancer.provider "nodeport" }}
+      nodePort: {{ .Values.loadBalancer.nodeport.httpPort }}
+      {{- end }}
+    - name: https
+      port: {{ .Values.envoy.service.httpsPort }}
+      targetPort: 10443
+      protocol: TCP
+      {{- if eq .Values.loadBalancer.provider "nodeport" }}
+      nodePort: {{ .Values.loadBalancer.nodeport.httpsPort }}
+      {{- end }}
+{{- end }}
+
+---
+{{- /* ── Optional Ingress (provider: existing, ingress.enabled: true) ── */}}
+{{- if and (eq .Values.loadBalancer.provider "existing") .Values.loadBalancer.existing.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy-ingress
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  ingressClassName: {{ .Values.loadBalancer.existing.ingress.className | quote }}
+  {{- if .Values.loadBalancer.existing.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.loadBalancer.existing.ingress.host | quote }}
+      secretName: {{ .Values.loadBalancer.existing.ingress.tlsSecretName | quote }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.loadBalancer.existing.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "mcp.fullname" . }}-envoy
+                port:
+                  number: {{ .Values.envoy.service.httpPort }}
+{{- end }}

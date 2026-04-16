@@ -1,0 +1,21 @@
+---
+# Headless service for Envoy xDS gRPC ADS connection to orchestrator.
+# Envoy's bootstrap config references mcp-orchestrator-xds-headless:18000.
+# A headless service (clusterIP: None) is required for gRPC to work correctly
+# with STRICT_DNS — it resolves to individual pod IPs, not a VIP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-orchestrator-xds-headless
+  namespace: mcp-system
+  labels:
+    app: mcp-orchestrator
+spec:
+  clusterIP: None        # headless — resolves to pod IPs directly
+  selector:
+    app: mcp-orchestrator
+  ports:
+    - name: xds
+      port: 18000
+      targetPort: 18000
+      protocol: TCP

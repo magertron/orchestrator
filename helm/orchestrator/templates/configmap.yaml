@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-config
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    api:
+      listen_address: "0.0.0.0"
+      http_port: {{ .Values.api.httpPort }}
+      grpc_port: {{ .Values.api.grpcPort }}
+      tls:
+        cert_file: /etc/tls/tls.crt
+        key_file: /etc/tls/tls.key
+      request_timeout: {{ .Values.api.requestTimeout }}
+
+    jwt:
+      public_key_pem: |
+        # Injected via Secret
+      issuer: {{ .Values.jwt.issuer | quote }}
+      audience: {{ .Values.jwt.audience | quote }}
+      clock_skew: {{ .Values.jwt.clockSkew }}
+
+    k8s:
+      in_cluster: true
+      default_namespace: {{ index .Values.namespaces 0 | default "mcp-prod" | quote }}
+      helm_binary: "/usr/local/bin/helm"
+      charts_dir: "/opt/mcp/charts"
+      watch_resync_period: 300
+
+    envoy:
+      xds_listen_address: {{ .Values.envoy.xds.listenAddress | quote }}
+      xds_port: {{ .Values.envoy.xds.port }}
+      node_id: {{ .Values.envoy.xds.nodeId | quote }}
+      cluster_name: {{ .Values.envoy.xds.clusterName | quote }}
+
+    observability:
+      log_level: {{ .Values.observability.logLevel | quote }}
+      log_format: {{ .Values.observability.logFormat | quote }}
+      metrics_port: {{ .Values.observability.metricsPort }}
+      audit_log_path: {{ .Values.observability.auditLogPath | quote }}
+
+    postgresql:
+      enabled: {{ .Values.postgresql.enabled }}
+      host: {{ include "mcp.postgresHost" . | quote }}
+      port: 5432
+      database: {{ .Values.postgresql.database | quote }}
+      username: {{ .Values.postgresql.username | quote }}

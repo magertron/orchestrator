@@ -1,0 +1,133 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-postgres-init
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: postgresql
+data:
+  01-schema.sql: |
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+    CREATE TABLE IF NOT EXISTS users (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        username      VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        roles         TEXT[]      NOT NULL DEFAULT '{}',
+        enabled       BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_login    TIMESTAMPTZ
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        kind          VARCHAR(64) NOT NULL,
+        actor         VARCHAR(255) NOT NULL,
+        server_name   VARCHAR(255),
+        namespace     VARCHAR(255),
+        detail        TEXT,
+        old_state     JSONB,
+        new_state     JSONB,
+        ts            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS audit_events_ts_idx ON audit_events (ts DESC);
+    CREATE INDEX IF NOT EXISTS audit_events_actor_idx ON audit_events (actor);
+    CREATE INDEX IF NOT EXISTS audit_events_server_idx ON audit_events (server_name, namespace);
+
+    CREATE TABLE IF NOT EXISTS deployed_servers (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name          VARCHAR(255) NOT NULL,
+        namespace     VARCHAR(255) NOT NULL,
+        image         VARCHAR(512) NOT NULL,
+        image_tag     VARCHAR(128) NOT NULL DEFAULT 'latest',
+        replicas      INT         NOT NULL DEFAULT 1,
+        mcp_port      INT         NOT NULL DEFAULT 3000,
+        transport     VARCHAR(32) NOT NULL DEFAULT 'http',
+        cluster_ip    VARCHAR(64),
+        cluster_port  INT,
+        state         VARCHAR(32) NOT NULL DEFAULT 'Pending',
+        deployed_by   VARCHAR(255),
+        tools         JSONB       NOT NULL DEFAULT '[]',
+        env_vars      JSONB       NOT NULL DEFAULT '{}',
+        labels        JSONB       NOT NULL DEFAULT '{}',
+        annotations   JSONB       NOT NULL DEFAULT '{}',
+        group_name    VARCHAR(255),
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (name, namespace)
+    );
+
+    CREATE TABLE IF NOT EXISTS roles (
+        id            VARCHAR(255) PRIMARY KEY,
+        name          VARCHAR(255) NOT NULL,
+        description   TEXT,
+        permissions   JSONB       NOT NULL DEFAULT '[]',
+        allowed_namespaces JSONB  NOT NULL DEFAULT '["*"]',
+        system_role   BOOLEAN     NOT NULL DEFAULT FALSE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS governance_policies (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name          VARCHAR(255) UNIQUE NOT NULL,
+        description   TEXT        NOT NULL DEFAULT '',
+        rules         JSONB       NOT NULL DEFAULT '[]',
+        applies_to_namespaces JSONB NOT NULL DEFAULT '["*"]',
+        is_template   BOOLEAN     NOT NULL DEFAULT FALSE,
+        enabled       BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS governance_policies_enabled_idx ON governance_policies (enabled);
+
+    CREATE TABLE IF NOT EXISTS webhooks (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name          VARCHAR(255) NOT NULL,
+        url           TEXT        NOT NULL,
+        secret        TEXT        NOT NULL DEFAULT '',
+        event_types   JSONB       NOT NULL DEFAULT '["*"]',
+        namespaces    JSONB       NOT NULL DEFAULT '["*"]',
+        enabled       BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+  02-seed.sql: |
+    INSERT INTO users (username, password_hash, roles, enabled)
+    VALUES ('admin', {{ .Values.seed.adminPasswordHash | quote }}, ARRAY['system:platform-admin'], TRUE)
+    ON CONFLICT (username) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:platform-admin', 'Platform Admin', 'Full access to all namespaces and operations',
+     '["Deploy","Undeploy","Scale","Read","Write","ManageRoles","AuditRead","ViewLogs"]', '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:deploy-manager', 'Deploy Manager', 'Deploy and manage servers in production and staging',
+     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs","AuditRead"]', '["mcp-prod","mcp-staging"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:operator', 'Operator', 'Deploy and manage servers in dev and staging only',
+     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs"]', '["mcp-dev","mcp-staging"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:viewer', 'Viewer', 'Read-only access across all namespaces',
+     '["Read","AuditRead"]', '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules) VALUES
+    ('enterprise-standard', 'Default enterprise governance policy', TRUE, TRUE, '["mcp-prod","mcp-staging"]',
+     '[{"category":"security","field":"transport","operator":"in","value":["streamable_http","sse"],"severity":"error","message":"Only Streamable HTTP or SSE transport allowed"},{"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":2048,"severity":"error","message":"Memory limit must not exceed 2Gi"},{"category":"resource_limits","field":"cpu_limit","operator":"lte","value":2.0,"severity":"error","message":"CPU limit must not exceed 2 cores"},{"category":"resource_limits","field":"replicas","operator":"lte","value":10,"severity":"error","message":"Initial replicas must not exceed 10"},{"category":"resource_limits","field":"replicas","operator":"gte","value":1,"severity":"error","message":"Must have at least 1 replica"},{"category":"naming","field":"labels.team","operator":"exists","value":true,"severity":"error","message":"Team label is required"},{"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens"},{"category":"tool_safety","field":"tools.*.read_only","operator":"equals","value":true,"severity":"warning","message":"Mutating tools detected"}]'::jsonb)
+    ON CONFLICT (name) DO NOTHING;
+
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules) VALUES
+    ('dev-relaxed', 'Relaxed policy for development environments', TRUE, TRUE, '["mcp-dev"]',
+     '[{"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":4096,"severity":"error","message":"Memory limit must not exceed 4Gi even in dev"},{"category":"resource_limits","field":"replicas","operator":"lte","value":5,"severity":"warning","message":"Consider keeping dev replicas under 5"},{"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens"}]'::jsonb)
+    ON CONFLICT (name) DO NOTHING;
+{{- end }}

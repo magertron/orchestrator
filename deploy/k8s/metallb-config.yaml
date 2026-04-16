@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  MetalLB Configuration — MCP Platform
+#  Apply AFTER installing MetalLB:
+#    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.5/config/manifests/metallb-native.yaml
+#    kubectl wait --namespace metallb-system --for=condition=ready pod --selector=app=metallb --timeout=120s
+#    kubectl apply -f deploy/k8s/metallb-config.yaml
+#
+#  Adjust ipRange to match your network:
+#    kind/Docker:        172.18.0.200-172.18.0.250  (run: docker network inspect kind)
+#    Private DC:         10.0.1.200-10.0.1.250      (use a free range in your LAN)
+#    VMware/Hyper-V:     192.168.x.200-192.168.x.250
+#
+#  NOT needed for:
+#    AWS / GCP / Azure — your cloud controller assigns IPs automatically.
+#    Clusters with an existing F5, Citrix, or hardware LB — use their CIS/plugin.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: mcp-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 172.18.0.200-172.18.0.250    # ← CHANGE THIS to match your network
+
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: mcp-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - mcp-pool
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BGP MODE (advanced — for production DC with BGP-capable routers)
+# Uncomment and replace L2Advertisement above with this if using BGP:
+# ─────────────────────────────────────────────────────────────────────────────
+# apiVersion: metallb.io/v1beta2
+# kind: BGPPeer
+# metadata:
+#   name: dc-router
+#   namespace: metallb-system
+# spec:
+#   peerAddress: 10.0.0.1        # ← your router IP
+#   peerASN: 65000
+#   myASN: 65001
+# ---
+# apiVersion: metallb.io/v1beta1
+# kind: BGPAdvertisement
+# metadata:
+#   name: mcp-bgp
+#   namespace: metallb-system
+# spec:
+#   ipAddressPools:
+#     - mcp-pool

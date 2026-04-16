@@ -1,0 +1,46 @@
+{{- /*
+  metallb.yaml — Rendered only when loadBalancer.provider == "metallb"
+  AND loadBalancer.metallb.install == true.
+  Installs MetalLB via a Helm sub-chart hook and configures an IPAddressPool.
+*/ -}}
+
+{{- if and (eq .Values.loadBalancer.provider "metallb") .Values.loadBalancer.metallb.install }}
+---
+# MetalLB namespace (created ahead of the CRD/controller install)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+  labels:
+    app.kubernetes.io/managed-by: mcp-orchestrator
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+
+---
+# IPAddressPool — the range MetalLB will assign from
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: mcp-pool
+  namespace: metallb-system
+  labels:
+    app.kubernetes.io/part-of: mcp-orchestrator
+spec:
+  addresses:
+    - {{ .Values.loadBalancer.metallb.ipRange | quote }}
+
+---
+# L2Advertisement — announces IPs via ARP on the local network segment
+# Works for: kind, bare-metal DC, private cloud without BGP
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: mcp-l2
+  namespace: metallb-system
+  labels:
+    app.kubernetes.io/part-of: mcp-orchestrator
+spec:
+  ipAddressPools:
+    - mcp-pool
+{{- end }}

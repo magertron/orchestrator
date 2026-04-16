@@ -1,0 +1,198 @@
+# ─── MCP Orchestrator Helm Values ─────────────────────────────────────────────
+
+# Global settings
+global:
+  imageRegistry: docker.io
+
+# ─── Orchestrator ─────────────────────────────────────────────────────────────
+orchestrator:
+  replicaCount: 2
+  image:
+    repository: curtismager20/mcp-orchestrator
+    tag: v1
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
+mcpSync:
+  image:
+    repository: curtismager20/mcp-sync
+    tag: v1
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ─── Envoy Gateway ───────────────────────────────────────────────────────────
+envoy:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: envoyproxy/envoy
+    tag: v1.28-latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: LoadBalancer
+    httpPort: 80
+    httpsPort: 443
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPU: 70
+    targetMemory: 80
+  xds:
+    listenAddress: "0.0.0.0"
+    port: 18000
+    nodeId: mcp-gateway
+    clusterName: mcp-gateway-cluster
+
+# ─── Load Balancer ────────────────────────────────────────────────────────────
+# Controls how the Envoy gateway is exposed outside the cluster.
+#
+# provider options:
+#   cloud     — AWS ELB / GCP LB / Azure LB (default for cloud deployments)
+#               No extra config needed — your cloud controller handles it.
+#
+#   metallb   — Bare-metal / private DC / kind dev clusters.
+#               Installs MetalLB and assigns IPs from the given pool.
+#               Use create-cluster.sh for dev — it handles this automatically.
+#
+#   nodeport  — Expose via NodePort only. No external IP assigned.
+#               Access via <node-ip>:<nodePort>. Useful for air-gapped clusters
+#               or when an upstream hardware LB handles external routing.
+#
+#   existing  — You already have an Ingress controller or LB in the cluster
+#               (nginx-ingress, Traefik, F5 CIS, etc). MCP will create the
+#               Service but NOT install any LB controller. Set annotations
+#               below to integrate with your existing infrastructure.
+#
+loadBalancer:
+  provider: cloud       # cloud | metallb | nodeport | existing
+
+  # ── MetalLB (provider: metallb) ───────────────────────────────────────────
+  metallb:
+    install: true                                   # set false if already installed
+    version: v0.14.5
+    ipRange: "172.18.0.200-172.18.0.250"            # adjust to your network
+    # bgp: false                                    # set true for BGP mode (advanced)
+
+  # ── NodePort (provider: nodeport) ─────────────────────────────────────────
+  nodeport:
+    httpPort: 30080     # customize to avoid conflicts
+    httpsPort: 30443
+
+  # ── Existing LB / Ingress (provider: existing) ────────────────────────────
+  existing:
+    # Annotations added to the Envoy Service — use to integrate with your LB.
+    # Examples:
+    #   AWS NLB:      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    #   F5 BIG-IP:    cis.f5.com/ip-type: "cluster"
+    #   MetalLB pool: metallb.universe.tf/address-pool: "production-pool"
+    serviceAnnotations: {}
+    #   service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+    # Optional: pre-assigned static IP for the LoadBalancer service
+    loadBalancerIP: ""
+
+    # Optional: create an Ingress resource instead of relying on LoadBalancer
+    ingress:
+      enabled: false
+      className: nginx          # nginx | traefik | haproxy | istio | etc.
+      host: mcp.example.com
+      tls: true
+      tlsSecretName: mcp-envoy-tls
+
+# ─── PostgreSQL ──────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage:
+    size: 5Gi
+    # storageClassName: longhorn    # Set for your environment
+  database: mcp_platform
+  username: mcp
+  # Password is read from the secret (key: MCP_DB_PASSWORD)
+
+# ─── API Configuration ──────────────────────────────────────────────────────
+api:
+  httpPort: 8080
+  grpcPort: 9090
+  requestTimeout: 30
+
+# ─── JWT Configuration ──────────────────────────────────────────────────────
+jwt:
+  issuer: "https://auth.acme.internal"
+  audience: "mcp-orchestrator"
+  clockSkew: 30
+  tokenTTL: 3600
+
+# ─── Observability ───────────────────────────────────────────────────────────
+observability:
+  logLevel: info
+  logFormat: json
+  metricsPort: 9091
+  auditLogPath: /var/log/mcp/audit.log
+
+# ─── Namespaces ──────────────────────────────────────────────────────────────
+# Additional namespaces to create for MCP server deployments
+namespaces:
+  - mcp-prod
+  - mcp-staging
+  - mcp-dev
+
+# ─── Network Policy ─────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: true
+
+# ─── Secrets ─────────────────────────────────────────────────────────────────
+# If createSecrets is true, the chart creates a Secret from these values.
+# For production, set createSecrets=false and create the Secret externally.
+secrets:
+  create: true
+  dbPassword: changeme
+  # JWT keys — base64-encoded PEM. Generate with:
+  #   openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
+  #   openssl rsa -in jwt.key -pubout -out jwt.pub
+  jwtPrivateKey: ""   # base64-encoded PEM private key
+  jwtPublicKey: ""    # base64-encoded PEM public key
+
+# ─── TLS ─────────────────────────────────────────────────────────────────────
+tls:
+  create: true
+  # If you provide cert/key, they'll be used. Otherwise auto-generated.
+  cert: ""
+  key: ""
+  orchestratorSecretName: mcp-orchestrator-tls
+  envoySecretName: mcp-envoy-tls
+
+# ─── Seed Data ───────────────────────────────────────────────────────────────
+seed:
+  # Default admin user (password: admin — CHANGE IN PRODUCTION)
+  adminPassword: admin
+  adminPasswordHash: "$2a$12$0OAq9ZVN96/RLKJngYzLIed1TekrTKUbdKjSDfdYCSmsTNrea7VaG"

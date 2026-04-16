@@ -1,0 +1,196 @@
+# ─── Namespace ────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp-system
+  labels:
+    app: mcp-orchestrator
+
+---
+# ─── mcp-orchestrator Deployment (with mcp-sync sidecar) ─────────────────────
+#
+# This is your existing Deployment with the mcp-sync sidecar added.
+# Everything from your original spec is preserved exactly:
+#   - selector: app=mcp-orchestrator
+#   - serviceAccountName: mcp-orchestrator
+#   - all volumes, secrets, config mounts
+#   - security context (runAsNonRoot, readOnlyRootFilesystem)
+#   - resource limits, probes, topology spread
+#
+# The only addition is the mcp-sync container at the bottom of containers[].
+#
+# Apply with:
+#   kubectl delete deployment mcp-orchestrator -n mcp-system
+#   kubectl apply -f deploy/deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-orchestrator
+  namespace: mcp-system
+  labels:
+    app: mcp-orchestrator
+    version: 1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-orchestrator           # preserved exactly from your original
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: mcp-orchestrator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      serviceAccountName: mcp-orchestrator   # your existing service account
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      terminationGracePeriodSeconds: 30
+
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app: mcp-orchestrator
+          maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+
+      volumes:
+        - name: config
+          configMap:
+            name: mcp-orchestrator-config
+        - name: tls
+          secret:
+            secretName: mcp-orchestrator-tls
+        - name: audit-log
+          emptyDir: {}
+
+      containers:
+
+        # ── Container 1: mcp-orchestratord (your existing C++ container) ───────
+        # Preserved exactly from your current live Deployment
+        - name: orchestrator
+          image: docker.io/curtismager20/mcp-orchestrator:v1
+          imagePullPolicy: Always
+          args:
+            - --config
+            - /etc/mcp/config.yaml
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - secretRef:
+                name: mcp-orchestrator-secrets
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: grpc
+              containerPort: 9090
+              protocol: TCP
+            - name: xds
+              containerPort: 18000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9091
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - mountPath: /etc/mcp
+              name: config
+              readOnly: true
+            - mountPath: /etc/tls
+              name: tls
+              readOnly: true
+            - mountPath: /var/log/mcp
+              name: audit-log
+
+        # ── Container 2: mcp-sync (Go sidecar — new addition) ─────────────────
+        # Talks to the orchestrator over localhost:8080.
+        # Watches McpRoute CRDs and pushes state via /internal/routes.
+        # Competes for leader lease — only the leader pushes to its paired
+        # orchestrator instance.
+        - name: mcp-sync
+          image: docker.io/curtismager20/mcp-sync:v1
+          imagePullPolicy: Always
+          env:
+            - name: ORCHESTRATOR_URL
+              value: "http://127.0.0.1:8080"
+            - name: WATCH_NAMESPACE
+              value: "mcp-system"
+            - name: LEASE_NAMESPACE
+              value: "mcp-system"
+            - name: LEASE_NAME
+              value: "mcp-sync-leader"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]

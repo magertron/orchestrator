@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.orchestrator.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mcp.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "mcp.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.observability.metricsPort | quote }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: mcp-orchestrator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: orchestrator
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.orchestrator.image.repository }}:{{ .Values.orchestrator.image.tag }}"
+          imagePullPolicy: {{ .Values.orchestrator.image.pullPolicy }}
+          args: ["--config", "/etc/mcp/config.yaml"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.httpPort }}
+            - name: grpc
+              containerPort: {{ .Values.api.grpcPort }}
+            - name: xds
+              containerPort: {{ .Values.envoy.xds.port }}
+            - name: metrics
+              containerPort: {{ .Values.observability.metricsPort }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - secretRef:
+                name: {{ include "mcp.fullname" . }}-secrets
+          volumeMounts:
+            - name: config
+              mountPath: /etc/mcp
+              readOnly: true
+            - name: tls
+              mountPath: /etc/tls
+              readOnly: true
+            - name: audit-log
+              mountPath: /var/log/mcp
+          resources:
+            {{- toYaml .Values.orchestrator.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.api.httpPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.api.httpPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+        # ── mcp-sync sidecar ──────────────────────────────────────────────
+        - name: mcp-sync
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.mcpSync.image.repository }}:{{ .Values.mcpSync.image.tag }}"
+          imagePullPolicy: {{ .Values.mcpSync.image.pullPolicy }}
+          env:
+            - name: ORCHESTRATOR_URL
+              value: "http://127.0.0.1:{{ .Values.api.httpPort }}"
+            - name: WATCH_NAMESPACE
+              value: ""
+            - name: LEASE_NAMESPACE
+              value: {{ include "mcp.namespace" . | quote }}
+            - name: LEASE_NAME
+              value: "mcp-sync-leader"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.mcpSync.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "mcp.fullname" . }}-config
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.orchestratorSecretName }}
+        - name: audit-log
+          emptyDir: {}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "mcp.selectorLabels" . | nindent 14 }}

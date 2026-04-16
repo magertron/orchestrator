@@ -1,0 +1,64 @@
+# Source code — never publish
+src/
+include/
+build/
+tools/
+third_party/
+proto/
+cmake/
+CMakeLists.txt
+CMakePresets.json
+
+# Keys and secrets — NEVER push these
+*.key
+*.pem
+private.pem
+public.pem
+*.p12
+*.pfx
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+build.log
+compile_commands.json
+
+# Internal tools
+sign-license
+mcp-orchestratord
+mcpctl/mcpctl
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# VSCode
+.vscode/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Backup folders
+Backx/
+Backxxx/
+
+# Docker
+docker-compose.yml
+Dockerfile
+build-push.sh
+
+# Dev files
+*.swp
+*.swo
+insto
+ui/node_modules/
+deploy/dev/
+.env.local
+ui/.env*
+schema/
+mcpctl/
+website/

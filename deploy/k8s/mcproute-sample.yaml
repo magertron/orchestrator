@@ -1,0 +1,39 @@
+# ─── Sample McpRoute Instances ────────────────────────────────────────────────
+#
+# Apply:  kubectl apply -f deploy/mcproute-sample.yaml
+# Watch:  kubectl get mcproutes -n mcp-system -w
+# Delete: kubectl delete -f deploy/mcproute-sample.yaml
+
+---
+apiVersion: mcp.io/v1
+kind: McpRoute
+metadata:
+  name: weather-tool
+  namespace: mcp-system
+  labels:
+    app: mcp-platform
+spec:
+  serverName:  weather-tool
+  namespace:   mcp-system
+  prefix:      /mcp/weather-tool/
+  clusterName: mcp_weather-tool
+  clusterIP:   10.0.1.5
+  clusterPort: 8080
+  enabled:     true
+
+---
+apiVersion: mcp.io/v1
+kind: McpRoute
+metadata:
+  name: code-assistant
+  namespace: mcp-system
+  labels:
+    app: mcp-platform
+spec:
+  serverName:  code-assistant
+  namespace:   mcp-system
+  prefix:      /mcp/code-assistant/
+  clusterName: mcp_code-assistant
+  clusterIP:   10.0.2.8
+  clusterPort: 8080
+  enabled:     true

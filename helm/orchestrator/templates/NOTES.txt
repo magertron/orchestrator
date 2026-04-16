@@ -1,0 +1,45 @@
+
+MCP Orchestrator has been deployed!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENTS:
+  Orchestrator:  {{ .Values.orchestrator.replicaCount }} replica(s)
+  PostgreSQL:    {{ if .Values.postgresql.enabled }}enabled{{ else }}external{{ end }}
+  Envoy Gateway: {{ if .Values.envoy.enabled }}{{ .Values.envoy.replicaCount }} replica(s){{ else }}disabled{{ end }}
+
+NAMESPACES:
+{{- range .Values.namespaces }}
+  - {{ . }}
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ACCESS THE DASHBOARD:
+
+  kubectl port-forward svc/{{ include "mcp.fullname" . }} -n {{ include "mcp.namespace" . }} 8080:{{ .Values.api.httpPort }}
+
+  Then open: http://localhost:8080
+  Login:     admin / {{ .Values.seed.adminPassword }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CLI TOOL:
+
+  mcpctl login http://localhost:8080 admin {{ .Values.seed.adminPassword }}
+  mcpctl servers
+  mcpctl deploy my-server mcp-prod my-image:latest --port 8080
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠  IMPORTANT: Change the default admin password immediately!
+
+{{- if and .Values.secrets.create (eq .Values.secrets.dbPassword "changeme") }}
+⚠  WARNING: Using default database password. Set secrets.dbPassword for production.
+{{- end }}
+
+{{- if and .Values.secrets.create (not .Values.secrets.jwtPrivateKey) }}
+⚠  WARNING: No JWT keys configured. Generate keys and set secrets.jwtPrivateKey/jwtPublicKey.
+   openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
+   openssl rsa -in jwt.key -pubout -out jwt.pub
+{{- end }}

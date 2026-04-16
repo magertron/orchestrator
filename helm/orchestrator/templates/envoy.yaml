@@ -1,0 +1,82 @@
+{{- if .Values.envoy.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway
+spec:
+  replicas: {{ .Values.envoy.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "mcp.fullname" . }}-envoy
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp.fullname" . }}-envoy
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          args: ["-c", "/etc/envoy/bootstrap.yaml", "--service-cluster", "mcp-gateway"]
+          ports:
+            - name: http
+              containerPort: 10080
+            - name: https
+              containerPort: 10443
+            - name: admin
+              containerPort: 9901
+          volumeMounts:
+            - name: envoy-config
+              mountPath: /etc/envoy
+              readOnly: true
+            - name: tls
+              mountPath: /etc/envoy/tls
+              readOnly: true
+          resources:
+            {{- toYaml .Values.envoy.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9901
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: {{ include "mcp.fullname" . }}-envoy-bootstrap
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.envoySecretName }}
+
+{{- if .Values.envoy.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy
+  namespace: {{ include "mcp.namespace" . }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "mcp.fullname" . }}-envoy
+  minReplicas: {{ .Values.envoy.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.envoy.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.envoy.autoscaling.targetCPU }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.envoy.autoscaling.targetMemory }}
+{{- end }}
+{{- end }}
