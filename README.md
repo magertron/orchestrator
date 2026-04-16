@@ -6,68 +6,7 @@ MCP Orchestrator deploys, monitors, and governs MCP servers across multi-tenant 
 
 ---
 
-## Architecture
-
-```
-                                    ┌─────────────────────────────────────────────────────────┐
-                                    │                    mcp-system namespace                  │
-                                    │                                                         │
-                                    │  ┌─────────────────────────────────────────────────┐    │
-   Clients                          │  │          Orchestrator Pod (×2 HA)                │    │
-  ┌─────────┐    HTTPS / REST       │  │  ┌─────────────────┐  ┌──────────────────┐     │    │
-  │ Browser │ ──────────────────┐   │  │  │  orchestrator    │  │   mcp-sync       │     │    │
-  │ (React) │                   │   │  │  │  (C++23)         │  │   (Go sidecar)   │     │    │
-  └─────────┘                   │   │  │  │                  │  │                  │     │    │
-                                │   │  │  │  • REST API      │  │  • Watches CRDs  │     │    │
-  ┌─────────┐                   ▼   │  │  │  • JWT Auth      │  │  • Leader elect  │     │    │
-  │ mcpctl  │ ──────────── ┌────────┤  │  │  • RBAC Engine   │  │  • Route sync    │     │    │
-  │  (CLI)  │              │ Envoy  │  │  │  • Governance    │  │                  │     │    │
-  └─────────┘              │Gateway │  │  │  • xDS Server    │  └──────────────────┘     │    │
-                           │ (×2)   │  │  │  • Health Mon.   │                           │    │
-  ┌─────────┐              │        │  │  │  • Webhooks      │                           │    │
-  │  AI     │ ─── MCP ──── │  ADS   │  │  │  • Audit Logger  │                           │    │
-  │ Agents  │  Protocol    │ (xDS)  │  │  └────────┬─────────┘                           │    │
-  └─────────┘              └────┬───┤  │           │                                     │    │
-                                │   │  └───────────┼─────────────────────────────────────┘    │
-                                │   │              │                                          │
-                                │   │     ┌────────▼─────────┐                                │
-                                │   │     │   PostgreSQL      │                                │
-                                │   │     │   • Users/RBAC    │                                │
-                                │   │     │   • Audit events  │                                │
-                                │   │     │   • Server state  │                                │
-                                │   │     │   • Policies      │                                │
-                                │   │     │   • Webhooks      │                                │
-                                │   │     └──────────────────┘                                │
-                                │   └─────────────────────────────────────────────────────────┘
-                                │
-                    ┌───────────┼──────────────────────────────┐
-                    │           │    MCP Server Namespaces      │
-                    │           ▼                               │
-                    │  ┌──────────────┐  ┌──────────────┐     │
-                    │  │  mcp-prod    │  │  mcp-staging  │     │
-                    │  │  ┌────────┐  │  │  ┌────────┐  │     │
-                    │  │  │MCP Srv │  │  │  │MCP Srv │  │     │
-                    │  │  │(fast-  │  │  │  │(code-  │  │     │
-                    │  │  │ time)  │  │  │  │ asst.) │  │     │
-                    │  │  └────────┘  │  │  └────────┘  │     │
-                    │  └──────────────┘  └──────────────┘     │
-                    │           ┌──────────────┐               │
-                    │           │  mcp-dev      │               │
-                    │           │  ┌────────┐   │               │
-                    │           │  │MCP Srv │   │               │
-                    │           │  └────────┘   │               │
-                    │           └──────────────┘               │
-                    └──────────────────────────────────────────┘
-```
-
 ## Features
-
-### License Tier Gating
-- **FREE** — Core deployment, health monitoring, scaling
-- **Pro** — Live metrics charts, additional observability features
-- **Enterprise** — Audit trail, governance policies, webhooks, deployment history & rollback
-- Upgrade prompts with direct links shown for locked features
-- License loaded from file at startup (`/etc/mcp-license/license.json`)
 
 ### Server Lifecycle Management
 - **Deploy** MCP servers from container images with configurable CPU, memory, replicas, and transport
@@ -115,11 +54,8 @@ MCP Orchestrator deploys, monitors, and governs MCP servers across multi-tenant 
 ### Envoy Gateway
 - Dynamic xDS (ADS) — push-based route updates with sub-second latency
 - Automatic cluster and listener configuration when servers are deployed
-- **Prefix rewriting** — strips `/mcp/<server-name>/` before forwarding to pods, so MCP servers receive clean paths (e.g. `/http`, `/sse`)
-- **Dynamic RDS** — route configuration served via xDS Route Discovery Service, no static bootstrap routes needed
 - HTTPS termination with TLS certificates
 - JSON access logging
-- Supports MetalLB (bare metal), cloud load balancers (AWS/GCP/Azure), NodePort, and existing Ingress controllers
 
 ### Deployment History & Rollback
 - Full audit trail of every deployment event (deploy, scale, update, restart, health change)
@@ -137,16 +73,6 @@ MCP Orchestrator deploys, monitors, and governs MCP servers across multi-tenant 
 - `kubectl` configured
 - metrics-server installed (`kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml`)
 
-### Dev Cluster (kind + Docker Desktop)
-
-The platform ships with a bootstrap script that creates a kind cluster, installs MetalLB, and auto-configures networking:
-
-```bash
-./create-cluster.sh
-```
-
-For details on load balancer options and macOS networking see [INSTALL.md](INSTALL.md#dev-cluster-setup-kind--docker-desktop).
-
 ### Generate JWT Keys
 ```bash
 openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
@@ -162,8 +88,7 @@ helm install mcp ./helm/orchestrator -n mcp-system --create-namespace \
 
 ### Access the Dashboard
 ```bash
-# Port-forward to Envoy gateway (recommended for dev)
-kubectl port-forward svc/mcp-mcp-orchestrator-envoy -n mcp-system 8080:80 &
+kubectl port-forward svc/mcp-mcp-orchestrator -n mcp-system 8080:8080
 open http://localhost:8080
 # Login: admin / admin
 ```
@@ -251,10 +176,7 @@ Key values in `values.yaml`:
 | `orchestrator.replicaCount` | `2` | Orchestrator HA replicas |
 | `orchestrator.image.tag` | `v1` | Orchestrator image tag |
 | `envoy.enabled` | `true` | Deploy Envoy gateway |
-| `loadBalancer.provider` | `cloud` | LB mode: `cloud` \| `metallb` \| `nodeport` \| `existing` |
-| `loadBalancer.metallb.ipRange` | `172.18.0.200-172.18.0.250` | MetalLB IP pool (metallb mode) |
-| `loadBalancer.nodeport.httpPort` | `30080` | NodePort for HTTP (nodeport mode) |
-| `loadBalancer.existing.serviceAnnotations` | `{}` | Annotations for existing LB (existing mode) |
+| `envoy.service.type` | `LoadBalancer` | Gateway service type |
 | `postgresql.storage.size` | `5Gi` | Database storage |
 | `postgresql.storage.storageClassName` | _(default)_ | Storage class (longhorn recommended) |
 | `namespaces` | `[mcp-prod, mcp-staging, mcp-dev]` | MCP server namespaces |
@@ -262,8 +184,6 @@ Key values in `values.yaml`:
 | `jwt.issuer` | `https://auth.acme.internal` | JWT issuer claim |
 | `jwt.tokenTTL` | `3600` | JWT expiry in seconds |
 | `networkPolicy.enabled` | `true` | Enable namespace isolation |
-
-See [INSTALL.md](INSTALL.md#load-balancer-configuration) for full load balancer configuration details.
 
 ### Production Install
 ```bash
