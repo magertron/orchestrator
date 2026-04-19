@@ -52,6 +52,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            # ── SSO JIT provisioning allowlist ──────────────────────────────
+            # Comma-separated list of email domains. If a user logs in via
+            # SSO with an email domain matching, they're provisioned on the
+            # fly into the local users table. Empty string = JIT disabled.
+            - name: MCP_SSO_AUTO_PROVISION_DOMAINS
+              value: {{ .Values.orchestrator.env.ssoAutoProvisionDomains | quote }}
+            # ── Public URL ──────────────────────────────────────────────────
+            # Used to populate meta.location in SCIM responses and to build
+            # SSO redirect URIs. Should match the URL customers/IdPs use to
+            # reach this orchestrator externally. Leave empty to use
+            # request-relative URLs.
+            - name: MCP_API_PUBLIC_URL
+              value: {{ .Values.orchestrator.env.apiPublicUrl | quote }}
+            # ── License file path ──────────────────────────────────────────
+            # Path to the license JSON inside the pod. Free tier if missing.
+            - name: MCP_LICENSE_FILE
+              value: /etc/mcp-license/license.json
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
@@ -64,6 +81,9 @@ spec:
               readOnly: true
             - name: audit-log
               mountPath: /var/log/mcp
+            - name: license
+              mountPath: /etc/mcp-license
+              readOnly: true
           resources:
             {{- toYaml .Values.orchestrator.resources | nindent 12 }}
           livenessProbe:
@@ -130,6 +150,17 @@ spec:
             secretName: {{ .Values.tls.orchestratorSecretName }}
         - name: audit-log
           emptyDir: {}
+        # License volume — always mounted, orchestrator handles missing
+        # license file gracefully by falling back to Free tier. The Secret
+        # is either created by the chart (via license.yaml when license.file
+        # is set at install time) OR pre-created by the customer via kubectl.
+        # optional: true means the pod starts even if the Secret doesn't
+        # exist yet — allows upgrading from Free to Enterprise without
+        # reinstall by just creating the Secret and restarting.
+        - name: license
+          secret:
+            secretName: {{ .Values.license.secretName }}
+            optional: true
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname

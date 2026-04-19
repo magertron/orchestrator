@@ -19,6 +19,24 @@ orchestrator:
       cpu: "1"
       memory: 1Gi
 
+  # Environment variables that configure SSO JIT and SCIM meta.location.
+  # Empty strings disable the respective feature (safe defaults).
+  env:
+    # Comma-separated allowlist of email domains for JIT provisioning via
+    # SSO login. A user logging in via SSO whose email domain is in this
+    # list gets auto-provisioned as a local user with role 'system:viewer'.
+    # Example: "example.com,partner.com"
+    # Empty string = SSO JIT disabled; users must be created manually.
+    ssoAutoProvisionDomains: ""
+
+    # Public HTTPS URL where external systems (IdPs, SCIM clients,
+    # browsers) reach this orchestrator. Used to construct:
+    #   - SCIM meta.location URLs in response bodies
+    #   - OIDC redirect_uri when building provider login URLs
+    # Example: "https://mcp.example.com"
+    # Empty string = orchestrator uses request-relative URLs.
+    apiPublicUrl: ""
+
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
   image:
@@ -47,8 +65,10 @@ envoy:
     limits:
       cpu: 500m
       memory: 512Mi
+  # Service ports — these are the PORT numbers exposed on the Envoy
+  # Service resource. The Service TYPE is determined by loadBalancer.provider
+  # (below), not here. For NodePort mode, also see loadBalancer.nodeport.
   service:
-    type: LoadBalancer
     httpPort: 80
     httpsPort: 443
   autoscaling:
@@ -181,6 +201,32 @@ secrets:
   #   openssl rsa -in jwt.key -pubout -out jwt.pub
   jwtPrivateKey: ""   # base64-encoded PEM private key
   jwtPublicKey: ""    # base64-encoded PEM public key
+
+# ─── License ─────────────────────────────────────────────────────────────────
+# License file for Enterprise tier features (SSO, SCIM, custom RBAC,
+# governance policies). Free tier does not require a license.
+#
+# Two ways to apply a license:
+#
+# 1. At install time:
+#    helm install mcp ./chart ... --set-file license.file=license.json
+#    (Chart creates the Secret.)
+#
+# 2. Pre-created externally:
+#    kubectl create secret generic mcp-license \
+#      --from-file=license.json=license.json -n mcp-system
+#    (Chart skips Secret creation; the orchestrator mounts the existing one.)
+#
+# In either case, the orchestrator reads /etc/mcp-license/license.json at
+# startup. Missing file = Free tier.
+license:
+  # Set at install time via --set-file to make the chart create the Secret.
+  # Must be empty in the default values — don't commit license content here.
+  file: ""
+
+  # Name of the Secret that contains the license. Both modes above use this
+  # same name. Override only if you already have a Secret named differently.
+  secretName: mcp-license
 
 # ─── TLS ─────────────────────────────────────────────────────────────────────
 tls:

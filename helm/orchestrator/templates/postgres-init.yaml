@@ -9,19 +9,46 @@ metadata:
     component: postgresql
 data:
   01-schema.sql: |
+    -- MCP Orchestrator canonical schema (v1.2.0 — adds SSO + SCIM)
+    -- Applied automatically by the postgres container on first start
+    -- (anything in /docker-entrypoint-initdb.d/ runs in alphabetical order).
+    -- All statements are idempotent so reinstalls / upgrades are safe.
+
     CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+    -- ── Users ──────────────────────────────────────────────────────────────────
+    -- password_hash = "SSO_ONLY" sentinel for SSO/SCIM-provisioned users
+    -- (defeats any accidental password-login path since no bcrypt produces that).
     CREATE TABLE IF NOT EXISTS users (
-        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-        username      VARCHAR(255) UNIQUE NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        roles         TEXT[]      NOT NULL DEFAULT '{}',
-        enabled       BOOLEAN     NOT NULL DEFAULT TRUE,
-        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        last_login    TIMESTAMPTZ
+        id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        username        VARCHAR(255) UNIQUE NOT NULL,
+        password_hash   VARCHAR(255) NOT NULL,
+        roles           TEXT[]      NOT NULL DEFAULT '{}',
+        enabled         BOOLEAN     NOT NULL DEFAULT TRUE,
+        sso_email       TEXT,                     -- binds user to IdP-provided email for SSO
+        -- SCIM: external_id is the IdP's stable identifier (SCIM externalId).
+        -- Nullable; only populated for SCIM-provisioned users.
+        external_id     TEXT,
+        -- How this user came into the system. Used by the admin UI to show a
+        -- provenance badge and to enforce read-only on SCIM-managed fields.
+        -- Values: 'password' | 'sso_jit' | 'scim' | NULL
+        provisioned_via TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_login      TIMESTAMPTZ
     );
+    -- For existing installs (upgrade path from pre-SSO / pre-SCIM schema):
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_email       TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS external_id     TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS provisioned_via TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    -- Each sso_email / external_id can map to at most one user; NULLs exempt.
+    CREATE UNIQUE INDEX IF NOT EXISTS users_sso_email_unique_idx
+        ON users (sso_email) WHERE sso_email IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS users_external_id_unique_idx
+        ON users (external_id) WHERE external_id IS NOT NULL;
 
+    -- ── Audit Events ───────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS audit_events (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
         kind          VARCHAR(64) NOT NULL,
@@ -33,10 +60,11 @@ data:
         new_state     JSONB,
         ts            TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS audit_events_ts_idx ON audit_events (ts DESC);
-    CREATE INDEX IF NOT EXISTS audit_events_actor_idx ON audit_events (actor);
+    CREATE INDEX IF NOT EXISTS audit_events_ts_idx     ON audit_events (ts DESC);
+    CREATE INDEX IF NOT EXISTS audit_events_actor_idx  ON audit_events (actor);
     CREATE INDEX IF NOT EXISTS audit_events_server_idx ON audit_events (server_name, namespace);
 
+    -- ── Deployed Servers ───────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS deployed_servers (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
         name          VARCHAR(255) NOT NULL,
@@ -60,6 +88,7 @@ data:
         UNIQUE (name, namespace)
     );
 
+    -- ── RBAC Roles ─────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS roles (
         id            VARCHAR(255) PRIMARY KEY,
         name          VARCHAR(255) NOT NULL,
@@ -71,6 +100,7 @@ data:
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- ── Governance Policies ────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS governance_policies (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
         name          VARCHAR(255) UNIQUE NOT NULL,
@@ -84,6 +114,7 @@ data:
     );
     CREATE INDEX IF NOT EXISTS governance_policies_enabled_idx ON governance_policies (enabled);
 
+    -- ── Webhooks ───────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS webhooks (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
         name          VARCHAR(255) NOT NULL,
@@ -96,38 +127,120 @@ data:
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-  02-seed.sql: |
-    INSERT INTO users (username, password_hash, roles, enabled)
-    VALUES ('admin', {{ .Values.seed.adminPasswordHash | quote }}, ARRAY['system:platform-admin'], TRUE)
-    ON CONFLICT (username) DO NOTHING;
+    -- ── SSO Providers (Enterprise tier) ────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS sso_providers (
+        id              TEXT        PRIMARY KEY,
+        name            TEXT        NOT NULL,
+        type            TEXT        NOT NULL CHECK (type IN ('oidc', 'saml')),
+        -- OIDC fields
+        client_id       TEXT        NOT NULL DEFAULT '',
+        client_secret   TEXT        NOT NULL DEFAULT '',
+        discovery_url   TEXT        NOT NULL DEFAULT '',
+        redirect_uri    TEXT        NOT NULL DEFAULT '',
+        -- SAML fields
+        entity_id       TEXT        NOT NULL DEFAULT '',
+        sso_url         TEXT        NOT NULL DEFAULT '',
+        idp_certificate TEXT        NOT NULL DEFAULT '',
+        sp_certificate  TEXT        NOT NULL DEFAULT '',
+        sp_private_key  TEXT        NOT NULL DEFAULT '',
+        -- Which IdP attribute to use as the email when resolving to a platform user
+        email_attribute TEXT        NOT NULL DEFAULT 'email',
+        enabled         BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    ALTER TABLE sso_providers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    CREATE INDEX IF NOT EXISTS sso_providers_enabled_idx
+        ON sso_providers (enabled) WHERE enabled = TRUE;
 
+    -- ── SCIM Bearer Tokens (Enterprise tier) ───────────────────────────────────
+    -- Long-lived tokens used by SCIM clients (Okta, Azure AD) to authenticate
+    -- against /scim/v2/*. Raw token values are NEVER stored — only SHA-256
+    -- hashes. The prefix (first ~8 chars of the raw token) is retained so
+    -- operators can distinguish tokens in the admin UI. Soft-delete via
+    -- revoked_at so historical audit references to a revoked token resolve.
+    CREATE TABLE IF NOT EXISTS scim_tokens (
+        id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name           TEXT        NOT NULL,
+        token_hash     TEXT        NOT NULL UNIQUE,
+        token_prefix   TEXT        NOT NULL,
+        created_by     TEXT        NOT NULL,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_used_at   TIMESTAMPTZ,
+        revoked_at     TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS scim_tokens_hash_idx    ON scim_tokens (token_hash);
+    CREATE INDEX IF NOT EXISTS scim_tokens_revoked_idx ON scim_tokens (revoked_at);
+
+  02-seed.sql: |
+    -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
+    -- (default: bcrypt of "admin" — CHANGE for production).
+    -- provisioned_via='password' ensures no provenance badge appears next to admin
+    -- in the Users tab. The ON CONFLICT clause back-fills the column on upgrades
+    -- where admin was seeded before provisioned_via existed.
+    INSERT INTO users (username, password_hash, roles, enabled, provisioned_via)
+    VALUES (
+        'admin',
+        {{ .Values.seed.adminPasswordHash | quote }},
+        ARRAY['system:platform-admin'],
+        TRUE,
+        'password'
+    )
+    ON CONFLICT (username) DO UPDATE
+        SET provisioned_via = COALESCE(users.provisioned_via, 'password');
+
+    -- ── System roles ───────────────────────────────────────────────────────────
     INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
     ('system:platform-admin', 'Platform Admin', 'Full access to all namespaces and operations',
-     '["Deploy","Undeploy","Scale","Read","Write","ManageRoles","AuditRead","ViewLogs"]', '["*"]', TRUE)
+     '["Deploy","Undeploy","Scale","Read","Write","ManageRoles","AuditRead","ViewLogs"]',
+     '["*"]', TRUE)
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
     ('system:deploy-manager', 'Deploy Manager', 'Deploy and manage servers in production and staging',
-     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs","AuditRead"]', '["mcp-prod","mcp-staging"]', TRUE)
+     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs","AuditRead"]',
+     '["mcp-prod","mcp-staging"]', TRUE)
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
-    ('system:operator', 'Operator', 'Deploy and manage servers in dev and staging only',
-     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs"]', '["mcp-dev","mcp-staging"]', TRUE)
+    ('system:operator', 'Operator', 'Deploy and manage servers in dev and staging only — no production access',
+     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs"]',
+     '["mcp-dev","mcp-staging"]', TRUE)
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
     ('system:viewer', 'Viewer', 'Read-only access across all namespaces',
-     '["Read","AuditRead"]', '["*"]', TRUE)
+     '["Read","AuditRead"]',
+     '["*"]', TRUE)
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules) VALUES
-    ('enterprise-standard', 'Default enterprise governance policy', TRUE, TRUE, '["mcp-prod","mcp-staging"]',
-     '[{"category":"security","field":"transport","operator":"in","value":["streamable_http","sse"],"severity":"error","message":"Only Streamable HTTP or SSE transport allowed"},{"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":2048,"severity":"error","message":"Memory limit must not exceed 2Gi"},{"category":"resource_limits","field":"cpu_limit","operator":"lte","value":2.0,"severity":"error","message":"CPU limit must not exceed 2 cores"},{"category":"resource_limits","field":"replicas","operator":"lte","value":10,"severity":"error","message":"Initial replicas must not exceed 10"},{"category":"resource_limits","field":"replicas","operator":"gte","value":1,"severity":"error","message":"Must have at least 1 replica"},{"category":"naming","field":"labels.team","operator":"exists","value":true,"severity":"error","message":"Team label is required"},{"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens"},{"category":"tool_safety","field":"tools.*.read_only","operator":"equals","value":true,"severity":"warning","message":"Mutating tools detected"}]'::jsonb)
-    ON CONFLICT (name) DO NOTHING;
+    -- ── Governance policy templates ────────────────────────────────────────────
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
+    VALUES (
+        'enterprise-standard',
+        'Default enterprise governance policy — enforces security, resource limits, naming, and transport standards.',
+        TRUE, TRUE, '["mcp-prod","mcp-staging"]',
+        '[
+          {"category":"security","field":"transport","operator":"in","value":["streamable_http","sse"],"severity":"error","message":"Only Streamable HTTP or SSE transport allowed — stdio is not permitted in production"},
+          {"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":2048,"severity":"error","message":"Memory limit must not exceed 2Gi"},
+          {"category":"resource_limits","field":"cpu_limit","operator":"lte","value":2.0,"severity":"error","message":"CPU limit must not exceed 2 cores"},
+          {"category":"resource_limits","field":"replicas","operator":"lte","value":10,"severity":"error","message":"Initial replicas must not exceed 10"},
+          {"category":"resource_limits","field":"replicas","operator":"gte","value":1,"severity":"error","message":"Must have at least 1 replica"},
+          {"category":"naming","field":"labels.team","operator":"exists","value":true,"severity":"error","message":"Label team is required for all MCP servers"},
+          {"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens, 3-63 chars"},
+          {"category":"tool_safety","field":"tools.*.read_only","operator":"equals","value":true,"severity":"warning","message":"Mutating tools detected — review required before production use"}
+        ]'::jsonb
+    ) ON CONFLICT (name) DO NOTHING;
 
-    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules) VALUES
-    ('dev-relaxed', 'Relaxed policy for development environments', TRUE, TRUE, '["mcp-dev"]',
-     '[{"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":4096,"severity":"error","message":"Memory limit must not exceed 4Gi even in dev"},{"category":"resource_limits","field":"replicas","operator":"lte","value":5,"severity":"warning","message":"Consider keeping dev replicas under 5"},{"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens"}]'::jsonb)
-    ON CONFLICT (name) DO NOTHING;
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
+    VALUES (
+        'dev-relaxed',
+        'Relaxed policy for development environments — minimal restrictions.',
+        TRUE, TRUE, '["mcp-dev"]',
+        '[
+          {"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":4096,"severity":"error","message":"Memory limit must not exceed 4Gi even in dev"},
+          {"category":"resource_limits","field":"replicas","operator":"lte","value":5,"severity":"warning","message":"Consider keeping dev replicas under 5"},
+          {"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens, 3-63 chars"}
+        ]'::jsonb
+    ) ON CONFLICT (name) DO NOTHING;
 {{- end }}

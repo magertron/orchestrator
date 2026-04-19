@@ -1,0 +1,43 @@
+{{/*
+  license.yaml — Optional license Secret for Enterprise tier features.
+
+  Two ways to apply a license:
+
+  1. At install time (chart creates the Secret):
+     helm install mcp ./chart ... \
+       --set-file license.file=license.json
+
+     The chart base64-encodes the file contents and creates the Secret
+     with key "license.json".
+
+  2. Pre-created externally (customer manages the Secret):
+     kubectl create secret generic mcp-license \
+       --from-file=license.json=license.json \
+       -n mcp-system
+
+     Then install without --set-file. The chart skips creating the Secret;
+     the orchestrator volume mounts it as-is.
+
+  Either way, the orchestrator reads /etc/mcp-license/license.json at
+  startup. If the file is missing, the orchestrator runs in Free tier.
+
+  .Values.license.secretName controls both cases — the name the chart
+  creates AND the name the orchestrator Deployment mounts. Only change
+  from the default if you already have a Secret of a different name.
+*/}}
+{{- if .Values.license.file }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.license.secretName }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: license
+  annotations:
+    # Makes it clear this was created by the chart vs externally.
+    mcp.io/license-source: "helm-chart"
+type: Opaque
+data:
+  license.json: {{ .Values.license.file | b64enc }}
+{{- end }}

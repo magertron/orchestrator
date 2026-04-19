@@ -15,8 +15,12 @@ data:
 
     # Dynamic resources via gRPC ADS — Aggregated Discovery Service.
     # Envoy opens a persistent bidirectional gRPC stream to the orchestrator
-    # and receives CDS + LDS updates pushed in real time when MCP servers
+    # and receives CDS + RDS updates pushed in real time when MCP servers
     # are deployed or removed. No polling — push-based, sub-second latency.
+    #
+    # LDS is NOT used — listeners are defined statically below (envoy
+    # re-arch 2026-04-18). HCM uses RDS for route config, which is the
+    # only routing surface that needs to change dynamically.
     dynamic_resources:
       ads_config:
         api_type: GRPC
@@ -25,9 +29,6 @@ data:
           - envoy_grpc:
               cluster_name: mcp_orchestrator_xds
       cds_config:
-        resource_api_version: V3
-        ads: {}
-      lds_config:
         resource_api_version: V3
         ads: {}
 
