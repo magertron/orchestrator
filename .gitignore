@@ -52,6 +52,7 @@ Dockerfile
 build-push.sh
 
 # Dev files
+*.sh
 *.swp
 *.swo
 insto
@@ -83,3 +84,4 @@ Screenshot*
 docs/*.svg
 docs/*.png
 docs/*.jpg
+*.pdf
