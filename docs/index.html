@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MCP Orchestrator — Magertron</title>
-<meta name="description" content="Deploy, govern, and manage MCP servers at enterprise scale. Kubernetes-native control plane for Model Context Protocol.">
+<meta name="description" content="Deploy, govern, secure, and manage MCP servers at enterprise scale. Kubernetes-native control plane for Model Context Protocol with SSO and SCIM.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -348,10 +348,10 @@ footer .links a:hover { color: var(--text-secondary); }
   <div class="container">
     <div class="hero-badge">
       <span class="dot"></span>
-      Now available — v1.1.0
+      Now available — v1.2.0
     </div>
     <h1>The control plane<br>for <em>MCP servers</em></h1>
-    <p>Deploy, govern, and manage Model Context Protocol servers across your Kubernetes infrastructure. Enterprise-grade security, multi-tenant isolation, and full lifecycle management.</p>
+    <p>Deploy, govern, secure, and manage Model Context Protocol servers across your Kubernetes infrastructure. Enterprise-grade security, multi-tenant isolation, and full lifecycle management.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
       <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
@@ -433,6 +433,11 @@ footer .links a:hover { color: var(--text-secondary); }
         <div class="feature-icon">⛊</div>
         <h3>Multi-Tenant RBAC</h3>
         <p>Role-based access with namespace isolation. Platform admins, deploy managers, operators, and viewers — each scoped to their allowed namespaces.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚿</div>
+        <h3>Enterprise Identity</h3>
+        <p>OIDC and SAML single sign-on with Okta, Azure AD, and Google Workspace. SCIM 2.0 for automated user provisioning. Just-in-time account creation on first login. Your IdP stays the source of truth.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">◷</div>
@@ -541,7 +546,7 @@ footer .links a:hover { color: var(--text-secondary); }
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Deploy and manage MCP servers</li>
-          <li>Health monitoring & metrics</li>
+          <li>Health monitoring &amp; metrics</li>
           <li>Envoy gateway with xDS</li>
           <li>Helm chart deployment</li>
           <li>Basic RBAC (admin + viewer)</li>
@@ -549,8 +554,9 @@ footer .links a:hover { color: var(--text-secondary); }
           <li class="disabled">CLI tool (mcpctl)</li>
           <li class="disabled">Live metrics charts</li>
           <li class="disabled">Namespace isolation</li>
+          <li class="disabled">SSO &amp; SCIM provisioning</li>
           <li class="disabled">Governance policies</li>
-          <li class="disabled">Webhooks & audit trail</li>
+          <li class="disabled">Webhooks &amp; audit trail</li>
         </ul>
         <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="pricing-btn secondary">Get started on GitHub →</a>
       </div>
@@ -566,12 +572,14 @@ footer .links a:hover { color: var(--text-secondary); }
           <li>CLI tool (mcpctl)</li>
           <li>Live metrics charts</li>
           <li>Multiple namespaces</li>
-          <li>Deployment history & rollback</li>
-          <li>Email & Slack support</li>
+          <li>Deployment history &amp; rollback</li>
+          <li>Email &amp; Slack support</li>
+          <li class="disabled">SSO (OIDC &amp; SAML)</li>
+          <li class="disabled">SCIM 2.0 user provisioning</li>
           <li class="disabled">Multi-tenant namespace isolation</li>
           <li class="disabled">Governance policy engine</li>
           <li class="disabled">Webhook notifications</li>
-          <li class="disabled">Audit trail & compliance</li>
+          <li class="disabled">Audit trail &amp; compliance</li>
           <li class="disabled">Custom RBAC roles</li>
         </ul>
         <a href="#" class="pricing-btn primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
@@ -585,16 +593,18 @@ footer .links a:hover { color: var(--text-secondary); }
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Everything in Pro, plus:</li>
+          <li>SSO (OIDC &amp; SAML) — Okta, Azure AD, Google</li>
+          <li>SCIM 2.0 automated user provisioning</li>
+          <li>Just-in-time user provisioning on first login</li>
           <li>Multi-tenant namespace isolation</li>
           <li>Governance policy engine</li>
-          <li>Custom RBAC roles & namespace scoping</li>
+          <li>Custom RBAC roles &amp; namespace scoping</li>
           <li>Webhook notifications (Slack, email)</li>
           <li>Full audit trail for compliance</li>
           <li>Governance policy export/import</li>
           <li>Priority support with SLA</li>
           <li>Dedicated onboarding</li>
           <li>Custom integrations</li>
-          <li>&nbsp;</li>
         </ul>
         <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales →</a>
       </div>
