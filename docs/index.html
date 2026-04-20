@@ -256,7 +256,8 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .modal-overlay.open { display: flex; }
 .modal {
   background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
-  padding: 40px; width: min(520px, 95vw); position: relative;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
   animation: fadeUp 0.25s ease-out;
 }
 .modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
@@ -470,26 +471,129 @@ footer .links a:hover { color: var(--text-secondary); }
           Read the security guide →
         </a>
       </div>
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px 24px;">
-          <div style="font-size:12px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:6px;">THREAT VECTOR 01</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">North-South — External agents</div>
-          <div style="font-size:13px;color:var(--text-secondary);">AI agents outside your perimeter reaching ungoverned internal MCP servers.</div>
+
+      <!-- Tabbed threat model -->
+      <div class="threat-tabs">
+        <div class="threat-tab-buttons" role="tablist">
+          <button class="threat-tab-btn active" data-tab="tv01" role="tab" aria-selected="true">
+            <span class="threat-tab-num">01</span>
+            <span class="threat-tab-label">North-South</span>
+          </button>
+          <button class="threat-tab-btn" data-tab="tv02" role="tab" aria-selected="false">
+            <span class="threat-tab-num" style="color:#fca5a5;">02</span>
+            <span class="threat-tab-label">East-West</span>
+          </button>
+          <button class="threat-tab-btn" data-tab="tvresp" role="tab" aria-selected="false">
+            <span class="threat-tab-num" style="color:#86efac;">✓</span>
+            <span class="threat-tab-label">Response</span>
+          </button>
         </div>
-        <div style="background:var(--bg-card);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:20px 24px;">
-          <div style="font-size:12px;font-family:var(--mono);color:#fca5a5;margin-bottom:6px;">THREAT VECTOR 02 — HARDER</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">East-West — Internal agents</div>
-          <div style="font-size:13px;color:var(--text-secondary);">Internal AI agents bypassing your perimeter entirely — never touching the gateway.</div>
+
+        <div class="threat-tab-content active" id="tv01" role="tabpanel">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:8px;">THREAT VECTOR 01</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">External AI agents</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">AI agents outside your perimeter reaching ungoverned internal MCP servers. Perimeter firewalls catch these — but only if the agent actually crosses the perimeter, and only if the MCP server is registered as a public service.</div>
         </div>
-        <div style="background:var(--bg-card);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:20px 24px;">
-          <div style="font-size:12px;font-family:var(--mono);color:#86efac;margin-bottom:6px;">PLATFORM RESPONSE</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Three enforcement layers</div>
-          <div style="font-size:13px;color:var(--text-secondary);">Perimeter firewall + internal network policy + Kubernetes NetworkPolicy — automatic.</div>
+
+        <div class="threat-tab-content" id="tv02" role="tabpanel" hidden>
+          <div style="font-size:12px;font-family:var(--mono);color:#fca5a5;margin-bottom:8px;">THREAT VECTOR 02 — HARDER</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">Internal AI agents</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">AI agents inside your perimeter bypassing the gateway entirely — talking to MCP servers pod-to-pod, laptop-to-laptop, namespace-to-namespace. Traditional perimeter defenses see none of it.</div>
+        </div>
+
+        <div class="threat-tab-content" id="tvresp" role="tabpanel" hidden>
+          <div style="font-size:12px;font-family:var(--mono);color:#86efac;margin-bottom:8px;">PLATFORM RESPONSE</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">Three enforcement layers</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">Perimeter firewall handles external agents. Internal network policy stops pod-to-pod lateral movement. Kubernetes NetworkPolicy isolates MCP server namespaces automatically. All three applied by default on every install.</div>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+<style>
+  .threat-tabs {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .threat-tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.15);
+  }
+  .threat-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 16px 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .threat-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.02);
+  }
+  .threat-tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-text);
+    background: rgba(255,255,255,0.03);
+  }
+  .threat-tab-num {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.05em;
+  }
+  .threat-tab-btn.active .threat-tab-num {
+    color: var(--accent-text);
+  }
+  .threat-tab-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .threat-tab-content {
+    padding: 28px 28px 32px;
+  }
+  .threat-tab-content[hidden] {
+    display: none;
+  }
+  @media (max-width: 900px) {
+    .threat-tab-btn {
+      padding: 12px 8px;
+    }
+    .threat-tab-label {
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.threat-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.tab;
+      btn.parentElement.querySelectorAll('.threat-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const container = btn.closest('.threat-tabs');
+      container.querySelectorAll('.threat-tab-content').forEach(c => {
+        c.hidden = (c.id !== targetId);
+      });
+    });
+  });
+</script>
 
 <!-- CLI Section -->
 <section class="cli-section" id="cli">

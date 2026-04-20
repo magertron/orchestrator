@@ -601,7 +601,7 @@ footer p { font-size: 13px; color: var(--text-tertiary); }
 
 <!-- Demo Modal -->
 <div class="modal-overlay" id="demoModal" onclick="if(event.target===this)closeDemoModal()">
-  <div style="background:#0c1018;border:1px solid #1a2030;border-radius:16px;padding:40px;width:min(520px,95vw);position:relative;animation:fadeUp 0.25s ease-out;">
+  <div style="background:#0c1018;border:1px solid #1a2030;border-radius:16px;padding:40px;width:min(520px,95vw);max-height:90vh;overflow-y:auto;position:relative;animation:fadeUp 0.25s ease-out;">
     <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#8694a8;font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
     <h3 style="font-size:22px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;">Schedule a Demo</h3>
     <p style="font-size:14px;color:#8694a8;margin-bottom:28px;">Tell us about your use case and we'll reach out within one business day.</p>
