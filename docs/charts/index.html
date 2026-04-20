@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP Orchestrator — Helm Repository</title>
+  <meta name="description" content="Helm chart repository for the MCP Orchestrator — Kubernetes-native control plane for Model Context Protocol servers.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base:        #0a0e17;
+      --bg-surface:     #111827;
+      --bg-elevated:    #1a2332;
+      --bg-hover:       #1f2b3d;
+      --border-subtle:  #1e293b;
+      --border-default: #2a3548;
+      --border-strong:  #374357;
+      --text-primary:   #e2e8f0;
+      --text-secondary: #8896ab;
+      --text-tertiary:  #5a6b80;
+      --accent:         #3b82f6;
+      --accent-hover:   #2563eb;
+      --accent-text:    #60a5fa;
+      --accent-subtle:  rgba(59, 130, 246, 0.12);
+      --success-text:   #4ade80;
+      --success-subtle: rgba(34, 197, 94, 0.12);
+      --font-sans:      'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:      'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      --shadow-glow:    0 0 20px rgba(59, 130, 246, 0.15);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-text);
+      background: var(--accent-subtle);
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-text);
+      box-shadow: 0 0 8px var(--accent-text);
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .sub {
+      color: var(--text-secondary);
+      font-size: 16px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    pre {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+
+    pre .comment { color: var(--text-tertiary); }
+    pre .cmd     { color: var(--accent-text); font-weight: 500; }
+
+    .note {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+
+    .free-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--success-text);
+      background: var(--success-subtle);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .links a {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-default);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: all 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .links a:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .links a.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .links a.primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .footer {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-align: center;
+    }
+
+    .footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: var(--accent-text);
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 26px; }
+      pre { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Helm Repository</div>
+
+    <h1>MCP Orchestrator</h1>
+    <p class="sub">Kubernetes-native control plane for Model Context Protocol servers.</p>
+
+    <div class="card">
+      <h2>Install with Helm</h2>
+      <pre><span class="comment"># 1. Add this repository</span>
+<span class="cmd">helm repo add</span> magertron https://magertron.com/charts
+<span class="cmd">helm repo update</span>
+
+<span class="comment"># 2. Install into a new namespace</span>
+<span class="cmd">helm install</span> mcp magertron/mcp-orchestrator \
+  --namespace mcp-system --create-namespace</pre>
+      <p class="note">
+        Starts in <strong>Free Tier</strong><span class="free-badge">No license required</span>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Chart Index</h2>
+      <pre><span class="cmd">curl</span> https://magertron.com/charts/index.yaml</pre>
+      <p class="note">The raw Helm repository index — machine-readable YAML consumed by <code>helm</code>.</p>
+    </div>
+
+    <div class="links">
+      <a href="https://github.com/curtismager20/magertron-mcpm" class="primary">Installation Guide →</a>
+      <a href="https://magertron.com">magertron.com</a>
+      <a href="mailto:sales@magertron.com">Contact Sales</a>
+    </div>
+
+    <div class="footer">
+      <p>Pro and Enterprise tiers require a commercial license. <a href="mailto:sales@magertron.com">Get in touch</a> for pricing.</p>
+    </div>
+  </div>
+</body>
+</html>
