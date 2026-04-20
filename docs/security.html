@@ -315,92 +315,184 @@ footer p { font-size: 13px; color: var(--text-tertiary); }
 
     <div class="divider"></div>
 
-    <!-- Three enforcement layers — accordion -->
+    <!-- Three enforcement layers — tabs (distinct from accordions above) -->
     <div class="sec">
       <div class="sec-label">Enforcement Model</div>
       <h2>Three layers of control</h2>
       <p>Complete MCP traffic governance requires enforcement at three distinct layers. The platform handles Layer 3 automatically — Layers 1 and 2 are implemented by your network team using standard enterprise tooling.</p>
     </div>
-    <div class="accordion">
-      <div class="acc-item mini" id="acc-4">
-        <div class="acc-header" onclick="toggleAcc(4)">
-          <div class="acc-header-left">
-            <span class="acc-num">01</span>
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
-                <span class="acc-title">Perimeter Firewall</span>
-                <span class="acc-tag warning">Enterprise network team</span>
-              </div>
-              <div class="acc-subtitle">North-South — block everything except the gateway</div>
-            </div>
-          </div>
-          <span class="acc-chevron">⌄</span>
-        </div>
-        <div class="acc-body" id="body-4">
-          <div class="acc-body-inner">
-            <p>Allow inbound MCP traffic only to the platform's Envoy gateway IP. Block all other MCP traffic at the perimeter. Configure egress filtering to prevent MCP servers from calling unauthorized external services.</p>
-            <ul>
-              <li>Add allowlist rule for gateway IP on HTTPS/443</li>
-              <li>Drop all other inbound MCP traffic at the firewall</li>
-              <li>Configure egress filtering for MCP server pods</li>
-              <li>Same pattern enterprises use for SaaS allowlisting</li>
-            </ul>
-          </div>
-        </div>
+
+    <div class="layer-tabs">
+      <div class="layer-tab-buttons" role="tablist">
+        <button class="layer-tab-btn active" data-tab="layer1" role="tab" aria-selected="true">
+          <span class="layer-tab-num">01</span>
+          <span class="layer-tab-label">Perimeter Firewall</span>
+          <span class="layer-tab-sub">Network team</span>
+        </button>
+        <button class="layer-tab-btn" data-tab="layer2" role="tab" aria-selected="false">
+          <span class="layer-tab-num">02</span>
+          <span class="layer-tab-label">Internal Network Policy</span>
+          <span class="layer-tab-sub">Network / NAC team</span>
+        </button>
+        <button class="layer-tab-btn" data-tab="layer3" role="tab" aria-selected="false">
+          <span class="layer-tab-num" style="color:#86efac;">03</span>
+          <span class="layer-tab-label">Kubernetes NetworkPolicy</span>
+          <span class="layer-tab-sub">Platform — automatic</span>
+        </button>
       </div>
-      <div class="acc-item mini" id="acc-5">
-        <div class="acc-header" onclick="toggleAcc(5)">
-          <div class="acc-header-left">
-            <span class="acc-num">02</span>
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
-                <span class="acc-title">Internal Network Policy</span>
-                <span class="acc-tag network">Network / NAC team</span>
-              </div>
-              <div class="acc-subtitle">East-West — route internal traffic through the gateway</div>
-            </div>
-          </div>
-          <span class="acc-chevron">⌄</span>
-        </div>
-        <div class="acc-body" id="body-5">
-          <div class="acc-body-inner">
-            <p>Route all internal MCP traffic through the gateway via proxy or NAC enforcement. Manage AI agent configurations centrally so agents resolve MCP addresses through the gateway, not directly.</p>
-            <ul>
-              <li>Internal proxy routes MCP traffic through the gateway</li>
-              <li>Centralize AI agent configs — all point to gateway hostname</li>
-              <li>Block direct access to MCP server ports (3000, 8080, 8443) internally</li>
-              <li>NAC enforcement prevents rogue direct connections</li>
-            </ul>
-          </div>
-        </div>
+
+      <div class="layer-tab-content active" id="layer1" role="tabpanel">
+        <div class="layer-tab-kicker">North-South — block everything except the gateway</div>
+        <p>Allow inbound MCP traffic only to the platform's Envoy gateway IP. Block all other MCP traffic at the perimeter. Configure egress filtering to prevent MCP servers from calling unauthorized external services.</p>
+        <ul>
+          <li>Add allowlist rule for gateway IP on HTTPS/443</li>
+          <li>Drop all other inbound MCP traffic at the firewall</li>
+          <li>Configure egress filtering for MCP server pods</li>
+          <li>Same pattern enterprises use for SaaS allowlisting</li>
+        </ul>
       </div>
-      <div class="acc-item mini" id="acc-6">
-        <div class="acc-header" onclick="toggleAcc(6)">
-          <div class="acc-header-left">
-            <span class="acc-num">03</span>
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
-                <span class="acc-title">Kubernetes NetworkPolicy</span>
-                <span class="acc-tag info">Platform — automatic</span>
-              </div>
-              <div class="acc-subtitle">In-cluster — MCP pods only accept gateway connections</div>
-            </div>
-          </div>
-          <span class="acc-chevron">⌄</span>
-        </div>
-        <div class="acc-body" id="body-6">
-          <div class="acc-body-inner">
-            <p>Deployed automatically with every installation. MCP server pods accept connections only from the Envoy gateway pod — direct pod-to-pod access is dropped at the Kubernetes network layer regardless of what Layers 1 and 2 allow.</p>
-            <ul>
-              <li>NetworkPolicy deployed automatically — no manual config</li>
-              <li>MCP pods reject all connections except from the Envoy gateway pod</li>
-              <li>Every request reaching a server has been authenticated and logged</li>
-              <li>Works independently of perimeter and internal network controls</li>
-            </ul>
-          </div>
-        </div>
+
+      <div class="layer-tab-content" id="layer2" role="tabpanel" hidden>
+        <div class="layer-tab-kicker">East-West — route internal traffic through the gateway</div>
+        <p>Route all internal MCP traffic through the gateway via proxy or NAC enforcement. Manage AI agent configurations centrally so agents resolve MCP addresses through the gateway, not directly.</p>
+        <ul>
+          <li>Internal proxy routes MCP traffic through the gateway</li>
+          <li>Centralize AI agent configs — all point to gateway hostname</li>
+          <li>Block direct access to MCP server ports (3000, 8080, 8443) internally</li>
+          <li>NAC enforcement prevents rogue direct connections</li>
+        </ul>
+      </div>
+
+      <div class="layer-tab-content" id="layer3" role="tabpanel" hidden>
+        <div class="layer-tab-kicker">In-cluster — MCP pods only accept gateway connections</div>
+        <p>Deployed automatically with every installation. MCP server pods accept connections only from the Envoy gateway pod — direct pod-to-pod access is dropped at the Kubernetes network layer regardless of what Layers 1 and 2 allow.</p>
+        <ul>
+          <li>NetworkPolicy deployed automatically — no manual config</li>
+          <li>MCP pods reject all connections except from the Envoy gateway pod</li>
+          <li>Every request reaching a server has been authenticated and logged</li>
+          <li>Works independently of perimeter and internal network controls</li>
+        </ul>
       </div>
     </div>
+
+    <style>
+      .layer-tabs {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 24px 0;
+      }
+      .layer-tab-buttons {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        background: rgba(0,0,0,0.15);
+      }
+      .layer-tab-btn {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 16px 14px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-family: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        text-align: center;
+      }
+      .layer-tab-btn:hover {
+        color: var(--text-primary);
+        background: rgba(255,255,255,0.02);
+      }
+      .layer-tab-btn.active {
+        color: var(--text-primary);
+        border-bottom-color: var(--accent-text);
+        background: rgba(255,255,255,0.03);
+      }
+      .layer-tab-num {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        letter-spacing: 0.05em;
+      }
+      .layer-tab-btn.active .layer-tab-num {
+        color: var(--accent-text);
+      }
+      .layer-tab-label {
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .layer-tab-sub {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .layer-tab-content {
+        padding: 28px 32px;
+      }
+      .layer-tab-content[hidden] {
+        display: none;
+      }
+      .layer-tab-kicker {
+        font-size: 13px;
+        font-family: var(--mono);
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 14px;
+      }
+      .layer-tab-content p {
+        margin: 0 0 14px;
+        color: var(--text-secondary);
+        line-height: 1.65;
+      }
+      .layer-tab-content ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+      }
+      .layer-tab-content ul li {
+        margin-bottom: 6px;
+      }
+      @media (max-width: 900px) {
+        .layer-tab-btn {
+          padding: 12px 8px;
+        }
+        .layer-tab-label {
+          font-size: 12px;
+        }
+        .layer-tab-sub {
+          font-size: 10px;
+        }
+      }
+    </style>
+
+    <script>
+      document.querySelectorAll('.layer-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.tab;
+          btn.parentElement.querySelectorAll('.layer-tab-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+          const container = btn.closest('.layer-tabs');
+          container.querySelectorAll('.layer-tab-content').forEach(c => {
+            c.hidden = (c.id !== targetId);
+          });
+        });
+      });
+    </script>
 
     <div class="divider"></div>
 
