@@ -649,12 +649,13 @@ window.addEventListener('scroll', () => {
 });
 
 // Accordion — opens one at a time, closes others
+// (IDs 4, 5, 6 were replaced with the layer-tabs widget — skip them here)
 function toggleAcc(n) {
   const item = document.getElementById('acc-' + n);
   const body = document.getElementById('body-' + n);
   const isOpen = item.classList.contains('open');
   // Close all
-  [1,2,3,4,5,6,7,8].forEach(i => {
+  [1,2,3,7,8].forEach(i => {
     document.getElementById('acc-' + i).classList.remove('open');
     document.getElementById('body-' + i).style.maxHeight = '0';
   });
