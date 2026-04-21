@@ -164,7 +164,7 @@ The `Events:` section at the bottom tells you what went wrong. Common causes —
 The simplest way to reach the UI on any install is port-forwarding:
 
 ```bash
-kubectl port-forward -n mcp-system svc/mcp-envoy 8443:443
+kubectl port-forward -n mcp-system svc/mcp-envoy-gateway 8443:443
 ```
 
 This command **stays running** and prints:
@@ -198,7 +198,7 @@ The chart ships with a self-signed TLS certificate so the UI works out of the bo
 If your cluster has a real LoadBalancer (cloud) or an ingress you configured, you can reach the UI directly:
 
 ```bash
-kubectl get svc -n mcp-system mcp-envoy
+kubectl get svc -n mcp-system mcp-envoy-gateway
 ```
 
 For a LoadBalancer service, the `EXTERNAL-IP` column shows where to browse. For NodePort, use any node's IP on port `30443`: `https://<node-ip>:30443`.
@@ -265,7 +265,7 @@ The server's status will move from **Pending** → **Deploying** → **Running**
 https://localhost:8443/servers/fast-time-server/mcp
 ```
 
-You're now running a governed, audited, routable MCP server. Everything you do from here — deploy more servers, configure RBAC, set up SSO — builds on this same foundation. See the [full documentation](https://magertron.com/docs) for the next steps.
+You're now running a governed, audited, routable MCP server. Everything you do from here — deploy more servers, configure RBAC, set up SSO — builds on this same foundation.
 
 ---
 
@@ -282,7 +282,7 @@ helm install mcp magertron/mcp-orchestrator \
   --namespace mcp-system --create-namespace
 ```
 
-Check the external IP with `kubectl get svc -n mcp-system mcp-envoy`. Wait for `EXTERNAL-IP` to move from `<pending>` to an actual IP, then browse to `https://<external-ip>`.
+Check the external IP with `kubectl get svc -n mcp-system mcp-envoy-gateway`. Wait for `EXTERNAL-IP` to move from `<pending>` to an actual IP, then browse to `https://<external-ip>`.
 
 ### NodePort (k3s, kind, minikube, any dev cluster)
 
@@ -457,7 +457,7 @@ kubectl exec -n mcp-system mcp-postgres-0 -- \
   pg_dumpall -U postgres > mcp-backup-$(date +%Y%m%d).sql
 ```
 
-Store the resulting `mcp-backup-YYYYMMDD.sql` somewhere safe. Restoring is a separate process — see the [full documentation](https://magertron.com/docs) for restore instructions.
+Store the resulting `mcp-backup-YYYYMMDD.sql` somewhere safe. For restore instructions, email [support@magertron.com](mailto:support@magertron.com).
 
 ---
 
@@ -500,7 +500,7 @@ helm install mcp magertron/mcp-orchestrator \
 
 **Envoy returns 404 for a deployed MCP server.** The xDS push hasn't reached Envoy yet, or the MCP server pod isn't Ready. Wait 10 seconds and retry. If the 404 persists, check `kubectl get mcproutes -n <your-namespace>` — the route resource should exist and have a `Ready` condition.
 
-**Other issues.** See the [full documentation](https://magertron.com/docs) or email [support@magertron.com](mailto:support@magertron.com).
+**Other issues.** Email [support@magertron.com](mailto:support@magertron.com) or [open a GitHub issue](https://github.com/curtismager20/magertron-mcpm/issues).
 
 ---
 
@@ -524,7 +524,6 @@ The MCP Platform orchestrator binary distributed via this chart is commercial so
 ## Links
 
 - **Website:** [magertron.com](https://magertron.com)
-- **Documentation:** [magertron.com/docs](https://magertron.com/docs)
 - **Docker image:** [hub.docker.com/r/curtismager20/mcp-orchestrator](https://hub.docker.com/r/curtismager20/mcp-orchestrator)
 - **Issues:** [github.com/curtismager20/magertron-mcpm/issues](https://github.com/curtismager20/magertron-mcpm/issues)
 - **MCP specification:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
