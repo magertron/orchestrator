@@ -196,11 +196,20 @@ networkPolicy:
 secrets:
   create: true
   dbPassword: changeme
-  # JWT keys — base64-encoded PEM. Generate with:
+  # JWT keys — PEM-encoded RSA private and public keys.
+  #
+  # Leave both empty to have the chart auto-generate a private key at install
+  # time. The orchestrator will derive the public key from it at startup.
+  # This is the Free-tier / evaluation path.
+  #
+  # For production (Pro / Enterprise), generate and pass both explicitly so
+  # keys survive reinstalls and can be rotated on your schedule:
   #   openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
   #   openssl rsa -in jwt.key -pubout -out jwt.pub
-  jwtPrivateKey: ""   # base64-encoded PEM private key
-  jwtPublicKey: ""    # base64-encoded PEM public key
+  #   helm install ... --set-file secrets.jwtPrivateKey=jwt.key \
+  #                    --set-file secrets.jwtPublicKey=jwt.pub
+  jwtPrivateKey: ""   # PEM-encoded RSA private key (leave empty for auto-gen)
+  jwtPublicKey: ""    # PEM-encoded RSA public key (derived from private if empty)
 
 # ─── License ─────────────────────────────────────────────────────────────────
 # License file for Enterprise tier features (SSO, SCIM, custom RBAC,
