@@ -51,14 +51,25 @@ For evaluators on a single Linux machine, we recommend **k3s**. It's a full Kube
 
 ### Install k3s (recommended for Linux evaluators)
 
+Install k3s with a world-readable kubeconfig so you can use `kubectl` as a regular user:
+
 ```bash
-curl -sfL https://get.k3s.io | sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode=644" sh -
 ```
 
-That's the whole install. Wait about 30 seconds for the service to come up, then:
+> **Security-conscious shops:** if piping to a shell isn't allowed by your policy, k3s also ships as a Debian package, an RPM, and a standalone binary. See the [k3s quick start](https://docs.k3s.io/quick-start) for alternatives.
+
+Wait about 30 seconds for the service to come up. Then point `kubectl` at k3s's kubeconfig by adding one line to your shell profile:
 
 ```bash
-sudo kubectl get nodes
+echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+```
+
+The first line makes it stick for future terminals; the second applies it right now. Verify:
+
+```bash
+kubectl get nodes
 ```
 
 **Expected output:**
@@ -68,24 +79,7 @@ NAME         STATUS   ROLES                  AGE   VERSION
 your-host    Ready    control-plane,master   45s   v1.30.x+k3s1
 ```
 
-### Make kubectl usable without sudo
-
-k3s stores its kubeconfig at `/etc/rancher/k3s/k3s.yaml`, which is only readable by root. To use `kubectl` as your regular user:
-
-```bash
-mkdir -p ~/.kube
-sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-sudo chown "$(id -u):$(id -g)" ~/.kube/config
-chmod 600 ~/.kube/config
-```
-
-Now you can run `kubectl` without sudo:
-
-```bash
-kubectl get nodes
-```
-
-Same output, no sudo. You have a cluster.
+You have a cluster.
 
 ### Install Helm
 
@@ -111,37 +105,29 @@ version.BuildInfo{Version:"v3.15.x", ...}
 
 ## Step 1 — Install the chart
 
+**If you followed Step 0 (k3s on a single machine)**, use the NodePort flavor — it's the simplest path to a working UI. Run the whole block:
+
 ```bash
-# Add the Helm repository
+# Add the Helm repository and install in one go
 helm repo add magertron https://magertron.com/charts
 helm repo update
-```
-
-**Expected output:**
-
-```
-"magertron" has been added to your repositories
-...Successfully got an update from the "magertron" chart repository
-```
-
-Then install. **If you followed Step 0 (k3s on a single machine)**, use the NodePort flavor — it's the simplest path to a working UI:
-
-```bash
 helm install mcp magertron/mcp-orchestrator \
   --namespace mcp-system \
   --create-namespace \
   --set loadBalancer.provider=nodeport
 ```
 
-**If you're on a cloud provider (EKS, GKE, AKS) or any cluster with a working LoadBalancer controller**, you can omit the `--set` flag:
+**If you're on a cloud provider (EKS, GKE, AKS) or any cluster with a working LoadBalancer controller**, omit the `--set` flag:
 
 ```bash
+helm repo add magertron https://magertron.com/charts
+helm repo update
 helm install mcp magertron/mcp-orchestrator \
   --namespace mcp-system \
   --create-namespace
 ```
 
-**For other setups** (MetalLB, existing ingress, etc.), see [Networking deep-dive](#networking-deep-dive) below.
+**For other setups** (MetalLB, existing ingress, etc.), see [Networking deep-dive](#networking-deep-dive) below — the repo-add commands there still apply.
 
 ### Wait for the pods to come up
 
@@ -411,6 +397,30 @@ Either approach works. The chart detects and reuses an existing `mcp-license` Se
 ### Pro / Enterprise CLI — `mcpctl`
 
 Pro and Enterprise tiers include `mcpctl`, a single-binary CLI for macOS and Linux. Download and install instructions are sent with your license. `mcpctl` lets you deploy, scale, and evaluate governance from your terminal without opening the UI.
+
+### Managing your own JWT signing keys *(production)*
+
+By default the chart auto-generates RSA keys for signing authentication tokens at install time. This is fine for evaluation — zero setup, everything Just Works.
+
+For production installs you'll want to manage these keys yourself so they survive chart reinstalls, can be rotated on your schedule, and can be stored in your secret backend of choice. Generate an RSA keypair once:
+
+```bash
+openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in jwt.key -pubout -out jwt.pub
+```
+
+Then pass both files at install time:
+
+```bash
+helm install mcp magertron/mcp-orchestrator \
+  --namespace mcp-system --create-namespace \
+  --set-file secrets.jwtPrivateKey=./jwt.key \
+  --set-file secrets.jwtPublicKey=./jwt.pub
+```
+
+**Store these keys somewhere safe.** If you lose them, all existing user sessions become invalid and users will need to log in again (not catastrophic — but worth knowing). If you rotate them, do the same: new install with new keys invalidates existing sessions.
+
+Keys provided via `--set-file` are stored in a Kubernetes Secret (`mcp-orchestrator-jwt`) which the orchestrator mounts read-only at runtime. They are not logged, transmitted, or visible in the UI.
 
 ---
 
