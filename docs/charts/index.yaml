@@ -1,9 +1,36 @@
 apiVersion: v1
 entries:
   mcp-orchestrator:
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: Removed placeholder `public_key_pem` from ConfigMap template that prevented JWT public-key auto-derivation from running; every default install was failing JWT verification with "bio read failed".
+        - kind: fixed
+          description: JWT keys now resolved strictly from env var / Secret (with auto-derive fallback when public key is empty).
+    apiVersion: v2
+    appVersion: 1.2.0
+    created: "2026-04-22T16:57:17.451877-04:00"
+    description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
+      servers
+    digest: 05e18d453821d208411180a714fc42cb48bfbecfe3005d918e908fd6473f337e
+    home: https://github.com/mcp-platform/mcp-orchestrator
+    keywords:
+    - mcp
+    - model-context-protocol
+    - orchestrator
+    - kubernetes
+    - ai
+    - llm
+    maintainers:
+    - name: MCP Platform Team
+    name: mcp-orchestrator
+    type: application
+    urls:
+    - https://magertron.com/charts/mcp-orchestrator-1.2.0.tgz
+    version: 1.2.0
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-04-21T16:44:01.504684-04:00"
+    created: "2026-04-22T16:57:17.449192-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 891a828a382cde95602289a092c37c7b2bb965298c1cd8387e9f896ddbff7c81
@@ -24,7 +51,7 @@ entries:
     version: 1.1.0
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-04-21T16:44:01.503764-04:00"
+    created: "2026-04-22T16:57:17.447446-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 38f77ecfde063545a8a8322fe9de4eb00538acca4bd0f87f31bc61bfc6deac75
@@ -43,4 +70,4 @@ entries:
     urls:
     - https://magertron.com/charts/mcp-orchestrator-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-21T16:44:01.500621-04:00"
+generated: "2026-04-22T16:57:17.443534-04:00"
