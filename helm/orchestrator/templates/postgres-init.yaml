@@ -172,6 +172,76 @@ data:
     CREATE INDEX IF NOT EXISTS scim_tokens_hash_idx    ON scim_tokens (token_hash);
     CREATE INDEX IF NOT EXISTS scim_tokens_revoked_idx ON scim_tokens (revoked_at);
 
+    -- ═══════════════════════════════════════════════════════════════════════
+    -- Phase E: L8 Tool-Level RBAC
+    -- Design decisions: EXACT > REGEX > WILDCARD precedence, role_id required,
+    -- time-bound via valid_from/valid_until, server-scoped only.
+    -- ═══════════════════════════════════════════════════════════════════════
+
+    -- Tools discovered via tools/list probing on each deployed MCP server.
+    CREATE TABLE IF NOT EXISTS mcp_tools (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id       UUID NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        tool_name       TEXT NOT NULL,
+        description     TEXT,
+        input_schema    JSONB,
+        first_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (server_id, tool_name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_mcp_tools_server ON mcp_tools (server_id);
+
+    -- Per-server governance knobs.
+    CREATE TABLE IF NOT EXISTS mcp_server_tool_governance (
+        server_id               UUID PRIMARY KEY REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        enforcement_enabled     BOOLEAN NOT NULL DEFAULT true,
+        log_tool_discovery      BOOLEAN NOT NULL DEFAULT true,
+        require_tool_discovery  BOOLEAN NOT NULL DEFAULT false,
+        updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_by              TEXT
+    );
+
+    -- Tool-level RBAC policies.
+    CREATE TABLE IF NOT EXISTS mcp_tool_permissions (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        role_id         VARCHAR(255) NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        server_id       UUID NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        pattern_type    TEXT NOT NULL CHECK (pattern_type IN ('EXACT','WILDCARD','REGEX')),
+        tool_pattern    TEXT NOT NULL,
+        effect          TEXT NOT NULL CHECK (effect IN ('ALLOW','DENY')),
+        valid_from      TIMESTAMPTZ,
+        valid_until     TIMESTAMPTZ,
+        CHECK (valid_from IS NULL OR valid_until IS NULL OR valid_from < valid_until),
+        reason          TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_by      TEXT,
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_by      TEXT,
+        UNIQUE (role_id, server_id, pattern_type, tool_pattern, effect)
+    );
+    CREATE INDEX IF NOT EXISTS idx_tool_perms_lookup ON mcp_tool_permissions (role_id, server_id);
+    CREATE INDEX IF NOT EXISTS idx_tool_perms_server ON mcp_tool_permissions (server_id);
+    CREATE INDEX IF NOT EXISTS idx_tool_perms_active ON mcp_tool_permissions (role_id, server_id)
+        WHERE valid_until IS NULL OR valid_until > now();
+
+    -- Flattened view for admin UI (avoids N+1 joins in the frontend).
+    CREATE OR REPLACE VIEW v_tool_permission_summary AS
+    SELECT
+        p.id, p.role_id, r.name AS role_name,
+        p.server_id, s.name AS server_name,
+        p.pattern_type, p.tool_pattern, p.effect,
+        p.valid_from, p.valid_until,
+        CASE
+            WHEN p.valid_until IS NOT NULL AND p.valid_until < now() THEN 'expired'
+            WHEN p.valid_from  IS NOT NULL AND p.valid_from  > now() THEN 'scheduled'
+            ELSE 'active'
+        END AS status,
+        p.reason, p.created_at, p.created_by, p.updated_at, p.updated_by
+    FROM mcp_tool_permissions p
+    JOIN roles r            ON r.id = p.role_id
+    JOIN deployed_servers s ON s.id = p.server_id
+    ORDER BY s.name, r.name, p.pattern_type, p.tool_pattern;
+
   02-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
