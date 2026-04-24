@@ -53,6 +53,17 @@ spec:
       {{- if eq .Values.loadBalancer.provider "nodeport" }}
       nodePort: {{ .Values.loadBalancer.nodeport.httpsPort }}
       {{- end }}
+    # ext_authz-enforced MCP listener — every request to this port is
+    # gated by a gRPC Check() call to the orchestrator's Policy Decision
+    # Point. Direct upstream access via :10080 is still possible; :10093
+    # is the enforced path MCP clients should target.
+    - name: http-authz
+      port: {{ .Values.envoy.service.httpAuthzPort | default 93 }}
+      targetPort: 10093
+      protocol: TCP
+      {{- if eq .Values.loadBalancer.provider "nodeport" }}
+      nodePort: {{ .Values.loadBalancer.nodeport.httpAuthzPort | default 30093 }}
+      {{- end }}
 {{- end }}
 
 ---

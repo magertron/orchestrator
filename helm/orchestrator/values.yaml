@@ -77,6 +77,10 @@ envoy:
   service:
     httpPort: 80
     httpsPort: 443
+    # ext_authz-enforced MCP listener (see helm-envoy-service.yaml).
+    # Default 93 avoids the 80/443 well-known ports. Override only if
+    # it conflicts with your environment.
+    httpAuthzPort: 93
   autoscaling:
     enabled: true
     minReplicas: 2
@@ -121,8 +125,9 @@ loadBalancer:
 
   # ── NodePort (provider: nodeport) ─────────────────────────────────────────
   nodeport:
-    httpPort: 30080     # customize to avoid conflicts
+    httpPort: 30080      # customize to avoid conflicts
     httpsPort: 30443
+    httpAuthzPort: 30093 # ext_authz-enforced MCP listener
 
   # ── Existing LB / Ingress (provider: existing) ────────────────────────────
   existing:
