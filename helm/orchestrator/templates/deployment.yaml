@@ -43,6 +43,12 @@ spec:
               containerPort: {{ .Values.envoy.xds.port }}
             - name: metrics
               containerPort: {{ .Values.observability.metricsPort }}
+            # ext_authz gRPC endpoint — Envoy's ext_authz filter calls this
+            # port for the Check RPC. Bound to 0.0.0.0:9092 inside the
+            # orchestrator process; must be declared here so the port is
+            # routable via the Service (see services.yaml).
+            - name: ext-authz
+              containerPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
           env:
             - name: POD_NAMESPACE
               valueFrom:

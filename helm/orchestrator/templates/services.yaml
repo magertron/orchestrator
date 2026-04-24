@@ -21,6 +21,10 @@ spec:
     - name: metrics
       port: {{ .Values.observability.metricsPort }}
       targetPort: {{ .Values.observability.metricsPort }}
+    # ext_authz gRPC — routes Envoy :10093 filter Check() calls to orchestrator
+    - name: ext-authz
+      port: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+      targetPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
 ---
 # Headless service for xDS gRPC — STRICT_DNS resolves to pod IPs

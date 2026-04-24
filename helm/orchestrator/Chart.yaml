@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.2.0
-appVersion: "1.2.0"
+version: 1.3.0
+appVersion: "1.3.0"
 keywords:
   - mcp
   - model-context-protocol
@@ -16,7 +16,9 @@ maintainers:
   - name: MCP Platform Team
 annotations:
   artifacthub.io/changes: |
-    - kind: fixed
-      description: Removed placeholder `public_key_pem` from ConfigMap template that prevented JWT public-key auto-derivation from running; every default install was failing JWT verification with "bio read failed".
-    - kind: fixed
-      description: JWT keys now resolved strictly from env var / Secret (with auto-derive fallback when public key is empty).
+    - kind: added
+      description: ext_authz enforcement plane. Adds an Envoy listener on :10093 that calls the orchestrator's Policy Decision Point via gRPC before forwarding any MCP request. Every tool invocation is checked against per-server per-role policies; unauthorized calls are denied with HTTP 403. Fail-closed on PDP outage.
+    - kind: added
+      description: orchestrator Service now exposes port 9092 (ext_authz gRPC) and the orchestrator Deployment declares the matching containerPort. Configurable via `.Values.orchestrator.extAuthzPort` (default 9092).
+    - kind: added
+      description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.

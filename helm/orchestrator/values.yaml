@@ -11,6 +11,12 @@ orchestrator:
     repository: curtismager20/mcp-orchestrator
     tag: v1
     pullPolicy: Always
+
+  # Port for the ext_authz gRPC Policy Decision Point.
+  # Envoy's ext_authz HTTP filter on :10093 calls Check() on this port.
+  # Do not change unless you also update the envoy-bootstrap ConfigMap's
+  # grpc_service.envoy_grpc.cluster_name endpoint — they must agree.
+  extAuthzPort: 9092
   resources:
     requests:
       cpu: 250m
