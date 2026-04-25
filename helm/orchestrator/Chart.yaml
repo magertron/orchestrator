@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.4.0
-appVersion: "1.4.0"
+version: 1.5.0
+appVersion: "1.5.0"
 keywords:
   - mcp
   - model-context-protocol
@@ -16,6 +16,8 @@ maintainers:
   - name: MCP Platform Team
 annotations:
   artifacthub.io/changes: |
+    - kind: added
+      description: "Phase F.3: separates audit events by plane (admin vs caller). Adds 'plane' VARCHAR(8) column to audit_events with CHECK constraint enforcing 'admin' (orchestrator REST events: deploys, role changes, governance changes) or 'caller' (ext_authz per-tool-invocation decisions). Composite index (plane, ts DESC) supports fast SIEM queries like 'show me last hour of caller-plane denies'. Existing 1.4.x audit events default to 'admin'. The two planes are written by separate code paths (orchestrator's audit_logger vs ext_authz's auditor) but share storage for unified SIEM ingestion."
     - kind: added
       description: "Phase F.1: OCSF-aligned audit_events schema. Adds 14 columns to support enterprise SIEM integration (Splunk, Elastic, Datadog, Sumo, Chronicle): class_uid, activity_id, severity_id, status_id, status_detail, actor_email, actor_session_id, actor_idp, actor_roles, src_ip, src_user_agent, request_id, tenant, cluster_uid, unmapped (OCSF overflow), and event_uid (globally-unique event id). Adds 4 new indexes for SIEM-pattern queries. Existing audit_events queries continue to work unchanged; new fields default to NULL or sensible defaults until upstream emission paths populate them in F.2/F.3."
     - kind: fixed

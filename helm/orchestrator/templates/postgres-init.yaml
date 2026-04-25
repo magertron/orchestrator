@@ -63,6 +63,14 @@ data:
         -- metadata.uid in OCSF payloads. Distinct from `id` so we can later
         -- migrate to externally-issued ids without breaking primary key refs.
 
+        -- ── Plane (Phase F.3) ───────────────────────────────────────────────
+        -- Separates events emitted by the orchestrator (admin plane: REST,
+        -- deployments, role changes) from events emitted by ext_authz (caller
+        -- plane: per-tool-invocation decisions). Two pipelines write to this
+        -- one table; SIEM filtering happens by 'plane'.
+        plane             VARCHAR(8)   NOT NULL DEFAULT 'admin'
+                                       CHECK (plane IN ('admin', 'caller')),
+
         -- ── Classification (OCSF-aligned) ───────────────────────────────────
         kind              VARCHAR(64)  NOT NULL,                  -- domain string, e.g. "Deployed"
         class_uid         INT          NOT NULL DEFAULT 6003,     -- OCSF class (6003=API Activity)
@@ -107,6 +115,7 @@ data:
     CREATE INDEX IF NOT EXISTS audit_events_class_idx     ON audit_events (class_uid, activity_id);
     CREATE INDEX IF NOT EXISTS audit_events_request_idx   ON audit_events (request_id) WHERE request_id IS NOT NULL;
     CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS audit_events_plane_ts_idx  ON audit_events (plane, ts DESC);
 
     -- ── Deployed Servers ───────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS deployed_servers (
