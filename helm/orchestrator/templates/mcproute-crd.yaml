@@ -61,6 +61,11 @@ spec:
                   type: boolean
                   default: true
                   description: "Whether Envoy should actively route to this server"
+                upstreamPath:
+                  type: string
+                  default: "/"
+                  pattern: "^/.*"
+                  description: "Path on the upstream MCP server. Envoy strips the inbound `prefix` and rewrites to this. Default `/` matches today's behavior; set to e.g. `/v1/mcp` for servers serving their MCP API at non-root paths. Multi-tenant: same server can be exposed via multiple McpRoutes with different upstreamPath values."
 
             status:
               type: object
