@@ -49,20 +49,64 @@ data:
         ON users (external_id) WHERE external_id IS NOT NULL;
 
     -- ── Audit Events ───────────────────────────────────────────────────────────
+    -- OCSF-aligned shape (Phase F.1, 2026-04-25). 22 columns supporting:
+    --  classification (class_uid, activity_id, severity_id, status_id),
+    --  actor metadata (email, session, idp, roles snapshot),
+    --  network context (src_ip, user_agent),
+    --  correlation (request_id, tenant, cluster_uid),
+    --  state diffs (old_state, new_state) and OCSF overflow (unmapped).
     CREATE TABLE IF NOT EXISTS audit_events (
-        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-        kind          VARCHAR(64) NOT NULL,
-        actor         VARCHAR(255) NOT NULL,
-        server_name   VARCHAR(255),
-        namespace     VARCHAR(255),
-        detail        TEXT,
-        old_state     JSONB,
-        new_state     JSONB,
-        ts            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        -- ── Core identity ───────────────────────────────────────────────────
+        id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_uid         UUID         NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+        -- event_uid is the OCSF-equivalent globally-unique id, exported as
+        -- metadata.uid in OCSF payloads. Distinct from `id` so we can later
+        -- migrate to externally-issued ids without breaking primary key refs.
+
+        -- ── Classification (OCSF-aligned) ───────────────────────────────────
+        kind              VARCHAR(64)  NOT NULL,                  -- domain string, e.g. "Deployed"
+        class_uid         INT          NOT NULL DEFAULT 6003,     -- OCSF class (6003=API Activity)
+        activity_id       INT          NOT NULL DEFAULT 0,        -- 0=Unknown,1=Create,2=Read,3=Update,4=Delete
+        severity_id       INT          NOT NULL DEFAULT 1,        -- 1=Info,2=Low,3=Medium,4=High,5=Critical,6=Fatal
+        status_id         INT          NOT NULL DEFAULT 1,        -- 1=Success,2=Failure
+        status_detail     TEXT,                                   -- failure reason if any
+
+        -- ── Actor (the user/agent/system that did the thing) ────────────────
+        actor             VARCHAR(255) NOT NULL,                  -- subject / username
+        actor_email       VARCHAR(255),                           -- from JWT 'email' claim
+        actor_session_id  VARCHAR(128),                           -- from JWT 'sid' / 'jti'
+        actor_idp         VARCHAR(128),                           -- from JWT 'iss'
+        actor_roles       JSONB        NOT NULL DEFAULT '[]',     -- snapshot of role IDs at event time
+
+        -- ── Source endpoint (network context) ───────────────────────────────
+        src_ip            INET,                                   -- client IP from XFF or socket
+        src_user_agent    TEXT,                                   -- HTTP UA string
+
+        -- ── Target ──────────────────────────────────────────────────────────
+        server_name       VARCHAR(255),
+        namespace         VARCHAR(255),
+
+        -- ── Correlation & multi-tenancy ─────────────────────────────────────
+        request_id        VARCHAR(128),                           -- correlate with Envoy access logs
+        tenant            VARCHAR(64),                            -- multi-tenant hook (NULL=default)
+        cluster_uid       VARCHAR(64),                            -- which Magertron instance
+
+        -- ── Detail & state ──────────────────────────────────────────────────
+        detail            TEXT,                                   -- human-readable description
+        old_state         JSONB,                                  -- pre-change snapshot
+        new_state         JSONB,                                  -- post-change snapshot
+        unmapped          JSONB        NOT NULL DEFAULT '{}',     -- OCSF overflow
+
+        -- ── Timestamps ──────────────────────────────────────────────────────
+        ts                TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS audit_events_ts_idx     ON audit_events (ts DESC);
-    CREATE INDEX IF NOT EXISTS audit_events_actor_idx  ON audit_events (actor);
-    CREATE INDEX IF NOT EXISTS audit_events_server_idx ON audit_events (server_name, namespace);
+    CREATE INDEX IF NOT EXISTS audit_events_ts_idx        ON audit_events (ts DESC);
+    CREATE INDEX IF NOT EXISTS audit_events_actor_idx     ON audit_events (actor);
+    CREATE INDEX IF NOT EXISTS audit_events_server_idx    ON audit_events (server_name, namespace);
+    CREATE INDEX IF NOT EXISTS audit_events_event_uid_idx ON audit_events (event_uid);
+    CREATE INDEX IF NOT EXISTS audit_events_class_idx     ON audit_events (class_uid, activity_id);
+    CREATE INDEX IF NOT EXISTS audit_events_request_idx   ON audit_events (request_id) WHERE request_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
 
     -- ── Deployed Servers ───────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS deployed_servers (
