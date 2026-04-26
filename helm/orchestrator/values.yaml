@@ -71,16 +71,12 @@ envoy:
     limits:
       cpu: 500m
       memory: 512Mi
-  # Service ports — these are the PORT numbers exposed on the Envoy
-  # Service resource. The Service TYPE is determined by loadBalancer.provider
-  # (below), not here. For NodePort mode, also see loadBalancer.nodeport.
+  # Service ports — the PORT numbers exposed on the Envoy Service.
+  # Only HTTPS is customer-facing; the listener on :10443 inside the pod
+  # does both TLS termination and ext_authz enforcement. The Service TYPE
+  # is determined by loadBalancer.provider (below), not here.
   service:
-    httpPort: 80
     httpsPort: 443
-    # ext_authz-enforced MCP listener (see helm-envoy-service.yaml).
-    # Default 93 avoids the 80/443 well-known ports. Override only if
-    # it conflicts with your environment.
-    httpAuthzPort: 93
   autoscaling:
     enabled: true
     minReplicas: 2
@@ -124,10 +120,10 @@ loadBalancer:
     # bgp: false                                    # set true for BGP mode (advanced)
 
   # ── NodePort (provider: nodeport) ─────────────────────────────────────────
+  # Only HTTPS is exposed — TLS termination and ext_authz both happen
+  # at this single port. Customers point MCP clients at <node-ip>:30443.
   nodeport:
-    httpPort: 30080      # customize to avoid conflicts
     httpsPort: 30443
-    httpAuthzPort: 30093 # ext_authz-enforced MCP listener
 
   # ── Existing LB / Ingress (provider: existing) ────────────────────────────
   existing:

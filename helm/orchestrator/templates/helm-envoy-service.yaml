@@ -39,30 +39,15 @@ spec:
   {{- end }}
 
   ports:
-    - name: http
-      port: {{ .Values.envoy.service.httpPort }}
-      targetPort: 10080
-      protocol: TCP
-      {{- if eq .Values.loadBalancer.provider "nodeport" }}
-      nodePort: {{ .Values.loadBalancer.nodeport.httpPort }}
-      {{- end }}
+    # The ONLY customer-facing port. TLS-terminated, ext_authz-gated.
+    # Plain HTTP and unauthenticated paths intentionally do not exist —
+    # mechanically impossible to bypass authz from outside the cluster.
     - name: https
       port: {{ .Values.envoy.service.httpsPort }}
       targetPort: 10443
       protocol: TCP
       {{- if eq .Values.loadBalancer.provider "nodeport" }}
       nodePort: {{ .Values.loadBalancer.nodeport.httpsPort }}
-      {{- end }}
-    # ext_authz-enforced MCP listener — every request to this port is
-    # gated by a gRPC Check() call to the orchestrator's Policy Decision
-    # Point. Direct upstream access via :10080 is still possible; :10093
-    # is the enforced path MCP clients should target.
-    - name: http-authz
-      port: {{ .Values.envoy.service.httpAuthzPort | default 93 }}
-      targetPort: 10093
-      protocol: TCP
-      {{- if eq .Values.loadBalancer.provider "nodeport" }}
-      nodePort: {{ .Values.loadBalancer.nodeport.httpAuthzPort | default 30093 }}
       {{- end }}
 {{- end }}
 
@@ -98,5 +83,5 @@ spec:
               service:
                 name: {{ include "mcp.fullname" . }}-envoy
                 port:
-                  number: {{ .Values.envoy.service.httpPort }}
+                  number: {{ .Values.envoy.service.httpsPort }}
 {{- end }}
