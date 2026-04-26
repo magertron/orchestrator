@@ -75,6 +75,15 @@ spec:
             # Path to the license JSON inside the pod. Free tier if missing.
             - name: MCP_LICENSE_FILE
               value: /etc/mcp-license/license.json
+            # ── Platform version ───────────────────────────────────────────
+            # Sourced from Chart.AppVersion at chart-render time. The
+            # orchestrator surfaces this via /api/v1/about (About modal)
+            # and the MCP initialize handshake's clientInfo (downstream
+            # MCP servers see exactly which orchestrator version probed
+            # them). Bumping Chart.yaml's appVersion is the only place
+            # the version needs to change at release time — no code edits.
+            - name: MCP_VERSION
+              value: {{ .Chart.AppVersion | quote }}
             # ── HealthMonitor poll interval ────────────────────────────────
             # How often the orchestrator polls Kubernetes for pod state and
             # MCP server health. Drives UI responsiveness for state
