@@ -25,6 +25,18 @@ orchestrator:
       cpu: "1"
       memory: 1Gi
 
+  # ── Health monitoring ─────────────────────────────────────────────────────
+  # How often the orchestrator polls Kubernetes for pod state changes and
+  # MCP server health. This drives how quickly the UI sees state transitions
+  # (Deploying → Probing → Running, or Probing → ProbeFailed). Lower values
+  # = snappier feedback but more API server load.
+  #
+  #   5s  — recommended for development and clusters with under ~100 servers
+  #   15s — balanced for clusters with 100-500 servers
+  #   30s — recommended for clusters with 500+ servers (reduces api-server load)
+  healthMonitor:
+    pollIntervalSeconds: 5
+
   # Environment variables that configure SSO JIT and SCIM meta.location.
   # Empty strings disable the respective feature (safe defaults).
   env:
@@ -71,12 +83,16 @@ envoy:
     limits:
       cpu: 500m
       memory: 512Mi
-  # Service ports — the PORT numbers exposed on the Envoy Service.
-  # Only HTTPS is customer-facing; the listener on :10443 inside the pod
-  # does both TLS termination and ext_authz enforcement. The Service TYPE
-  # is determined by loadBalancer.provider (below), not here.
+  # Service ports — these are the PORT numbers exposed on the Envoy
+  # Service resource. The Service TYPE is determined by loadBalancer.provider
+  # (below), not here. For NodePort mode, also see loadBalancer.nodeport.
   service:
+    httpPort: 80
     httpsPort: 443
+    # ext_authz-enforced MCP listener (see helm-envoy-service.yaml).
+    # Default 93 avoids the 80/443 well-known ports. Override only if
+    # it conflicts with your environment.
+    httpAuthzPort: 93
   autoscaling:
     enabled: true
     minReplicas: 2
@@ -120,10 +136,10 @@ loadBalancer:
     # bgp: false                                    # set true for BGP mode (advanced)
 
   # ── NodePort (provider: nodeport) ─────────────────────────────────────────
-  # Only HTTPS is exposed — TLS termination and ext_authz both happen
-  # at this single port. Customers point MCP clients at <node-ip>:30443.
   nodeport:
+    httpPort: 30080      # customize to avoid conflicts
     httpsPort: 30443
+    httpAuthzPort: 30093 # ext_authz-enforced MCP listener
 
   # ── Existing LB / Ingress (provider: existing) ────────────────────────────
   existing:

@@ -75,6 +75,14 @@ spec:
             # Path to the license JSON inside the pod. Free tier if missing.
             - name: MCP_LICENSE_FILE
               value: /etc/mcp-license/license.json
+            # ── HealthMonitor poll interval ────────────────────────────────
+            # How often the orchestrator polls Kubernetes for pod state and
+            # MCP server health. Drives UI responsiveness for state
+            # transitions (Deploying → Probing → Running). See values.yaml
+            # `orchestrator.healthMonitor.pollIntervalSeconds` for guidance
+            # on tuning per cluster size.
+            - name: MCP_K8S_POLL_INTERVAL
+              value: {{ .Values.orchestrator.healthMonitor.pollIntervalSeconds | default 5 | quote }}
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets

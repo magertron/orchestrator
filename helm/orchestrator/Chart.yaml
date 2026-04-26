@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.5.0
-appVersion: "1.5.0"
+version: 1.6.0
+appVersion: "1.6.0"
 keywords:
   - mcp
   - model-context-protocol
@@ -16,6 +16,26 @@ maintainers:
   - name: MCP Platform Team
 annotations:
   artifacthub.io/changes: |
+    - kind: changed
+      description: "TLS+ext_authz unified on a single customer-facing port (`:30443`). The previous architecture had three Envoy listeners (plain HTTP `:30080`, TLS-only HTTPS `:30443`, plain ext_authz `:30093`); these are collapsed into one listener that does both TLS termination AND ext_authz Check on every request. Plain-HTTP and ext_authz-bypass paths are eliminated — every external request now goes through both encryption and authorization. BREAKING: `envoy.service.httpPort`, `envoy.service.httpAuthzPort`, `loadBalancer.nodeport.httpPort`, and `loadBalancer.nodeport.httpAuthzPort` are removed from values.yaml. Customers using `:30093` directly must move to `https://...:30443/`. Self-signed cert in dev — accept with `curl -k` or a proper cert in prod."
+    - kind: added
+      description: "Post-deploy MCP-handshake verification. The orchestrator now performs a real `initialize` + `tools/list` against newly-deployed servers using the configured `upstream_path`, and only marks them `Running` if the handshake succeeds. Failed servers transition to a new `ProbeFailed` state with a structured error reason (HTTP code, timeout, parse failure) surfaced in `/api/v1/servers` responses and the admin UI. Previously, servers were marked `Running` as soon as their pod reached Ready, hiding configuration bugs (wrong port, wrong upstream path) until the first MCP client request 404'd. Adds new `Probing` state for the in-flight handshake and a `probe_result` object to `DeployedServer`."
+    - kind: added
+      description: "Per-server `upstream_path` field on McpServerSpec. Becomes the Envoy `prefix_rewrite` target so requests to `/mcp/<ns>/<name>/...` get forwarded to the upstream MCP server's actual path (e.g. `/http` for IBM fast-time-server, `/mcp` for ContextForge, `/sse` for SSE transport). Defaults to `/` for servers serving at root. Previously hardcoded as `/`, breaking any MCP server that didn't serve at root path."
+    - kind: changed
+      description: "Namespaced URL prefix shape. New routes follow `/mcp/<namespace>/<server-name>/` instead of `/mcp/<server-name>/`. Same-name servers in different namespaces (e.g. `mcp-prod/foo` vs `mcp-staging/foo`) are now addressable without colliding. The ext_authz path parser handles both shapes for backward compatibility — legacy single-segment routes continue to work."
+    - kind: added
+      description: "Operator-friendly `gateway_url` and `prefix` fields in `/api/v1/servers` responses. `gateway_url` is the full copy-paste-ready URL that operators hand to MCP clients (e.g. `https://mcp.acme.com/mcp/mcp-prod/fast-time/`); built from `MCP_API_PUBLIC_URL` plus the namespaced prefix. Eliminates the need for operators to assemble URLs from parts or know the routing convention."
+    - kind: added
+      description: "Configurable HealthMonitor poll interval via `orchestrator.healthMonitor.pollIntervalSeconds` (default 5s, was hardcoded 15s). Drives how quickly the UI sees state transitions like Deploying → Probing → Running. Lower = snappier UI feedback; higher = less Kubernetes API server load. Recommended 5s for clusters under ~100 servers, 15-30s for larger deployments. Can also be set via `MCP_K8S_POLL_INTERVAL` env var."
+    - kind: added
+      description: "Admin UI: server template catalog. Operators select a known MCP server from a dropdown (IBM Fast Time, Anthropic Filesystem, plus Custom...) and image, port, and upstream_path auto-fill. Reduces operator burden for well-known servers — no more docs hunting to find the right port or path. Templates ship in `ui/src/data/serverCatalog.ts`."
+    - kind: added
+      description: "Admin UI: animated `Probing` badge with spinner and red `ProbeFailed` banner showing the structured error reason. Operators see at a glance which servers are mid-verification vs. which have failed configuration, with the exact failure mode (e.g. `initialize: HTTP 404 at http://10.X.X.X:8080/wrong`) inline in the server detail view."
+    - kind: added
+      description: "Route-prefix validation across all three REST handlers (POST /api/v1/routes, PUT /api/v1/routes/{name}, POST /internal/routes). Reserved-prefix list (`/`, `/api/`, `/auth/`, `/healthz`, `/readyz`, `/ui/`, `/assets/`, `/static/`, `/favicon.ico`, `/mcp/_meta/`, `/mcp/_admin/`, `/mcp/_health/`) blocks both registration of conflicting prefixes AND shadowing of orchestrator-internal routes by user prefixes. Bidirectional enforcement: it's mechanically impossible to register a route that conflicts with a reserved path or that would itself be conflicted-with by a future route."
+    - kind: fixed
+      description: "Three latent `cluster_port` /  `upstream_path` data-loss bugs along the deploy chain. (1) `DeployedServer::to_json` did not emit `upstream_path`, so the deployment-event payload arrived at the xDS subscriber missing the field. (2) The xDS subscriber callback in `main.cpp` hand-constructed a fresh `DeployedServer` with only 4 fields, dropping every other spec field including `upstream_path`. (3) The ext_authz path parser hardcoded the legacy `/mcp/<name>/` URL shape and grabbed the namespace as the server name on namespaced URLs, returning `unknown MCP server: mcp-prod`. All three patched; deploys with custom `upstream_path` now work end-to-end."
     - kind: added
       description: "Phase F.3: separates audit events by plane (admin vs caller). Adds 'plane' VARCHAR(8) column to audit_events with CHECK constraint enforcing 'admin' (orchestrator REST events: deploys, role changes, governance changes) or 'caller' (ext_authz per-tool-invocation decisions). Composite index (plane, ts DESC) supports fast SIEM queries like 'show me last hour of caller-plane denies'. Existing 1.4.x audit events default to 'admin'. The two planes are written by separate code paths (orchestrator's audit_logger vs ext_authz's auditor) but share storage for unified SIEM ingestion."
     - kind: added
