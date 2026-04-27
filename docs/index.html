@@ -174,8 +174,22 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .feature-card {
   padding: 32px; border-radius: 12px; background: var(--bg-card);
   border: 1px solid var(--border); transition: all 0.3s;
+  position: relative;
 }
-.feature-card:hover { border-color: var(--border-accent); background: var(--bg-card-hover); transform: translateY(-2px); }
+/* Hover affordance: only the clickable variant gets the lift + accent
+   treatment, so the visual difference between "click me" and "informational"
+   is obvious to a reader scanning the grid. */
+.feature-card.clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.feature-card.clickable:hover { border-color: var(--border-accent); background: var(--bg-card-hover); transform: translateY(-2px); text-decoration: none; }
+.feature-card.clickable::after {
+  content: "→";
+  position: absolute;
+  top: 32px; right: 32px;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  transition: transform 0.2s, color 0.2s;
+}
+.feature-card.clickable:hover::after { color: var(--accent-text); transform: translateX(4px); }
 .feature-icon {
   width: 40px; height: 40px; border-radius: 8px;
   background: var(--accent-glow); border: 1px solid rgba(37, 99, 235, 0.2);
@@ -470,7 +484,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   </div>
 </section>
 
-<section class="showcase">
+<section class="showcase" id="server-management">
   <div class="container">
     <div class="showcase-row">
       <div class="showcase-content">
@@ -493,7 +507,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 </section>
 
 <!-- Showcase: Governance -->
-<section class="showcase">
+<section class="showcase" id="governance">
   <div class="container">
     <div class="showcase-row reverse">
       <div class="showcase-content">
@@ -524,16 +538,16 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Apache 2.0. Most platforms cover one or two of these. Magertron covers all five.</div>
 
     <div class="feature-grid">
-      <div class="feature-card">
+      <a href="#server-management" class="feature-card clickable">
         <div class="feature-icon">⬡</div>
         <h3>Server Lifecycle</h3>
         <p>Deploy, scale, restart, rollback, and undeploy MCP servers with a single command or click. Full deployment history with one-click rollback.</p>
-      </div>
-      <div class="feature-card">
+      </a>
+      <a href="#governance" class="feature-card clickable">
         <div class="feature-icon">◈</div>
         <h3>Governance Engine</h3>
         <p>Define policies that enforce resource limits, transport requirements, naming standards, and security rules. Namespace-scoped — different rules for prod vs dev.</p>
-      </div>
+      </a>
       <div class="feature-card">
         <div class="feature-icon">⛊</div>
         <h3>Multi-Tenant RBAC</h3>
@@ -544,11 +558,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <h3>Enterprise Identity</h3>
         <p>OIDC and SAML single sign-on with Okta, Azure AD, and Google Workspace. SCIM 2.0 for automated user provisioning. Just-in-time account creation on first login. Your IdP stays the source of truth.</p>
       </div>
-      <div class="feature-card">
+      <a href="siem-integration.html" class="feature-card clickable">
         <div class="feature-icon">◷</div>
         <h3>Audit & Compliance</h3>
         <p>Every deployment, scale, restart, and config change logged with OCSF-aligned schema. Validated end-to-end with Splunk Cloud — fields auto-extract for SIEM queries. Built for regulated environments.</p>
-      </div>
+      </a>
       <div class="feature-card">
         <div class="feature-icon">⇌</div>
         <h3>Envoy Gateway</h3>
