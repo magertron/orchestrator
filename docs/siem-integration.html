@@ -28,7 +28,8 @@ a:hover { text-decoration: underline; }
 /* Nav */
 nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(6,8,12,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
 nav .container { max-width: 1200px; display: flex; justify-content: space-between; align-items: center; height: 64px; }
-.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
 .nav-logo span { color: var(--accent-text); }
 .nav-links { display: flex; gap: 32px; align-items: center; }
 .nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
@@ -180,7 +181,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 <nav>
   <div class="container">
-    <div class="nav-logo"><span>▸</span> magertron</div>
+    <a href="index.html" class="nav-logo"><span>▸</span> magertron</a>
     <div class="nav-links">
       <a href="index.html#features">MCP Orchestrator</a>
       <a href="index.html#pricing">Pricing</a>
