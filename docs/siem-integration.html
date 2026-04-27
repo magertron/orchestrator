@@ -70,6 +70,42 @@ nav .container { max-width: 1200px; display: flex; justify-content: space-betwee
 .pattern-card .pattern-meta span { color: var(--text-tertiary); }
 .pattern-card .pattern-meta strong { color: var(--success); }
 
+/* Tabs — horizontal SIEM selector. On mobile (<640px) the tab row scrolls
+   horizontally so all tabs stay visible without wrapping. Inactive panels
+   use display:none; this is fine for our static GitHub-Pages context (the
+   page is fully rendered before JS runs, no streaming concerns). */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0 24px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
 /* Validated banner */
 .validated-banner { display: flex; align-items: center; gap: 16px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3); border-radius: 12px; padding: 20px 24px; margin: 32px 0; }
 .validated-banner .icon { color: var(--success); font-size: 20px; flex-shrink: 0; }
@@ -168,34 +204,42 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <h2>Integration patterns</h2>
 
-    <h3>Splunk</h3>
+    <p>Choose the SIEM you're already running. Each tab covers the recommended integration shapes for that platform — most start with a forwarder picking up structured audit events, ship them to your existing SIEM stack, and let your security team's existing dashboards and alerts do the rest.</p>
 
-    <div class="pattern-card">
-      <h3>Pattern A — Splunk DB Connect (recommended for Splunk shops)</h3>
-      <div class="pattern-meta">
-        <span>Setup: <strong>~30 minutes</strong></span>
-        <span>Latency: <strong>1–5 min batches</strong></span>
-        <span>Best for: <strong>existing Splunk customers</strong></span>
-      </div>
-      <p>DB Connect queries Magertron's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
-      <ol>
-        <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
-        <li>Add a Postgres identity using a read-only database user we provision</li>
-        <li>Create a Database Input using the rising-column query template we ship with the integration pack</li>
-        <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target an index of your choice (we recommend a dedicated index like <code>mcp_audit</code>)</li>
-      </ol>
-      <p>The exact query template, column reference, and indexed-extraction config are part of the design-partner onboarding.</p>
+    <div class="tab-nav" role="tablist" aria-label="SIEM integration patterns">
+      <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab="splunk">Splunk</button>
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="datadog">Datadog</button>
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="elastic">Elastic / OpenSearch</button>
+      <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="chronicle">Google Chronicle</button>
     </div>
 
-    <div class="pattern-card">
-      <h3>Pattern B — Universal Forwarder + Fluent Bit DaemonSet</h3>
-      <div class="pattern-meta">
-        <span>Setup: <strong>~1 hour</strong></span>
-        <span>Latency: <strong>real-time</strong></span>
-        <span>Best for: <strong>Kubernetes-native observability</strong></span>
+    <div class="tab-panel active" data-panel="splunk" role="tabpanel">
+      <div class="pattern-card">
+        <h3>Pattern A — Splunk DB Connect (recommended for Splunk shops)</h3>
+        <div class="pattern-meta">
+          <span>Setup: <strong>~30 minutes</strong></span>
+          <span>Latency: <strong>1–5 min batches</strong></span>
+          <span>Best for: <strong>existing Splunk customers</strong></span>
+        </div>
+        <p>DB Connect queries Magertron's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
+        <ol>
+          <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
+          <li>Add a Postgres identity using a read-only database user we provision</li>
+          <li>Create a Database Input using the rising-column query template we ship with the integration pack</li>
+          <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target an index of your choice (we recommend a dedicated index like <code>mcp_audit</code>)</li>
+        </ol>
+        <p>The exact query template, column reference, and indexed-extraction config are part of the design-partner onboarding.</p>
       </div>
-      <p>Fluent Bit runs as a DaemonSet, tails the orchestrator's structured-JSON stdout (which mirrors the audit_events table), and forwards to a Splunk Universal Forwarder Service. The forwarder ships to your Splunk Cloud HEC endpoint.</p>
-      <pre>fluent-bit.conf
+
+      <div class="pattern-card">
+        <h3>Pattern B — Universal Forwarder + Fluent Bit DaemonSet</h3>
+        <div class="pattern-meta">
+          <span>Setup: <strong>~1 hour</strong></span>
+          <span>Latency: <strong>real-time</strong></span>
+          <span>Best for: <strong>Kubernetes-native observability</strong></span>
+        </div>
+        <p>Fluent Bit runs as a DaemonSet, tails the orchestrator's structured-JSON stdout (which mirrors the audit_events table), and forwards to a Splunk Universal Forwarder Service. The forwarder ships to your Splunk Cloud HEC endpoint.</p>
+        <pre>fluent-bit.conf
 
 [INPUT]
     Name              tail
@@ -215,52 +259,53 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     Port              8088
     Splunk_Token      ${HEC_TOKEN}
     Splunk_Send_Raw   On</pre>
+      </div>
+
+      <div class="pattern-card">
+        <h3>Pattern C — Direct HEC push from Magertron (planned for v1.7)</h3>
+        <div class="pattern-meta">
+          <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
+          <span>Latency: <strong>real-time</strong></span>
+          <span>Best for: <strong>simple deploys without existing forwarder infra</strong></span>
+        </div>
+        <p>Native HEC client baked into the orchestrator. Configure with <code>siem.provider: splunk</code> and <code>siem.splunk.hecUrl</code> + a token Secret. Roadmapped for v1.7 — design partners can have it earlier.</p>
+      </div>
     </div>
 
-    <div class="pattern-card">
-      <h3>Pattern C — Direct HEC push from Magertron (planned for v1.7)</h3>
-      <div class="pattern-meta">
-        <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
-        <span>Latency: <strong>real-time</strong></span>
-        <span>Best for: <strong>simple deploys without existing forwarder infra</strong></span>
+    <div class="tab-panel" data-panel="datadog" role="tabpanel">
+      <div class="pattern-card">
+        <h3>Datadog Agent with OCSF source</h3>
+        <div class="pattern-meta">
+          <span>Setup: <strong>~30 minutes</strong></span>
+          <span>Latency: <strong>real-time</strong></span>
+          <span>Best for: <strong>Datadog observability customers</strong></span>
+        </div>
+        <p>The Datadog Agent runs as a DaemonSet, autodiscovers the orchestrator pod, parses JSON logs, and ships to Datadog Logs. Tag with <code>service:mcp-orchestrator</code> and <code>source:ocsf</code> for proper Datadog Cloud SIEM rule application. Validated end-to-end — every OCSF field auto-extracts as a structured attribute in Datadog Logs Explorer.</p>
       </div>
-      <p>Native HEC client baked into the orchestrator. Configure with <code>siem.provider: splunk</code> and <code>siem.splunk.hecUrl</code> + a token Secret. Roadmapped for v1.7 — design partners can have it earlier.</p>
     </div>
 
-    <h3>Elastic / OpenSearch</h3>
-
-    <div class="pattern-card">
-      <h3>Filebeat with the audit_events index template</h3>
-      <div class="pattern-meta">
-        <span>Setup: <strong>~45 minutes</strong></span>
-        <span>Latency: <strong>real-time</strong></span>
-        <span>Best for: <strong>Elastic Stack customers</strong></span>
+    <div class="tab-panel" data-panel="elastic" role="tabpanel">
+      <div class="pattern-card">
+        <h3>Filebeat with an OCSF ingest pipeline</h3>
+        <div class="pattern-meta">
+          <span>Setup: <strong>~45 minutes</strong></span>
+          <span>Latency: <strong>real-time</strong></span>
+          <span>Best for: <strong>Elastic Stack customers</strong></span>
+        </div>
+        <p>Filebeat tails orchestrator container logs, applies an Elastic Common Schema (ECS) ingest pipeline that maps OCSF fields onto their ECS equivalents (most map 1-to-1 since both standards converged on similar primitives), and ships to your Elasticsearch cluster. Full ingest pipeline configuration available on request.</p>
       </div>
-      <p>Filebeat tails orchestrator container logs, applies an Elastic Common Schema (ECS) ingest pipeline that maps OCSF fields onto their ECS equivalents (most map 1-to-1 since both standards converged on similar primitives), and ships to your Elasticsearch cluster. We provide the full ingest pipeline configuration on request.</p>
     </div>
 
-    <h3>Datadog</h3>
-
-    <div class="pattern-card">
-      <h3>Datadog Agent with OCSF source</h3>
-      <div class="pattern-meta">
-        <span>Setup: <strong>~30 minutes</strong></span>
-        <span>Latency: <strong>real-time</strong></span>
-        <span>Best for: <strong>Datadog observability customers</strong></span>
+    <div class="tab-panel" data-panel="chronicle" role="tabpanel">
+      <div class="pattern-card">
+        <h3>Chronicle Forwarder with OCSF parser</h3>
+        <div class="pattern-meta">
+          <span>Setup: <strong>~1 hour</strong></span>
+          <span>Latency: <strong>real-time</strong></span>
+          <span>Best for: <strong>Google Cloud security teams</strong></span>
+        </div>
+        <p>Chronicle's recent OCSF-native parsers consume Magertron events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log stream or Postgres replica.</p>
       </div>
-      <p>The Datadog Agent runs as a DaemonSet, autodiscovers the orchestrator pod, parses JSON logs, and ships to Datadog Logs. Tag with <code>service:mcp-orchestrator</code> and <code>source:ocsf</code> for proper Datadog Cloud SIEM rule application.</p>
-    </div>
-
-    <h3>Google Chronicle</h3>
-
-    <div class="pattern-card">
-      <h3>Chronicle Forwarder with OCSF parser</h3>
-      <div class="pattern-meta">
-        <span>Setup: <strong>~1 hour</strong></span>
-        <span>Latency: <strong>real-time</strong></span>
-        <span>Best for: <strong>Google Cloud security teams</strong></span>
-      </div>
-      <p>Chronicle's recent OCSF-native parsers consume Magertron events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log file or Postgres replica.</p>
     </div>
 
     <h2>Common questions</h2>
@@ -434,6 +479,23 @@ function submitDemoForm() {
   });
 }
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeDemoModal(); });
+
+// SIEM integration tabs — clicking a tab button activates the matching panel.
+// Buttons carry data-tab; panels carry matching data-panel. Default 'splunk' is
+// pre-marked active in HTML so the page renders correctly even if JS hasn't run yet.
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      const active = b.dataset.tab === tab;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.panel === tab);
+    });
+  });
+});
 </script>
 </body>
 </html>
