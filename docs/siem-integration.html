@@ -70,6 +70,34 @@ nav .container { max-width: 1200px; display: flex; justify-content: space-betwee
 .pattern-card .pattern-meta span { color: var(--text-tertiary); }
 .pattern-card .pattern-meta strong { color: var(--success); }
 
+/* Collapsible variant — used on the Splunk tab where 3 patterns would
+   otherwise stack vertically. Header (title + meta) is always visible;
+   body (description, steps, code) hides until clicked. Chevron rotates
+   to indicate state. CSS-only — no JS needed if we use the [data-open]
+   attribute toggled by a click handler. */
+.pattern-card.collapsible { padding: 0; cursor: pointer; transition: border-color 0.15s; }
+.pattern-card.collapsible:hover { border-color: var(--border-accent); }
+.pattern-card.collapsible .pc-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.pattern-card.collapsible .pc-header-text { flex: 1; }
+.pattern-card.collapsible h3 { margin-bottom: 12px; font-size: 16px; }
+.pattern-card.collapsible .pattern-meta { margin-bottom: 0; }
+.pattern-card.collapsible .pc-chevron {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: transform 0.2s;
+  margin-top: 2px;
+}
+.pattern-card.collapsible[data-open="true"] .pc-chevron { transform: rotate(180deg); }
+.pattern-card.collapsible .pc-body { display: none; padding: 0 24px 24px; }
+.pattern-card.collapsible[data-open="true"] .pc-body { display: block; border-top: 1px solid var(--border); padding-top: 20px; }
+.pattern-card.collapsible .pc-body p { margin-bottom: 16px; }
+.pattern-card.collapsible .pc-body p:last-child { margin-bottom: 0; }
+.pattern-card.collapsible .pc-body ol { margin: 12px 0 16px 24px; }
+.pattern-card.collapsible .pc-body li { margin-bottom: 6px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+
 /* Tabs — horizontal SIEM selector. On mobile (<640px) the tab row scrolls
    horizontally so all tabs stay visible without wrapping. Inactive panels
    use display:none; this is fine for our static GitHub-Pages context (the
@@ -201,32 +229,45 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </div>
 
     <div class="tab-panel active" data-panel="splunk" role="tabpanel">
-      <div class="pattern-card">
-        <h3>Pattern A — Splunk DB Connect (recommended for Splunk shops)</h3>
-        <div class="pattern-meta">
-          <span>Setup: <strong>~30 minutes</strong></span>
-          <span>Latency: <strong>1–5 min batches</strong></span>
-          <span>Best for: <strong>existing Splunk customers</strong></span>
+      <div class="pattern-card collapsible" data-open="false" onclick="togglePattern(this)">
+        <div class="pc-header">
+          <div class="pc-header-text">
+            <h3>Pattern A — Splunk DB Connect (recommended for Splunk shops)</h3>
+            <div class="pattern-meta">
+              <span>Setup: <strong>~30 minutes</strong></span>
+              <span>Latency: <strong>1–5 min batches</strong></span>
+              <span>Best for: <strong>existing Splunk customers</strong></span>
+            </div>
+          </div>
+          <div class="pc-chevron">⌄</div>
         </div>
-        <p>DB Connect queries Magertron's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
-        <ol>
-          <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
-          <li>Add a Postgres identity using a read-only database user we provision</li>
-          <li>Create a Database Input using the rising-column query template we ship with the integration pack</li>
-          <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target an index of your choice (we recommend a dedicated index like <code>mcp_audit</code>)</li>
-        </ol>
-        <p>The exact query template, column reference, and indexed-extraction config are part of the design-partner onboarding.</p>
+        <div class="pc-body">
+          <p>DB Connect queries Magertron's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
+          <ol>
+            <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
+            <li>Add a Postgres identity using a read-only database user we provision</li>
+            <li>Create a Database Input using the rising-column query template we ship with the integration pack</li>
+            <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target an index of your choice (we recommend a dedicated index like <code>mcp_audit</code>)</li>
+          </ol>
+          <p>The exact query template, column reference, and indexed-extraction config are part of the design-partner onboarding.</p>
+        </div>
       </div>
 
-      <div class="pattern-card">
-        <h3>Pattern B — Universal Forwarder + Fluent Bit DaemonSet</h3>
-        <div class="pattern-meta">
-          <span>Setup: <strong>~1 hour</strong></span>
-          <span>Latency: <strong>real-time</strong></span>
-          <span>Best for: <strong>Kubernetes-native observability</strong></span>
+      <div class="pattern-card collapsible" data-open="false" onclick="togglePattern(this)">
+        <div class="pc-header">
+          <div class="pc-header-text">
+            <h3>Pattern B — Universal Forwarder + Fluent Bit DaemonSet</h3>
+            <div class="pattern-meta">
+              <span>Setup: <strong>~1 hour</strong></span>
+              <span>Latency: <strong>real-time</strong></span>
+              <span>Best for: <strong>Kubernetes-native observability</strong></span>
+            </div>
+          </div>
+          <div class="pc-chevron">⌄</div>
         </div>
-        <p>Fluent Bit runs as a DaemonSet, tails the orchestrator's structured-JSON stdout (which mirrors the audit_events table), and forwards to a Splunk Universal Forwarder Service. The forwarder ships to your Splunk Cloud HEC endpoint.</p>
-        <pre>fluent-bit.conf
+        <div class="pc-body">
+          <p>Fluent Bit runs as a DaemonSet, tails the orchestrator's structured-JSON stdout (which mirrors the audit_events table), and forwards to a Splunk Universal Forwarder Service. The forwarder ships to your Splunk Cloud HEC endpoint.</p>
+          <pre>fluent-bit.conf
 
 [INPUT]
     Name              tail
@@ -246,16 +287,24 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     Port              8088
     Splunk_Token      ${HEC_TOKEN}
     Splunk_Send_Raw   On</pre>
+        </div>
       </div>
 
-      <div class="pattern-card">
-        <h3>Pattern C — Direct HEC push from Magertron (planned for v1.7)</h3>
-        <div class="pattern-meta">
-          <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
-          <span>Latency: <strong>real-time</strong></span>
-          <span>Best for: <strong>simple deploys without existing forwarder infra</strong></span>
+      <div class="pattern-card collapsible" data-open="false" onclick="togglePattern(this)">
+        <div class="pc-header">
+          <div class="pc-header-text">
+            <h3>Pattern C — Direct HEC push from Magertron (planned for v1.7)</h3>
+            <div class="pattern-meta">
+              <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
+              <span>Latency: <strong>real-time</strong></span>
+              <span>Best for: <strong>simple deploys without existing forwarder infra</strong></span>
+            </div>
+          </div>
+          <div class="pc-chevron">⌄</div>
         </div>
-        <p>Native HEC client baked into the orchestrator. Configure with <code>siem.provider: splunk</code> and <code>siem.splunk.hecUrl</code> + a token Secret. Roadmapped for v1.7 — design partners can have it earlier.</p>
+        <div class="pc-body">
+          <p>Native HEC client baked into the orchestrator. Configure with <code>siem.provider: splunk</code> and <code>siem.splunk.hecUrl</code> + a token Secret. Roadmapped for v1.7 — design partners can have it earlier.</p>
+        </div>
       </div>
     </div>
 
@@ -477,6 +526,15 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
   });
 });
+
+// Collapsible pattern cards (Splunk tab). Click anywhere on the card to
+// toggle data-open; CSS handles show/hide and chevron rotation. Cards
+// default to closed so the tab opens compact and the reader expands the
+// pattern they care about.
+function togglePattern(card) {
+  const isOpen = card.getAttribute('data-open') === 'true';
+  card.setAttribute('data-open', isOpen ? 'false' : 'true');
+}
 </script>
 </body>
 </html>
