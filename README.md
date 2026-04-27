@@ -19,6 +19,7 @@ Most MCP platforms are SaaS-first, single-purpose, or tied to a specific cloud. 
 - **Runs in your cluster, not ours.** No data leaves your perimeter. Self-hosted on any Kubernetes 1.25+.
 - **Language-agnostic.** Any MCP server image — Python, TypeScript, Go, Java. We don't care how you built it.
 - **Full lifecycle.** Deploy, registry, gateway, governance, observability — all in one Helm chart.
+- **MCP server registry built in.** Central catalog of every MCP server in your organization. Most MCP platforms don't have a registry at all — Magertron does, and it runs in your cluster.
 - **Truly free up to 20 servers.** Apache 2.0, no signup, no credit card, no time limit.
 - **OCSF-aligned audit schema** for SIEM integration (Splunk, Elastic, Datadog, Chronicle).
 
