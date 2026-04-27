@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MCP Orchestrator — Magertron</title>
-<meta name="description" content="Deploy, govern, secure, and manage MCP servers at enterprise scale. Kubernetes-native control plane for Model Context Protocol with SSO and SCIM.">
+<meta name="description" content="The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster. Any language, any image. OSS Free up to 20 servers — no signup, no credit card.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -351,11 +351,20 @@ footer .links a:hover { color: var(--text-secondary); }
       <span class="dot"></span>
       Now available — v1.6.0
     </div>
-    <h1>The control plane<br>for <em>MCP servers</em></h1>
-    <p>Deploy, govern, secure, and manage Model Context Protocol servers across your Kubernetes infrastructure. Enterprise-grade security, multi-tenant isolation, and full lifecycle management.</p>
+    <h1>The Kubernetes-native<br>MCP <em>control plane</em></h1>
+    <p>Deploy, govern, and observe MCP servers in your own cluster. Any language, any image. Full lifecycle from a single Helm chart. OSS Free up to 20 servers — no signup, no credit card.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
       <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
+    </div>
+
+    <!-- 5-minute install snippet — visible above the fold for HN/listicle visitors
+         who want to see "can I try this in 5 minutes?" answered immediately. -->
+    <div style="max-width: 620px; margin: 32px auto 0; text-align: left;">
+      <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; text-align: center;">Install in 5 minutes</div>
+      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> helm repo add magertron https://magertron.com/charts
+<span style="color: var(--text-secondary);">$</span> helm repo update
+<span style="color: var(--text-secondary);">$</span> helm install magertron magertron/orchestrator</pre>
     </div>
 
     <!-- Main dashboard screenshot -->
@@ -416,8 +425,8 @@ footer .links a:hover { color: var(--text-secondary); }
 <section class="features" id="features">
   <div class="container">
     <div class="section-label">Capabilities</div>
-    <div class="section-title">Everything you need to<br>run MCP at scale</div>
-    <div class="section-desc">From a single server to hundreds across teams — one control plane manages it all.</div>
+    <div class="section-title">The full MCP lifecycle —<br>in your Kubernetes cluster</div>
+    <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Apache 2.0. Most platforms cover one or two of these. Magertron covers all five.</div>
 
     <div class="feature-grid">
       <div class="feature-card">
@@ -647,6 +656,7 @@ footer .links a:hover { color: var(--text-secondary); }
         <div class="pricing-tier">Open Source</div>
         <div class="pricing-name">Free</div>
         <div class="pricing-price">Free forever · Apache 2.0</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 20 MCP servers · No signup · No credit card</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Deploy and manage MCP servers</li>

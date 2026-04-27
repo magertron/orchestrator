@@ -575,10 +575,16 @@ footer p { font-size: 13px; color: var(--text-tertiary); }
       </div>
     </div>
 
-    <!-- CTA -->
+    <!-- CTA — closes high-intent security readers with the positioning that
+         matches the rest of the site, plus the Helm install command so a
+         security architect who's read the whole page can stand it up
+         immediately rather than scheduling a demo first. -->
     <div class="page-cta">
-      <h3>Ready to govern MCP traffic in your enterprise?</h3>
-      <p>Talk to us about your network architecture and we'll walk you through the full deployment model.</p>
+      <h3>Close these gaps in your own Kubernetes cluster.</h3>
+      <p>Magertron runs in your cluster, not ours. No data leaves your perimeter. OSS Free up to 20 servers — no signup, no credit card. Try it in 5 minutes.</p>
+      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 20px auto; max-width: 580px; text-align: left; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> helm repo add magertron https://magertron.com/charts
+<span style="color: var(--text-secondary);">$</span> helm repo update
+<span style="color: var(--text-secondary);">$</span> helm install magertron magertron/orchestrator</pre>
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
       <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
     </div>
