@@ -656,7 +656,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <ul>
           <li><a href="security.html">Security</a></li>
           <li><a href="https://github.com/curtismager20/magertron-mcpm#readme" target="_blank">Documentation</a></li>
-          <li><a href="https://github.com/curtismager20/magertron-mcpm/releases" target="_blank">Releases</a></li>
           <li><a href="#" onclick="openDemoModal(event)">Schedule a demo</a></li>
         </ul>
       </div>
@@ -722,7 +721,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Tell us about your use case</label>
       <textarea id="demo-message" placeholder="How many MCP servers are you planning to deploy?" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;min-height:80px;resize:vertical;font-family:inherit;"></textarea>
     </div>
-    <button onclick="submitDemoForm()" style="width:100%;padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Send request →</button>
+    <button id="demo-submit" onclick="submitDemoForm()" style="width:100%;padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Send request →</button>
   </div>
 </div>
 
@@ -764,10 +763,44 @@ function submitDemoForm() {
   const tier=document.getElementById('demo-tier').value;
   const message=document.getElementById('demo-message').value.trim();
   if(!fname||!email){alert('Please enter your name and email.');return;}
-  const subject=encodeURIComponent(`Demo Request — ${company||fname} (${tier})`);
-  const body=encodeURIComponent(`Name: ${fname} ${lname}\nEmail: ${email}\nCompany: ${company}\nInterested in: ${tier}\n\nMessage:\n${message}`);
-  window.location.href=`mailto:sales@magertron.com?subject=${subject}&body=${body}`;
-  closeDemoModal();
+
+  // Submit to Formspree (matches index.html). Replaces the previous mailto:
+  // approach which lost ~50% of leads on webmail-only browsers.
+  const btn=document.getElementById('demo-submit');
+  if(btn){btn.disabled=true;btn.textContent='Sending\u2026';}
+
+  fetch('https://formspree.io/f/mbdqeejk',{
+    method:'POST',
+    headers:{'Accept':'application/json','Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:`${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject:`Demo Request — ${company||fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r=>{
+    if(!r.ok)throw new Error('Submission failed');
+    const modal=document.getElementById('demoModal');
+    if(modal){
+      const card=modal.querySelector('div[style*="background:#0c1018"]');
+      if(card){
+        card.innerHTML=`
+          <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;">\u2715</button>
+          <h3 style="font-family:var(--serif);font-weight:700;font-size:24px;margin-bottom:12px;">Thanks — we'll be in touch.</h3>
+          <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">
+            Your message is on its way. Expect a reply within one business day. In the meantime, browse the source on <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" style="color:var(--border-accent);">GitHub</a>.
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err=>{
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if(btn){btn.disabled=false;btn.textContent='Send request \u2192';}
+  });
 }
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeDemoModal(); });
 </script>

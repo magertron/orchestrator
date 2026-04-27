@@ -806,7 +806,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <ul>
           <li><a href="security.html">Security</a></li>
           <li><a href="https://github.com/curtismager20/magertron-mcpm#readme" target="_blank">Documentation</a></li>
-          <li><a href="https://github.com/curtismager20/magertron-mcpm/releases" target="_blank">Releases</a></li>
           <li><a href="#" onclick="openDemoModal(event)">Schedule a demo</a></li>
         </ul>
       </div>
@@ -872,7 +871,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <label>Tell us about your use case</label>
       <textarea id="demo-message" placeholder="How many MCP servers are you planning to deploy? What's your team size?"></textarea>
     </div>
-    <button class="modal-submit" onclick="submitDemoForm()">Send request →</button>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send request →</button>
   </div>
 </div>
 
@@ -902,13 +901,49 @@ function submitDemoForm() {
     return;
   }
 
-  const subject = encodeURIComponent(`Demo Request — ${company || fname} (${tier})`);
-  const body = encodeURIComponent(
-    `Name: ${fname} ${lname}\nEmail: ${email}\nCompany: ${company}\nInterested in: ${tier}\n\nMessage:\n${message}`
-  );
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
-  window.location.href = `mailto:sales@magertron.com?subject=${subject}&body=${body}`;
-  closeDemoModal();
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Thanks — we'll be in touch.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            Your message is on its way to our team. Expect a reply within one business day.
+            In the meantime, you can <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">helm install magertron magertron/orchestrator</code>.
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
 </script>
