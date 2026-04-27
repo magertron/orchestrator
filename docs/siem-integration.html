@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIEM Integration — Magertron</title>
-<meta name="description" content="Forwarding Magertron audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
+<title>SIEM Integration — MCP Orchestrator | Magertron</title>
+<meta name="description" content="Forwarding MCP Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -195,7 +195,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="page-badge">✓ Validated against Splunk Cloud and Datadog</div>
     <h1>SIEM Integration</h1>
-    <p>Magertron emits OCSF-aligned audit events designed for SIEM ingestion. Forward them to Splunk, Elastic, Datadog, or Chronicle using the integration pattern that fits your existing observability stack.</p>
+    <p>MCP Orchestrator emits OCSF-aligned audit events designed for SIEM ingestion. Forward them to Splunk, Elastic, Datadog, or Chronicle using the integration pattern that fits your existing observability stack.</p>
   </div>
 </section>
 
@@ -209,13 +209,13 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <h2>The audit event schema</h2>
 
-    <p>Magertron emits events conforming to the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> — the cross-vendor standard adopted by AWS, Splunk, Sumo Logic, IBM QRadar, and others. Your SIEM almost certainly already understands it.</p>
+    <p>MCP Orchestrator emits events conforming to the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> — the cross-vendor standard adopted by AWS, Splunk, Sumo Logic, IBM QRadar, and others. Your SIEM almost certainly already understands it.</p>
 
     <p>Events split into two planes — admin (orchestrator REST actions) and caller (per-tool authorization decisions on MCP traffic) — sharing the same OCSF base for unified ingestion. Full schema and integration pack are part of <a href="#" onclick="openDemoModal(event)">design-partner onboarding</a>.</p>
 
-    <h2>Why Magertron doesn't push directly to your SIEM</h2>
+    <h2>Why MCP Orchestrator doesn't push directly to your SIEM</h2>
 
-    <p>Enterprises run a uniform forwarder layer across all applications — Splunk Universal Forwarder, Fluent Bit, OpenTelemetry Collector. Embedding a SIEM client in the orchestrator would bypass that. Magertron emits structured audit events; your existing forwarder picks them up like any other application's.</p>
+    <p>Enterprises run a uniform forwarder layer across all applications — Splunk Universal Forwarder, Fluent Bit, OpenTelemetry Collector. Embedding a SIEM client in the orchestrator would bypass that. MCP Orchestrator emits structured audit events; your existing forwarder picks them up like any other application's.</p>
 
     <h2>Integration patterns</h2>
 
@@ -242,7 +242,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <div class="pc-chevron">⌄</div>
         </div>
         <div class="pc-body">
-          <p>DB Connect queries Magertron's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
+          <p>DB Connect queries MCP Orchestrator's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
           <ol>
             <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
             <li>Add a Postgres identity using a read-only database user we provision</li>
@@ -293,7 +293,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="pattern-card collapsible" data-open="false" onclick="togglePattern(this)">
         <div class="pc-header">
           <div class="pc-header-text">
-            <h3>Pattern C — Direct HEC push from Magertron (planned for v1.7)</h3>
+            <h3>Pattern C — Direct HEC push from MCP Orchestrator (planned for v1.7)</h3>
             <div class="pattern-meta">
               <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
               <span>Latency: <strong>real-time</strong></span>
@@ -340,13 +340,13 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <span>Latency: <strong>real-time</strong></span>
           <span>Best for: <strong>Google Cloud security teams</strong></span>
         </div>
-        <p>Chronicle's recent OCSF-native parsers consume Magertron events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log stream or Postgres replica.</p>
+        <p>Chronicle's recent OCSF-native parsers consume MCP Orchestrator events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log stream or Postgres replica.</p>
       </div>
     </div>
 
     <h2>Common questions</h2>
 
-    <h4>Does Magertron support syslog for older SIEMs?</h4>
+    <h4>Does MCP Orchestrator support syslog for older SIEMs?</h4>
     <p>Not natively. QRadar, ArcSight, or LogRhythm shops use a Fluent Bit or Vector intermediary to emit RFC 5424 syslog from the OCSF JSON.</p>
 
     <h4>What event volume should I expect?</h4>
