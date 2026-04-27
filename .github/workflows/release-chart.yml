@@ -1,0 +1,87 @@
+name: Release Helm Chart
+
+# Triggers whenever helm/orchestrator/Chart.yaml changes on main — so bumping
+# the chart version is the only edit needed to ship a release. The workflow
+# packages the chart, regenerates the Helm-repo index, and pushes the
+# resulting docs/charts/ tree back to the repo. GitHub Pages serves it from
+# magertron.com/charts within ~1 minute of the push completing.
+#
+# Manual trigger (workflow_dispatch) is kept so you can re-run the workflow
+# without bumping the version — useful if you need to recover from a bad
+# index or test workflow changes themselves.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'helm/orchestrator/Chart.yaml'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Read chart version
+        id: chart
+        run: |
+          VERSION=$(grep '^version:' helm/orchestrator/Chart.yaml | awk '{print $2}' | tr -d '"')
+          APP_VERSION=$(grep '^appVersion:' helm/orchestrator/Chart.yaml | awk '{print $2}' | tr -d '"')
+          echo "version=$VERSION"         >> "$GITHUB_OUTPUT"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Chart version detected: $VERSION (appVersion $APP_VERSION)"
+
+      - name: Package chart
+        run: |
+          mkdir -p docs/charts
+          helm package helm/orchestrator -d docs/charts/
+
+      - name: Regenerate Helm repo index
+        # --merge keeps history of older versions in the index so customers
+        # pinned to a specific chart version can still install it.
+        run: |
+          helm repo index docs/charts/ \
+            --url https://magertron.com/charts \
+            --merge docs/charts/index.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/charts/
+
+          # Skip the commit if nothing changed — happens when the workflow
+          # is manually re-run without a chart version bump.
+          if git diff --cached --quiet; then
+            echo "No chart changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chart: publish v${{ steps.chart.outputs.version }} (appVersion ${{ steps.chart.outputs.app_version }})"
+          git push
+
+      - name: Summary
+        run: |
+          echo "### Helm chart published" >> "$GITHUB_STEP_SUMMARY"
+          echo ""                          >> "$GITHUB_STEP_SUMMARY"
+          echo "- Chart version: \`${{ steps.chart.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- App version:   \`${{ steps.chart.outputs.app_version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repo URL:      https://magertron.com/charts" >> "$GITHUB_STEP_SUMMARY"
+          echo ""                          >> "$GITHUB_STEP_SUMMARY"
+          echo "Install:"                  >> "$GITHUB_STEP_SUMMARY"
+          echo '```bash'                   >> "$GITHUB_STEP_SUMMARY"
+          echo "helm repo add magertron https://magertron.com/charts" >> "$GITHUB_STEP_SUMMARY"
+          echo "helm repo update"          >> "$GITHUB_STEP_SUMMARY"
+          echo "helm install magertron magertron/orchestrator" >> "$GITHUB_STEP_SUMMARY"
+          echo '```'                       >> "$GITHUB_STEP_SUMMARY"
