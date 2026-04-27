@@ -176,35 +176,22 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <div class="validated-banner">
       <span class="icon">✓</span>
-      <p><strong>Validated end-to-end with Splunk Cloud and Datadog.</strong> Audit events ingest with OCSF fields auto-extracted in both platforms. The OCSF specification is supported by every major SIEM (Elastic, Chronicle, Sumo, IBM QRadar) — same events, same schema, same integration shape.</p>
+      <p><strong>Validated end-to-end with Splunk Cloud and Datadog.</strong> OCSF fields auto-extract in both. Same schema parses cleanly into any OCSF-compliant SIEM.</p>
     </div>
 
     <h2>The audit event schema</h2>
 
-    <p>Magertron writes every audit event to its Postgres database (table <code>audit_events</code>) using the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> column layout. OCSF is the cross-vendor standard adopted by AWS Security Hub, Splunk, Sumo Logic, IBM QRadar, and many others — meaning your SIEM almost certainly already understands it.</p>
+    <p>Magertron emits events conforming to the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> — the cross-vendor standard adopted by AWS, Splunk, Sumo Logic, IBM QRadar, and others. Your SIEM almost certainly already understands it.</p>
 
-    <p>Events follow the OCSF API Activity class (<code>class_uid</code> 6003) and include the standard OCSF base — actor identity, source attribution (IP, user-agent, request ID), severity and outcome, plus correlation identifiers. Magertron-specific context layers on top via OCSF's overflow object.</p>
-
-    <p>The schema separates audit emission into two planes:</p>
-
-    <ul>
-      <li><strong>Admin-plane events</strong> — orchestrator REST API actions (deploys, role changes, governance changes, license operations).</li>
-      <li><strong>Caller-plane events</strong> — per-tool ext_authz authorization decisions when MCP clients invoke tools.</li>
-    </ul>
-
-    <p>Both planes share the same OCSF base, so a single SIEM ingestion path covers all audit data. SIEM teams typically build separate dashboards per plane — admin-plane for operator-driven changes, caller-plane for runtime tool invocations.</p>
-
-    <p>Full column reference and example events are part of the <a href="#" onclick="openDemoModal(event)">design-partner onboarding</a>.</p>
+    <p>Events split into two planes — admin (orchestrator REST actions) and caller (per-tool authorization decisions on MCP traffic) — sharing the same OCSF base for unified ingestion. Full schema and integration pack are part of <a href="#" onclick="openDemoModal(event)">design-partner onboarding</a>.</p>
 
     <h2>Why Magertron doesn't push directly to your SIEM</h2>
 
-    <p>Most enterprise customers run a uniform observability strategy across all their applications — typically a forwarder layer (Splunk Universal Forwarder, Fluent Bit, OpenTelemetry Collector) that ships logs to the SIEM with consistent enrichment, redaction, and rate limiting. Embedding a SIEM-specific HTTP client in the orchestrator would bypass that layer and create a parallel ingestion path that operations teams have to manage separately.</p>
-
-    <p>Magertron emits structured audit events. Your existing forwarder picks them up the same way it picks up logs from every other application in your cluster.</p>
+    <p>Enterprises run a uniform forwarder layer across all applications — Splunk Universal Forwarder, Fluent Bit, OpenTelemetry Collector. Embedding a SIEM client in the orchestrator would bypass that. Magertron emits structured audit events; your existing forwarder picks them up like any other application's.</p>
 
     <h2>Integration patterns</h2>
 
-    <p>Choose the SIEM you're already running. Each tab covers the recommended integration shapes for that platform — most start with a forwarder picking up structured audit events, ship them to your existing SIEM stack, and let your security team's existing dashboards and alerts do the rest.</p>
+    <p>Pick the SIEM you're already running.</p>
 
     <div class="tab-nav" role="tablist" aria-label="SIEM integration patterns">
       <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab="splunk">Splunk</button>
@@ -310,21 +297,15 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <h2>Common questions</h2>
 
-    <h4>Does Magertron support syslog forwarding for older SIEMs?</h4>
-    <p>Not natively today. Customers running QRadar, ArcSight, or LogRhythm typically use a Fluent Bit or Vector intermediary configured to emit RFC 5424 syslog from the OCSF JSON.</p>
+    <h4>Does Magertron support syslog for older SIEMs?</h4>
+    <p>Not natively. QRadar, ArcSight, or LogRhythm shops use a Fluent Bit or Vector intermediary to emit RFC 5424 syslog from the OCSF JSON.</p>
 
-    <h4>Are caller-plane (per-tool-call) events emitted with the same schema?</h4>
-    <p>Yes. Audit events distinguish admin-plane (orchestrator REST: deploys, role changes) from caller-plane (per-tool ext_authz decisions on MCP traffic) using a dedicated discriminator field. Both share the OCSF base schema. SIEM teams typically build separate dashboards per plane.</p>
-
-    <h4>How do I correlate audit events with cluster-level activity?</h4>
-    <p>Every event includes a stable cluster identifier and an orchestrator-assigned request correlation ID. The cluster identifier is consistent across orchestrator restarts; the request ID correlates the same logical operation across multiple log lines. Specific field names are documented in the design-partner onboarding pack.</p>
-
-    <h4>What's the event volume to expect?</h4>
-    <p>Roughly 10–50 admin-plane events per active operator per day (deploys, scales, role changes). Caller-plane events scale with MCP traffic — a 10-server cluster handling ~1k tool calls/day produces ~1k caller events. SIEM ingestion costs are predictable; storage is the dominant variable.</p>
+    <h4>What event volume should I expect?</h4>
+    <p>Admin-plane: 10–50 events per operator per day. Caller-plane scales with MCP traffic — roughly one event per tool invocation. A 10-server cluster handling 1k tool calls/day produces ~1k caller events.</p>
 
     <div class="page-cta">
       <h3>Need help wiring up your SIEM?</h3>
-      <p>Send us your stack — Splunk, Elastic, Datadog, Chronicle, or anything else — and we'll send back a tested integration config. Design partners get priority on roadmapped features like native HEC push.</p>
+      <p>Send us your stack — we'll send back a tested integration config.</p>
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
       <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
     </div>
