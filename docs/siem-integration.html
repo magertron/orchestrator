@@ -129,7 +129,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 <section class="page-hero">
   <div class="container">
-    <div class="page-badge">✓ Validated against Splunk Cloud</div>
+    <div class="page-badge">✓ Validated against Splunk Cloud and Datadog</div>
     <h1>SIEM Integration</h1>
     <p>Magertron emits OCSF-aligned audit events designed for SIEM ingestion. Forward them to Splunk, Elastic, Datadog, or Chronicle using the integration pattern that fits your existing observability stack.</p>
   </div>
@@ -140,35 +140,25 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <div class="validated-banner">
       <span class="icon">✓</span>
-      <p><strong>Validated end-to-end with Splunk Cloud.</strong> Audit events ingest through HEC into a custom <code>mcp:audit:ocsf</code> sourcetype with all OCSF fields auto-extracted (<code>class_uid</code>, <code>activity_id</code>, <code>actor_email</code>, <code>plane</code>, etc.).</p>
+      <p><strong>Validated end-to-end with Splunk Cloud and Datadog.</strong> Audit events ingest with OCSF fields auto-extracted in both platforms. The OCSF specification is supported by every major SIEM (Elastic, Chronicle, Sumo, IBM QRadar) — same events, same schema, same integration shape.</p>
     </div>
 
     <h2>The audit event schema</h2>
 
     <p>Magertron writes every audit event to its Postgres database (table <code>audit_events</code>) using the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> column layout. OCSF is the cross-vendor standard adopted by AWS Security Hub, Splunk, Sumo Logic, IBM QRadar, and many others — meaning your SIEM almost certainly already understands it.</p>
 
-    <div class="schema-box">
-      <h4>OCSF columns emitted on every event</h4>
-      <table>
-        <tr><td>class_uid</td><td>OCSF event class (6003 = API Activity for orchestrator events)</td></tr>
-        <tr><td>activity_id</td><td>Action taken (1=Create, 2=Read, 3=Update, 4=Delete)</td></tr>
-        <tr><td>severity_id</td><td>1=Informational, 2=Low, 3=Medium, 4=High, 5=Critical</td></tr>
-        <tr><td>status_id</td><td>1=Success, 2=Failure</td></tr>
-        <tr><td>actor_email</td><td>Authenticated user identity</td></tr>
-        <tr><td>actor_idp</td><td>Identity provider (oidc, saml, local)</td></tr>
-        <tr><td>actor_session_id</td><td>Session correlation identifier</td></tr>
-        <tr><td>actor_roles</td><td>Effective RBAC roles at time of action</td></tr>
-        <tr><td>src_ip</td><td>Caller IP address</td></tr>
-        <tr><td>src_user_agent</td><td>Caller's user-agent (e.g. mcpctl/1.6.0)</td></tr>
-        <tr><td>request_id</td><td>End-to-end request correlation ID</td></tr>
-        <tr><td>tenant</td><td>Multi-tenant boundary (Enterprise tier)</td></tr>
-        <tr><td>cluster_uid</td><td>Source cluster identifier (kube-system namespace UID)</td></tr>
-        <tr><td>event_uid</td><td>Globally-unique event ID for deduplication</td></tr>
-        <tr><td>plane</td><td><code>admin</code> (REST API events) or <code>caller</code> (per-tool ext_authz decisions)</td></tr>
-      </table>
-    </div>
+    <p>Events follow the OCSF API Activity class (<code>class_uid</code> 6003) and include the standard OCSF base — actor identity, source attribution (IP, user-agent, request ID), severity and outcome, plus correlation identifiers. Magertron-specific context layers on top via OCSF's overflow object.</p>
 
-    <p>Magertron-specific fields layer on top of the OCSF base — <code>kind</code> (event subtype like <code>server.deploy</code>), <code>namespace</code>, <code>server</code>, <code>actor</code>, <code>result</code>. Those land in your SIEM's <code>unmapped</code> overflow object by default and become first-class fields once you add the <code>mcp:audit:ocsf</code> sourcetype configuration we ship with each integration.</p>
+    <p>The schema separates audit emission into two planes:</p>
+
+    <ul>
+      <li><strong>Admin-plane events</strong> — orchestrator REST API actions (deploys, role changes, governance changes, license operations).</li>
+      <li><strong>Caller-plane events</strong> — per-tool ext_authz authorization decisions when MCP clients invoke tools.</li>
+    </ul>
+
+    <p>Both planes share the same OCSF base, so a single SIEM ingestion path covers all audit data. SIEM teams typically build separate dashboards per plane — admin-plane for operator-driven changes, caller-plane for runtime tool invocations.</p>
+
+    <p>Full column reference and example events are part of the <a href="#" onclick="openDemoModal(event)">design-partner onboarding</a>.</p>
 
     <h2>Why Magertron doesn't push directly to your SIEM</h2>
 
@@ -187,13 +177,14 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <span>Latency: <strong>1–5 min batches</strong></span>
         <span>Best for: <strong>existing Splunk customers</strong></span>
       </div>
-      <p>DB Connect queries Magertron's <code>audit_events</code> table directly and ingests rows on a schedule. Highest fidelity — you get every column, with full OCSF semantics preserved.</p>
+      <p>DB Connect queries Magertron's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
       <ol>
         <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
-        <li>Add a Postgres identity using a read-only DB user scoped to <code>audit_events</code></li>
-        <li>Create a "Database Input" with the query <code>SELECT * FROM audit_events WHERE created_at &gt; ? ORDER BY created_at</code> using <code>created_at</code> as the rising column</li>
-        <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target the <code>mcp_audit</code> index</li>
+        <li>Add a Postgres identity using a read-only database user we provision</li>
+        <li>Create a Database Input using the rising-column query template we ship with the integration pack</li>
+        <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target an index of your choice (we recommend a dedicated index like <code>mcp_audit</code>)</li>
       </ol>
+      <p>The exact query template, column reference, and indexed-extraction config are part of the design-partner onboarding.</p>
     </div>
 
     <div class="pattern-card">
@@ -245,8 +236,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <span>Latency: <strong>real-time</strong></span>
         <span>Best for: <strong>Elastic Stack customers</strong></span>
       </div>
-      <p>Filebeat tails orchestrator container logs, applies an Elastic Common Schema (ECS) mapping that aligns with OCSF (most fields map 1-to-1), and ships to your Elasticsearch cluster.</p>
-      <p>The ECS-to-OCSF field mapping is roughly: <code>actor_email</code> → <code>user.email</code>, <code>src_ip</code> → <code>source.ip</code>, <code>activity_id</code> → <code>event.action</code>, <code>severity_id</code> → <code>event.severity</code>. We provide the full Elastic ingest pipeline configuration on request.</p>
+      <p>Filebeat tails orchestrator container logs, applies an Elastic Common Schema (ECS) ingest pipeline that maps OCSF fields onto their ECS equivalents (most map 1-to-1 since both standards converged on similar primitives), and ships to your Elasticsearch cluster. We provide the full ingest pipeline configuration on request.</p>
     </div>
 
     <h3>Datadog</h3>
@@ -279,10 +269,10 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <p>Not natively today. Customers running QRadar, ArcSight, or LogRhythm typically use a Fluent Bit or Vector intermediary configured to emit RFC 5424 syslog from the OCSF JSON.</p>
 
     <h4>Are caller-plane (per-tool-call) events emitted with the same schema?</h4>
-    <p>Yes. The <code>plane</code> column distinguishes <code>admin</code> events (orchestrator REST: deploys, role changes) from <code>caller</code> events (ext_authz decisions per tool invocation). Both share the OCSF base schema. SIEM teams typically build separate dashboards per plane.</p>
+    <p>Yes. Audit events distinguish admin-plane (orchestrator REST: deploys, role changes) from caller-plane (per-tool ext_authz decisions on MCP traffic) using a dedicated discriminator field. Both share the OCSF base schema. SIEM teams typically build separate dashboards per plane.</p>
 
     <h4>How do I correlate audit events with cluster-level activity?</h4>
-    <p>Every event includes <code>cluster_uid</code> (the kube-system namespace UID) and <code>request_id</code> (orchestrator-assigned). Cluster_uid is stable across orchestrator restarts; request_id correlates the same logical operation across multiple log lines.</p>
+    <p>Every event includes a stable cluster identifier and an orchestrator-assigned request correlation ID. The cluster identifier is consistent across orchestrator restarts; the request ID correlates the same logical operation across multiple log lines. Specific field names are documented in the design-partner onboarding pack.</p>
 
     <h4>What's the event volume to expect?</h4>
     <p>Roughly 10–50 admin-plane events per active operator per day (deploys, scales, role changes). Caller-plane events scale with MCP traffic — a 10-server cluster handling ~1k tool calls/day produces ~1k caller events. SIEM ingestion costs are predictable; storage is the dominant variable.</p>
