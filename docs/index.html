@@ -44,7 +44,8 @@ nav {
   border-bottom: 1px solid var(--border);
 }
 nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
-.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
 .nav-logo span { color: var(--accent-text); }
 .nav-links { display: flex; gap: 32px; align-items: center; }
 .nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
@@ -375,7 +376,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <!-- Nav -->
 <nav>
   <div class="container">
-    <div class="nav-logo"><span>▸</span> magertron</div>
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron</a>
     <div class="nav-links">
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
