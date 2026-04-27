@@ -813,7 +813,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
         </ul>
       </div>
 
@@ -829,7 +829,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="footer-bottom">
       <p>&copy; 2026 Magertron. All rights reserved.</p>
       <div class="links">
-        <a href="mailto:sales@magertron.com">Contact</a>
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
       </div>
     </div>
   </div>
@@ -839,8 +839,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
   <div class="modal">
     <button class="modal-close" onclick="closeDemoModal()">✕</button>
-    <h3>Schedule a Demo</h3>
-    <p>Tell us about your use case and we'll reach out within one business day.</p>
+    <h3 id="demo-modal-title">Schedule a Demo</h3>
+    <p id="demo-modal-subtitle">Tell us about your use case and we'll reach out within one business day.</p>
     <div class="form-row">
       <div class="form-group">
         <label>First name</label>
@@ -876,8 +876,22 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 </div>
 
 <script>
-function openDemoModal(e) {
+function openDemoModal(e, mode) {
   if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Schedule a Demo';
+    if (subtitle) subtitle.textContent = 'Tell us about your use case and we\u2019ll reach out within one business day.';
+  }
+
   document.getElementById('demoModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }

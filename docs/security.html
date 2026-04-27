@@ -663,7 +663,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
         </ul>
       </div>
 
@@ -679,7 +679,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="footer-bottom">
       <p>&copy; 2026 Magertron. All rights reserved.</p>
       <div class="links">
-        <a href="mailto:sales@magertron.com">Contact</a>
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
       </div>
     </div>
   </div>
@@ -689,8 +689,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <div class="modal-overlay" id="demoModal" onclick="if(event.target===this)closeDemoModal()">
   <div style="background:#0c1018;border:1px solid #1a2030;border-radius:16px;padding:40px;width:min(520px,95vw);max-height:90vh;overflow-y:auto;position:relative;animation:fadeUp 0.25s ease-out;">
     <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#8694a8;font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
-    <h3 style="font-size:22px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;">Schedule a Demo</h3>
-    <p style="font-size:14px;color:#8694a8;margin-bottom:28px;">Tell us about your use case and we'll reach out within one business day.</p>
+    <h3 id="demo-modal-title" style="font-size:22px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;">Schedule a Demo</h3>
+    <p id="demo-modal-subtitle" style="font-size:14px;color:#8694a8;margin-bottom:28px;">Tell us about your use case and we'll reach out within one business day.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">First name</label>
@@ -752,8 +752,22 @@ function toggleAcc(n) {
   }
 }
 
-// Demo modal
-function openDemoModal(e) { if(e) e.preventDefault(); document.getElementById('demoModal').classList.add('open'); document.body.style.overflow='hidden'; }
+// Demo modal — supports two entry-point modes. 'contact' from footer Contact
+// links shows "Contact us" framing; default shows "Schedule a Demo".
+function openDemoModal(e, mode) {
+  if(e) e.preventDefault();
+  const title=document.getElementById('demo-modal-title');
+  const subtitle=document.getElementById('demo-modal-subtitle');
+  if(mode==='contact'){
+    if(title)title.textContent='Contact us';
+    if(subtitle)subtitle.textContent='Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if(title)title.textContent='Schedule a Demo';
+    if(subtitle)subtitle.textContent='Tell us about your use case and we\u2019ll reach out within one business day.';
+  }
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
 function closeDemoModal() { document.getElementById('demoModal').classList.remove('open'); document.body.style.overflow=''; }
 function submitDemoForm() {
   const fname=document.getElementById('demo-fname').value.trim();
