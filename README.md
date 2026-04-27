@@ -1,10 +1,28 @@
 # MCP Platform Orchestrator
 
-**Deploy, route, scale, and govern [Model Context Protocol](https://modelcontextprotocol.io) servers on Kubernetes.**
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Helm Chart](https://img.shields.io/badge/helm-v1.6.0-326CE5?logo=helm&logoColor=white)](https://magertron.com/charts)
+[![Website](https://img.shields.io/badge/website-magertron.com-2563EB)](https://magertron.com)
+
+**The Kubernetes-native [MCP](https://modelcontextprotocol.io) control plane.** Deploy, govern, and observe MCP servers in your own cluster — any language, any container image. Full lifecycle from a single Helm chart. **Free up to 20 servers, no signup required.**
 
 This repository contains the Helm chart and installation documentation. The orchestrator software itself is distributed as a container image and runs under a commercial license for Pro and Enterprise tiers. The **Free Tier is available without a license** — no signup, no license file, no time limit.
 
 > **License note:** This repository (the Helm chart and these docs) is Apache 2.0. The orchestrator container image you pull via this chart is commercial software. Free Tier usage is always permitted without a license. See [Tiers & Licensing](#tiers--licensing) for details.
+
+---
+
+## Why Magertron?
+
+Most MCP platforms are SaaS-first, single-purpose, or tied to a specific cloud. Magertron is different:
+
+- **Runs in your cluster, not ours.** No data leaves your perimeter. Self-hosted on any Kubernetes 1.25+.
+- **Language-agnostic.** Any MCP server image — Python, TypeScript, Go, Java. We don't care how you built it.
+- **Full lifecycle.** Deploy, registry, gateway, governance, observability — all in one Helm chart.
+- **Truly free up to 20 servers.** Apache 2.0, no signup, no credit card, no time limit.
+- **OCSF-aligned audit schema** for SIEM integration (Splunk, Elastic, Datadog, Chronicle).
+
+If you're building MCP servers that wrap proprietary APIs, internal data, or sensitive services — running them on someone else's cloud isn't an option. Magertron is the Kubernetes-native alternative.
 
 ---
 
@@ -20,13 +38,13 @@ This repository contains the Helm chart and installation documentation. The orch
 
 ## Tiers & Licensing
 
-| Tier | License Required | Typical Use |
-| --- | --- | --- |
-| **Free** | No | Evaluation, small deployments, local dev |
-| **Pro** | Yes | Small teams, production workloads, CLI (`mcpctl`) |
-| **Enterprise** | Yes | Organizations needing SSO, SCIM, governance, and audit |
+| Tier | License Required | Limits | Typical Use |
+| --- | --- | --- | --- |
+| **Free** | No | Up to 20 MCP servers | Small teams, evaluation, local dev |
+| **Pro** | Yes | Unlimited servers, multiple namespaces, deployment history, CLI (`mcpctl`) | Small production teams |
+| **Enterprise** | Yes | Pro + SSO/SCIM, governance engine, custom RBAC, multi-tenant isolation, webhooks | Larger orgs, regulated industries |
 
-The platform **starts in Free Tier by default**. No license file is required to install and run. To unlock Pro or Enterprise features, email [licensing@magertron.com](mailto:licensing@magertron.com) — see [Licensed Install](#licensed-install-pro--enterprise).
+The platform **starts in Free Tier by default**. No license file is required to install and run — no signup, no credit card, no time limit. To unlock Pro or Enterprise features, email [licensing@magertron.com](mailto:licensing@magertron.com) — see [Licensed Install](#licensed-install-pro--enterprise).
 
 ---
 
