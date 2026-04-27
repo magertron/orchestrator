@@ -47,14 +47,6 @@ nav .container { max-width: 1200px; display: flex; justify-content: space-betwee
 .article p { font-size: 16px; color: var(--text-secondary); line-height: 1.85; margin-bottom: 18px; }
 .article p strong { color: var(--text); font-weight: 500; }
 
-.lineage-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px 32px; margin: 32px 0; }
-.lineage-card h3 { font-size: 14px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
-.lineage-list { list-style: none; padding: 0; margin: 0; }
-.lineage-list li { display: grid; grid-template-columns: 110px 1fr; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
-.lineage-list li:last-child { border-bottom: none; }
-.lineage-list .company { font-family: var(--mono); font-weight: 500; color: var(--text); font-size: 13px; }
-.lineage-list .role { color: var(--text-secondary); }
-
 .page-cta { background: linear-gradient(135deg,rgba(37,99,235,0.1),rgba(99,102,241,0.05)); border: 1px solid rgba(37,99,235,0.2); border-radius: 16px; padding: 48px; text-align: center; margin-top: 64px; }
 .page-cta h3 { font-family: var(--serif); font-weight: 700; font-size: 24px; letter-spacing: -0.03em; margin-bottom: 12px; }
 .page-cta p { font-size: 15px; color: var(--text-secondary); margin-bottom: 28px; }
@@ -83,7 +75,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
   .footer-brand { grid-column: 1 / -1; }
   .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
-  .lineage-list li { grid-template-columns: 1fr; gap: 4px; }
 }
 
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -108,7 +99,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section class="page-hero">
   <div class="container">
     <div class="page-badge">About Magertron</div>
-    <h1>Built by someone who has<br>seen this movie before.</h1>
+    <h1>History does<br>indeed repeat.</h1>
     <p>Magertron is a Florida-based startup building infrastructure for the Model Context Protocol era. Our first product, MCP Orchestrator, is a Kubernetes-native control plane for the next generation of enterprise integration.</p>
   </div>
 </section>
@@ -124,22 +115,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <p>Magertron is building the platform that <strong>should</strong> exist for MCP — Kubernetes-native, self-hosted, language-agnostic, OSS Free up to 20 servers. Run it in your own cluster. Your data never leaves your perimeter.</p>
 
-    <h2>Who's behind this</h2>
+    <h2>Leadership</h2>
 
-    <p>Magertron is led by <strong>Curtis Mager</strong>, who has spent 33 years building and selling enterprise middleware — the category that always sits between application teams who want to ship and operations teams who need control.</p>
+    <p>Magertron is led by <strong>Curtis Mager</strong>, who has spent 33 years in enterprise middleware — the category that always sits between application teams who want to ship and operations teams who need control. That work began at <strong>BEA Systems</strong> in the days of Java application servers, continued through <strong>Apigee</strong> as the industry figured out how to govern API traffic at scale, into <strong>Akana</strong> bringing API governance to regulated industries, then <strong>Curity</strong> for the OAuth and OpenID Connect identity layer, and most recently <strong>Tyk</strong> for the open-source API gateway era.</p>
 
-    <div class="lineage-card">
-      <h3>33 years of middleware lineage</h3>
-      <ul class="lineage-list">
-        <li><span class="company">BEA Systems</span><span class="role">Enterprise Java application servers — defined the playbook for middleware at scale</span></li>
-        <li><span class="company">Apigee</span><span class="role">Modern API management — the company that taught the industry how to govern API traffic</span></li>
-        <li><span class="company">Akana</span><span class="role">Enterprise API governance and policy — extending API management to regulated industries</span></li>
-        <li><span class="company">Curity</span><span class="role">OAuth and OpenID Connect at enterprise scale — the identity layer for modern APIs</span></li>
-        <li><span class="company">Tyk</span><span class="role">Open-source API gateway — most recently, building the bridge from monolith to mesh</span></li>
-      </ul>
-    </div>
-
-    <p>The throughline across these companies is the same shape: every wave of enterprise software needs a control plane between developers shipping fast and operators keeping the lights on. SOAP needed it. REST needed it. Now MCP needs it. Magertron is being built by someone who has lived through every prior wave and seen what works.</p>
+    <p>The throughline across these chapters is the same shape: every wave of enterprise software needs a control plane between developers shipping fast and operators keeping the lights on. SOAP needed it. REST needed it. Now MCP needs it. Magertron is being built by someone who has lived through every prior wave and seen what works.</p>
 
     <h2>Where we are today</h2>
 
