@@ -304,12 +304,54 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .cta p { font-size: 16px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; position: relative; }
 
 /* ── Footer ───────────────────────────────────────────────────────────── */
-footer { padding: 48px 0; border-top: 1px solid var(--border); }
-footer .container { display: flex; justify-content: space-between; align-items: center; }
-footer p { font-size: 13px; color: var(--text-tertiary); }
-footer .links { display: flex; gap: 24px; }
-footer .links a { font-size: 13px; color: var(--text-tertiary); }
-footer .links a:hover { color: var(--text-secondary); }
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   Multi-column layout: brand block on the left (logo + tagline), navigation
+   columns on the right (Products / Resources / Company / Social). On mobile
+   the brand block stacks above the columns. The bottom strip carries the
+   copyright and a slim set of utility links. */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  color: var(--text-primary);
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand p {
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 13px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--text-primary); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
 
 /* ── Animations ───────────────────────────────────────────────────────── */
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -360,7 +402,7 @@ footer .links a:hover { color: var(--text-secondary); }
 
     <!-- 5-minute install snippet — visible above the fold for HN/listicle visitors
          who want to see "can I try this in 5 minutes?" answered immediately. -->
-    <div style="max-width: 620px; margin: 32px auto 0; text-align: left;">
+    <div id="install" style="max-width: 620px; margin: 32px auto 0; text-align: left;">
       <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; text-align: center;">Install in 5 minutes</div>
       <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> helm repo add magertron https://magertron.com/charts
 <span style="color: var(--text-secondary);">$</span> helm repo update
@@ -743,12 +785,53 @@ footer .links a:hover { color: var(--text-secondary); }
 <!-- Footer -->
 <footer>
   <div class="container">
-    <p>&copy; 2026 Magertron. All rights reserved.</p>
-    <div class="links">
-      <a href="https://github.com/curtismager20/magertron-mcpm">GitHub</a>
-      <a href="mailto:sales@magertron.com">Contact</a>
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> magertron</div>
+        <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm/releases" target="_blank">Releases</a></li>
+          <li><a href="#" onclick="openDemoModal(event)">Schedule a demo</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="mailto:sales@magertron.com">Contact</a>
+      </div>
     </div>
   </div>
 </footer>
