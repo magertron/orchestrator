@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIEM Integration — Magertron</title>
+<meta name="description" content="Forwarding Magertron audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #06080c; --bg-card: #0c1018; --bg-card-hover: #111820;
+  --border: #1a2030; --border-accent: #2563eb;
+  --text: #e8ecf4; --text-secondary: #8694a8; --text-tertiary: #4a5568;
+  --accent: #2563eb; --accent-glow: rgba(37,99,235,0.15); --accent-text: #60a5fa;
+  --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 900px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(6,8,12,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+nav .container { max-width: 1200px; display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo span { color: var(--accent-text); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta { background: var(--accent) !important; color: white !important; padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; }
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* Hero — green tint to differentiate from red security page */
+.page-hero { padding: 100px 0 32px; text-align: center; position: relative; overflow: hidden; }
+.page-hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(34,197,94,0.08) 0%, transparent 70%); pointer-events: none; }
+.page-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px; border: 1px solid rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); font-size: 13px; color: #86efac; margin-bottom: 24px; }
+.page-hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(36px,5vw,56px); line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 20px; }
+.page-hero p { font-size: 18px; color: var(--text-secondary); max-width: 680px; margin: 0 auto; line-height: 1.7; }
+
+/* Article */
+.article { padding: 32px 0 96px; }
+.article h2 { font-family: var(--serif); font-weight: 700; font-size: 28px; letter-spacing: -0.03em; margin: 56px 0 16px; }
+.article h3 { font-family: var(--serif); font-weight: 600; font-size: 20px; margin: 32px 0 12px; }
+.article h4 { font-size: 14px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin: 24px 0 12px; }
+.article p { font-size: 15px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; }
+.article ul { margin: 12px 0 24px 24px; }
+.article li { font-size: 15px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 8px; }
+.article code { font-family: var(--mono); font-size: 13px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--text); }
+.article pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.7; margin: 16px 0 24px; overflow-x: auto; color: var(--text); }
+.article strong { color: var(--text); font-weight: 500; }
+
+/* Schema box */
+.schema-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 24px 0 32px; }
+.schema-box h4 { margin-top: 0; }
+.schema-box table { width: 100%; font-size: 13px; }
+.schema-box td { padding: 6px 12px 6px 0; vertical-align: top; }
+.schema-box td:first-child { font-family: var(--mono); color: var(--accent-text); white-space: nowrap; }
+.schema-box td:last-child { color: var(--text-secondary); }
+
+/* Pattern card */
+.pattern-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 16px; }
+.pattern-card h3 { margin-top: 0; }
+.pattern-card .pattern-meta { display: flex; gap: 16px; margin-bottom: 16px; font-size: 12px; }
+.pattern-card .pattern-meta span { color: var(--text-tertiary); }
+.pattern-card .pattern-meta strong { color: var(--success); }
+
+/* Validated banner */
+.validated-banner { display: flex; align-items: center; gap: 16px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3); border-radius: 12px; padding: 20px 24px; margin: 32px 0; }
+.validated-banner .icon { color: var(--success); font-size: 20px; flex-shrink: 0; }
+.validated-banner p { margin: 0; font-size: 14px; color: var(--text); }
+
+/* CTA */
+.page-cta { background: linear-gradient(135deg,rgba(37,99,235,0.1),rgba(99,102,241,0.05)); border: 1px solid rgba(37,99,235,0.2); border-radius: 16px; padding: 48px; text-align: center; margin-top: 64px; }
+.page-cta h3 { font-family: var(--serif); font-weight: 700; font-size: 26px; letter-spacing: -0.03em; margin-bottom: 12px; }
+.page-cta p { font-size: 15px; color: var(--text-secondary); margin-bottom: 28px; }
+.btn-primary { display: inline-block; background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px; font-weight: 500; font-size: 14px; margin-right: 12px; }
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; }
+.btn-secondary { display: inline-block; background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px; font-weight: 500; font-size: 14px; border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg-card); text-decoration: none; }
+
+/* Footer (matches index.html / security.html) */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 64px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-weight: 700; font-size: 20px; color: var(--text); }
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); font-weight: 500; margin-bottom: 14px; }
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid var(--border); }
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
+
+/* Demo modal (shared with index.html / security.html) */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="nav-logo"><span>▸</span> magertron</div>
+    <div class="nav-links">
+      <a href="index.html#features">Features</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="security.html">Security</a>
+      <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Schedule a Demo</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <div class="page-badge">✓ Validated against Splunk Cloud</div>
+    <h1>SIEM Integration</h1>
+    <p>Magertron emits OCSF-aligned audit events designed for SIEM ingestion. Forward them to Splunk, Elastic, Datadog, or Chronicle using the integration pattern that fits your existing observability stack.</p>
+  </div>
+</section>
+
+<article class="article">
+  <div class="container">
+
+    <div class="validated-banner">
+      <span class="icon">✓</span>
+      <p><strong>Validated end-to-end with Splunk Cloud.</strong> Audit events ingest through HEC into a custom <code>mcp:audit:ocsf</code> sourcetype with all OCSF fields auto-extracted (<code>class_uid</code>, <code>activity_id</code>, <code>actor_email</code>, <code>plane</code>, etc.).</p>
+    </div>
+
+    <h2>The audit event schema</h2>
+
+    <p>Magertron writes every audit event to its Postgres database (table <code>audit_events</code>) using the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> column layout. OCSF is the cross-vendor standard adopted by AWS Security Hub, Splunk, Sumo Logic, IBM QRadar, and many others — meaning your SIEM almost certainly already understands it.</p>
+
+    <div class="schema-box">
+      <h4>OCSF columns emitted on every event</h4>
+      <table>
+        <tr><td>class_uid</td><td>OCSF event class (6003 = API Activity for orchestrator events)</td></tr>
+        <tr><td>activity_id</td><td>Action taken (1=Create, 2=Read, 3=Update, 4=Delete)</td></tr>
+        <tr><td>severity_id</td><td>1=Informational, 2=Low, 3=Medium, 4=High, 5=Critical</td></tr>
+        <tr><td>status_id</td><td>1=Success, 2=Failure</td></tr>
+        <tr><td>actor_email</td><td>Authenticated user identity</td></tr>
+        <tr><td>actor_idp</td><td>Identity provider (oidc, saml, local)</td></tr>
+        <tr><td>actor_session_id</td><td>Session correlation identifier</td></tr>
+        <tr><td>actor_roles</td><td>Effective RBAC roles at time of action</td></tr>
+        <tr><td>src_ip</td><td>Caller IP address</td></tr>
+        <tr><td>src_user_agent</td><td>Caller's user-agent (e.g. mcpctl/1.6.0)</td></tr>
+        <tr><td>request_id</td><td>End-to-end request correlation ID</td></tr>
+        <tr><td>tenant</td><td>Multi-tenant boundary (Enterprise tier)</td></tr>
+        <tr><td>cluster_uid</td><td>Source cluster identifier (kube-system namespace UID)</td></tr>
+        <tr><td>event_uid</td><td>Globally-unique event ID for deduplication</td></tr>
+        <tr><td>plane</td><td><code>admin</code> (REST API events) or <code>caller</code> (per-tool ext_authz decisions)</td></tr>
+      </table>
+    </div>
+
+    <p>Magertron-specific fields layer on top of the OCSF base — <code>kind</code> (event subtype like <code>server.deploy</code>), <code>namespace</code>, <code>server</code>, <code>actor</code>, <code>result</code>. Those land in your SIEM's <code>unmapped</code> overflow object by default and become first-class fields once you add the <code>mcp:audit:ocsf</code> sourcetype configuration we ship with each integration.</p>
+
+    <h2>Why Magertron doesn't push directly to your SIEM</h2>
+
+    <p>Most enterprise customers run a uniform observability strategy across all their applications — typically a forwarder layer (Splunk Universal Forwarder, Fluent Bit, OpenTelemetry Collector) that ships logs to the SIEM with consistent enrichment, redaction, and rate limiting. Embedding a SIEM-specific HTTP client in the orchestrator would bypass that layer and create a parallel ingestion path that operations teams have to manage separately.</p>
+
+    <p>Magertron emits structured audit events. Your existing forwarder picks them up the same way it picks up logs from every other application in your cluster.</p>
+
+    <h2>Integration patterns</h2>
+
+    <h3>Splunk</h3>
+
+    <div class="pattern-card">
+      <h3>Pattern A — Splunk DB Connect (recommended for Splunk shops)</h3>
+      <div class="pattern-meta">
+        <span>Setup: <strong>~30 minutes</strong></span>
+        <span>Latency: <strong>1–5 min batches</strong></span>
+        <span>Best for: <strong>existing Splunk customers</strong></span>
+      </div>
+      <p>DB Connect queries Magertron's <code>audit_events</code> table directly and ingests rows on a schedule. Highest fidelity — you get every column, with full OCSF semantics preserved.</p>
+      <ol>
+        <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
+        <li>Add a Postgres identity using a read-only DB user scoped to <code>audit_events</code></li>
+        <li>Create a "Database Input" with the query <code>SELECT * FROM audit_events WHERE created_at &gt; ? ORDER BY created_at</code> using <code>created_at</code> as the rising column</li>
+        <li>Set sourcetype to <code>mcp:audit:ocsf</code> and target the <code>mcp_audit</code> index</li>
+      </ol>
+    </div>
+
+    <div class="pattern-card">
+      <h3>Pattern B — Universal Forwarder + Fluent Bit DaemonSet</h3>
+      <div class="pattern-meta">
+        <span>Setup: <strong>~1 hour</strong></span>
+        <span>Latency: <strong>real-time</strong></span>
+        <span>Best for: <strong>Kubernetes-native observability</strong></span>
+      </div>
+      <p>Fluent Bit runs as a DaemonSet, tails the orchestrator's structured-JSON stdout (which mirrors the audit_events table), and forwards to a Splunk Universal Forwarder Service. The forwarder ships to your Splunk Cloud HEC endpoint.</p>
+      <pre>fluent-bit.conf
+
+[INPUT]
+    Name              tail
+    Path              /var/log/containers/mcp-orchestratord-*.log
+    Parser            json
+    Tag               mcp.audit
+
+[FILTER]
+    Name              grep
+    Match             mcp.audit
+    Regex             event_kind audit
+
+[OUTPUT]
+    Name              splunk
+    Match             mcp.audit
+    Host              splunk-uf.splunk.svc.cluster.local
+    Port              8088
+    Splunk_Token      ${HEC_TOKEN}
+    Splunk_Send_Raw   On</pre>
+    </div>
+
+    <div class="pattern-card">
+      <h3>Pattern C — Direct HEC push from Magertron (planned for v1.7)</h3>
+      <div class="pattern-meta">
+        <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
+        <span>Latency: <strong>real-time</strong></span>
+        <span>Best for: <strong>simple deploys without existing forwarder infra</strong></span>
+      </div>
+      <p>Native HEC client baked into the orchestrator. Configure with <code>siem.provider: splunk</code> and <code>siem.splunk.hecUrl</code> + a token Secret. Roadmapped for v1.7 — design partners can have it earlier.</p>
+    </div>
+
+    <h3>Elastic / OpenSearch</h3>
+
+    <div class="pattern-card">
+      <h3>Filebeat with the audit_events index template</h3>
+      <div class="pattern-meta">
+        <span>Setup: <strong>~45 minutes</strong></span>
+        <span>Latency: <strong>real-time</strong></span>
+        <span>Best for: <strong>Elastic Stack customers</strong></span>
+      </div>
+      <p>Filebeat tails orchestrator container logs, applies an Elastic Common Schema (ECS) mapping that aligns with OCSF (most fields map 1-to-1), and ships to your Elasticsearch cluster.</p>
+      <p>The ECS-to-OCSF field mapping is roughly: <code>actor_email</code> → <code>user.email</code>, <code>src_ip</code> → <code>source.ip</code>, <code>activity_id</code> → <code>event.action</code>, <code>severity_id</code> → <code>event.severity</code>. We provide the full Elastic ingest pipeline configuration on request.</p>
+    </div>
+
+    <h3>Datadog</h3>
+
+    <div class="pattern-card">
+      <h3>Datadog Agent with OCSF source</h3>
+      <div class="pattern-meta">
+        <span>Setup: <strong>~30 minutes</strong></span>
+        <span>Latency: <strong>real-time</strong></span>
+        <span>Best for: <strong>Datadog observability customers</strong></span>
+      </div>
+      <p>The Datadog Agent runs as a DaemonSet, autodiscovers the orchestrator pod, parses JSON logs, and ships to Datadog Logs. Tag with <code>service:mcp-orchestrator</code> and <code>source:ocsf</code> for proper Datadog Cloud SIEM rule application.</p>
+    </div>
+
+    <h3>Google Chronicle</h3>
+
+    <div class="pattern-card">
+      <h3>Chronicle Forwarder with OCSF parser</h3>
+      <div class="pattern-meta">
+        <span>Setup: <strong>~1 hour</strong></span>
+        <span>Latency: <strong>real-time</strong></span>
+        <span>Best for: <strong>Google Cloud security teams</strong></span>
+      </div>
+      <p>Chronicle's recent OCSF-native parsers consume Magertron events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log file or Postgres replica.</p>
+    </div>
+
+    <h2>Common questions</h2>
+
+    <h4>Does Magertron support syslog forwarding for older SIEMs?</h4>
+    <p>Not natively today. Customers running QRadar, ArcSight, or LogRhythm typically use a Fluent Bit or Vector intermediary configured to emit RFC 5424 syslog from the OCSF JSON.</p>
+
+    <h4>Are caller-plane (per-tool-call) events emitted with the same schema?</h4>
+    <p>Yes. The <code>plane</code> column distinguishes <code>admin</code> events (orchestrator REST: deploys, role changes) from <code>caller</code> events (ext_authz decisions per tool invocation). Both share the OCSF base schema. SIEM teams typically build separate dashboards per plane.</p>
+
+    <h4>How do I correlate audit events with cluster-level activity?</h4>
+    <p>Every event includes <code>cluster_uid</code> (the kube-system namespace UID) and <code>request_id</code> (orchestrator-assigned). Cluster_uid is stable across orchestrator restarts; request_id correlates the same logical operation across multiple log lines.</p>
+
+    <h4>What's the event volume to expect?</h4>
+    <p>Roughly 10–50 admin-plane events per active operator per day (deploys, scales, role changes). Caller-plane events scale with MCP traffic — a 10-server cluster handling ~1k tool calls/day produces ~1k caller events. SIEM ingestion costs are predictable; storage is the dominant variable.</p>
+
+    <div class="page-cta">
+      <h3>Need help wiring up your SIEM?</h3>
+      <p>Send us your stack — Splunk, Elastic, Datadog, Chronicle, or anything else — and we'll send back a tested integration config. Design partners get priority on roadmapped features like native HEC push.</p>
+      <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
+      <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
+    </div>
+
+  </div>
+</article>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> magertron</div>
+        <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#features">Features</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm#readme" target="_blank">Documentation</a></li>
+          <li><a href="#" onclick="openDemoModal(event)">Schedule a demo</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="demoModal" onclick="if(event.target===this)closeDemoModal()">
+  <div style="background:#0c1018;border:1px solid #1a2030;border-radius:16px;padding:40px;width:min(520px,95vw);max-height:90vh;overflow-y:auto;position:relative;">
+    <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;">✕</button>
+    <h3 id="demo-modal-title" style="font-size:22px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;">Schedule a Demo</h3>
+    <p id="demo-modal-subtitle" style="font-size:14px;color:#8694a8;margin-bottom:28px;">Tell us about your use case and we'll reach out within one business day.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" style="width:100%;background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 12px;color:#e8ecf4;font-size:14px;margin-top:4px;" />
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" style="width:100%;background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 12px;color:#e8ecf4;font-size:14px;margin-top:4px;" />
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" style="width:100%;background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 12px;color:#e8ecf4;font-size:14px;margin-top:4px;" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" style="width:100%;background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 12px;color:#e8ecf4;font-size:14px;margin-top:4px;" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Interested in</label>
+      <select id="demo-tier" style="width:100%;background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 12px;color:#e8ecf4;font-size:14px;margin-top:4px;">
+        <option value="Pro">Pro — $499/mo</option>
+        <option value="Enterprise">Enterprise — Custom pricing</option>
+        <option value="Just looking">Just exploring</option>
+      </select>
+    </div>
+    <div style="margin-bottom:24px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Tell us about your use case</label>
+      <textarea id="demo-message" rows="3" placeholder="A short note about what you're trying to do" style="width:100%;background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 12px;color:#e8ecf4;font-size:14px;margin-top:4px;resize:vertical;"></textarea>
+    </div>
+    <button id="demo-submit" onclick="submitDemoForm()" style="width:100%;padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Send request →</button>
+  </div>
+</div>
+
+<script>
+function openDemoModal(e, mode) {
+  if(e) e.preventDefault();
+  const title=document.getElementById('demo-modal-title');
+  const subtitle=document.getElementById('demo-modal-subtitle');
+  if(mode==='contact'){
+    if(title)title.textContent='Contact us';
+    if(subtitle)subtitle.textContent='Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if(title)title.textContent='Schedule a Demo';
+    if(subtitle)subtitle.textContent='Tell us about your use case and we\u2019ll reach out within one business day.';
+  }
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDemoModal() { document.getElementById('demoModal').classList.remove('open'); document.body.style.overflow=''; }
+function submitDemoForm() {
+  const fname=document.getElementById('demo-fname').value.trim();
+  const lname=document.getElementById('demo-lname').value.trim();
+  const email=document.getElementById('demo-email').value.trim();
+  const company=document.getElementById('demo-company').value.trim();
+  const tier=document.getElementById('demo-tier').value;
+  const message=document.getElementById('demo-message').value.trim();
+  if(!fname||!email){alert('Please enter your name and email.');return;}
+  const btn=document.getElementById('demo-submit');
+  if(btn){btn.disabled=true;btn.textContent='Sending\u2026';}
+  fetch('https://formspree.io/f/mbdqeejk',{
+    method:'POST',
+    headers:{'Accept':'application/json','Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:`${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject:`Demo Request — ${company||fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r=>{
+    if(!r.ok)throw new Error('Submission failed');
+    const modal=document.getElementById('demoModal');
+    if(modal){
+      const card=modal.querySelector('div[style*="background:#0c1018"]');
+      if(card){
+        card.innerHTML=`
+          <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;">\u2715</button>
+          <h3 style="font-family:var(--serif);font-weight:700;font-size:24px;margin-bottom:12px;">Thanks — we'll be in touch.</h3>
+          <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">
+            Your message is on its way. Expect a reply within one business day. In the meantime, browse the source on <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" style="color:var(--border-accent);">GitHub</a>.
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err=>{
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if(btn){btn.disabled=false;btn.textContent='Send request \u2192';}
+  });
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDemoModal(); });
+</script>
+</body>
+</html>
