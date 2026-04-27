@@ -465,53 +465,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 </section>
 
 <!-- Features Grid -->
-<section class="features" id="features">
-  <div class="container">
-    <div class="section-label">Capabilities</div>
-    <div class="section-title">The full MCP lifecycle —<br>in your Kubernetes cluster</div>
-    <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Apache 2.0. Most platforms cover one or two of these. Magertron covers all five.</div>
-
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">⬡</div>
-        <h3>Server Lifecycle</h3>
-        <p>Deploy, scale, restart, rollback, and undeploy MCP servers with a single command or click. Full deployment history with one-click rollback.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">◈</div>
-        <h3>Governance Engine</h3>
-        <p>Define policies that enforce resource limits, transport requirements, naming standards, and security rules. Namespace-scoped — different rules for prod vs dev.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⛊</div>
-        <h3>Multi-Tenant RBAC</h3>
-        <p>Role-based access with namespace isolation. Platform admins, deploy managers, operators, and viewers — each scoped to their allowed namespaces.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚿</div>
-        <h3>Enterprise Identity</h3>
-        <p>OIDC and SAML single sign-on with Okta, Azure AD, and Google Workspace. SCIM 2.0 for automated user provisioning. Just-in-time account creation on first login. Your IdP stays the source of truth.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">◷</div>
-        <h3>Audit & Compliance</h3>
-        <p>Every deployment, scale, restart, and config change logged with OCSF-aligned schema. Validated end-to-end with Splunk Cloud — fields auto-extract for SIEM queries. Built for regulated environments.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⇌</div>
-        <h3>Envoy Gateway</h3>
-        <p>Dynamic xDS-powered Envoy gateway with push-based route updates. Sub-second latency from deploy to routable. HTTPS termination built in.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⇶</div>
-        <h3>Webhook Notifications</h3>
-        <p>Slack, email, or any HTTP endpoint. Filter by event type and namespace. Automatic retries with exponential backoff. HMAC signature verification.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Security Teaser -->
 <section style="padding:80px 0; border-top: 1px solid var(--border);">
   <div class="container" style="max-width:1200px;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
@@ -562,6 +515,54 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </div>
   </div>
 </section>
+
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">Capabilities</div>
+    <div class="section-title">The full MCP lifecycle —<br>in your Kubernetes cluster</div>
+    <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Apache 2.0. Most platforms cover one or two of these. Magertron covers all five.</div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⬡</div>
+        <h3>Server Lifecycle</h3>
+        <p>Deploy, scale, restart, rollback, and undeploy MCP servers with a single command or click. Full deployment history with one-click rollback.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◈</div>
+        <h3>Governance Engine</h3>
+        <p>Define policies that enforce resource limits, transport requirements, naming standards, and security rules. Namespace-scoped — different rules for prod vs dev.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⛊</div>
+        <h3>Multi-Tenant RBAC</h3>
+        <p>Role-based access with namespace isolation. Platform admins, deploy managers, operators, and viewers — each scoped to their allowed namespaces.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚿</div>
+        <h3>Enterprise Identity</h3>
+        <p>OIDC and SAML single sign-on with Okta, Azure AD, and Google Workspace. SCIM 2.0 for automated user provisioning. Just-in-time account creation on first login. Your IdP stays the source of truth.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◷</div>
+        <h3>Audit & Compliance</h3>
+        <p>Every deployment, scale, restart, and config change logged with OCSF-aligned schema. Validated end-to-end with Splunk Cloud — fields auto-extract for SIEM queries. Built for regulated environments.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⇌</div>
+        <h3>Envoy Gateway</h3>
+        <p>Dynamic xDS-powered Envoy gateway with push-based route updates. Sub-second latency from deploy to routable. HTTPS termination built in.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⇶</div>
+        <h3>Webhook Notifications</h3>
+        <p>Slack, email, or any HTTP endpoint. Filter by event type and namespace. Automatic retries with exponential backoff. HMAC signature verification.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Security Teaser -->
 
 <style>
   .threat-tabs {
