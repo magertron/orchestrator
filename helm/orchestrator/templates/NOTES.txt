@@ -45,10 +45,51 @@ For quick testing without configuring DNS, port-forward to Envoy:
 
 Then open: https://localhost:8443  (self-signed cert warning expected)
 
-Login with the seeded admin account:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⚠  ADMIN BOOTSTRAP CREDENTIAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Username: admin
-  Password: {{ .Values.seed.adminPassword }}    ⚠  CHANGE THIS IMMEDIATELY
+
+  The admin password lives in the Kubernetes Secret. Retrieve it with:
+
+    kubectl get secret -n {{ include "mcp.namespace" . }} \
+      {{ include "mcp.fullname" . }}-secrets \
+      -o jsonpath='{.data.MCP_SEED_ADMIN_PASSWORD}' | base64 -d ; echo
+
+{{- if .Values.seed.adminPasswordHash }}
+
+  ⓘ A bcrypt hash was supplied via seed.adminPasswordHash. The orchestrator
+    uses this hash directly; the plaintext above does NOT match the hash
+    and is unused. Log in with whatever password matches your hash.
+{{- else if .Values.seed.adminPassword }}
+
+  ⓘ A password was supplied via --set seed.adminPassword. The chart did
+    NOT auto-generate one for this install.
+{{- else }}
+
+  ⓘ No password was supplied — the chart generated a strong random
+    24-character password at install time and stored it in the Secret
+    above. Reveal it with the kubectl command shown.
+{{- end }}
+
+  After first login:
+
+    1. Change the password via the UI (Users tab → admin → Change Password).
+    2. Rotate the bootstrap value in the Secret so it no longer matches
+       any working credential:
+
+         kubectl patch secret -n {{ include "mcp.namespace" . }} \
+           {{ include "mcp.fullname" . }}-secrets \
+           --type=json \
+           -p='[{"op":"replace","path":"/data/MCP_SEED_ADMIN_PASSWORD",
+                "value":"'"$(openssl rand -base64 24 | base64)"'"}]'
+
+  This is a *bootstrap credential* — a strong random default that gets
+  you logged in the first time. Treat it like an initial root password:
+  use it once, change it, rotate it. The orchestrator's seed code only
+  runs against an empty database, so changing this Secret value AFTER
+  first install does not affect the running admin password.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   2. APPLY A LICENSE  (Enterprise tier — SSO, SCIM, custom RBAC, governance)
@@ -103,8 +144,24 @@ After logging in as admin, visit "Identity Providers" in the left nav.
 
 Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/README.md
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  v1.6 — single-replica orchestrator
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  v1.6 ships single-replica only. The chart's HA bones are in place
+  (headless service for xDS, stateless image, Postgres of record, mcp-sync
+  uses Lease-based leader election), but multi-replica orchestrator
+  coordination — leader-elected HealthMonitor, single-writer xDS push —
+  is v1.7+ work. Kubernetes pod-restart self-healing (~30s recovery on
+  failure) is the current operating mode.
+
+  Track the v1.7 work or report issues:
+    https://github.com/mcp-platform/mcp-orchestrator/issues
+
 {{- if and .Values.secrets.create (eq .Values.secrets.dbPassword "changeme") }}
 
-⚠  WARNING: Using the default database password ("changeme").
-   Set secrets.dbPassword in values.yaml for production deployments.
+⚠  WARNING: secrets.dbPassword is set to the literal string "changeme".
+   This was the old default; the chart now auto-generates strong passwords
+   when secrets.dbPassword is empty. Either unset (recommended) or set to
+   a strong value via --set secrets.dbPassword=<value>.
 {{- end }}

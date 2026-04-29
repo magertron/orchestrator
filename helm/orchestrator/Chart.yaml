@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.6.1
-appVersion: "1.6.1"
+version: 1.6.2
+appVersion: "1.6.2"
 keywords:
   - mcp
   - model-context-protocol
@@ -16,6 +16,14 @@ maintainers:
   - name: MCP Platform Team
 annotations:
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Default admin and database passwords are now auto-generated at install time instead of shipping with hardcoded defaults. Previously, `seed.adminPassword: admin` (with a publicly-committed bcrypt hash) and `secrets.dbPassword: changeme` shipped as chart defaults — a Shodan/Censys-style instant-compromise pattern for any cluster exposed via NodePort or LoadBalancer. Now: leave these values empty (the new default) and the chart generates strong random passwords (24-char admin, 32-char db) at install time, persists them in the Secret, and reuses them across `helm upgrade` via the existing-secret lookup pattern. The admin password is surfaced once in the post-install NOTES with retrieval and rotation guidance. To pin specific passwords, pass `--set seed.adminPassword=...` or `--set secrets.dbPassword=...`."
+    - kind: added
+      description: "Orchestrator seed code now accepts plaintext admin passwords via `MCP_SEED_ADMIN_PASSWORD` env var and bcrypts in-process at seed time (work factor 12). Previously only `MCP_SEED_ADMIN_PASSWORD_HASH` (pre-computed bcrypt) was accepted. Three-tier priority chain: hash > plaintext > hardcoded fallback. Plaintext lives only in the Kubernetes Secret + memory; the database stores only the bcrypt hash. Plaintext is intentionally lower priority than hash so existing hash-based workflows continue unchanged."
+    - kind: deprecated
+      description: "`seed.adminPasswordHash` is deprecated in favor of `seed.adminPassword` (plaintext). The orchestrator now bcrypts plaintext in-process at seed time, eliminating the need for operators to pre-compute hashes. The hash field is retained for backward compatibility — if both are set, hash wins. Empty default for both fields means the chart auto-generates a plaintext password and the orchestrator bcrypts it."
+    - kind: added
+      description: "Post-install NOTES surface the auto-generated admin password with kubectl commands to retrieve and rotate it. Treats the auto-generated password as a one-time bootstrap credential (use once, change via UI, rotate the Secret) rather than a permanent password. The seed code only runs against an empty database, so changing the Secret value after first install does not affect the running admin password — it only invalidates the bootstrap credential."
     - kind: changed
       description: "Default `orchestrator.replicaCount` and `envoy.replicaCount` lowered from 2 → 1, and Envoy HPA min/max capped at 1. The orchestrator's HealthMonitor and xDS push are not yet leader-elected; running multiple orchestrator replicas produces state-machine flapping, divergent xDS pushes, and ghost-server reconcile loops (verified empirically). Single-replica with Kubernetes pod-restart self-healing is the v1.6 operating mode. Multi-replica HA is v1.7+ work and the defaults will move back to 2+ once leader election ships. The chart's HA bones (headless service for xDS, stateless image, Postgres of record, mcp-sync uses Lease-based leader election) remain in place — only the default replica count changes."
     - kind: changed
