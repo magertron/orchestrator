@@ -6,7 +6,18 @@ global:
 
 # ─── Orchestrator ─────────────────────────────────────────────────────────────
 orchestrator:
-  replicaCount: 2
+  # v1.6: Single replica only.
+  #
+  # The orchestrator is HA-shaped at the infrastructure layer (headless
+  # service for xDS, stateless image, Postgres of record, mcp-sync sidecar
+  # uses Lease-based leader election), but multi-replica orchestrator
+  # coordination — leader-elected HealthMonitor, single-writer xDS push,
+  # cross-pod registry sync — is v1.7+ work. Running >1 replica today
+  # produces state-machine flapping, divergent xDS pushes, and
+  # ghost-server reconcile loops (verified empirically).
+  #
+  # Will move to 2+ once v1.7 leader election ships.
+  replicaCount: 1
   image:
     repository: curtismager20/mcp-orchestrator
     tag: v1
@@ -72,7 +83,11 @@ mcpSync:
 # ─── Envoy Gateway ───────────────────────────────────────────────────────────
 envoy:
   enabled: true
-  replicaCount: 2
+  # v1.6: Single replica until orchestrator's xDS push is single-writer.
+  # See the same note under orchestrator.replicaCount above. The HPA below
+  # is capped at 1 in v1.6 for the same reason — Envoy fanout is fine at 1
+  # but produces flapping config at >1 with current orchestrator architecture.
+  replicaCount: 1
   image:
     repository: envoyproxy/envoy
     tag: v1.28-latest
@@ -95,8 +110,10 @@ envoy:
     httpAuthzPort: 93
   autoscaling:
     enabled: true
-    minReplicas: 2
-    maxReplicas: 10
+    # v1.6: Capped at 1. Bump alongside orchestrator.replicaCount when
+    # leader-elected xDS push lands in v1.7.
+    minReplicas: 1
+    maxReplicas: 1
     targetCPU: 70
     targetMemory: 80
   xds:

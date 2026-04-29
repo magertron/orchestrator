@@ -1,0 +1,124 @@
+
+╭─────────────────────────────────────────────────────────────────────────────╮
+│  MCP Orchestrator v{{ .Chart.AppVersion }}  —  deployed successfully        │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+COMPONENTS
+──────────────────────────────────────────────────────────────────────────────
+  Orchestrator:  {{ .Values.orchestrator.replicaCount }} replica(s)
+  Envoy:         {{ if .Values.envoy.enabled }}{{ .Values.envoy.replicaCount }} replica(s){{ else }}disabled{{ end }}
+  PostgreSQL:    {{ if .Values.postgresql.enabled }}in-cluster{{ else }}external{{ end }}
+  LB provider:   {{ .Values.loadBalancer.provider }}
+
+NAMESPACES CREATED
+──────────────────────────────────────────────────────────────────────────────
+{{- range .Values.namespaces }}
+  • {{ . }}
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. ACCESS THE DASHBOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- if eq .Values.loadBalancer.provider "nodeport" }}
+The Envoy Service is exposed via NodePort. Hit your cluster node's IP:
+
+  HTTP:   http://<node-ip>:{{ .Values.loadBalancer.nodeport.httpPort }}
+  HTTPS:  https://<node-ip>:{{ .Values.loadBalancer.nodeport.httpsPort }}
+{{- else if eq .Values.loadBalancer.provider "cloud" }}
+Wait for the cloud LoadBalancer to assign an external IP, then browse to it:
+
+  kubectl get svc {{ include "mcp.fullname" . }}-envoy -n {{ include "mcp.namespace" . }}
+{{- else if eq .Values.loadBalancer.provider "metallb" }}
+MetalLB will assign an IP from {{ .Values.loadBalancer.metallb.ipRange }}:
+
+  kubectl get svc {{ include "mcp.fullname" . }}-envoy -n {{ include "mcp.namespace" . }}
+{{- else }}
+Configure your ingress to route to Service {{ include "mcp.fullname" . }}-envoy
+in namespace {{ include "mcp.namespace" . }}.
+{{- end }}
+
+For quick testing without configuring DNS, port-forward to Envoy:
+
+  kubectl port-forward svc/{{ include "mcp.fullname" . }}-envoy \
+    -n {{ include "mcp.namespace" . }} 8443:443
+
+Then open: https://localhost:8443  (self-signed cert warning expected)
+
+Login with the seeded admin account:
+
+  Username: admin
+  Password: {{ .Values.seed.adminPassword }}    ⚠  CHANGE THIS IMMEDIATELY
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  2. APPLY A LICENSE  (Enterprise tier — SSO, SCIM, custom RBAC, governance)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- if .Values.license.file }}
+  ✓ License was applied at install time.
+{{- else }}
+  ⓘ No license applied — running in FREE tier.
+
+  Free tier includes: server deployment, health monitoring, scaling, core RBAC.
+  Enterprise adds:    SSO (OIDC/SAML), SCIM provisioning, governance policies,
+                       audit export, webhooks, deployment history & rollback.
+
+  To upgrade after install:
+
+    kubectl create secret generic {{ .Values.license.secretName }} \
+      --from-file=license.json \
+      -n {{ include "mcp.namespace" . }}
+
+    kubectl rollout restart deployment/{{ include "mcp.fullname" . }} \
+      -n {{ include "mcp.namespace" . }}
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  3. CONFIGURE IDENTITY  (Enterprise tier only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After logging in as admin, visit "Identity Providers" in the left nav.
+
+  SSO (OIDC/SAML):  add a provider (Okta, Azure AD, Google Workspace) so
+                    users can log in with corporate credentials.
+
+  SCIM tokens:      mint a bearer token and paste it into your IdP's SCIM
+                    app config. Users assigned to the app in your IdP are
+                    automatically provisioned as MCP users.
+{{- if not .Values.orchestrator.env.apiPublicUrl }}
+
+  ⚠  MCP_API_PUBLIC_URL is not set. SCIM meta.location and OIDC redirect
+     URIs will use request-relative URLs. For production, set
+     orchestrator.env.apiPublicUrl in values.yaml to your public URL
+     (e.g. "https://mcp.example.com") and redeploy.
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  •  Change the admin password (Users tab)
+  •  Deploy your first MCP server (Servers tab → Deploy)
+  •  Review pre-seeded governance policies (Governance tab)
+
+Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/README.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  v1.6 — single-replica orchestrator
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  v1.6 ships single-replica only. The chart's HA bones are in place
+  (headless service for xDS, stateless image, Postgres of record, mcp-sync
+  uses Lease-based leader election), but multi-replica orchestrator
+  coordination — leader-elected HealthMonitor, single-writer xDS push —
+  is v1.7+ work. Kubernetes pod-restart self-healing (~30s recovery on
+  failure) is the current operating mode.
+
+  Track the v1.7 work or report issues:
+    https://github.com/mcp-platform/mcp-orchestrator/issues
+
+{{- if and .Values.secrets.create (eq .Values.secrets.dbPassword "changeme") }}
+
+⚠  WARNING: Using the default database password ("changeme").
+   Set secrets.dbPassword in values.yaml for production deployments.
+{{- end }}

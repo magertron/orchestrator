@@ -1,548 +1,540 @@
-# MCP Platform Orchestrator
+# MCP Orchestrator — Helm Chart
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Helm Chart](https://img.shields.io/badge/helm-v1.6.0-326CE5?logo=helm&logoColor=white)](https://magertron.com/charts)
-[![Website](https://img.shields.io/badge/website-magertron.com-2563EB)](https://magertron.com)
-
-**The Kubernetes-native [MCP](https://modelcontextprotocol.io) control plane.** Deploy, govern, and observe MCP servers in your own cluster — any language, any container image. Full lifecycle from a single Helm chart. **Free up to 20 servers, no signup required.**
-
-This repository contains the Helm chart and installation documentation. The orchestrator software itself is distributed as a container image and runs under a commercial license for Pro and Enterprise tiers. The **Free Tier is available without a license** — no signup, no license file, no time limit.
-
-> **License note:** This repository (the Helm chart and these docs) is Apache 2.0. The orchestrator container image you pull via this chart is commercial software. Free Tier usage is always permitted without a license. See [Tiers & Licensing](#tiers--licensing) for details.
+Install guide for the MCP Orchestrator Helm chart, focused on **on-prem and
+private-cloud Kubernetes deployments**. If you're on a managed cloud
+(EKS / GKE / AKS), the chart works there too — see the last appendix.
 
 ---
 
-## Why Magertron?
+## What you're installing
 
-Most MCP platforms are SaaS-first, single-purpose, or tied to a specific cloud. Magertron is different:
+The chart deploys the full MCP Orchestrator platform to your cluster:
 
-- **Runs in your cluster, not ours.** MCP servers deploy as native pods. No data leaves your perimeter.
-- **Language-agnostic.** Any MCP server image — Python, TypeScript, Go, Java. We don't care how you built it.
-- **Full lifecycle.** Deploy, registry, gateway, governance, observability — all in one Helm chart.
-- **MCP server registry built in.** Central catalog of every MCP server in your organization. Most MCP platforms don't have a registry at all — Magertron does, and it runs in your cluster.
-- **Truly free up to 20 servers.** Apache 2.0, no signup, no credit card, no time limit.
-- **OCSF-aligned audit schema** for SIEM integration (Splunk, Elastic, Datadog, Chronicle).
+- **Orchestrator** (2 replicas by default) — the control plane, REST API, and
+  admin UI
+- **Envoy gateway** — TLS termination and HTTP routing to MCP servers
+- **PostgreSQL** — in-cluster database for users, roles, policies, audit,
+  SSO providers, SCIM tokens
+- **mcp-sync sidecar** — watches MCP server CRDs and pushes Envoy routes
+- **Namespaces** for MCP servers (`mcp-prod`, `mcp-staging`, `mcp-dev`)
+- **Network policies** isolating MCP server namespaces
+- **RBAC** — a ServiceAccount + ClusterRole granting the orchestrator the
+  k8s permissions it needs to deploy MCP servers on your behalf
+- **CRDs** — the `mcp.io/McpRoute` custom resource used internally
 
-If you're building MCP servers that wrap proprietary APIs, internal data, or sensitive services — running them on someone else's cloud isn't an option. Magertron is the Kubernetes-native alternative.
-
----
-
-## What it does
-
-- **Deploy** MCP servers to Kubernetes from a single control plane
-- **Route** client traffic to the right MCP server via an Envoy-based gateway with dynamic xDS updates
-- **Scale** MCP servers with a slider or a CLI command
-- **Govern** deployments with RBAC, audit logging, and policy enforcement
-- **Integrate** with your identity provider via SSO (OIDC / SAML) and SCIM provisioning *(Enterprise)*
+After install you log in as `admin / admin`, change the password, optionally
+apply an Enterprise license, and start deploying MCP servers.
 
 ---
 
-## Tiers & Licensing
+## Prerequisites
 
-| Tier | License Required | Limits | Typical Use |
-| --- | --- | --- | --- |
-| **Free** | No | Up to 20 MCP servers | Small teams, evaluation, local dev |
-| **Pro** | Yes | Unlimited servers, multiple namespaces, deployment history, CLI (`mcpctl`) | Small production teams |
-| **Enterprise** | Yes | Pro + SSO/SCIM, governance engine, custom RBAC, multi-tenant isolation, webhooks | Larger orgs, regulated industries |
+You need these BEFORE running `helm install`. The chart won't generate them
+for you (by design — you own these secrets).
 
-The platform **starts in Free Tier by default**. No license file is required to install and run — no signup, no credit card, no time limit. To unlock Pro or Enterprise features, email [licensing@magertron.com](mailto:licensing@magertron.com) — see [Licensed Install](#licensed-install-pro--enterprise).
+### 1. A Kubernetes cluster
+
+- **Version**: 1.28 or newer
+- **Who you talk to when you configure it**: k8s admin (you)
+- **Supported flavors for on-prem**:
+  - [k3s](https://k3s.io) — recommended for single-box deployments
+  - kubeadm-installed — for multi-node production clusters
+  - RKE2 / OpenShift / Rancher — also fine, not explicitly tested
+
+> **If using k3s, disable its bundled Traefik:**
+> ```
+> curl -sfL https://get.k3s.io | sh -s - --disable=traefik
+> ```
+> Otherwise Traefik and Envoy both try to bind port 443 and one will fail.
+
+### 2. Helm 3.x and kubectl
+
+```
+helm version    # want v3.x
+kubectl version --client
+kubectl get nodes     # confirms you can reach the cluster
+```
+
+### 3. A TLS certificate for your hostname
+
+MCP Orchestrator terminates TLS at the Envoy gateway using a cert you
+provide. Pick the hostname customers will use to reach the orchestrator
+(e.g. `mcp.yourcompany.com`) and get a cert+key for it.
+
+**Options to get a cert:**
+- Let's Encrypt via certbot (free, 90-day rotation)
+- Your company's internal CA
+- A commercial cert vendor
+
+You need two files: `tls.crt` (full chain) and `tls.key` (private key).
+
+The chart CAN generate a self-signed cert if you don't provide one, but
+self-signed certs only work for testing — browsers warn and IdPs will
+reject them.
+
+### 4. JWT signing keypair
+
+The orchestrator signs session tokens with RS256. Generate a keypair:
+
+```
+openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in jwt.key -pubout -out jwt.pub
+```
+
+Keep these files safe. Rotating them invalidates all active user sessions.
+
+### 5. metrics-server (optional but recommended)
+
+Needed for CPU/memory charts in the UI and for HorizontalPodAutoscaler
+on Envoy. Most production clusters have it already. If not:
+
+```
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+For non-cloud clusters you may need to add `--kubelet-insecure-tls` to the
+metrics-server deployment args.
+
+### 6. License file (optional — Enterprise tier only)
+
+Free tier covers core deployment, health monitoring, scaling, RBAC.
+Enterprise tier adds SSO, SCIM, governance, audit export, webhooks,
+deployment history, rollback.
+
+If you have a license JSON file, you can apply it at install time or
+later. See "Apply a license" below.
 
 ---
 
-## What You'll Need
+## Choose your ingress path
 
-Before you begin, make sure you have:
+Your cluster needs to expose the Envoy gateway to the outside world
+somehow. This is the single biggest decision for on-prem installs.
 
-- A **Kubernetes 1.25 or newer** cluster. If you don't have one, [Step 0](#step-0--get-a-kubernetes-cluster) below gets you one in about two minutes.
-- **kubectl** configured to talk to that cluster — [install](https://kubernetes.io/docs/tasks/tools/).
-- **Helm 3.x** — [install](https://helm.sh/docs/intro/install/).
-- **4 GB RAM** and **2 CPU cores** free on the cluster.
+Pick one of these based on your environment:
 
-This chart bundles PostgreSQL — no separate database setup is required.
+### NodePort (recommended for single-box / small installs)
 
----
+Envoy runs as a `NodePort` Service on port 30443 (configurable). You
+configure your firewall or router to forward external 443 (or any port)
+to `<cluster-node-ip>:30443`. Works everywhere, no k8s add-ons required.
 
-## Step 0 — Get a Kubernetes cluster
-
-**If you already have a cluster, skip to [Step 1](#step-1--install-the-chart).**
-
-For evaluators on a single Linux machine, we recommend **k3s**. It's a full Kubernetes distribution in one binary, runs as a systemd service, and needs no Docker.
-
-### Install k3s (recommended for Linux evaluators)
-
-Install k3s with a world-readable kubeconfig so you can use `kubectl` as a regular user:
-
-```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode=644" sh -
+**values.yaml**:
+```yaml
+loadBalancer:
+  provider: nodeport
+  nodeport:
+    httpsPort: 30443   # can be 30000-32767
 ```
 
-> **Security-conscious shops:** if piping to a shell isn't allowed by your policy, k3s also ships as a Debian package, an RPM, and a standalone binary. See the [k3s quick start](https://docs.k3s.io/quick-start) for alternatives.
+### MetalLB (multi-node bare-metal with LAN IP pool)
 
-Wait about 30 seconds for the service to come up. Then point `kubectl` at k3s's kubeconfig by adding one line to your shell profile:
+MetalLB assigns a "real" LoadBalancer IP from a pool you give it. Good
+when you have multiple cluster nodes and want a single stable IP that
+follows the Envoy pod.
 
-```bash
-echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+**Requires**: a block of IPs on your LAN that aren't being used by DHCP.
+
+**values.yaml**:
+```yaml
+loadBalancer:
+  provider: metallb
+  metallb:
+    install: true                # chart installs MetalLB
+    ipRange: "10.0.1.240-10.0.1.250"   # adjust to YOUR LAN
 ```
 
-The first line makes it stick for future terminals; the second applies it right now. Verify:
+### Existing ingress controller (nginx-ingress, Traefik, etc.)
 
-```bash
-kubectl get nodes
-```
+If your cluster already has an ingress controller handling TLS and HTTP
+routing for other apps, use it for the orchestrator too.
 
-**Expected output:**
-
-```
-NAME         STATUS   ROLES                  AGE   VERSION
-your-host    Ready    control-plane,master   45s   v1.30.x+k3s1
-```
-
-You have a cluster.
-
-### Install Helm
-
-If you don't already have it:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-```
-
-Verify:
-
-```bash
-helm version
-```
-
-**Expected output (version numbers will vary):**
-
-```
-version.BuildInfo{Version:"v3.15.x", ...}
-```
-
----
-
-## Step 1 — Install the chart
-
-**If you followed Step 0 (k3s on a single machine)**, use the NodePort flavor — it's the simplest path to a working UI. Run the whole block:
-
-```bash
-# Add the Helm repository and install in one go
-helm repo add magertron https://magertron.com/charts
-helm repo update
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system \
-  --create-namespace \
-  --set loadBalancer.provider=nodeport
-```
-
-**If you're on a cloud provider (EKS, GKE, AKS) or any cluster with a working LoadBalancer controller**, omit the `--set` flag:
-
-```bash
-helm repo add magertron https://magertron.com/charts
-helm repo update
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system \
-  --create-namespace
-```
-
-**For other setups** (MetalLB, existing ingress, etc.), see [Networking deep-dive](#networking-deep-dive) below — the repo-add commands there still apply.
-
-### Wait for the pods to come up
-
-```bash
-kubectl wait --for=condition=ready pod \
-  -l app.kubernetes.io/name=mcp-orchestrator \
-  -n mcp-system --timeout=300s
-```
-
-**Expected output:**
-
-```
-pod/mcp-orchestrator-xxxxxxxxxx-yyyyy condition met
-```
-
-**If this times out**, something is off. Check pod status:
-
-```bash
-kubectl get pods -n mcp-system
-```
-
-Any pod not `Running`? Describe it:
-
-```bash
-kubectl describe pod <pod-name> -n mcp-system
-```
-
-The `Events:` section at the bottom tells you what went wrong. Common causes — insufficient resources, image pull failure, missing license for a licensed install — are covered in [Troubleshooting](#troubleshooting).
-
----
-
-## Step 2 — Access the UI
-
-The simplest way to reach the UI on any install is port-forwarding:
-
-```bash
-kubectl port-forward -n mcp-system svc/mcp-envoy-gateway 8443:443
-```
-
-This command **stays running** and prints:
-
-```
-Forwarding from 127.0.0.1:8443 -> 443
-Forwarding from [::1]:8443 -> 443
-```
-
-Leave that terminal window open. In a browser, go to:
-
-```
-https://localhost:8443
-```
-
-### Expected: browser warns "Not Secure"
-
-The chart ships with a self-signed TLS certificate so the UI works out of the box without you configuring DNS or procuring a cert. Every browser will warn about this.
-
-**Click "Advanced" → "Proceed to localhost (unsafe)"** (exact wording varies by browser). This is normal and expected for the first login. For production installs, configure a real certificate — see [TLS in production](#tls-in-production).
-
-### First login
-
-- **Username:** `admin`
-- **Password:** `admin`
-
-**Change the admin password immediately after logging in.** Open **Settings → Users → admin → Change Password** and set a real password. The default credentials are for evaluation convenience only and must not be used in any environment reachable from a network you don't trust.
-
-### Alternative: LoadBalancer or Ingress
-
-If your cluster has a real LoadBalancer (cloud) or an ingress you configured, you can reach the UI directly:
-
-```bash
-kubectl get svc -n mcp-system mcp-envoy-gateway
-```
-
-For a LoadBalancer service, the `EXTERNAL-IP` column shows where to browse. For NodePort, use any node's IP on port `30443`: `https://<node-ip>:30443`.
-
-### Stopping the port-forward
-
-When you're done, press `Ctrl+C` in the terminal running `kubectl port-forward`. Re-run the same command to start it again later.
-
----
-
-## Step 3 — Verify your install
-
-Once you're logged in, confirm everything is healthy. Two ways.
-
-### Option A — via the UI (recommended)
-
-Click the **MCP Platform** logo in the top-left of the UI. An **About** dialog opens showing:
-
-- Version of the orchestrator
-- License tier (Free, Pro, or Enterprise)
-- Kubernetes version
-- Database status
-
-If all four show sensible values, you're good.
-
-### Option B — via the API
-
-With the port-forward still running from Step 2, in a new terminal:
-
-```bash
-curl -k https://localhost:8443/api/v1/license
-```
-
-**Expected output (Free Tier):**
-
-```json
-{"tier":"free","valid":true,...}
-```
-
-The `-k` flag tells `curl` to accept the self-signed cert. For Pro or Enterprise, the `tier` field shows `pro` or `enterprise` instead.
-
----
-
-## Step 4 — Deploy your first MCP server
-
-Let's deploy a real MCP server to prove the platform works end-to-end. We'll use the IBM `fast-time-server`, a small public MCP server that exposes `get_system_time` and `convert_time` tools.
-
-In the UI:
-
-1. Click **Servers** in the left sidebar.
-2. Click **Deploy New Server** (top right).
-3. Fill in:
-   - **Name:** `fast-time-server`
-   - **Namespace:** `mcp-prod` *(the UI will offer to create it)*
-   - **Image:** `ghcr.io/ibm/fast-time-server:latest`
-   - **Port:** `8080`
-4. Click **Deploy**.
-
-The server's status will move from **Pending** → **Deploying** → **Running** over about 30 seconds. When it reaches **Running**, click the server name to open its detail panel. The **Tools** tab should list `get_system_time` and `convert_time` — auto-discovered by the platform.
-
-**To route traffic to it**, use any MCP client (the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is a good first choice) pointed at:
-
-```
-https://localhost:8443/servers/fast-time-server/mcp
-```
-
-You're now running a governed, audited, routable MCP server. Everything you do from here — deploy more servers, configure RBAC, set up SSO — builds on this same foundation.
-
----
-
-## Networking deep-dive
-
-The chart supports four networking modes via `loadBalancer.provider` in `values.yaml`. Step 1 above picked one for you. If you need a different mode, here's the full picture.
-
-### Cloud LoadBalancer (default)
-
-For **EKS, GKE, AKS**, or any cluster where `Service type: LoadBalancer` auto-provisions an external IP.
-
-```bash
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace
-```
-
-Check the external IP with `kubectl get svc -n mcp-system mcp-envoy-gateway`. Wait for `EXTERNAL-IP` to move from `<pending>` to an actual IP, then browse to `https://<external-ip>`.
-
-### NodePort (k3s, kind, minikube, any dev cluster)
-
-For **local dev clusters** or any environment where cloud LoadBalancer isn't available. This is what Step 1 uses if you followed Step 0.
-
-```bash
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace \
-  --set loadBalancer.provider=nodeport
-```
-
-Access via any node's IP on port `30443`: `https://<node-ip>:30443`. You can also use `kubectl port-forward` (Step 2) regardless of provider.
-
-### MetalLB (bare-metal clusters)
-
-For on-prem clusters where you want a real LoadBalancer IP but your environment doesn't provide one. MetalLB assigns IPs from a range you own on your LAN.
-
-```bash
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace \
-  --set loadBalancer.provider=metallb \
-  --set loadBalancer.metallb.ipRange="192.168.1.240-192.168.1.250"
-```
-
-**How to pick an IP range:** choose a block of IP addresses on your LAN that's outside your router's DHCP range and unused by any device. Example: if your router hands out `192.168.1.100–192.168.1.200` via DHCP, `192.168.1.240–192.168.1.250` is safe to use for MetalLB. Ask your network admin if unsure.
-
-You must install MetalLB on your cluster separately — see the [MetalLB install docs](https://metallb.universe.tf/installation/).
-
-### Existing Ingress
-
-For clusters that already have an ingress controller (nginx-ingress, Traefik, Istio) or a pre-configured LoadBalancer.
-
-Create a file called `my-values.yaml` in your working directory:
-
+**values.yaml**:
 ```yaml
 loadBalancer:
   provider: existing
   existing:
     ingress:
       enabled: true
-      className: nginx              # your ingress class name
-      host: mcp.example.com         # the hostname you'll access the UI at
+      className: nginx
+      host: mcp.yourcompany.com
       tls: true
-      tlsSecretName: mcp-envoy-tls  # Secret containing the TLS cert + key
+      tlsSecretName: mcp-envoy-tls
 ```
 
-Create the TLS Secret separately (your cert and key):
+### Cloud LoadBalancer (EKS / GKE / AKS)
 
-```bash
-kubectl create namespace mcp-system
-kubectl create secret tls mcp-envoy-tls \
-  --cert=./tls.crt --key=./tls.key \
-  -n mcp-system
-```
-
-Then install:
-
-```bash
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace \
-  -f my-values.yaml
-```
+Default mode. Your cloud provider's LoadBalancer controller assigns a
+public IP automatically. See the cloud appendix at the bottom.
 
 ---
 
-## Licensed Install (Pro / Enterprise)
+## Install
 
-Free Tier needs no license. To unlock Pro or Enterprise features, request a license file from Magertron and install it.
+### Minimum viable install (Free tier, self-signed cert, NodePort)
 
-### Step 1 — Get your cluster UID
+Fine for kicking the tires. **Not for production.**
 
-The license is tied to a specific cluster's `kube-system` namespace UID.
-
-```bash
-kubectl get namespace kube-system -o jsonpath='{.metadata.uid}'
 ```
-
-Copy the output. It looks like `8a7f3c2e-1234-5678-90ab-cdef12345678`.
-
-### Step 2 — Request a license
-
-Email [licensing@magertron.com](mailto:licensing@magertron.com) with:
-
-- Your cluster UID (from Step 1)
-- Your desired tier (**Pro** or **Enterprise**)
-- Your organization name
-
-We'll send back a signed `license.json` file tied to that cluster UID. Licenses cannot be transferred between clusters.
-
-### Step 3 — Install with the license
-
-```bash
-helm install mcp magertron/mcp-orchestrator \
+helm install mcp ./helm/orchestrator \
   --namespace mcp-system --create-namespace \
-  --set-file license.file=./license.json
+  --set loadBalancer.provider=nodeport \
+  --set-file secrets.jwtPrivateKey=jwt.key \
+  --set-file secrets.jwtPublicKey=jwt.pub
 ```
 
-The chart creates a Kubernetes Secret (`mcp-license`) containing the file, which the orchestrator mounts at `/etc/mcp-license/license.json` and validates at startup.
+### Production install (Free tier)
 
-**Alternative: create the Secret yourself**
+```
+helm install mcp ./helm/orchestrator \
+  --namespace mcp-system --create-namespace \
+  --set loadBalancer.provider=nodeport \
+  --set orchestrator.env.apiPublicUrl=https://mcp.yourcompany.com \
+  --set secrets.dbPassword='<strong-password>' \
+  --set-file secrets.jwtPrivateKey=jwt.key \
+  --set-file secrets.jwtPublicKey=jwt.pub \
+  --set-file tls.cert=tls.crt \
+  --set-file tls.key=tls.key
+```
 
-```bash
-kubectl create namespace mcp-system
+### Production install (Enterprise tier with license)
+
+Same as above plus one more flag:
+
+```
+  --set-file license.file=license.json
+```
+
+### What the flags mean
+
+| Flag | Purpose |
+|---|---|
+| `--namespace mcp-system --create-namespace` | Install into a dedicated namespace |
+| `loadBalancer.provider=...` | Pick your ingress path (see above) |
+| `orchestrator.env.apiPublicUrl=...` | Public HTTPS URL for SCIM meta.location + OIDC redirects. Must match the URL customers actually use. |
+| `secrets.dbPassword=...` | Set the PostgreSQL password. Default is `changeme` — don't ship it that way. |
+| `--set-file secrets.jwtPrivateKey=...` | JWT signing key (RS256 PEM) |
+| `--set-file secrets.jwtPublicKey=...` | JWT verification key (RS256 PEM) |
+| `--set-file tls.cert=...` | Your TLS cert (full chain PEM) |
+| `--set-file tls.key=...` | Your TLS private key (PEM) |
+| `--set-file license.file=...` | Enterprise license JSON (optional) |
+
+---
+
+## After install
+
+### 1. Watch the rollout
+
+```
+kubectl get pods -n mcp-system -w
+```
+
+Expected pods (give it 2-3 minutes on first install):
+
+```
+mcp-mcp-orchestrator-xxxxx-xxxx     2/2 Running
+mcp-mcp-orchestrator-xxxxx-xxxx     2/2 Running
+mcp-mcp-orchestrator-envoy-xxxxx    1/1 Running
+mcp-mcp-orchestrator-envoy-xxxxx    1/1 Running
+mcp-mcp-orchestrator-postgres-xxxx  1/1 Running
+```
+
+If anything stays in `Init` or `Pending` for more than a minute, see
+Troubleshooting below.
+
+### 2. Access the dashboard
+
+For NodePort mode, if you haven't configured your firewall yet, quick test
+via port-forward:
+
+```
+kubectl port-forward svc/mcp-mcp-orchestrator-envoy \
+  -n mcp-system 8443:443
+```
+
+Then open `https://localhost:8443` in your browser. Self-signed cert warning
+expected if you didn't provide a real cert.
+
+Log in with:
+- Username: `admin`
+- Password: `admin`
+
+**Change the password immediately** via Users tab → admin → Password.
+
+### 3. Apply a license (skip if Free tier is fine)
+
+If you didn't pass `--set-file license.file=...` at install:
+
+```
 kubectl create secret generic mcp-license \
-  --from-file=license.json=./license.json \
+  --from-file=license.json=/path/to/license.json \
   -n mcp-system
-helm install mcp magertron/mcp-orchestrator -n mcp-system
+
+kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
 ```
 
-Either approach works. The chart detects and reuses an existing `mcp-license` Secret.
+After the pods restart, check that Enterprise features unlock:
+- In the UI, the "Governance" tab should no longer show an upgrade prompt
+- The "Identity Providers" page should be accessible
 
-### Pro / Enterprise CLI — `mcpctl`
+### 4. Configure SSO (Enterprise — optional)
 
-Pro and Enterprise tiers include `mcpctl`, a single-binary CLI for macOS and Linux. Download and install instructions are sent with your license. `mcpctl` lets you deploy, scale, and evaluate governance from your terminal without opening the UI.
+Admin → "Identity Providers" tab → "+ Add provider"
 
-### Managing your own JWT signing keys *(production)*
+Fill in the OIDC or SAML details from your IdP (Okta, Azure AD, Google
+Workspace, etc.). For OIDC you'll typically need:
+- Discovery URL (e.g. `https://your-org.okta.com/.well-known/openid-configuration`)
+- Client ID
+- Client Secret
+- Redirect URI: `<apiPublicUrl>/api/v1/auth/sso/oidc/callback`
 
-By default the chart auto-generates RSA keys for signing authentication tokens at install time. This is fine for evaluation — zero setup, everything Just Works.
+If you want users to be auto-provisioned on first SSO login, set:
 
-For production installs you'll want to manage these keys yourself so they survive chart reinstalls, can be rotated on your schedule, and can be stored in your secret backend of choice. Generate an RSA keypair once:
-
-```bash
-openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
-openssl rsa -in jwt.key -pubout -out jwt.pub
+```yaml
+orchestrator:
+  env:
+    ssoAutoProvisionDomains: "yourcompany.com,partner.com"
 ```
 
-Then pass both files at install time:
+Then `helm upgrade` to apply.
 
-```bash
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace \
-  --set-file secrets.jwtPrivateKey=./jwt.key \
-  --set-file secrets.jwtPublicKey=./jwt.pub
-```
+### 5. Configure SCIM (Enterprise — optional)
 
-**Store these keys somewhere safe.** If you lose them, all existing user sessions become invalid and users will need to log in again (not catastrophic — but worth knowing). If you rotate them, do the same: new install with new keys invalidates existing sessions.
+Admin → "Identity Providers" tab → "SCIM Tokens" sub-tab → "+ Mint token"
 
-Keys provided via `--set-file` are stored in a Kubernetes Secret (`mcp-orchestrator-jwt`) which the orchestrator mounts read-only at runtime. They are not logged, transmitted, or visible in the UI.
+The modal shows the raw token exactly once. **Copy it immediately** —
+after dismissal, only the prefix is visible and you can't retrieve the
+raw value. If you lose the token, revoke and mint a new one.
+
+In your IdP, create a SCIM 2.0 app pointing at:
+- Base URL: `<apiPublicUrl>/scim/v2`
+- Authentication: OAuth Bearer Token
+- Token: the raw token you just minted
+
+Most IdPs have a "Test API Credentials" button. That's the fastest way
+to confirm the integration works.
 
 ---
 
-## Upgrading
+## Day-2 operations
 
-```bash
-helm repo update
-helm upgrade mcp magertron/mcp-orchestrator -n mcp-system
+### Upgrade the chart
+
+```
+helm upgrade mcp ./helm/orchestrator \
+  --namespace mcp-system \
+  --reuse-values         # keeps your install-time --set values
 ```
 
-**Licenses survive upgrades.** The `mcp-license` Secret is not modified or recreated if it already exists, so you do not need to reinstall your license after every upgrade.
+**CRDs are NOT upgraded by `helm upgrade`** — that's intentional (helm
+treats CRDs as install-only because they can be destructive). If the
+chart ships new CRD versions, apply them manually:
 
-If you used a custom `values.yaml` (for example, for ingress or MetalLB config), pass it again:
-
-```bash
-helm upgrade mcp magertron/mcp-orchestrator -n mcp-system -f my-values.yaml
+```
+kubectl apply -f helm/orchestrator/crds/
 ```
 
----
+### Roll pods after a config change
 
-## Uninstalling
+```
+kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
+kubectl rollout restart deployment/mcp-mcp-orchestrator-envoy -n mcp-system
+```
 
-```bash
+### Uninstall
+
+```
 helm uninstall mcp -n mcp-system
+```
+
+This removes Deployments, Services, Secrets, ConfigMaps. The PersistentVolumeClaim
+for PostgreSQL is **preserved** — your data survives uninstall. To also drop
+the database:
+
+```
+kubectl delete pvc -l app=mcp-orchestrator -n mcp-system
 kubectl delete namespace mcp-system
 ```
 
-This removes all orchestrator components **including the PostgreSQL PersistentVolumeClaim** — all deployment history, audit logs, users, and configuration will be gone.
+CRDs and the namespaces you created (`mcp-prod`, etc.) are also preserved.
+Delete them manually if you want a clean slate:
 
-**To preserve data before uninstalling**, back up the PostgreSQL volume:
-
-```bash
-kubectl exec -n mcp-system mcp-postgres-0 -- \
-  pg_dumpall -U postgres > mcp-backup-$(date +%Y%m%d).sql
 ```
-
-Store the resulting `mcp-backup-YYYYMMDD.sql` somewhere safe. For restore instructions, email [support@magertron.com](mailto:support@magertron.com).
-
----
-
-## TLS in production
-
-The chart ships with a self-signed certificate for first-run convenience. For any install reachable from a network you don't control, replace it.
-
-**Option 1 — provide cert and key at install time:**
-
-```bash
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace \
-  --set-file tls.cert=./tls.crt \
-  --set-file tls.key=./tls.key
+kubectl delete crd mcproutes.mcp.io
+kubectl delete namespace mcp-prod mcp-staging mcp-dev
 ```
-
-**Option 2 — terminate TLS at your ingress** (the existing-ingress mode in [Networking](#existing-ingress)) and let your ingress controller handle certs via cert-manager, Let's Encrypt, or your corporate CA.
 
 ---
 
 ## Troubleshooting
 
-**Pods stuck in `Pending`.** Usually insufficient cluster resources. Run `kubectl describe pod <name> -n mcp-system` and check the `Events:` section.
+### Orchestrator pods stuck in Init
 
-**`EXTERNAL-IP` stuck in `<pending>`.** Your cluster doesn't support `Service type: LoadBalancer`. Switch to `nodeport`, `metallb`, or `existing` — see [Networking deep-dive](#networking-deep-dive).
+Most common cause: **PostgreSQL isn't ready yet**. The orchestrator waits
+for Postgres readiness before starting. Check the Postgres pod:
 
-**`ImagePullBackOff` on the orchestrator pod.** The node can't pull the image. Check `kubectl describe pod <name> -n mcp-system` for the exact error. Common causes: no internet from the node, an HTTP proxy that isn't configured for the container runtime, or an air-gapped environment (contact us for air-gapped install instructions).
+```
+kubectl logs mcp-mcp-orchestrator-postgres-xxxxx -n mcp-system
+```
 
-**PostgreSQL pod crashing.** Check `kubectl logs -n mcp-system mcp-postgres-0`. The most common cause is insufficient disk space on the PersistentVolume — the chart defaults to 10 GiB. Increase `postgresql.persistence.size` in your values file if you need more.
+If you see `initdb` errors, the schema init scripts may have failed.
+Delete the PVC and reinstall (data loss acceptable on first install):
 
-**UI shows "Not Secure" in browser.** Expected on a first install — see [Access the UI](#step-2--access-the-ui). For production, use your own cert — see [TLS in production](#tls-in-production).
+```
+helm uninstall mcp -n mcp-system
+kubectl delete pvc -l app=mcp-orchestrator -n mcp-system
+helm install mcp ... # (rerun your install command)
+```
 
-**"License invalid for this cluster" at startup.** The `kube-system` namespace UID doesn't match what the license was issued for. Re-run Step 1 of [Licensed Install](#licensed-install-pro--enterprise) and request a new license for the current cluster.
+### Envoy pod won't start — "cannot load TLS certificate"
 
-**"License expired" at startup.** Your license term has ended. Email [licensing@magertron.com](mailto:licensing@magertron.com) to renew.
+Check that the `mcp-envoy-tls` Secret exists:
 
-**SSO callback fails with "Failed to decode SAML response" *(Enterprise)*.** URL-encoded SAML assertions from some IdPs need to be decoded by the orchestrator. This is fixed in orchestrator image `v1.1` and newer — upgrade with `helm upgrade` above.
+```
+kubectl get secret mcp-envoy-tls -n mcp-system -o yaml
+```
 
-**SSO callback fails with "state provider mismatch" *(Enterprise)*.** The `provider_id` must be resolved from RelayState, not passed as a callback parameter. Fixed in `v1.1` and newer.
+If it's missing, your install didn't pass `--set-file tls.cert=...` AND
+you also disabled auto-generation. Re-run install with a valid cert+key
+OR with `tls.create=true` (the default) to let the chart self-sign.
 
-**Envoy returns 404 for a deployed MCP server.** The xDS push hasn't reached Envoy yet, or the MCP server pod isn't Ready. Wait 10 seconds and retry. If the 404 persists, check `kubectl get mcproutes -n <your-namespace>` — the route resource should exist and have a `Ready` condition.
+### Cannot log in — "Invalid credentials" with admin / admin
 
-**Other issues.** Email [support@magertron.com](mailto:support@magertron.com) or [open a GitHub issue](https://github.com/curtismager20/magertron-mcpm/issues).
+The admin seed is idempotent — if the database already has an admin user
+from a previous install, the password hash from values.yaml won't be
+re-applied. Reset the admin password directly:
+
+```
+kubectl exec -it mcp-mcp-orchestrator-postgres-xxxxx -n mcp-system -- \
+  psql -U mcp -d mcp_platform -c \
+  "UPDATE users SET password_hash = '\$2a\$12\$0OAq9ZVN96/RLKJngYzLIed1TekrTKUbdKjSDfdYCSmsTNrea7VaG' WHERE username = 'admin';"
+```
+
+(That hash is `admin`. Change the password via UI after.)
+
+### SCIM endpoints return HTML instead of JSON
+
+This happens when your IdP hits a path the orchestrator doesn't handle —
+for v1, that's Groups (`/scim/v2/Groups`). The orchestrator returns a
+proper SCIM 404 with `application/scim+json` content-type. If you see
+HTML, you're on a version older than v1.2.0 — upgrade the chart.
+
+### Okta SCIM "Test API Credentials" fails with 401
+
+Verify you picked the **Bearer Token** variant of Okta's SCIM test app,
+not the **Header Auth** variant. The Header Auth variant sends the raw
+token with no `Bearer ` prefix, which our orchestrator rejects. The
+Bearer Token variant is the correct choice for our implementation.
+
+### SCIM meta.location points at localhost
+
+You forgot to set `orchestrator.env.apiPublicUrl` at install time. Most
+SCIM operations still work (IdPs use the Base URL they were configured
+with for actual requests), but meta.location in response bodies will
+be cosmetically wrong. Fix with:
+
+```
+helm upgrade mcp ./helm/orchestrator \
+  --namespace mcp-system --reuse-values \
+  --set orchestrator.env.apiPublicUrl=https://mcp.yourcompany.com
+
+kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
+```
+
+### OIDC login redirects to localhost
+
+Same root cause as above — `apiPublicUrl` not set. Fix the same way,
+then go to Identity Providers and click through the OIDC provider's
+details to re-trigger the redirect URL calculation. You may need to
+delete and re-create the provider if the cached URL persists.
+
+### Network policies block legit traffic
+
+The chart creates NetworkPolicies on MCP server namespaces to restrict
+ingress to the `mcp-system` namespace only. If you're running a CNI
+that doesn't fully support NetworkPolicy (Flannel in default mode is a
+common offender), pods in MCP namespaces won't be reachable.
+
+Options:
+1. Switch to a CNI that supports NetworkPolicy (Calico, Cilium)
+2. Disable network policies: `--set networkPolicy.enabled=false`
+
+### "Still showing Free tier after applying license"
+
+Two things to check:
+
+1. Did you restart the orchestrator pods after creating the Secret?
+   ```
+   kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
+   ```
+
+2. Is the Secret actually mounted? Exec into the orchestrator and check:
+   ```
+   kubectl exec -it mcp-mcp-orchestrator-xxxxx -c orchestrator -n mcp-system -- \
+     ls -la /etc/mcp-license/
+   ```
+   You should see `license.json`. If not, the Secret name probably doesn't
+   match `license.secretName` (default: `mcp-license`).
 
 ---
 
-## Contact
+## Full values reference
 
-- **Sales and demos:** [sales@magertron.com](mailto:sales@magertron.com)
-- **Licensing (Pro / Enterprise):** [licensing@magertron.com](mailto:licensing@magertron.com)
-- **Technical support:** [support@magertron.com](mailto:support@magertron.com)
-- **Website:** [magertron.com](https://magertron.com)
+See [values.yaml](./values.yaml) for the full configuration surface. Key
+knobs you'll commonly override:
+
+| Key | Default | Purpose |
+|---|---|---|
+| `orchestrator.replicaCount` | 1 | Orchestrator replicas. v1.6 is single-replica; v1.7+ will support 2+ once leader election lands. |
+| `orchestrator.env.apiPublicUrl` | `""` | Public URL for SCIM/OIDC |
+| `orchestrator.env.ssoAutoProvisionDomains` | `""` | SSO JIT allowlist |
+| `envoy.replicaCount` | 1 | Envoy replicas (HPA capped to 1 in v1.6 for the same reason as orchestrator) |
+| `loadBalancer.provider` | `cloud` | `cloud`/`metallb`/`nodeport`/`existing` |
+| `postgresql.storage.size` | `5Gi` | DB volume size |
+| `postgresql.storage.storageClassName` | (default) | Pick a storage class if needed |
+| `namespaces` | `[mcp-prod, mcp-staging, mcp-dev]` | MCP server namespaces to create |
+| `networkPolicy.enabled` | `true` | NetworkPolicy creation |
+| `secrets.dbPassword` | `changeme` | PostgreSQL password |
+| `license.secretName` | `mcp-license` | Name of the license Secret |
+| `seed.adminPassword` | `admin` | Default admin password (display only) |
+| `seed.adminPasswordHash` | (bcrypt of admin) | Actual hash applied to the users table |
 
 ---
 
-## License
+## Appendix: Cloud Kubernetes (EKS / GKE / AKS)
 
-This repository (the Helm chart and this documentation) is licensed under **Apache 2.0**. See [LICENSE](./LICENSE).
+Works with default settings. Your cloud provider's LoadBalancer controller
+handles the public IP automatically. You still bring your own cert and JWT
+keys:
 
-The MCP Platform orchestrator binary distributed via this chart is commercial software. Free Tier usage is permitted without a license. Pro and Enterprise tiers require a separate commercial license — see [Licensed Install](#licensed-install-pro--enterprise).
+```
+helm install mcp ./helm/orchestrator \
+  --namespace mcp-system --create-namespace \
+  --set orchestrator.env.apiPublicUrl=https://mcp.yourcompany.com \
+  --set-file secrets.jwtPrivateKey=jwt.key \
+  --set-file secrets.jwtPublicKey=jwt.pub \
+  --set-file tls.cert=tls.crt \
+  --set-file tls.key=tls.key
+```
+
+Then point `mcp.yourcompany.com` DNS at the LoadBalancer IP:
+
+```
+kubectl get svc mcp-mcp-orchestrator-envoy -n mcp-system
+# Look at EXTERNAL-IP column
+```
+
+Cert-manager is a common choice for automating TLS on cloud clusters.
+Integration is straightforward but out of scope for this guide.
 
 ---
 
-## Links
+## Support
 
-- **Website:** [magertron.com](https://magertron.com)
-- **Docker image:** [hub.docker.com/r/curtismager20/mcp-orchestrator](https://hub.docker.com/r/curtismager20/mcp-orchestrator)
-- **Issues:** [github.com/curtismager20/magertron-mcpm/issues](https://github.com/curtismager20/magertron-mcpm/issues)
-- **MCP specification:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
+For issues, check the orchestrator logs first:
+
+```
+kubectl logs -n mcp-system -l app=mcp-orchestrator -c orchestrator --tail=100
+```
+
+File bug reports with the log output attached.
