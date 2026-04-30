@@ -22,15 +22,20 @@ The chart deploys the full MCP Orchestrator platform to your cluster:
   k8s permissions it needs to deploy MCP servers on your behalf
 - **CRDs** — the `mcp.io/McpRoute` custom resource used internally
 
-After install you log in as `admin / admin`, change the password, optionally
-apply an Enterprise license, and start deploying MCP servers.
+After install you retrieve the auto-generated `admin` password from the
+Kubernetes Secret (instructions printed in the post-install notes), log
+in, change the password, optionally apply an Enterprise license, and
+start deploying MCP servers.
 
 ---
 
 ## Prerequisites
 
-You need these BEFORE running `helm install`. The chart won't generate them
-for you (by design — you own these secrets).
+You need these BEFORE running `helm install`. The chart can auto-generate
+TLS certificates, JWT keys, and the database/admin passwords for you (the
+default behavior, suitable for dev/PoC), but for production deployments
+we recommend providing your own — see the relevant prerequisite sections
+below and the production-hardening guidance in the post-install notes.
 
 ### 1. A Kubernetes cluster
 
@@ -255,11 +260,22 @@ kubectl port-forward svc/mcp-mcp-orchestrator-envoy \
 Then open `https://localhost:8443` in your browser. Self-signed cert warning
 expected if you didn't provide a real cert.
 
-Log in with:
-- Username: `admin`
-- Password: `admin`
+Log in as `admin`. Retrieve the auto-generated password from the
+Kubernetes Secret:
+
+```
+kubectl get secret -n mcp-system mcp-mcp-orchestrator-secrets \
+  -o jsonpath='{.data.MCP_SEED_ADMIN_PASSWORD}' | base64 -d ; echo
+```
+
+(If you supplied your own password via `--set seed.adminPassword=...` at
+install, use that instead.)
 
 **Change the password immediately** via Users tab → admin → Password.
+This is a bootstrap credential — treat it like an initial root password:
+use it once, change it, then rotate the Secret value to invalidate the
+bootstrap. See the post-install notes (`helm get notes mcp-orchestrator
+-n mcp-system`) for full rotation guidance.
 
 ### 3. Apply a license (skip if Free tier is fine)
 
@@ -313,6 +329,185 @@ In your IdP, create a SCIM 2.0 app pointing at:
 
 Most IdPs have a "Test API Credentials" button. That's the fastest way
 to confirm the integration works.
+
+---
+
+## Production hardening
+
+The chart auto-generates several credentials at install time for ease of
+use. These are appropriate for development, demos, and proofs of concept.
+**For production, replace each with values sourced from your secret
+management system** (Vault, AWS Secrets Manager, GCP Secret Manager,
+Sealed Secrets, etc).
+
+This section mirrors the post-install notes (`helm get notes
+mcp-orchestrator -n mcp-system`) and is included here so customers
+evaluating the chart see the security story before installing.
+
+### TLS certificate
+
+The chart auto-generates a self-signed TLS certificate if you don't
+provide one. Browsers will show a security warning and API clients will
+fail TLS verification by default. **This is fine for dev but not for
+production.**
+
+The auto-generated cert has SANs only for `mcp-orchestrator`,
+`localhost`, and `127.0.0.1`. Clients connecting via your public hostname
+(e.g. `mcp.example.com`) will fail verification regardless of whether
+they accept self-signed warnings.
+
+Two production-grade alternatives:
+
+**Option A — Bring your own certificate at install time.**
+
+```
+helm upgrade --install mcp ./helm/orchestrator \
+  --namespace mcp-system \
+  --set-file tls.cert=/path/to/your-cert.pem \
+  --set-file tls.key=/path/to/your-key.pem
+```
+
+**Option B — Use cert-manager (recommended for cloud / Let's Encrypt).**
+
+1. Install cert-manager once per cluster:
+
+   ```
+   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+   ```
+
+2. Create a `ClusterIssuer` pointing at your CA (Let's Encrypt, internal
+   PKI, AWS PCA, etc).
+
+3. Pre-create a `Certificate` resource that writes to the
+   `mcp-envoy-tls` Secret in the orchestrator's namespace:
+
+   ```
+   apiVersion: cert-manager.io/v1
+   kind: Certificate
+   metadata:
+     name: mcp-envoy-tls
+     namespace: mcp-system
+   spec:
+     secretName: mcp-envoy-tls
+     dnsNames:
+       - mcp.your-company.com
+     issuerRef:
+       name: your-issuer
+       kind: ClusterIssuer
+   ```
+
+4. Run `helm upgrade --install`. The chart detects the existing TLS
+   Secret (via Helm's `lookup` function) and reuses it. cert-manager
+   handles renewal automatically.
+
+### JWT signing key
+
+The JWT private key signs every authentication token issued by the
+orchestrator. **If exposed, an attacker can forge tokens for any user.**
+
+For production:
+
+**Option A — Generate keys on a trusted machine and pass at install:**
+
+```
+openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in jwt.key -pubout -out jwt.pub
+
+helm upgrade --install mcp ./helm/orchestrator \
+  --namespace mcp-system \
+  --set-file secrets.jwtPrivateKey=jwt.key \
+  --set-file secrets.jwtPublicKey=jwt.pub
+
+shred -u jwt.key jwt.pub
+```
+
+**Option B — Source from your KMS** (Vault, AWS Secrets Manager, etc)
+and pre-create the Secret externally:
+
+```
+vault read -field=private secret/mcp-orch/jwt > /tmp/jwt.key
+vault read -field=public  secret/mcp-orch/jwt > /tmp/jwt.pub
+
+kubectl create secret generic mcp-mcp-orchestrator-secrets \
+  --from-file=MCP_JWT_PRIVATE_KEY=/tmp/jwt.key \
+  --from-file=MCP_JWT_PUBLIC_KEY=/tmp/jwt.pub \
+  -n mcp-system
+
+shred -u /tmp/jwt.key /tmp/jwt.pub
+```
+
+The chart's three-tier fallback in `templates/secrets.yaml` checks for an
+existing Secret first, so pre-creating the Secret externally takes
+precedence over auto-generation.
+
+The auto-generated key lives in the Kubernetes Secret
+`mcp-mcp-orchestrator-secrets`. Anyone with `get secrets` permission in
+the orchestrator's namespace can retrieve it. **RBAC discipline is the
+only enforcement boundary** — see *RBAC hardening* below.
+
+### PostgreSQL password
+
+The chart auto-generates a 32-character random password for the internal
+PostgreSQL instance. PostgreSQL is internal-only (ClusterIP service, no
+external exposure) so this is appropriate for most installs without
+action.
+
+Retrieve if needed (debugging, manual psql, backup tooling):
+
+```
+kubectl get secret -n mcp-system mcp-mcp-orchestrator-secrets \
+  -o jsonpath='{.data.MCP_DB_PASSWORD}' | base64 -d ; echo
+```
+
+To pin a specific value (e.g. for off-cluster Postgres or shared
+credential management), pass `--set secrets.dbPassword=<value>` at
+install OR pre-create the Secret externally.
+
+### Admin bootstrap password
+
+The chart auto-generates a 24-character random password for the seeded
+admin user on first install. Retrieve it from the Secret as documented
+above (with `MCP_SEED_ADMIN_PASSWORD` instead of `MCP_DB_PASSWORD`).
+
+**Treat this as a one-time bootstrap credential.** Log in once, change
+the password via the UI, then rotate the Secret value to invalidate the
+bootstrap. The seed code only runs against an empty database, so changing
+the Secret value AFTER first install does not affect the running admin
+password — but it does invalidate any record of what the bootstrap value
+was, which is what you want.
+
+### RBAC hardening
+
+All credentials above (TLS keys, JWT keys, DB password, admin password,
+SCIM tokens) live in Kubernetes Secrets in the orchestrator's namespace.
+Anyone with `get secrets` permission in this namespace can retrieve them
+in plaintext via `kubectl`. Restrict accordingly:
+
+1. **Audit who has Secret-read access** in the orchestrator's namespace:
+
+   ```
+   kubectl auth can-i --list --as=<user> -n mcp-system | grep secret
+   ```
+
+2. **Enable encryption-at-rest in your cluster's etcd.** This is a
+   one-line cluster config; without it, anyone with etcd access reads
+   Secrets in plaintext:
+
+   <https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/>
+
+3. **Audit cluster backups** (Velero, etcd snapshots) for Secret content
+   and ensure backup storage has equivalent or stricter access controls
+   than the cluster itself.
+
+4. **For high-compliance environments** (PCI, HIPAA, FedRAMP), consider:
+   - Sealed Secrets (encrypted Secret manifests in git)
+   - External Secrets Operator (Secrets fetched from external KMS at
+     pod startup, never persisted to the cluster)
+   - Workload Identity (no Kubernetes Secret; the orchestrator gets its
+     keys directly from cloud KMS via IAM)
+
+These mitigations apply to all Secrets in the namespace, not just MCP
+Orchestrator's. They are standard Kubernetes hygiene.
 
 ---
 
@@ -398,19 +593,36 @@ If it's missing, your install didn't pass `--set-file tls.cert=...` AND
 you also disabled auto-generation. Re-run install with a valid cert+key
 OR with `tls.create=true` (the default) to let the chart self-sign.
 
-### Cannot log in — "Invalid credentials" with admin / admin
+### Cannot log in — "Invalid credentials"
 
-The admin seed is idempotent — if the database already has an admin user
-from a previous install, the password hash from values.yaml won't be
-re-applied. Reset the admin password directly:
+The admin seed runs only against an empty database. If you've reinstalled
+the chart against an existing Postgres volume (PVC retained), the original
+admin user persists and the chart's auto-generated bootstrap password in
+the Secret is unused. Login with the *original* password (whatever was
+generated or set on first install) — that's the one in the database.
+
+If you've genuinely lost it, the safe recovery path is to truncate the
+users and roles tables and let the orchestrator's seed code re-run
+against an empty database, picking up the current Secret value as the
+new admin password:
 
 ```
-kubectl exec -it mcp-mcp-orchestrator-postgres-xxxxx -n mcp-system -- \
-  psql -U mcp -d mcp_platform -c \
-  "UPDATE users SET password_hash = '\$2a\$12\$0OAq9ZVN96/RLKJngYzLIed1TekrTKUbdKjSDfdYCSmsTNrea7VaG' WHERE username = 'admin';"
+PG_POD=$(kubectl get pods -n mcp-system -l app=mcp-orchestrator-postgres \
+  -o jsonpath='{.items[0].metadata.name}')
+
+# WARNING: this removes ALL users and roles — including any operators
+# you've added, any SSO-provisioned users, and any custom RBAC roles.
+# For a non-destructive reset, change the password via psql instead
+# (you'd need to compute a bcrypt hash externally — out of scope here).
+kubectl exec -n mcp-system $PG_POD -- psql -U mcp -d mcp_platform -c \
+  "TRUNCATE users, roles CASCADE;"
+
+kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
 ```
 
-(That hash is `admin`. Change the password via UI after.)
+After restart, retrieve the admin password from the Secret as documented
+in the post-install notes. The seed code will have re-created admin with
+that value.
 
 ### SCIM endpoints return HTML instead of JSON
 
