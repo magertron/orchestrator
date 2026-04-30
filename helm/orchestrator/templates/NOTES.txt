@@ -315,23 +315,23 @@ After logging in as admin, visit "Identity Providers" in the left nav.
 Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/README.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  v1.6 — single-replica orchestrator
+  v1.7 development build — multi-replica HA in progress
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  v1.6 ships single-replica only. The chart's HA bones are in place
-  (headless service for xDS, stateless image, Postgres of record, mcp-sync
-  uses Lease-based leader election), but multi-replica orchestrator
-  coordination — leader-elected HealthMonitor, single-writer xDS push —
-  is v1.7+ work. Kubernetes pod-restart self-healing (~30s recovery on
-  failure) is the current operating mode.
+  This chart is a v1.7 development build (appVersion {{ .Chart.AppVersion }}).
+  The HA architecture is being assembled across the v1.7 series:
 
-  Track the v1.7 work or report issues:
+    Item 1 (this build) — leader-elected HealthMonitor backed by a
+    Kubernetes Lease. With orchestrator.replicaCount > 1, exactly one
+    pod actively polls Kubernetes / probes MCP servers; the rest sit
+    warm and take over within ~2s if the leader dies.
+
+    Item 2 (in progress) — single-writer xDS push with Postgres-backed
+    snapshots. All orchestrator pods will serve identical xDS state to
+    their connected Envoy instances.
+
+  Single-replica deployments behave identically to v1.6 — leader
+  election is a no-op when there's only one pod.
+
+  Track v1.7 progress or report issues:
     https://github.com/mcp-platform/mcp-orchestrator/issues
-
-{{- if and .Values.secrets.create (eq .Values.secrets.dbPassword "changeme") }}
-
-⚠  WARNING: secrets.dbPassword is set to the literal string "changeme".
-   This was the old default; the chart now auto-generates strong passwords
-   when secrets.dbPassword is empty. Either unset (recommended) or set to
-   a strong value via --set secrets.dbPassword=<value>.
-{{- end }}
