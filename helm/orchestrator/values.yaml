@@ -66,6 +66,29 @@ orchestrator:
     # Empty string = orchestrator uses request-relative URLs.
     apiPublicUrl: ""
 
+    # ── Leader election (v1.7 multi-replica HA) ──────────────────────────
+    # Override the auto-derived setting. By default, the chart enables
+    # leader election when orchestrator.replicaCount > 1 and disables it
+    # otherwise. Set this to "true" or "false" to force a specific value
+    # regardless of replica count — useful for testing single-replica
+    # behavior with leader election machinery active, or vice versa.
+    #
+    # Empty string ("") means "auto" — derive from replicaCount.
+    leaderElectionEnabled: ""
+
+    # ── NOTIFY-based xDS fanout (v1.8 experimental) ──────────────────────
+    # When "true", followers run a Postgres LISTEN thread that wakes
+    # immediately on leader-issued NOTIFY events instead of waiting for
+    # the next 1s polling cycle. Achieves sub-100ms config propagation
+    # vs polling's 0-1s typical. Polling continues to run as fallback,
+    # so disabling NOTIFY (or NOTIFY connection failures) degrade
+    # cleanly to the v1.7 polling-only behavior.
+    #
+    # Default: "false" (v1.7 polling-only). Set to "true" to enable
+    # the experimental v1.8 fast path. See docs/HA-DEPLOYMENT.md for
+    # operational implications.
+    useNotifyFanout: "false"
+
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
   image:

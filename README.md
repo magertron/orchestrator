@@ -511,6 +511,21 @@ Orchestrator's. They are standard Kubernetes hygiene.
 
 ---
 
+## Multi-replica HA
+
+For deployments running more than one orchestrator replica — sizing
+guidance, configuration knobs, failover behavior, operational procedures,
+recovery from various failure modes — see the dedicated guide:
+
+**[docs/HA-DEPLOYMENT.md](docs/HA-DEPLOYMENT.md)**
+
+Quick start: set `orchestrator.replicaCount=2` and `envoy.replicaCount=2`
+in your values file, then `helm upgrade --install`. The chart enables
+leader election automatically when replicaCount > 1. The HA guide covers
+everything else.
+
+---
+
 ## Day-2 operations
 
 ### Upgrade the chart

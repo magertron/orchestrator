@@ -274,8 +274,12 @@ data:
     );
     CREATE INDEX IF NOT EXISTS idx_tool_perms_lookup ON mcp_tool_permissions (role_id, server_id);
     CREATE INDEX IF NOT EXISTS idx_tool_perms_server ON mcp_tool_permissions (server_id);
-    CREATE INDEX IF NOT EXISTS idx_tool_perms_active ON mcp_tool_permissions (role_id, server_id)
-        WHERE valid_until IS NULL OR valid_until > now();
+    -- Note: a partial-index variant (idx_tool_perms_active WHERE valid_until
+    -- IS NULL OR valid_until > now()) was previously defined here but
+    -- removed because Postgres requires partial-index predicates to use
+    -- IMMUTABLE functions, and now() is STABLE. The base composite index
+    -- idx_tool_perms_lookup already covers (role_id, server_id) lookups.
+    -- Time-window filtering happens at query level via WHERE clauses.
 
     -- Flattened view for admin UI (avoids N+1 joins in the frontend).
     CREATE OR REPLACE VIEW v_tool_permission_summary AS
@@ -294,6 +298,39 @@ data:
     JOIN roles r            ON r.id = p.role_id
     JOIN deployed_servers s ON s.id = p.server_id
     ORDER BY s.name, r.name, p.pattern_type, p.tool_pattern;
+
+    -- ═══════════════════════════════════════════════════════════════════════
+    -- v1.7+ Multi-Replica HA — xDS snapshots
+    -- ═══════════════════════════════════════════════════════════════════════
+    -- Append-only log of xDS routes table snapshots. The leader pod writes
+    -- here on every route mutation; followers SELECT the latest row to
+    -- converge their in-memory state. Each row is a complete snapshot of
+    -- the routes table at write time (not a delta) so followers can
+    -- bootstrap from a single SELECT.
+    --
+    -- Volume profile: one row per route mutation. v1.7 has no retention,
+    -- so the table grows over time. v1.8 adds retention policy. See
+    -- HA-DEPLOYMENT.md "Known limitations" for operator guidance.
+    --
+    -- Used by: src/gateway/envoy_xds.cpp (write_snapshot_to_db,
+    --          polling_loop, listener_loop) via DbClient methods
+    --          insert_xds_snapshot / get_latest_xds_snapshot.
+    --
+    -- v1.8 LISTEN/NOTIFY adds a 'xds_snapshots_changed' channel on this
+    -- table; the NOTIFY is issued in the same transaction as INSERT so
+    -- followers' listener threads are guaranteed to see the row when
+    -- they receive the notification.
+    CREATE TABLE IF NOT EXISTS xds_snapshots (
+        id              BIGSERIAL    PRIMARY KEY,
+        routes          JSONB        NOT NULL,
+        schema_version  INTEGER      NOT NULL DEFAULT 1,
+        written_by      VARCHAR(253) NOT NULL,
+        created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    -- Followers always read MAX(id) on every poll, so a descending index
+    -- makes that lookup O(1).
+    CREATE INDEX IF NOT EXISTS idx_xds_snapshots_id_desc
+        ON xds_snapshots (id DESC);
 
   02-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash

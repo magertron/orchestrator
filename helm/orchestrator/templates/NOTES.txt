@@ -333,5 +333,9 @@ Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/READM
   Single-replica deployments behave identically to v1.6 — leader
   election is a no-op when there's only one pod.
 
+  For multi-replica deployment guidance (sizing, configuration, failover,
+  recovery procedures), see the HA Deployment Guide:
+    https://github.com/curtismager20/magertron-mcpm/blob/main/docs/HA-DEPLOYMENT.md
+
   Track v1.7 progress or report issues:
     https://github.com/mcp-platform/mcp-orchestrator/issues

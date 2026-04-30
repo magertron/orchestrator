@@ -92,6 +92,48 @@ spec:
             # on tuning per cluster size.
             - name: MCP_K8S_POLL_INTERVAL
               value: {{ .Values.orchestrator.healthMonitor.pollIntervalSeconds | default 5 | quote }}
+            # ── v1.7 close-out: SchemaGuard schema source ──────────────────
+            # SchemaGuard reads this file at orchestrator startup and applies
+            # every statement idempotently. This is the upgrade-safe path for
+            # schema additions: the same canonical SQL drives both fresh
+            # Postgres init (via the postgres-init ConfigMap) AND ongoing
+            # orchestrator-driven schema migration (via SchemaGuard).
+            #
+            # Mounted at /etc/mcp-schema/01-schema.sql (see volumeMounts).
+            # Only set when bundled Postgres is enabled — external-Postgres
+            # operators manage schema themselves.
+            {{- if .Values.postgresql.enabled }}
+            - name: MCP_SCHEMA_FILE
+              value: "/etc/mcp-schema/01-schema.sql"
+            {{- end }}
+            # ── Leader election (v1.7+ multi-replica HA) ───────────────────
+            # Auto-enabled when replicaCount > 1. The LeaderLock acquires
+            # a Kubernetes Lease named "mcp-orchestrator-leader" in the
+            # orchestrator's namespace; the holder is the active writer
+            # for HealthMonitor mutations, xDS snapshot writes, and
+            # registry-table mutations. Followers reject mutations and
+            # converge on leader's state via DB polling.
+            #
+            # Single-replica (replicaCount=1): set to false; LeaderLock
+            # is a no-op. Behavior matches v1.6 single-replica mode.
+            #
+            # Override possible via .Values.orchestrator.env.leaderElectionEnabled
+            # (string "true"/"false") if an operator wants to force the
+            # setting independent of replicaCount.
+            - name: MCP_LEADER_ELECTION_ENABLED
+              value: {{ if .Values.orchestrator.env.leaderElectionEnabled }}{{ .Values.orchestrator.env.leaderElectionEnabled | quote }}{{ else if gt (int .Values.orchestrator.replicaCount) 1 }}"true"{{ else }}"false"{{ end }}
+            # ── v1.8 NOTIFY-based xDS fanout (experimental) ────────────────
+            # When true, the xDS server runs an additional listener thread
+            # holding a Postgres LISTEN connection on xds_snapshots_changed.
+            # NOTIFY-based fanout achieves sub-100ms latency vs polling's
+            # 0-1s. Polling continues to run as fallback.
+            #
+            # Default: false (v1.7 polling-only behavior). Opt in via
+            # .Values.orchestrator.env.useNotifyFanout = "true" once you
+            # want to test the v1.8 path. See HA-DEPLOYMENT.md for the
+            # operational implications and fallback semantics.
+            - name: MCP_USE_NOTIFY_FANOUT
+              value: {{ .Values.orchestrator.env.useNotifyFanout | default "false" | quote }}
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
@@ -99,6 +141,28 @@ spec:
             - name: config
               mountPath: /etc/mcp
               readOnly: true
+            # ── v1.7 close-out: SchemaGuard belt-and-suspenders ──────────
+            # Mounts the chart's postgres-init ConfigMap into the orchestrator
+            # pod so SchemaGuard::ensure_schema() can read it on every startup.
+            # This is the architectural fix for the "Postgres skipped init
+            # scripts because PGDATA wasn't empty" class of bug — SchemaGuard's
+            # idempotent re-application of the canonical schema closes the
+            # upgrade-safety gap.
+            #
+            # Mounted at /etc/mcp-schema/ (not /etc/mcp/) because /etc/mcp is
+            # already a ConfigMap mount and Kubernetes refuses nested-file
+            # mounts inside an existing ConfigMap directory mount.
+            #
+            # SchemaGuard reads MCP_SCHEMA_FILE env var to find the file
+            # (set in the env: section above).
+            #
+            # Only mount if postgresql.enabled — operators using external
+            # Postgres are responsible for their own schema management.
+            {{- if .Values.postgresql.enabled }}
+            - name: schema
+              mountPath: /etc/mcp-schema
+              readOnly: true
+            {{- end }}
             - name: tls
               mountPath: /etc/tls
               readOnly: true
@@ -168,6 +232,20 @@ spec:
         - name: config
           configMap:
             name: {{ include "mcp.fullname" . }}-config
+        # ── v1.7 close-out: SchemaGuard schema source ──────────────────
+        # Reuses the postgres-init ConfigMap (which already has the
+        # canonical schema for first-install Postgres bootstrap). Mounting
+        # the same ConfigMap here ensures schema-as-code: a single source
+        # of truth for both fresh-install (Postgres init scripts) and
+        # ongoing-upgrade (SchemaGuard re-application) paths.
+        {{- if .Values.postgresql.enabled }}
+        - name: schema
+          configMap:
+            name: {{ include "mcp.fullname" . }}-postgres-init
+            items:
+              - key: 01-schema.sql
+                path: 01-schema.sql
+        {{- end }}
         - name: tls
           secret:
             secretName: {{ .Values.tls.orchestratorSecretName }}
