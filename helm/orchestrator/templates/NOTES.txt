@@ -315,27 +315,40 @@ After logging in as admin, visit "Identity Providers" in the left nav.
 Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/README.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  v1.7 development build — multi-replica HA in progress
+  v1.8 — multi-replica HA + sub-millisecond config fanout
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  This chart is a v1.7 development build (appVersion {{ .Chart.AppVersion }}).
-  The HA architecture is being assembled across the v1.7 series:
+  This chart is a v1.8 build (appVersion {{ .Chart.AppVersion }}). The
+  multi-replica HA architecture is fully assembled:
 
-    Item 1 (this build) — leader-elected HealthMonitor backed by a
-    Kubernetes Lease. With orchestrator.replicaCount > 1, exactly one
-    pod actively polls Kubernetes / probes MCP servers; the rest sit
-    warm and take over within ~2s if the leader dies.
+    Leader election — backed by a Kubernetes Lease. With
+    orchestrator.replicaCount > 1, exactly one pod is the active writer
+    for HealthMonitor probing, xDS snapshot writes, and registry
+    mutations. The rest sit warm and take over within ~2s if the
+    leader dies. Auto-enabled when replicaCount > 1.
 
-    Item 2 (in progress) — single-writer xDS push with Postgres-backed
-    snapshots. All orchestrator pods will serve identical xDS state to
-    their connected Envoy instances.
+    Single-writer xDS push — all orchestrator pods serve identical xDS
+    state to their connected Envoy instances. Leader writes snapshots
+    to Postgres; followers converge via either polling (default) or
+    LISTEN/NOTIFY (opt-in via orchestrator.env.useNotifyFanout=true).
+    NOTIFY mode achieves sub-millisecond fanout latency.
 
-  Single-replica deployments behave identically to v1.6 — leader
-  election is a no-op when there's only one pod.
+    Cross-pod registry consistency — followers poll the deployed_servers
+    table on a configurable interval (MCP_REGISTRY_POLL_INTERVAL_MS,
+    default 1000ms) so admin UI list endpoints return identical state
+    no matter which pod handles the request.
 
-  For multi-replica deployment guidance (sizing, configuration, failover,
-  recovery procedures), see the HA Deployment Guide:
+    Schema-as-code — SchemaGuard applies the canonical schema on every
+    orchestrator startup, so new tables added in chart upgrades appear
+    in the database automatically without manual migration steps.
+
+  Single-replica deployments behave as before — leader election is a
+  no-op when there's only one pod, and NOTIFY/polling are unused.
+
+  For multi-replica deployment guidance (sizing, configuration, failover
+  recovery, SCIM operational notes, monitoring), see the HA Deployment
+  Guide:
     https://github.com/curtismager20/magertron-mcpm/blob/main/docs/HA-DEPLOYMENT.md
 
-  Track v1.7 progress or report issues:
+  Track v1.8 progress or report issues:
     https://github.com/mcp-platform/mcp-orchestrator/issues

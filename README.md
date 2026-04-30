@@ -712,10 +712,12 @@ knobs you'll commonly override:
 
 | Key | Default | Purpose |
 |---|---|---|
-| `orchestrator.replicaCount` | 1 | Orchestrator replicas. v1.6 is single-replica; v1.7+ will support 2+ once leader election lands. |
+| `orchestrator.replicaCount` | 1 | Orchestrator replicas. Multi-replica HA (2+) is supported via leader election + LISTEN/NOTIFY fanout. See [HA-DEPLOYMENT.md](./docs/HA-DEPLOYMENT.md). |
 | `orchestrator.env.apiPublicUrl` | `""` | Public URL for SCIM/OIDC |
 | `orchestrator.env.ssoAutoProvisionDomains` | `""` | SSO JIT allowlist |
-| `envoy.replicaCount` | 1 | Envoy replicas (HPA capped to 1 in v1.6 for the same reason as orchestrator) |
+| `orchestrator.env.leaderElectionEnabled` | `""` (auto) | Auto-enabled when replicaCount > 1; force on/off with `"true"`/`"false"` |
+| `orchestrator.env.useNotifyFanout` | `"false"` | Enable Postgres LISTEN/NOTIFY for sub-millisecond xDS fanout (experimental) |
+| `envoy.replicaCount` | 1 | Envoy replicas |
 | `loadBalancer.provider` | `cloud` | `cloud`/`metallb`/`nodeport`/`existing` |
 | `postgresql.storage.size` | `5Gi` | DB volume size |
 | `postgresql.storage.storageClassName` | (default) | Pick a storage class if needed |
