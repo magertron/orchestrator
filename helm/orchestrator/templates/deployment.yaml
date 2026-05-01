@@ -31,7 +31,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: orchestrator
-          image: "{{ .Values.global.imageRegistry }}/{{ .Values.orchestrator.image.repository }}:{{ .Values.orchestrator.image.tag }}"
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.orchestrator.image.repository }}:{{ .Values.orchestrator.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.orchestrator.image.pullPolicy }}
           args: ["--config", "/etc/mcp/config.yaml"]
           ports:
@@ -200,7 +200,7 @@ spec:
 
         # ── mcp-sync sidecar ──────────────────────────────────────────────
         - name: mcp-sync
-          image: "{{ .Values.global.imageRegistry }}/{{ .Values.mcpSync.image.repository }}:{{ .Values.mcpSync.image.tag }}"
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.mcpSync.image.repository }}:{{ .Values.mcpSync.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.mcpSync.image.pullPolicy }}
           env:
             - name: ORCHESTRATOR_URL

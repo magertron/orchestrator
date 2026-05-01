@@ -20,8 +20,16 @@ orchestrator:
   replicaCount: 1
   image:
     repository: curtismager20/mcp-orchestrator
-    tag: v1
-    pullPolicy: Always
+    # Image tag. Empty string ("") = use .Chart.AppVersion (recommended).
+    # Pin to a specific tag (e.g. "1.8.2-dev", "v1") only when overriding
+    # the chart-version-implied default — for example, to roll back to a
+    # known-good image while staying on the current chart, or to test a
+    # pre-release image without bumping the chart.
+    tag: ""
+    # IfNotPresent is correct once tags are versioned (every release tag
+    # is immutable, so re-pulling on every restart is wasted work).
+    # Use Always only with mutable tags like :latest or :v1.
+    pullPolicy: IfNotPresent
 
   # Port for the ext_authz gRPC Policy Decision Point.
   # Envoy's ext_authz HTTP filter on :10093 calls Check() on this port.
@@ -108,14 +116,15 @@ orchestrator:
     #   - "0" disables the timeout (Deploying never auto-fails)
     #
     # The orchestrator reads this as MCP_DEPLOY_TIMEOUT_SECONDS at startup.
-    deployTimeoutSeconds: "300"
+    deployTimeoutSeconds: "60"
 
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
   image:
     repository: curtismager20/mcp-sync
-    tag: v1
-    pullPolicy: Always
+    # Empty string ("") = use .Chart.AppVersion. Pin only when overriding.
+    tag: ""
+    pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: 50m
