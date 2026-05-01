@@ -1,87 +1,19 @@
-# Source code — never publish
-src/
-include/
-build/
-tools/
-third_party/
-proto/
-cmake/
-CMakeLists.txt
-CMakePresets.json
-
-# Keys and secrets — NEVER push these
-*.key
-*.pem
-private.pem
-public.pem
-*.p12
-*.pfx
-
-# Build artifacts
-*.o
-*.a
-*.so
-*.dylib
-build.log
-compile_commands.json
-
-# Internal tools
-sign-license
-mcp-orchestratord
-mcpctl/mcpctl
-
-# macOS
+gr
 .DS_Store
-**/.DS_Store
-
-# VSCode
+.README.md.swp
 .vscode/
-
-# Python
-venv/
-__pycache__/
-*.pyc
-
-# Backup folders
-Backx/
-Backxxx/
-
-# Docker
-docker-compose.yml
-Dockerfile
-build-push.sh
-
-# Dev files
-*.sh
-*.swp
-*.swo
-insto
-ui/node_modules/
-deploy/dev/
-.env.local
-ui/.env*
-schema/
-mcpctl/
-license-manager/
-Backx
-Backxxx
-curtout.txt
-deploy/envoy/bkup
-deploy/envoy/bootstrap copy 2.working.yaml
-k
-r
-rp
-t
-pf
-mcp-sync-binary
-mcp_traffic_sim.py
-venv.sh
-xyz
-ui/
-Screenshot*
-*.png
-*.jpg
-docs/*.svg
-docs/*.png
-docs/*.jpg
-*.pdf
+docs/.DS_Store
+docs/magerLinkedIN(1).png
+docs/magerLinkedIN(2).png
+docs/magerLinkedIN.png
+docs/magertron(1).png
+docs/magertron-logo-linkedin.svg
+docs/magertron-logo-v2.svg
+docs/magertron-logo-v3.svg
+docs/magertron-logo-v4.svg
+docs/magertron-logo.svg
+docs/magertron.jpg
+docs/screenshots/.DS_Store
+helm/.DS_Store
+helm/orchestrator/.DS_Store
+helm/orchestrator/templates/.DS_Store
