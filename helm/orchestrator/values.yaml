@@ -89,6 +89,27 @@ orchestrator:
     # operational implications.
     useNotifyFanout: "false"
 
+    # ── Deploy timeout (v1.8) ────────────────────────────────────────────
+    # Maximum time (seconds) a server can stay in "Deploying" state before
+    # HealthMonitor transitions it to Failed. This catches misconfigured
+    # deployments — wrong image, wrong port, container crashloops — that
+    # would otherwise sit in Deploying indefinitely waiting for k8s to
+    # produce a ready pod that's never coming.
+    #
+    # Default: 300s (5 min). Long enough that legitimate slow deploys
+    # (image pulls on slow registries, slow container init) complete
+    # naturally. Short enough that operators aren't left wondering why
+    # their broken deploy is still "in progress" 30 minutes later.
+    #
+    # Tuning guidance:
+    #   - Fast local clusters with cached images: "60" - "120"
+    #   - Default mixed environments: "300"  (recommended)
+    #   - Slow corporate networks / large images: "600"
+    #   - "0" disables the timeout (Deploying never auto-fails)
+    #
+    # The orchestrator reads this as MCP_DEPLOY_TIMEOUT_SECONDS at startup.
+    deployTimeoutSeconds: "300"
+
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
   image:

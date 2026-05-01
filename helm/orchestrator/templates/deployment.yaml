@@ -134,6 +134,12 @@ spec:
             # operational implications and fallback semantics.
             - name: MCP_USE_NOTIFY_FANOUT
               value: {{ .Values.orchestrator.env.useNotifyFanout | default "false" | quote }}
+            # ── Deploy timeout (v1.8) ────────────────────────────────────
+            # Max seconds a server can be stuck in "Deploying" before
+            # HealthMonitor transitions it to Failed. See values.yaml
+            # for tuning guidance. Default 300s (5 min). 0 = disabled.
+            - name: MCP_DEPLOY_TIMEOUT_SECONDS
+              value: {{ .Values.orchestrator.env.deployTimeoutSeconds | default "300" | quote }}
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
