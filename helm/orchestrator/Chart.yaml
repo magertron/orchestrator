@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.8.3-dev
-appVersion: "1.8.3-dev"
+version: 1.8.4-dev
+appVersion: "1.8.4-dev"
 keywords:
   - mcp
   - model-context-protocol
@@ -17,7 +17,7 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: changed
-      description: "BREAKING: resource names no longer double when release name is a prefix of chart name. Previously, `helm install mcp magertron/mcp-orchestrator` produced resources named `mcp-mcp-orchestrator-*` (release+chart concatenation). The fullname helper now detects prefix overlap and uses just the chart name, producing `mcp-orchestrator-*`. Other release names are unaffected (e.g. `helm install prod ...` still produces `prod-mcp-orchestrator-*`). MIGRATION: helm upgrade from 1.8.2-dev or earlier will tear down old resources and create new ones — including the PostgreSQL PVC. Postgres data is destroyed. Acceptable for dev installs; production installs should manually rename the PVC before upgrading or stay on 1.8.2-dev until a documented migration path exists."
+      description: "Phase F.4: /debug/stats observability endpoint."
     - kind: added
       description: "Orchestrator seed code now accepts plaintext admin passwords via `MCP_SEED_ADMIN_PASSWORD` env var and bcrypts in-process at seed time (work factor 12). Previously only `MCP_SEED_ADMIN_PASSWORD_HASH` (pre-computed bcrypt) was accepted. Three-tier priority chain: hash > plaintext > hardcoded fallback. Plaintext lives only in the Kubernetes Secret + memory; the database stores only the bcrypt hash. Plaintext is intentionally lower priority than hash so existing hash-based workflows continue unchanged."
     - kind: deprecated
