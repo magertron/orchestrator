@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.8.6-dev
-appVersion: "1.8.6-dev"
+version: 1.9.0-dev
+appVersion: "1.9.0-dev"
 keywords:
   - mcp
   - model-context-protocol
@@ -16,10 +16,12 @@ maintainers:
   - name: MCP Platform Team
 annotations:
   artifacthub.io/changes: |
+    - kind: added
+      description: "Orchestrator now applies the mcp-server-isolation NetworkPolicy to tenant namespaces it creates at runtime, closing the security gap left by the chart-side fix in 1.8.6-dev. Previously, namespaces created by the orchestrator (e.g. when an MCP server was deployed into a not-yet-existing namespace) had no isolation policy applied — pods were reachable from anywhere in the cluster (bypassing Envoy/ext_authz) and could read cloud metadata endpoints (169.254.169.254). K8sClient::ensure_namespace now also calls ensure_tenant_namespace_isolation_policy, which applies a NetworkPolicy byte-equivalent to templates/networkpolicy.yaml. Idempotent (409 Conflict treated as success). Fail-open with loud logging on permission/API errors so a missing RBAC binding or transient API hiccup doesn't block deploys. Opt-out via env var `MCP_NETWORK_POLICY_ENABLED=false` (chart's deployment.yaml wires this from `.Values.networkPolicy.enabled`)."
     - kind: fixed
       description: "Tenant namespaces (mcp-prod, mcp-staging, mcp-dev) are no longer created by the chart at install time. The previous behavior created them as Helm-managed resources, which collided with the orchestrator's runtime namespace creation (orchestrator labels them `app.kubernetes.io/managed-by: mcp-orchestrator` when an MCP server is deployed into a not-yet-existing namespace). The two ownership models conflicted on reinstall: any orchestrator-created namespace from a prior install caused subsequent `helm install` to fail with `cannot be imported into the current release: invalid ownership metadata`. Tenant namespaces are now exclusively orchestrator-owned, created on demand at first-server-deploy, and survive `helm uninstall`. The `.Values.namespaces` list is retained — it now seeds the default mcp-deployer role's allowed_namespaces and SSO providers' allowed_namespaces in the Postgres init data, plus configures the orchestrator's UI default-namespace dropdown. Removes `templates/namespaces.yaml`."
     - kind: fixed
-      description: "templates/networkpolicy.yaml now uses Helm `lookup` to skip NetworkPolicy generation for tenant namespaces that don't exist at install time. Previously, the same `range .Values.namespaces` fan-out as namespaces.yaml caused install failures (`namespaces \"mcp-prod\" not found`) on fresh clusters where tenant namespaces hadn't been created yet by the orchestrator. With `lookup`, the chart applies the isolation NetworkPolicy to tenant namespaces that exist (e.g. created by a prior orchestrator install or by ops), and quietly skips namespaces that don't yet exist. Known gap: namespaces created later by the orchestrator at server-deploy time will not get the chart-managed NetworkPolicy until a `helm upgrade` rerenders. Closing this gap requires C++ work to apply the policy from the orchestrator's runtime namespace-creation path; tracked as 1.9.x candidate."
+      description: "templates/networkpolicy.yaml now uses Helm `lookup` to skip NetworkPolicy generation for tenant namespaces that don't exist at install time. Previously, the same `range .Values.namespaces` fan-out as namespaces.yaml caused install failures (`namespaces \"mcp-prod\" not found`) on fresh clusters where tenant namespaces hadn't been created yet by the orchestrator. With `lookup`, the chart applies the isolation NetworkPolicy to tenant namespaces that exist (e.g. created by a prior orchestrator install or by ops), and quietly skips namespaces that don't yet exist. The runtime gap this leaves is now closed by orchestrator-side policy application (see new `added` entry above)."
     - kind: changed
       description: "Phase F.4: /debug/stats observability endpoint."
     - kind: added
