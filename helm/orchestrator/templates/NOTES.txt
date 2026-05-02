@@ -315,10 +315,10 @@ After logging in as admin, visit "Identity Providers" in the left nav.
 Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/README.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  v1.8 — multi-replica HA + sub-millisecond config fanout
+ v{{ .Chart.AppVersion }} — multi-replica HA + sub-millisecond config fanout
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  This chart is a v1.8 build (appVersion {{ .Chart.AppVersion }}). The
+  This chart is a v{{ .Chart.AppVersion }} build (appVersion {{ .Chart.AppVersion }}). The
   multi-replica HA architecture is fully assembled:
 
     Leader election — backed by a Kubernetes Lease. With
@@ -350,5 +350,5 @@ Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/READM
   Guide:
     https://github.com/curtismager20/magertron-mcpm/blob/main/docs/HA-DEPLOYMENT.md
 
-  Track v1.8 progress or report issues:
+  Track v{{ .Chart.AppVersion }} progress or report issues:
     https://github.com/mcp-platform/mcp-orchestrator/issues
