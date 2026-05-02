@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.9.0-dev
-appVersion: "1.9.0-dev"
+version: 1.10.0-dev
+appVersion: "1.10.0-dev"
 keywords:
   - mcp
   - model-context-protocol
@@ -16,6 +16,8 @@ maintainers:
   - name: MCP Platform Team
 annotations:
   artifacthub.io/changes: |
+    - kind: added
+      description: "Hot-path Postgres connection pool. ext_authz Check()'s three SQL queries (list_servers, list_tool_permissions, get_server_governance) now share a 4-connection pool (size tunable via env MCP_DB_POOL_SIZE, range [1,32]) instead of serializing on the single conn_mutex_. This was the next bottleneck after the 1.8.5-dev audit-decoupling fix: at 1000 rps, Check() latency p99 was hitting 429ms (just under Envoy's 500ms ext_authz timeout) because each Check held conn_mutex_ for ~10ms across two SQL queries. With the pool, those calls no longer block each other. Cold-path methods (admin REST CRUD, SCIM, deploys) continue to use the original conn_/conn_mutex_ — their aggregate rate is well under 5 req/sec so contention there is irrelevant. Pool exhaustion blocks on a condition variable rather than failing fast (we don't want fail-closed authorization under transient pool pressure); on connection breakage (pqxx::broken_connection or sql_error), the slot is marked for reset and rebuilt on next acquire. The three hot-path methods retain a conn_mutex_ fallback path if pool acquire throws, so a degraded pool can never produce empty server-list / governance / policy responses that would silently break authorization."
     - kind: added
       description: "Orchestrator now applies the mcp-server-isolation NetworkPolicy to tenant namespaces it creates at runtime, closing the security gap left by the chart-side fix in 1.8.6-dev. Previously, namespaces created by the orchestrator (e.g. when an MCP server was deployed into a not-yet-existing namespace) had no isolation policy applied — pods were reachable from anywhere in the cluster (bypassing Envoy/ext_authz) and could read cloud metadata endpoints (169.254.169.254). K8sClient::ensure_namespace now also calls ensure_tenant_namespace_isolation_policy, which applies a NetworkPolicy byte-equivalent to templates/networkpolicy.yaml. Idempotent (409 Conflict treated as success). Fail-open with loud logging on permission/API errors so a missing RBAC binding or transient API hiccup doesn't block deploys. Opt-out via env var `MCP_NETWORK_POLICY_ENABLED=false` (chart's deployment.yaml wires this from `.Values.networkPolicy.enabled`)."
     - kind: fixed
