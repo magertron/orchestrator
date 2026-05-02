@@ -5,6 +5,8 @@ entries:
       artifacthub.io/changes: |
         - kind: fixed
           description: "Tenant namespaces (mcp-prod, mcp-staging, mcp-dev) are no longer created by the chart at install time. The previous behavior created them as Helm-managed resources, which collided with the orchestrator's runtime namespace creation (orchestrator labels them `app.kubernetes.io/managed-by: mcp-orchestrator` when an MCP server is deployed into a not-yet-existing namespace). The two ownership models conflicted on reinstall: any orchestrator-created namespace from a prior install caused subsequent `helm install` to fail with `cannot be imported into the current release: invalid ownership metadata`. Tenant namespaces are now exclusively orchestrator-owned, created on demand at first-server-deploy, and survive `helm uninstall`. The `.Values.namespaces` list is retained — it now seeds the default mcp-deployer role's allowed_namespaces and SSO providers' allowed_namespaces in the Postgres init data, plus configures the orchestrator's UI default-namespace dropdown. Removes `templates/namespaces.yaml`."
+        - kind: fixed
+          description: "templates/networkpolicy.yaml now uses Helm `lookup` to skip NetworkPolicy generation for tenant namespaces that don't exist at install time. Previously, the same `range .Values.namespaces` fan-out as namespaces.yaml caused install failures (`namespaces \"mcp-prod\" not found`) on fresh clusters where tenant namespaces hadn't been created yet by the orchestrator. With `lookup`, the chart applies the isolation NetworkPolicy to tenant namespaces that exist (e.g. created by a prior orchestrator install or by ops), and quietly skips namespaces that don't yet exist. Known gap: namespaces created later by the orchestrator at server-deploy time will not get the chart-managed NetworkPolicy until a `helm upgrade` rerenders. Closing this gap requires C++ work to apply the policy from the orchestrator's runtime namespace-creation path; tracked as 1.9.x candidate."
         - kind: changed
           description: "Phase F.4: /debug/stats observability endpoint."
         - kind: added
@@ -51,10 +53,10 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.6-dev
-    created: "2026-05-02T13:40:15.116015098Z"
+    created: "2026-05-02T14:23:14.842729441Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
-    digest: 793b33a6adbd539ceef521fd6e73443fc3ebad8df9c8437a25c03d723219a57f
+    digest: 1ebf445d38746347744a8301ce909eaddb626ef35fa8fce69849c88ca736e276
     home: https://github.com/mcp-platform/mcp-orchestrator
     keywords:
     - mcp
@@ -118,7 +120,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.5-dev
-    created: "2026-05-02T13:40:15.114375201Z"
+    created: "2026-05-02T14:23:14.84109585Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f97ca83bd207dc3af32e401e762f913b12191b8403588c3fe0ebf1c4a64d1dcd
@@ -185,7 +187,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.4-dev
-    created: "2026-05-02T13:40:15.112734854Z"
+    created: "2026-05-02T14:23:14.83948285Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 30243d88817ff57f57af4b6ad9b8a2242cac9c524b68e87cd79c73f9c927eb4b
@@ -252,7 +254,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.3-dev
-    created: "2026-05-02T13:40:15.110260231Z"
+    created: "2026-05-02T14:23:14.837093434Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2be84b4e752df8dd42c1198ec05822ddbacfe27c8f64f8e9e6a62cc9e8472953
@@ -319,7 +321,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.2-dev
-    created: "2026-05-02T13:40:15.108615858Z"
+    created: "2026-05-02T14:23:14.8354648Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6aeee98e3415f191560395d1afa0cf358a77fc326ce6900ec2ab61c470de631c
@@ -386,7 +388,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.1-dev
-    created: "2026-05-02T13:40:15.106996421Z"
+    created: "2026-05-02T14:23:14.833865861Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4ee9c4b836cbc3ed4fc68ba5e1320d37907fe78560bec245ecac7e486ddbd7dc
@@ -453,7 +455,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.0-dev
-    created: "2026-05-02T13:40:15.105301212Z"
+    created: "2026-05-02T14:23:14.832009123Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f227f48f3f3e5d9d439da28ef80e0f6a10756de52ab1218a1bf7f106926f882f
@@ -520,7 +522,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.7.0-dev
-    created: "2026-05-02T13:40:15.103068487Z"
+    created: "2026-05-02T14:23:14.830106782Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9c89ceba9a5f89c663c161a02808b6e03a7108539fdc3da3eb885a63e5768bd8
@@ -587,7 +589,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.6.2
-    created: "2026-05-02T13:40:15.101551392Z"
+    created: "2026-05-02T14:23:14.828608001Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 16f165f9a9bf9d0c81ec7c53e600e33882e8088697f393926f01c61e2a14f725
@@ -646,7 +648,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.6.1
-    created: "2026-05-02T13:40:15.100113574Z"
+    created: "2026-05-02T14:23:14.827171704Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2959587010776b61cb96d3653f00916793c61fad4fe76fcfa80efc6af52f0aa3
@@ -703,7 +705,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.6.0
-    created: "2026-05-02T13:40:15.098711409Z"
+    created: "2026-05-02T14:23:14.825615588Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 56a274926be9ba2a8a8c82960999a6f084d7f1efe0e7e4c09b90bb8b1448cc37
@@ -730,7 +732,7 @@ entries:
           description: JWT keys now resolved strictly from env var / Secret (with auto-derive fallback when public key is empty).
     apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-05-02T13:40:15.096447589Z"
+    created: "2026-05-02T14:23:14.823507596Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 05e18d453821d208411180a714fc42cb48bfbecfe3005d918e908fd6473f337e
@@ -751,7 +753,7 @@ entries:
     version: 1.2.0
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-05-02T13:40:15.095334081Z"
+    created: "2026-05-02T14:23:14.822392587Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 891a828a382cde95602289a092c37c7b2bb965298c1cd8387e9f896ddbff7c81
@@ -772,7 +774,7 @@ entries:
     version: 1.1.0
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-05-02T13:40:15.094214764Z"
+    created: "2026-05-02T14:23:14.821220272Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 38f77ecfde063545a8a8322fe9de4eb00538acca4bd0f87f31bc61bfc6deac75
@@ -791,4 +793,4 @@ entries:
     urls:
     - https://magertron.com/charts/mcp-orchestrator-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-02T13:40:15.092893829Z"
+generated: "2026-05-02T14:23:14.819883713Z"
