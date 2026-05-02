@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.8.4-dev
-appVersion: "1.8.4-dev"
+version: 1.8.5-dev
+appVersion: "1.8.5-dev"
 keywords:
   - mcp
   - model-context-protocol
@@ -19,7 +19,7 @@ annotations:
     - kind: changed
       description: "Phase F.4: /debug/stats observability endpoint."
     - kind: added
-      description: "Orchestrator seed code now accepts plaintext admin passwords via `MCP_SEED_ADMIN_PASSWORD` env var and bcrypts in-process at seed time (work factor 12). Previously only `MCP_SEED_ADMIN_PASSWORD_HASH` (pre-computed bcrypt) was accepted. Three-tier priority chain: hash > plaintext > hardcoded fallback. Plaintext lives only in the Kubernetes Secret + memory; the database stores only the bcrypt hash. Plaintext is intentionally lower priority than hash so existing hash-based workflows continue unchanged."
+      description: "Decouple ext_authz Check() hot path from caller-plane audit drain. New dedicated audit Postgres connection (audit_conn_) prevents 250 rps load contention on the shared conn_mutex_. Audit writes now batch via multi-row INSERT with synchronous_commit=off, ~10-20x faster drain. gRPC sync server thread pool capped at 64 (defense in depth against thread explosion)."
     - kind: deprecated
       description: "`seed.adminPasswordHash` is deprecated in favor of `seed.adminPassword` (plaintext). The orchestrator now bcrypts plaintext in-process at seed time, eliminating the need for operators to pre-compute hashes. The hash field is retained for backward compatibility — if both are set, hash wins. Empty default for both fields means the chart auto-generates a plaintext password and the orchestrator bcrypts it."
     - kind: added
