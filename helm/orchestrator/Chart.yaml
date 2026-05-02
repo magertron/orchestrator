@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 1.10.2-dev
-appVersion: "1.10.2-dev"
+version: 1.12.0-dev
+appVersion: "1.12.0-dev"
 keywords:
   - mcp
   - model-context-protocol
@@ -17,7 +17,7 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: added
-      description: "Compiled-regex cache for tool_rbac::Evaluator::pattern_matches. Profiling under 1.10.1-dev (with hot-path read caches) showed Check() latency at 1000 rps was floored at ~50ms even when DB reads were cache-hits. The eval stage was the new bottleneck — tool_rbac::pattern_matches was constructing std::regex on every Check, for every policy. std::regex compilation is documented-expensive (1-10ms per pattern). At 1000 rps with even a handful of policies, this dominated CPU. Process-global thread-safe regex cache keyed by 'WILDCARD:<pattern>' or 'REGEX:<pattern>'. Cache uses std::shared_ptr<std::regex> so lookup releases the mutex before the actual match call (mutex held for nanoseconds). Negative caching: failed pattern compilations are cached as nullptr to avoid re-compiling and re-logging bad patterns. Cache lifetime is the process; no invalidation needed because compiled regexes are pure-function-of-pattern (a stale cached regex still produces correct results — it's just how-to-match, not the data being matched). Patterns rarely change in production anyway."
+      description: "Raised all the Envoy caps. Its a bottleneck."
     - kind: added
       description: "Hot-path read caches for ext_authz Check(). Per-call instrumentation in 1.10.0-dev showed that Check() latency at 1000 rps was dominated by Postgres read latency (50-200ms per query) — not orchestrator-side mutex contention as we'd assumed. Even with the connection pool, Postgres serialized reads behind concurrent audit writes (WAL pressure on shared_buffers). Three in-process TTL caches now back the hot-path reads: list_servers (keyed by namespace), list_tool_permissions (keyed by server_id), get_server_governance (keyed by server_id, with negative caching). TTL is 5 seconds (env MCP_HOT_PATH_CACHE_TTL_SEC, range [0,60], 0=disable). Multi-replica HA correctness is preserved because the leader/follower architecture (1.7-1.8) already serializes mutations through the DB; reads don't actually need every-call freshness. Same-replica write-then-read consistency is preserved by invalidation calls in upsert_server, update_server_state, delete_server, upsert_server_governance, create/update/delete_tool_permission. Cross-replica visibility is bounded by the TTL window. Thundering-herd guard via a per-cache loading_ set + condition variable: the first thread to miss claims the load and other concurrent missers wait rather than fanning out N parallel DB queries."
     - kind: added

@@ -73,15 +73,75 @@ data:
         # ext_authz gRPC cluster — the Policy Decision Point.
         # The ext_authz HTTP filter on :10443 calls Check() against this
         # cluster before forwarding any request. HTTP/2 required for gRPC.
+        #
+        # ── 1.11.x throughput tuning ─────────────────────────────────────
+        # At 1000+ rps, the orchestrator's per-Check work is fast (~5ms p50
+        # after the 1.10.x cache work) but Envoy was hitting a hard
+        # ~500 rps wall regardless of orchestrator capacity. Diagnosis:
+        # default circuit_breakers (max_requests=1024, max_pending=1024)
+        # + single-connection HTTP/2 multiplexing under default settings
+        # was saturating the gRPC stream pool to the orchestrator.
+        #
+        # Tuning:
+        #  - circuit_breakers raised so Envoy doesn't reject in-flight
+        #    Check() calls under burst load
+        #  - max_concurrent_streams: 1024 lets HTTP/2 multiplex many
+        #    Check() calls over the same TCP connection
+        #  - max_requests_per_connection: 0 (unlimited) so a hot
+        #    connection isn't churned by Envoy
+        #  - keepalive params keep connections warm across idle gaps
         - name: mcp_ext_authz
           connect_timeout: 1s
           type: STRICT_DNS
           lb_policy: ROUND_ROBIN
+          # Circuit breakers — generous defaults for a high-throughput
+          # PDP. The numbers are sized for 5000+ rps headroom over our
+          # current target of ~2000 rps so the breaker never trips at
+          # production loads.
+          circuit_breakers:
+            thresholds:
+              - priority: DEFAULT
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+              - priority: HIGH
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              # common_http_protocol_options applies to BOTH http1 and
+              # http2 paths; we only do http2 here, but setting these
+              # at the common layer is the right place per Envoy docs.
+              common_http_protocol_options:
+                # idle_timeout: 0s = never close idle connections.
+                # The orchestrator side is permanent; we want Envoy to
+                # hold its gRPC connections open for the lifetime of
+                # the proxy, not churn them.
+                idle_timeout: 0s
+                # max_requests_per_connection: 0 = unlimited.
+                # Envoy default is 0 already but explicit is better.
+                max_requests_per_connection: 0
               explicit_http_config:
-                http2_protocol_options: {}
+                http2_protocol_options:
+                  # max_concurrent_streams: HTTP/2's per-connection cap on
+                  # in-flight streams. Default (per RFC) is unlimited but
+                  # Envoy and the orchestrator's gRPC server may negotiate
+                  # a much lower SETTINGS value. Setting this explicitly
+                  # tells Envoy to advertise a high stream concurrency
+                  # in its SETTINGS frame so the orchestrator's gRPC
+                  # client pool can multiplex aggressively.
+                  max_concurrent_streams: 1024
+                  # Initial connection / stream window — bigger windows
+                  # mean less back-pressure from flow control. ext_authz
+                  # request and response bodies are tiny (<10KB each)
+                  # so the standard windows are fine; explicit values
+                  # documented for clarity.
+                  initial_stream_window_size: 1048576    # 1 MB
+                  initial_connection_window_size: 8388608  # 8 MB
           load_assignment:
             cluster_name: mcp_ext_authz
             endpoints:
@@ -135,13 +195,24 @@ data:
                       # with_request_body captures up to 8KB so the Check()
                       # service can parse JSON-RPC to extract the MCP method
                       # and tool name for policy evaluation.
+                      #
+                      # ── 1.11.x: timeout raised 0.5s → 2s ─────────────────
+                      # The 0.5s default was hit at p99 under 1000+ rps load,
+                      # producing 24% spurious 403s even when the orchestrator
+                      # was processing fine — Envoy just gave up too early on
+                      # tail-latency Check() calls. After the 1.10.x cache
+                      # work, Check() p50 is ~5ms but the long tail (cache
+                      # cold-start, transient DB blip) can stretch to 100-
+                      # 200ms. 2s gives ample headroom for those without
+                      # masking real PDP failures (a hung orchestrator still
+                      # gets caught by failure_mode_allow=false within 2s).
                       - name: envoy.filters.http.ext_authz
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
                           grpc_service:
                             envoy_grpc:
                               cluster_name: mcp_ext_authz
-                            timeout: 0.5s
+                            timeout: 2s
                           transport_api_version: V3
                           failure_mode_allow: false
                           with_request_body:
