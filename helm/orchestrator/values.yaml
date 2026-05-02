@@ -272,8 +272,29 @@ observability:
   metricsPort: 9091
   auditLogPath: /var/log/mcp/audit.log
 
-# ─── Namespaces ──────────────────────────────────────────────────────────────
-# Additional namespaces to create for MCP server deployments
+# ─── Tenant namespaces ───────────────────────────────────────────────────────
+# Tenant namespaces (e.g. mcp-prod, mcp-staging) are NOT created by this
+# chart. They are created on demand by the orchestrator when the first MCP
+# server is deployed into them — orchestrator-created namespaces carry the
+# label `app.kubernetes.io/managed-by: mcp-orchestrator` and survive helm
+# uninstall (they are not Helm-owned resources).
+#
+# This list seeds the orchestrator's defaults at first-install time:
+#
+#   - configmap.yaml:        first entry becomes the orchestrator's
+#                            `default_namespace` (used by the admin UI's
+#                            deploy form when no namespace is explicitly
+#                            chosen).
+#   - postgres-init.yaml:    seeds the default `mcp-deployer` role's
+#                            allowed_namespaces and the SSO providers'
+#                            allowed_namespaces with this list, so a
+#                            freshly-installed cluster has working RBAC
+#                            for these tenants out of the box.
+#
+# Deleting this list does NOT prevent operators from creating servers in
+# arbitrary namespaces — the orchestrator creates whichever namespace the
+# operator picks at deploy time. It only affects which namespaces are
+# pre-allowed in the seed RBAC policy.
 namespaces:
   - mcp-prod
   - mcp-staging
