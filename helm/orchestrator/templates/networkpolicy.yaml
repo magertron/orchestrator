@@ -1,5 +1,33 @@
+{{- /*
+NetworkPolicy for MCP server pods in tenant namespaces.
+
+Important: tenant namespaces (mcp-prod, mcp-staging, etc.) are NOT
+created by this chart — they are created on demand by the orchestrator
+when the first MCP server is deployed into them. So at chart install
+time, .Values.namespaces may list namespaces that don't yet exist.
+
+We use `lookup` to check namespace existence at render time, and skip
+generating the NetworkPolicy for namespaces that don't exist. This
+means customers with pre-existing tenant namespaces (created by ops,
+or by a previous orchestrator install) get the policy automatically.
+Customers who let the orchestrator create tenant namespaces at runtime
+will NOT get this NetworkPolicy applied — the orchestrator's runtime
+namespace-creation path needs to apply equivalent policies. That work
+is tracked separately (1.9.x candidate).
+
+The policy itself enforces:
+  - Ingress: only mcp-system namespace can connect to MCP server pods
+    (= Envoy hits MCP servers; nothing else in the cluster can bypass
+    Envoy and ext_authz)
+  - Egress:
+      * DNS allowed cluster-wide
+      * Internet allowed EXCEPT the cloud metadata endpoint
+        (169.254.169.254) — prevents a compromised MCP server from
+        stealing IAM credentials (Capital One pattern)
+*/}}
 {{- if .Values.networkPolicy.enabled }}
 {{- range .Values.namespaces }}
+{{- if lookup "v1" "Namespace" "" . }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -29,5 +57,6 @@ spec:
             cidr: 0.0.0.0/0
             except:
               - 169.254.169.254/32
+{{- end }}
 {{- end }}
 {{- end }}
