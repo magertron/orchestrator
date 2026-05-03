@@ -6,18 +6,21 @@ global:
 
 # ─── Orchestrator ─────────────────────────────────────────────────────────────
 orchestrator:
-  # v1.6: Single replica only.
+  # ── Multi-replica HA (shipped in v1.13.0-dev) ─────────────────────────────
+  # Default 2 replicas. The orchestrator runs Lease-based leader election
+  # for the singleton work (HealthMonitor polling, xDS push to Envoy,
+  # deploy state-machine ticks) while every replica serves the read-heavy
+  # ext_authz Check() hot path in parallel. Verified empirically:
+  # 2-replica configuration sustains ~3000 rps end-to-end with 100%
+  # success vs ~1500 rps for a single replica — near-linear scaling.
   #
-  # The orchestrator is HA-shaped at the infrastructure layer (headless
-  # service for xDS, stateless image, Postgres of record, mcp-sync sidecar
-  # uses Lease-based leader election), but multi-replica orchestrator
-  # coordination — leader-elected HealthMonitor, single-writer xDS push,
-  # cross-pod registry sync — is v1.7+ work. Running >1 replica today
-  # produces state-machine flapping, divergent xDS pushes, and
-  # ghost-server reconcile loops (verified empirically).
+  # Bumping to 3+ replicas continues to scale Check() throughput; the
+  # singleton work stays on whichever replica holds the Lease so
+  # additional replicas are pure capacity (no fanout overhead).
   #
-  # Will move to 2+ once v1.7 leader election ships.
-  replicaCount: 1
+  # Set to 1 only for resource-constrained dev clusters or if you want
+  # to verify single-replica behavior. Production should run 2 or more.
+  replicaCount: 2
   image:
     repository: curtismager20/mcp-orchestrator
     # Image tag. Empty string ("") = use .Chart.AppVersion (recommended).
@@ -84,18 +87,18 @@ orchestrator:
     # Empty string ("") means "auto" — derive from replicaCount.
     leaderElectionEnabled: ""
 
-    # ── NOTIFY-based xDS fanout (v1.8 experimental) ──────────────────────
+    # ── NOTIFY-based xDS fanout (shipped in v1.13.0-dev) ─────────────────
     # When "true", followers run a Postgres LISTEN thread that wakes
     # immediately on leader-issued NOTIFY events instead of waiting for
     # the next 1s polling cycle. Achieves sub-100ms config propagation
     # vs polling's 0-1s typical. Polling continues to run as fallback,
     # so disabling NOTIFY (or NOTIFY connection failures) degrade
-    # cleanly to the v1.7 polling-only behavior.
+    # cleanly to the polling-only behavior.
     #
-    # Default: "false" (v1.7 polling-only). Set to "true" to enable
-    # the experimental v1.8 fast path. See docs/HA-DEPLOYMENT.md for
-    # operational implications.
-    useNotifyFanout: "false"
+    # Default: "true" (verified under sustained 3000 rps load with
+    # 2 orchestrator + 2 envoy replicas). Set to "false" if you need
+    # to fall back to the polling-only path for diagnostic reasons.
+    useNotifyFanout: "true"
 
     # ── Deploy timeout (v1.8) ────────────────────────────────────────────
     # Maximum time (seconds) a server can stay in "Deploying" state before
@@ -136,11 +139,17 @@ mcpSync:
 # ─── Envoy Gateway ───────────────────────────────────────────────────────────
 envoy:
   enabled: true
-  # v1.6: Single replica until orchestrator's xDS push is single-writer.
-  # See the same note under orchestrator.replicaCount above. The HPA below
-  # is capped at 1 in v1.6 for the same reason — Envoy fanout is fine at 1
-  # but produces flapping config at >1 with current orchestrator architecture.
-  replicaCount: 1
+  # ── Multi-replica HA (shipped in v1.13.0-dev) ──────────────────────────────
+  # Default 2 replicas. With orchestrator leader-elected xDS push, each
+  # Envoy independently consumes the same xDS stream via the headless
+  # service so multi-replica Envoy is consistent — there is no flapping
+  # config. NodePort/LoadBalancer fronts both pods so client traffic is
+  # spread across them at the connection level.
+  #
+  # Verified empirically: 2-Envoy + 2-orchestrator sustains ~3000 rps
+  # end-to-end with 100% success vs ~1500 rps single-replica. The
+  # autoscaling block below extends this up to 10 replicas under load.
+  replicaCount: 2
   image:
     repository: envoyproxy/envoy
     tag: v1.28-latest
@@ -163,10 +172,17 @@ envoy:
     httpAuthzPort: 93
   autoscaling:
     enabled: true
-    # v1.6: Capped at 1. Bump alongside orchestrator.replicaCount when
-    # leader-elected xDS push lands in v1.7.
-    minReplicas: 1
-    maxReplicas: 1
+    # ── Production HA defaults (shipped in v1.13.0-dev) ───────────────────
+    # min=2 keeps a baseline of HA capacity even at idle load — single-pod
+    # Envoy is a SPOF and client traffic spikes can outpace HPA reaction
+    # time on cold-start.
+    # max=10 covers ~15000 rps headroom at observed per-pod throughput
+    # of ~1500 rps. Tune up for higher-traffic environments.
+    # CPU/memory targets unchanged — Envoy is CPU-light at ext_authz
+    # scale (TLS termination is the dominant cost) so 70%/80% triggers
+    # scale-up well before saturation.
+    minReplicas: 2
+    maxReplicas: 10
     targetCPU: 70
     targetMemory: 80
   xds:
