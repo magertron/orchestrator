@@ -135,11 +135,24 @@ data:
         env_vars      JSONB       NOT NULL DEFAULT '{}',
         labels        JSONB       NOT NULL DEFAULT '{}',
         annotations   JSONB       NOT NULL DEFAULT '{}',
+        -- Container entrypoint override. Both default to empty array '[]'
+        -- meaning "use the image's default ENTRYPOINT/CMD" — backward-
+        -- compatible with deploys made before this column existed. When
+        -- non-empty, command flows to the K8s container.command field
+        -- (overrides image ENTRYPOINT) and args flows to container.args
+        -- (overrides image CMD). Common case: forcing stdio-default MCP
+        -- server images (mcp/everything, tzolov/mcp-everything-server)
+        -- into HTTP mode via args=["node","dist/index.js","streamableHttp"].
+        command       JSONB       NOT NULL DEFAULT '[]',
+        args          JSONB       NOT NULL DEFAULT '[]',
         group_name    VARCHAR(255),
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace)
     );
+    -- For existing installs (upgrade path from pre-1.15 schema):
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS command JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
 
     -- ── RBAC Roles ─────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS roles (
