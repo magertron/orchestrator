@@ -2,8 +2,13 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
+<<<<<<< HEAD
 version: 1.35.0-dev
 appVersion: "1.35.0-dev"
+=======
+version: 1.2.1-dev
+appVersion: "1.2.1-dev"
+>>>>>>> 9c8801accbfc8ab48d0511c00c57c2a4e4166254
 keywords:
   - mcp
   - model-context-protocol
@@ -19,7 +24,11 @@ annotations:
     - kind: added
       description: "Raised all the Envoy caps. Its a bottleneck."
     - kind: added
+<<<<<<< HEAD
       description: "Failed at our dual MCP Server test. Going back to 1.18"
+=======
+      description: "Adding Logic at envoy and rest_server to maintain session state."
+>>>>>>> 9c8801accbfc8ab48d0511c00c57c2a4e4166254
     - kind: added
       description: "Hot-path Postgres connection pool. ext_authz Check()'s three SQL queries (list_servers, list_tool_permissions, get_server_governance) now share a 4-connection pool (size tunable via env MCP_DB_POOL_SIZE, range [1,32]) instead of serializing on the single conn_mutex_."
     - kind: added
