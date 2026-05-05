@@ -189,6 +189,19 @@ envoy:
     listenAddress: "0.0.0.0"
     port: 18000
     nodeId: mcp-gateway
+
+  # ── V3 ADS gRPC server (experimental, slice 3-5) ───────────────────────────
+  # Greenfield xDS path on generated Envoy v3 protos. Lives entirely in a
+  # parallel C++ subtree (src/gateway/v3/) and a separate gRPC port so it
+  # cannot affect the legacy hand-rolled xDS path on envoy.xds.port (18000).
+  # Enabling this only starts the v3 ADS gRPC server in the orchestrator;
+  # it does NOT affect Envoy's bootstrap or routing — Envoy is unaware of
+  # this server until separate bootstrap config is added in a future slice.
+  # Safe to enable for testing.
+  v3ads:
+    enabled: true
+    port: 18100
+    nodePort: 30100
     clusterName: mcp-gateway-cluster
 
 # ─── Load Balancer ────────────────────────────────────────────────────────────

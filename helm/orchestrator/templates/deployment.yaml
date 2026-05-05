@@ -49,6 +49,12 @@ spec:
             # routable via the Service (see services.yaml).
             - name: ext-authz
               containerPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+            {{- if .Values.envoy.v3ads.enabled }}
+            # V3 ADS gRPC port — experimental v3 xDS path (slice 3-5).
+            # Only exposed when the v3 ADS server is enabled.
+            - name: v3-ads
+              containerPort: {{ .Values.envoy.v3ads.port }}
+            {{- end }}
           env:
             - name: POD_NAMESPACE
               valueFrom:
@@ -84,6 +90,14 @@ spec:
             # the version needs to change at release time — no code edits.
             - name: MCP_VERSION
               value: {{ .Chart.AppVersion | quote }}
+            # ── V3 ADS gRPC server (experimental) ──────────────────────────
+            # Default disabled. When enabled, starts a parallel xDS gRPC
+            # server on a separate port for the new v3 path. See
+            # src/gateway/v3/ads_server.cpp for behavior.
+            - name: MCP_V3_ADS_ENABLED
+              value: {{ .Values.envoy.v3ads.enabled | quote }}
+            - name: MCP_V3_ADS_PORT
+              value: {{ .Values.envoy.v3ads.port | quote }}
             # ── HealthMonitor poll interval ────────────────────────────────
             # How often the orchestrator polls Kubernetes for pod state and
             # MCP server health. Drives UI responsiveness for state

@@ -43,3 +43,32 @@ spec:
     - name: xds
       port: {{ .Values.envoy.xds.port }}
       targetPort: {{ .Values.envoy.xds.port }}
+
+{{- if .Values.envoy.v3ads.enabled }}
+---
+# Dedicated NodePort service for V3 ADS gRPC (experimental, slice 3-5).
+# Separate from the main orchestrator service so the existing ClusterIP
+# topology stays untouched. Only renders when v3ads is enabled, so by
+# default this Service does not exist in the cluster at all.
+#
+# Reachable from outside the cluster at <node-ip>:30100, which lets the
+# operator's Mac speak gRPC to the v3 ADS server via grpcurl without
+# port-forwarding. In production (when the v3 path goes live), this is
+# also the port Envoy bootstrap will eventually point at.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-v3-ads
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: v3-ads
+      port: {{ .Values.envoy.v3ads.port }}
+      targetPort: {{ .Values.envoy.v3ads.port }}
+      nodePort: {{ .Values.envoy.v3ads.nodePort }}
+{{- end }}
