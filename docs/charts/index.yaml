@@ -61,10 +61,10 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.35.0-dev
-    created: "2026-05-06T19:44:22.827247-04:00"
+    created: "2026-05-07T08:03:00.908931-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
-    digest: 82f0b7d1c989caf52aa4cc0da160923e805ae1a80ac69560be4b0e1e6db055f7
+    digest: 5eb5fcfac605a8c542ccc3aac57c84f9442e0ed88462b3154b3dade801352869
     home: https://github.com/mcp-platform/mcp-orchestrator
     keywords:
     - mcp
@@ -140,7 +140,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.31.1-dev
-    created: "2026-05-06T19:44:22.825804-04:00"
+    created: "2026-05-07T08:03:00.907928-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a31524d6c85c3f75516d15a238cd5432edc5514aae92cf1daa83b58d486d3477
@@ -219,7 +219,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.30.0-dev
-    created: "2026-05-06T19:44:22.824674-04:00"
+    created: "2026-05-07T08:03:00.906943-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 77e19ef8db41de0af11803c68b6dc9f3a95bbaecf7b8eb07aa04b1aabbe2c3dd
@@ -298,7 +298,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.18.0-dev
-    created: "2026-05-06T19:44:22.819103-04:00"
+    created: "2026-05-07T08:03:00.901363-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e6387dc38dee274663336b2886b126d75ed66ea4e5f953ec194b07c231a2ab9c
@@ -377,7 +377,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.17.0-dev
-    created: "2026-05-06T19:44:22.81782-04:00"
+    created: "2026-05-07T08:03:00.899773-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c8dd744f749aa1d5fcd7e4568227f10e6a09510be6cd67da0d43ed840637cf6d
@@ -456,7 +456,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.16.0-dev
-    created: "2026-05-06T19:44:22.816603-04:00"
+    created: "2026-05-07T08:03:00.898354-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 479f9415c4a7ba9c39996bfb726d5c88dfb6bacf989936cf6334c1198e6f9531
@@ -535,7 +535,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.15.0-dev
-    created: "2026-05-06T19:44:22.815357-04:00"
+    created: "2026-05-07T08:03:00.897036-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 23963451e42a8bf7ea67b9fd8c804f6568fb39332f1717df517919bc3321b960
@@ -614,7 +614,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.14.0-dev
-    created: "2026-05-06T19:44:22.813746-04:00"
+    created: "2026-05-07T08:03:00.895709-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 73d321fd4e3b592f6e0b2a50d5e7b140d10c643736a8b03f7fb5ea9f4552fb02
@@ -693,7 +693,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.13.0-dev
-    created: "2026-05-06T19:44:22.812451-04:00"
+    created: "2026-05-07T08:03:00.893437-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5adf3af12989a968f965e5023bcc4f12b1197e3bb5359fe5c70ddc558734cfad
@@ -772,7 +772,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.12.0-dev
-    created: "2026-05-06T19:44:22.811104-04:00"
+    created: "2026-05-07T08:03:00.892159-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5d1bc5817d1632e6d7b1bd8ab53dbdd3a0764589e1d77e33ddbff62f18424042
@@ -849,7 +849,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.11.1-dev
-    created: "2026-05-06T19:44:22.809885-04:00"
+    created: "2026-05-07T08:03:00.890916-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8c3579e99e4f0cb00045f0d7c02dd6bde78390353d47c4c8430e6a152fb1a06a
@@ -928,7 +928,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.10.2-dev
-    created: "2026-05-06T19:44:22.808157-04:00"
+    created: "2026-05-07T08:03:00.889581-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4b6d51768232194a5e5540665d7ccb7bdcf9210c19f8a543f551b0003b03ddc3
@@ -1005,7 +1005,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.10.1-dev
-    created: "2026-05-06T19:44:22.80678-04:00"
+    created: "2026-05-07T08:03:00.887984-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c3e92b75287ddc08fd0c549db80f99f4e45db410a5026626477b0489c9f601e8
@@ -1080,7 +1080,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.10.0-dev
-    created: "2026-05-06T19:44:22.805523-04:00"
+    created: "2026-05-07T08:03:00.886698-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 25c2f639c5f0d4cc2d4111a47958760e5a26ac0136884e0169ad5830886724d7
@@ -1153,7 +1153,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.9.0-dev
-    created: "2026-05-06T19:44:22.841268-04:00"
+    created: "2026-05-07T08:03:00.924783-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0f9ebc6c9e43079d82013415dc49ff00da27f56a6f5dd5801689dfcffb409f0b
@@ -1224,7 +1224,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.6-dev
-    created: "2026-05-06T19:44:22.840081-04:00"
+    created: "2026-05-07T08:03:00.92314-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 1ebf445d38746347744a8301ce909eaddb626ef35fa8fce69849c88ca736e276
@@ -1291,7 +1291,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.5-dev
-    created: "2026-05-06T19:44:22.838872-04:00"
+    created: "2026-05-07T08:03:00.921512-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f97ca83bd207dc3af32e401e762f913b12191b8403588c3fe0ebf1c4a64d1dcd
@@ -1358,7 +1358,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.4-dev
-    created: "2026-05-06T19:44:22.837694-04:00"
+    created: "2026-05-07T08:03:00.919979-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 30243d88817ff57f57af4b6ad9b8a2242cac9c524b68e87cd79c73f9c927eb4b
@@ -1425,7 +1425,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.3-dev
-    created: "2026-05-06T19:44:22.836394-04:00"
+    created: "2026-05-07T08:03:00.918827-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2be84b4e752df8dd42c1198ec05822ddbacfe27c8f64f8e9e6a62cc9e8472953
@@ -1492,7 +1492,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.2-dev
-    created: "2026-05-06T19:44:22.835165-04:00"
+    created: "2026-05-07T08:03:00.917624-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6aeee98e3415f191560395d1afa0cf358a77fc326ce6900ec2ab61c470de631c
@@ -1559,7 +1559,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.1-dev
-    created: "2026-05-06T19:44:22.834027-04:00"
+    created: "2026-05-07T08:03:00.91608-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4ee9c4b836cbc3ed4fc68ba5e1320d37907fe78560bec245ecac7e486ddbd7dc
@@ -1626,7 +1626,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.8.0-dev
-    created: "2026-05-06T19:44:22.832942-04:00"
+    created: "2026-05-07T08:03:00.914771-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f227f48f3f3e5d9d439da28ef80e0f6a10756de52ab1218a1bf7f106926f882f
@@ -1693,7 +1693,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.7.0-dev
-    created: "2026-05-06T19:44:22.83181-04:00"
+    created: "2026-05-07T08:03:00.913665-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9c89ceba9a5f89c663c161a02808b6e03a7108539fdc3da3eb885a63e5768bd8
@@ -1760,7 +1760,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.6.2
-    created: "2026-05-06T19:44:22.830409-04:00"
+    created: "2026-05-07T08:03:00.912556-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 16f165f9a9bf9d0c81ec7c53e600e33882e8088697f393926f01c61e2a14f725
@@ -1819,7 +1819,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.6.1
-    created: "2026-05-06T19:44:22.829356-04:00"
+    created: "2026-05-07T08:03:00.911472-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2959587010776b61cb96d3653f00916793c61fad4fe76fcfa80efc6af52f0aa3
@@ -1876,7 +1876,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.6.0
-    created: "2026-05-06T19:44:22.828298-04:00"
+    created: "2026-05-07T08:03:00.909974-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 56a274926be9ba2a8a8c82960999a6f084d7f1efe0e7e4c09b90bb8b1448cc37
@@ -1955,7 +1955,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.2.1-dev
-    created: "2026-05-06T19:44:22.823675-04:00"
+    created: "2026-05-07T08:03:00.905669-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3d80f15f40fd1c8d29b5c0929f511168b9f9cd4677e2df4fbc9f5fb4cd35db30
@@ -1982,7 +1982,7 @@ entries:
           description: JWT keys now resolved strictly from env var / Secret (with auto-derive fallback when public key is empty).
     apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-05-06T19:44:22.822484-04:00"
+    created: "2026-05-07T08:03:00.904385-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 05e18d453821d208411180a714fc42cb48bfbecfe3005d918e908fd6473f337e
@@ -2061,7 +2061,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 1.2.0-dev
-    created: "2026-05-06T19:44:22.820684-04:00"
+    created: "2026-05-07T08:03:00.902589-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 32b20983b8f0e1ff3b87d4fb51044ea612674ca75a80d7808679ad4508944651
@@ -2082,7 +2082,7 @@ entries:
     version: 1.2.0-dev
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-05-06T19:44:22.804202-04:00"
+    created: "2026-05-07T08:03:00.885348-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 891a828a382cde95602289a092c37c7b2bb965298c1cd8387e9f896ddbff7c81
@@ -2103,7 +2103,7 @@ entries:
     version: 1.1.0
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2026-05-06T19:44:22.802415-04:00"
+    created: "2026-05-07T08:03:00.883616-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 38f77ecfde063545a8a8322fe9de4eb00538acca4bd0f87f31bc61bfc6deac75
@@ -2122,4 +2122,4 @@ entries:
     urls:
     - https://magertron.com/charts/mcp-orchestrator-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-06T19:44:22.800886-04:00"
+generated: "2026-05-07T08:03:00.882497-04:00"
