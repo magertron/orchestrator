@@ -146,6 +146,12 @@ data:
         command       JSONB       NOT NULL DEFAULT '[]',
         args          JSONB       NOT NULL DEFAULT '[]',
         group_name    VARCHAR(255),
+        -- Slice 6f: data plane selector. "legacy" routes through the legacy
+        -- xDS push handler (existing behavior); "v3" routes through the v3
+        -- ADS pull-driven handler (slice 6e Option A). The v3 ADS subscriber
+        -- in src/gateway/v3/ads_subscriber.cpp filters on this field —
+        -- only servers with routing_mode='v3' are exposed to v3 Envoy.
+        routing_mode  VARCHAR(16) NOT NULL DEFAULT 'legacy',
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace)
@@ -153,6 +159,7 @@ data:
     -- For existing installs (upgrade path from pre-1.15 schema):
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS command JSONB NOT NULL DEFAULT '[]';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(16) NOT NULL DEFAULT 'legacy';
 
     -- ── RBAC Roles ─────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS roles (
