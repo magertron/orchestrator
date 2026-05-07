@@ -1,0 +1,101 @@
+{{- if .Values.envoy.v3.enabled }}
+# ─── V3 Envoy Deployment ────────────────────────────────────────────────────
+# Standalone Envoy pod running the v3 xDS path bootstrap. Architecturally
+# parallel to the legacy Envoy (templates/envoy.yaml) — does NOT replace it.
+# Both pods run side-by-side, consuming from different ADS endpoints, serving
+# different listener ports.
+#
+# This pod's only knowledge of "v3" is in its ConfigMap-mounted bootstrap.yaml
+# (templates/envoy-v3-bootstrap.yaml). The Envoy binary itself is the same
+# upstream image as the legacy pod — the divergence is config, not code.
+#
+# Single-replica by default for slice 6e validation. Production-grade HA
+# (multi-replica + HPA, mirroring legacy autoscaling) is deferred until v3
+# proves out under load. Slice 8+ work.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy-v3
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway-v3
+spec:
+  replicas: {{ .Values.envoy.v3.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mcp.selectorLabels" . | nindent 6 }}
+      component: envoy-gateway-v3
+  template:
+    metadata:
+      labels:
+        {{- include "mcp.selectorLabels" . | nindent 8 }}
+        component: envoy-gateway-v3
+      annotations:
+        # Roll the pod when the bootstrap ConfigMap changes — without this,
+        # editing bootstrap.yaml has no effect until something else triggers
+        # a restart.
+        checksum/bootstrap: {{ include (print $.Template.BasePath "/envoy-v3-bootstrap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: envoy-v3
+          # Reuses the same Envoy image+tag as the legacy Envoy. Pinned via
+          # values.yaml so we can bump both Envoys in lock-step or diverge
+          # if needed.
+          image: "{{ .Values.envoy.v3.image.repository | default .Values.envoy.image.repository }}:{{ .Values.envoy.v3.image.tag | default .Values.envoy.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-c"
+            - "/etc/envoy/bootstrap.yaml"
+            - "--service-cluster"
+            - "{{ .Values.envoy.v3.clusterName }}"
+            - "--service-node"
+            - "{{ .Values.envoy.v3.nodeId }}"
+          ports:
+            # Customer-facing TLS+ext_authz listener
+            - name: https
+              containerPort: {{ .Values.envoy.v3.listenerPort }}
+            # Envoy admin API (distinct from legacy's 9901)
+            - name: admin
+              containerPort: 9902
+          volumeMounts:
+            - name: bootstrap
+              mountPath: /etc/envoy
+              readOnly: true
+            - name: tls
+              mountPath: /etc/envoy/tls
+              readOnly: true
+          # Probes go against admin port; /ready returns 200 when the
+          # bootstrap parsed cleanly and dynamic resources are warm.
+          # Same pattern as legacy Envoy.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: admin
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: admin
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml (.Values.envoy.v3.resources | default .Values.envoy.resources) | nindent 12 }}
+      volumes:
+        - name: bootstrap
+          configMap:
+            name: {{ include "mcp.fullname" . }}-envoy-v3-bootstrap
+            items:
+              - key: bootstrap.yaml
+                path: bootstrap.yaml
+        # Reuses the legacy Envoy's TLS Secret — both Envoys present the
+        # same self-signed cert. Acceptable for dev; production deployments
+        # should provide a separate cert for the v3 path. See SLICE_6E_PLAN.md
+        # decision E1.
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.envoySecretName }}
+{{- end }}

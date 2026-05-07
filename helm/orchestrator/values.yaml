@@ -204,6 +204,25 @@ envoy:
     nodePort: 30100
     clusterName: mcp-gateway-cluster
 
+  # ── V3 Envoy data plane (slice 6e, experimental) ───────────────────────────
+  # Standalone Envoy pod consuming from the v3 ADS server (envoy.v3ads above).
+  # Runs in parallel with the legacy Envoy (envoy.* settings, port 30443) —
+  # both pods exist in the same cluster, with legacy serving routing_mode=
+  # "legacy" servers and v3 serving routing_mode="v3" servers. Default
+  # disabled; enable for slice 6e validation. Production-default stays off
+  # until v3 proves out under load.
+  v3:
+    enabled: false
+    replicaCount: 1
+    listenerPort: 10444
+    nodePort: 30444
+    nodeId: mcp-gateway-v3
+    clusterName: mcp-gateway-v3-cluster
+    image:
+      repository: ""
+      tag: ""
+    resources: {}
+
 # ─── Load Balancer ────────────────────────────────────────────────────────────
 # Controls how the Envoy gateway is exposed outside the cluster.
 #

@@ -1,0 +1,33 @@
+{{- if .Values.envoy.v3.enabled }}
+# ─── V3 Envoy NodePort Service ──────────────────────────────────────────────
+# Exposes the v3 Envoy pod externally on NodePort 30444. Customers and
+# integration tests targeting the v3 path hit:
+#
+#   https://<node-ip>:30444/mcp/<namespace>/<server-name>/
+#
+# Architecturally parallel to the legacy Envoy Service (templates/helm-envoy-
+# service.yaml) which exposes 30443 → 10443. Both NodePorts are independent;
+# legacy traffic continues to flow on 30443 unaffected.
+#
+# Type=NodePort by default for slice 6e validation. Production deployments
+# should front this with a proper LoadBalancer or Ingress (slice 8+ work).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy-v3
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway-v3
+spec:
+  type: NodePort
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+    component: envoy-gateway-v3
+  ports:
+    - name: https
+      port: {{ .Values.envoy.v3.listenerPort }}
+      targetPort: {{ .Values.envoy.v3.listenerPort }}
+      nodePort: {{ .Values.envoy.v3.nodePort }}
+      protocol: TCP
+{{- end }}

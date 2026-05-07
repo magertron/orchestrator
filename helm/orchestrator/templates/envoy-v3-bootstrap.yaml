@@ -1,0 +1,193 @@
+{{- if .Values.envoy.v3.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy-v3-bootstrap
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway-v3
+data:
+  bootstrap.yaml: |
+    # ─── V3 ENVOY BOOTSTRAP ───────────────────────────────────────────────────
+    # Experimental v3 xDS data plane. Architecturally identical to the legacy
+    # bootstrap (templates/envoy-bootstrap.yaml), with three key differences:
+    #
+    #   1. Connects to v3 ADS on port 18100 (not legacy xDS on 18000)
+    #   2. Listens on 10444 (not 10443) — distinct port avoids conflicts
+    #      when both Envoys run side-by-side in the same cluster
+    #   3. Distinct node id "mcp-gateway-v3" so orchestrator logs can tell
+    #      legacy and v3 streams apart
+    #
+    # Static listener + dynamic CDS/RDS via ADS (mirrors legacy: LDS not used).
+    # The v3 path will populate clusters and route configs from the slice 6a-d
+    # AdsSubscriber's stored resources for any server with routing_mode: v3.
+    # If no v3-marked servers exist, Envoy receives empty CDS/RDS responses
+    # and serves no routes — the listener is up but every request 404s.
+    node:
+      id: {{ .Values.envoy.v3.nodeId }}
+      cluster: {{ .Values.envoy.v3.clusterName }}
+
+    dynamic_resources:
+      ads_config:
+        api_type: GRPC
+        transport_api_version: V3
+        grpc_services:
+          - envoy_grpc:
+              cluster_name: mcp_orchestrator_v3_ads
+      cds_config:
+        resource_api_version: V3
+        ads: {}
+
+    static_resources:
+      clusters:
+        # ── v3 ADS cluster — connects to orchestrator's V3AdsServer ──────────
+        # Uses STRICT_DNS against the v3-ads-headless service so each
+        # orchestrator pod IP is independently reachable; HTTP/2 required
+        # for gRPC.
+        - name: mcp_orchestrator_v3_ads
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
+          load_assignment:
+            cluster_name: mcp_orchestrator_v3_ads
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.envoy.xds.port }}
+
+        # ── ext_authz cluster — copy verbatim from legacy bootstrap ──────────
+        # The orchestrator's PDP is the same; both Envoys call Check() against
+        # the same endpoint on port 9092. Tuning values match legacy (sized
+        # for the production target of 2000+ rps at 5000 rps headroom).
+        - name: mcp_ext_authz
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          circuit_breakers:
+            thresholds:
+              - priority: DEFAULT
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+              - priority: HIGH
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              common_http_protocol_options:
+                idle_timeout: 0s
+                max_requests_per_connection: 0
+              explicit_http_config:
+                http2_protocol_options:
+                  max_concurrent_streams: 1024
+                  initial_stream_window_size: 1048576
+                  initial_connection_window_size: 8388608
+          load_assignment:
+            cluster_name: mcp_ext_authz
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+
+      listeners:
+        # ── HTTPS listener on 10444 — TLS-terminated, ext_authz-gated ────────
+        # Mirrors legacy mcp_https_listener (10443). Same TLS, same
+        # ext_authz wiring, same access log shape. Only difference: the
+        # bind port and a distinct stat_prefix so metrics don't collide
+        # with legacy in shared dashboards.
+        - name: mcp_https_listener_v3
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: {{ .Values.envoy.v3.listenerPort }}
+          filter_chains:
+            - transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  common_tls_context:
+                    tls_certificates:
+                      - certificate_chain:
+                          filename: /etc/envoy/tls/tls.crt
+                        private_key:
+                          filename: /etc/envoy/tls/tls.key
+              filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: mcp_ingress_v3
+                    codec_type: AUTO
+                    use_remote_address: true
+                    rds:
+                      route_config_name: mcp_route
+                      config_source:
+                        resource_api_version: V3
+                        ads: {}
+                    http_filters:
+                      # ext_authz timeout 2s matches legacy (1.11.x tuning).
+                      # failure_mode_allow: false → fail-closed on PDP outage.
+                      - name: envoy.filters.http.ext_authz
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: mcp_ext_authz
+                            timeout: 2s
+                          transport_api_version: V3
+                          failure_mode_allow: false
+                          with_request_body:
+                            max_request_bytes: 8192
+                            allow_partial_message: false
+                            pack_as_bytes: false
+                          include_peer_certificate: false
+                          stat_prefix: mcp_ext_authz_v3
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                    access_log:
+                      - name: envoy.access_loggers.stdout
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                          log_format:
+                            json_format:
+                              ts: "%START_TIME%"
+                              method: "%REQ(:METHOD)%"
+                              path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                              status: "%RESPONSE_CODE%"
+                              duration_ms: "%DURATION%"
+                              upstream: "%UPSTREAM_HOST%"
+                              trace_id: "%REQ(X-REQUEST-ID)%"
+                              authz_flags: "%RESPONSE_FLAGS%"
+                              authz_reason: "%RESP(x-mcp-authz-denied)%"
+                              # v3 marker — lets log-aggregation systems
+                              # filter v3 vs legacy traffic at a glance.
+                              path_version: "v3"
+
+    # Envoy admin API on a distinct port so legacy and v3 admin
+    # interfaces don't collide if both are debugged via port-forward.
+    admin:
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 9902
+      access_log:
+        - name: envoy.access_loggers.stdout
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+{{- end }}

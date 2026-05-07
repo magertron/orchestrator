@@ -19,6 +19,7 @@ spec:
     metadata:
       labels:
         {{- include "mcp.selectorLabels" . | nindent 8 }}
+        component: orchestrator
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: {{ .Values.observability.metricsPort | quote }}
