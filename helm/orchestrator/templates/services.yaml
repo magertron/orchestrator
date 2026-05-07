@@ -44,6 +44,15 @@ spec:
     - name: xds
       port: {{ .Values.envoy.xds.port }}
       targetPort: {{ .Values.envoy.xds.port }}
+    # Bug #3 fix follow-up: REST API on headless so Envoy can resolve to
+    # individual pod IPs and load-balance directly. Without this, the
+    # mcp_orchestrator cluster in envoy-bootstrap.yaml saw only the
+    # ClusterIP VIP and one sick pod produced ~50% failure rates because
+    # kube-proxy round-robins blindly. With pod IPs visible to Envoy,
+    # connection-pool retries against a different pod work as expected.
+    - name: http
+      port: {{ .Values.api.httpPort }}
+      targetPort: {{ .Values.api.httpPort }}
 
 # Slice 6e Option A: v3-ads NodePort service removed. v3 ADS traffic now
 # rides the legacy xDS port (18000) and the unified AdsServiceImpl in the

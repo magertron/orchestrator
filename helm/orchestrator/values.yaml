@@ -212,7 +212,7 @@ envoy:
   # disabled; enable for slice 6e validation. Production-default stays off
   # until v3 proves out under load.
   v3:
-    enabled: false
+    enabled: true
     replicaCount: 1
     listenerPort: 10444
     nodePort: 30444

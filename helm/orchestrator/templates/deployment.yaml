@@ -65,6 +65,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            # POD_IP is exposed via Downward API so the LeaderLock can publish
+            # it as a lease annotation when this pod becomes leader. Followers
+            # then read the annotation and use it as the proxy_to_leader
+            # endpoint, eliminating most "not the current leader" 503s.
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             # ── SSO JIT provisioning allowlist ──────────────────────────────
             # Comma-separated list of email domains. If a user logs in via
             # SSO with an email domain matching, they're provisioned on the

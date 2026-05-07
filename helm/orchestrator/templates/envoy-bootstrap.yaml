@@ -56,6 +56,11 @@ data:
                           port_value: {{ .Values.envoy.xds.port }}
 
         # Direct cluster to orchestrator REST API (for non-xDS traffic)
+        # Bug #3 fix follow-up: point REST cluster at the headless service
+        # so Envoy can independently health-check and load-balance across
+        # both pod IPs. Previously this used the regular ClusterIP service,
+        # which collapsed to a single VIP and ~50% failure rate when one
+        # pod was momentarily unhealthy.
         - name: mcp_orchestrator
           connect_timeout: 5s
           type: STRICT_DNS
@@ -67,7 +72,7 @@ data:
                   - endpoint:
                       address:
                         socket_address:
-                          address: {{ include "mcp.fullname" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.api.httpPort }}
 
         # ext_authz gRPC cluster — the Policy Decision Point.
