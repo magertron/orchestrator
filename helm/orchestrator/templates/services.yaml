@@ -27,7 +27,8 @@ spec:
       targetPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
 ---
-# Headless service for xDS gRPC — STRICT_DNS resolves to pod IPs
+# Headless service for xDS gRPC + REST + ext_authz — STRICT_DNS resolves
+# to pod IPs, bypassing the ClusterIP/kube-proxy NAT layer.
 apiVersion: v1
 kind: Service
 metadata:
@@ -53,6 +54,18 @@ spec:
     - name: http
       port: {{ .Values.api.httpPort }}
       targetPort: {{ .Values.api.httpPort }}
+    # ── Bug E fix (2026-05-09) ──────────────────────────────────────────
+    # ext_authz on headless for the same reason as the Bug #3 follow-up
+    # above — bypass kube-proxy. With the ClusterIP path, Envoy's
+    # mcp_ext_authz cluster saw 37-55% connect_fail rates on cold-start
+    # bursts (UAEX flag, upstream=null, destroy_remote in the stats).
+    # Diagnosed via per-pod TCP probes (40/40 OK), Envoy admin /stats
+    # showing membership_total=1 with cx_connect_fail=11/20 cx_total
+    # right after envoy rollout. Per-pod resolution eliminates it.
+    # ────────────────────────────────────────────────────────────────────
+    - name: ext-authz
+      port: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+      targetPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
 # Slice 6e Option A: v3-ads NodePort service removed. v3 ADS traffic now
 # rides the legacy xDS port (18000) and the unified AdsServiceImpl in the

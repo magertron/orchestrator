@@ -68,6 +68,18 @@ data:
         # The orchestrator's PDP is the same; both Envoys call Check() against
         # the same endpoint on port 9092. Tuning values match legacy (sized
         # for the production target of 2000+ rps at 5000 rps headroom).
+        #
+        # ── Bug E fix (2026-05-09) ───────────────────────────────────────
+        # Switched from the ClusterIP service to the headless service —
+        # same fix as legacy bootstrap. With the ClusterIP, kube-proxy
+        # NAT'd new SYNs to backend pods, and under burst (cold connection
+        # pool, e.g. just after Envoy or orchestrator restart) ~37-55%
+        # got RST'd before the gRPC server could accept them. Reproduced
+        # cleanly via `kubectl rollout restart` of v3 envoy followed by
+        # 30-burst: 11/30 returned 403 with UAEX flag, upstream=null,
+        # cx_connect_fail=11 / cx_destroy_remote=11 in admin /stats.
+        # Headless service gives Envoy direct per-pod endpoints,
+        # membership_total goes from 1 → N, failure mode disappears.
         - name: mcp_ext_authz
           connect_timeout: 1s
           type: STRICT_DNS
@@ -102,7 +114,7 @@ data:
                   - endpoint:
                       address:
                         socket_address:
-                          address: {{ include "mcp.fullname" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
       listeners:
@@ -142,6 +154,15 @@ data:
                     http_filters:
                       # ext_authz timeout 2s matches legacy (1.11.x tuning).
                       # failure_mode_allow: false → fail-closed on PDP outage.
+                      #
+                      # ── Body-size foot-gun fix (2026-05-09) ──────────────
+                      # Same fix as legacy bootstrap. Previously
+                      # max_request_bytes=8192 + allow_partial_message=false
+                      # would synthesize a 403 with identical wire signature
+                      # to Bug E (UAEX, upstream=null, null reason) for any
+                      # request body > 8KB. Raised to 64KB and flipped to
+                      # truncate-and-Check() for bodies that still exceed
+                      # the cap. See legacy bootstrap for full rationale.
                       - name: envoy.filters.http.ext_authz
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
@@ -152,8 +173,8 @@ data:
                           transport_api_version: V3
                           failure_mode_allow: false
                           with_request_body:
-                            max_request_bytes: 8192
-                            allow_partial_message: false
+                            max_request_bytes: 65536
+                            allow_partial_message: true
                             pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_v3

@@ -95,6 +95,21 @@ data:
         #  - max_requests_per_connection: 0 (unlimited) so a hot
         #    connection isn't churned by Envoy
         #  - keepalive params keep connections warm across idle gaps
+        #
+        # ── Bug E fix (2026-05-09) ───────────────────────────────────────
+        # Switched from the ClusterIP service to the headless service —
+        # same fix as the mcp_orchestrator cluster above (Bug #3
+        # follow-up). With the ClusterIP, kube-proxy NAT'd new SYNs to
+        # backend pods, and under burst (cold connection pool, e.g. just
+        # after Envoy or orchestrator restart) ~37-55% got RST'd before
+        # the gRPC server could accept them. Diagnosis trail: UAEX
+        # response_flags + upstream=null in access logs, cx_connect_fail
+        # equal to cx_destroy_remote in admin /stats, membership_total=1
+        # confirming STRICT_DNS resolved a single ClusterIP. Direct TCP
+        # probes to each pod were 40/40 OK — failure was kube-proxy
+        # NAT/conntrack under burst, not the orchestrator. Headless
+        # gives Envoy direct per-pod endpoints; membership_total goes
+        # from 1 → N (one per Ready pod) and the failure mode disappears.
         - name: mcp_ext_authz
           connect_timeout: 1s
           type: STRICT_DNS
@@ -154,7 +169,7 @@ data:
                   - endpoint:
                       address:
                         socket_address:
-                          address: {{ include "mcp.fullname" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
       listeners:
@@ -197,7 +212,7 @@ data:
                       # ext_authz runs BEFORE router. Every request triggers
                       # a gRPC Check() to the orchestrator's ext_authz service.
                       # failure_mode_allow: false -> fail-closed on PDP outage.
-                      # with_request_body captures up to 8KB so the Check()
+                      # with_request_body captures up to 64KB so the Check()
                       # service can parse JSON-RPC to extract the MCP method
                       # and tool name for policy evaluation.
                       #
@@ -211,6 +226,31 @@ data:
                       # 200ms. 2s gives ample headroom for those without
                       # masking real PDP failures (a hung orchestrator still
                       # gets caught by failure_mode_allow=false within 2s).
+                      #
+                      # ── Body-size foot-gun fix (2026-05-09) ──────────────
+                      # Previously: max_request_bytes=8192 with
+                      # allow_partial_message=false. If a request body
+                      # exceeded 8KB, Envoy refused to call Check() at all
+                      # and synthesized a 403 with the EXACT same wire
+                      # signature as Bug E (UAEX flag, upstream=null, null
+                      # authz_reason). Different root cause, identical
+                      # surface symptom — would have caused hours of
+                      # confused debugging the first time someone sent a
+                      # tools/call payload with a large argument blob.
+                      #
+                      # Fix:
+                      #  - max_request_bytes raised 8192 → 65536 (64KB).
+                      #    Realistic MCP JSON-RPC envelopes are <1KB; 64KB
+                      #    handles even unusual cases like base64-encoded
+                      #    images embedded in tool arguments.
+                      #  - allow_partial_message: false → true. For the
+                      #    rare case a body exceeds 64KB, Envoy now
+                      #    truncates and calls Check() with the prefix
+                      #    instead of refusing entirely. The orchestrator's
+                      #    auth decision depends on the JSON-RPC method
+                      #    name and tool name, both at the start of the
+                      #    body, so truncation past 64KB is benign for
+                      #    policy evaluation.
                       - name: envoy.filters.http.ext_authz
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
@@ -221,8 +261,8 @@ data:
                           transport_api_version: V3
                           failure_mode_allow: false
                           with_request_body:
-                            max_request_bytes: 8192
-                            allow_partial_message: false
+                            max_request_bytes: 65536
+                            allow_partial_message: true
                             pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz
