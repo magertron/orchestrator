@@ -1,5 +1,7 @@
 # MCP Orchestrator — Helm Chart
 
+**Current release:** v2.1.1 — Helm chart on [magertron.com/charts](https://magertron.com/charts).
+
 Install guide for the MCP Orchestrator Helm chart, focused on **on-prem and
 private-cloud Kubernetes deployments**. If you're on a managed cloud
 (EKS / GKE / AKS), the chart works there too — see the last appendix.
@@ -712,12 +714,12 @@ knobs you'll commonly override:
 
 | Key | Default | Purpose |
 |---|---|---|
-| `orchestrator.replicaCount` | 1 | Orchestrator replicas. Multi-replica HA (2+) is supported via leader election + LISTEN/NOTIFY fanout. See [HA-DEPLOYMENT.md](./docs/HA-DEPLOYMENT.md). |
+| `orchestrator.replicaCount` | 2 | Orchestrator replicas. HA via leader election + LISTEN/NOTIFY fanout (default; tested through v2.1.1). See [HA-DEPLOYMENT.md](./docs/HA-DEPLOYMENT.md). |
 | `orchestrator.env.apiPublicUrl` | `""` | Public URL for SCIM/OIDC |
 | `orchestrator.env.ssoAutoProvisionDomains` | `""` | SSO JIT allowlist |
 | `orchestrator.env.leaderElectionEnabled` | `""` (auto) | Auto-enabled when replicaCount > 1; force on/off with `"true"`/`"false"` |
-| `orchestrator.env.useNotifyFanout` | `"false"` | Enable Postgres LISTEN/NOTIFY for sub-millisecond xDS fanout (experimental) |
-| `envoy.replicaCount` | 1 | Envoy replicas |
+| `orchestrator.env.useNotifyFanout` | `"true"` | Postgres LISTEN/NOTIFY for sub-millisecond xDS fanout. Default ON since v2.0; turn off only for debugging. |
+| `envoy.replicaCount` | 2 | Envoy replicas (default; HPA scales to 10) |
 | `loadBalancer.provider` | `cloud` | `cloud`/`metallb`/`nodeport`/`existing` |
 | `postgresql.storage.size` | `5Gi` | DB volume size |
 | `postgresql.storage.storageClassName` | (default) | Pick a storage class if needed |
