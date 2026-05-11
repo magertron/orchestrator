@@ -1,0 +1,28 @@
+# robots.txt for magertron.com
+# https://magertron.com/robots.txt
+#
+# Standard permissive policy: crawlers welcome, sitemap referenced.
+# Generated 2026-05-11.
+
+User-agent: *
+Allow: /
+
+# Honor AI assistant crawlers — we want to be discovered by Claude, ChatGPT,
+# Perplexity, etc. when developers ask about MCP infrastructure.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Block crawlers from internal admin/test paths if any exist later.
+# (None currently — placeholder for future additions.)
+
+# Point all crawlers at the sitemap.
+Sitemap: https://magertron.com/sitemap.xml
