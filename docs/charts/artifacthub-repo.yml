@@ -1,0 +1,28 @@
+# Artifact Hub repository metadata
+# https://artifacthub.io/docs/topics/repositories/#repository-metadata-file
+#
+# This file claims ownership of the Helm repository at
+# https://magertron.com/charts for the Artifact Hub publisher account that
+# originally registered this repository ID. The presence of this file plus
+# a matching repository ID in the Artifact Hub control panel grants the
+# "Verified Publisher" badge to the listed repositories.
+#
+# Path expectations:
+#   - Helm repo URL: https://magertron.com/charts
+#   - Metadata file:  https://magertron.com/charts/artifacthub-repo.yml
+#   - Filesystem:     docs/charts/artifacthub-repo.yml (GitHub Pages serves
+#                     docs/ as site root)
+
+repositoryID: 7e970f6d-d6d0-4152-a120-6bd983a42881
+
+# Optional but recommended: owners list. Each entry shows publicly on the
+# repository page on Artifact Hub. Email becomes the contact channel for
+# user inquiries that aren't a GitHub issue.
+owners:
+  - name: Curtis Mager
+    email: sales@magertron.com
+
+# Optional: ignore list. Patterns matching chart files that Artifact Hub
+# should skip when indexing. Empty here — every chart in the repo is
+# intentional.
+ignore: []
