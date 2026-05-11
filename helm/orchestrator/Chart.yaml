@@ -11,11 +11,78 @@ keywords:
   - kubernetes
   - ai
   - llm
-home: https://github.com/mcp-platform/mcp-orchestrator
+home: https://magertron.com
+sources:
+  - https://github.com/curtismager20/magertron-mcpm
+icon: https://magertron.com/logo.svg
 maintainers:
-  - name: MCP Platform Team
+  - name: Curtis Mager
+    email: sales@magertron.com
+    url: https://magertron.com
 annotations:
+  # ── Artifact Hub display metadata ─────────────────────────────────────────
+  # https://artifacthub.io/docs/topics/annotations/helm/
+  # These annotations control how Magertron renders on artifacthub.io —
+  # the de-facto Helm chart registry. Affects search ranking, category
+  # placement, link panel, screenshot carousel, and the rendered changelog.
+
+  artifacthub.io/displayName: "Magertron MCP Orchestrator"
+
+  artifacthub.io/category: security
+
+  artifacthub.io/license: Apache-2.0
+
+  artifacthub.io/keywords: "mcp, model context protocol, kubernetes, governance, audit, envoy, xds, ai agents, mcp gateway, mcp server, helm chart, ai infrastructure, ai governance, ext_authz, sso, oidc, saml, scim, multi-tenant, rbac, ocsf, siem, splunk, elastic, datadog"
+
+  artifacthub.io/operator: "false"
+
+  artifacthub.io/prerelease: "false"
+
+  artifacthub.io/containsSecurityUpdates: "false"
+
+  # Rich link panel — appears on the chart page above the install instructions.
+  # Each link gets a styled card; users can click straight to docs, security
+  # narrative, SIEM integration guide, etc.
+  artifacthub.io/links: |
+    - name: Website
+      url: https://magertron.com
+    - name: Security & Threat Model
+      url: https://magertron.com/security.html
+    - name: SIEM Integration Guide
+      url: https://magertron.com/siem-integration.html
+    - name: About
+      url: https://magertron.com/about.html
+    - name: Source Code
+      url: https://github.com/curtismager20/magertron-mcpm
+    - name: Documentation
+      url: https://github.com/curtismager20/magertron-mcpm#readme
+
+  # Screenshot carousel on the chart page. Renders inline.
+  # Each screenshot needs a public URL and a title that becomes alt text +
+  # the caption on hover.
+  artifacthub.io/screenshots: |
+    - title: Dashboard — MCP servers running in your cluster
+      url: https://magertron.com/screenshots/dashboard.png
+    - title: Server detail — live metrics, logs, one-click rollback
+      url: https://magertron.com/screenshots/server-detail.png
+    - title: Governance — namespace-scoped policies for prod vs dev
+      url: https://magertron.com/screenshots/governance.png
+
+  # Maintainer cards — richer than the top-level `maintainers:` field.
+  # Each appears with avatar + name + role on the chart page.
+  artifacthub.io/maintainers: |
+    - name: Curtis Mager
+      email: sales@magertron.com
+
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Envoy resource defaults bumped for cross-node HA topology. CPU request 100m → 250m, CPU limit 500m → 1000m, memory request 128Mi → 256Mi, memory limit 512Mi → 1Gi. Pre-2.2.1 defaults were sized for single-node dev; warm Envoy pods sat at ~120Mi steady-state (94% of the 128Mi request) and brief TLS handshake CPU bursts during low-rps load (verified empirically at 100 rps) cascaded HPA 2→4→8→10 replicas in 30s on a system that was nowhere near saturated. New profile reflects observed real-world warm-Envoy resource use and gives genuine headroom before HPA fires."
+    - kind: added
+      description: "HPA scale behavior block on the envoy HorizontalPodAutoscaler (templates/envoy.yaml). 60s scaleUp stabilization window dampens brief CPU spikes that previously triggered runaway scaling — HPA now uses the trailing-60s max desired replica count, smoothing single-burst noise. Per-policy max capped at 2 pods or 50% increase per 60s, whichever is greater, so worst-case 2→10 spike still completes in ~4 minutes for real sustained load. Scale-down stabilization left at the 300s default to avoid oscillation."
+    - kind: added
+      description: "Pod anti-affinity and topology spread constraints across orchestrator, envoy, and envoy-v3 deployments. Soft podAntiAffinity (preferredDuringSchedulingIgnoredDuringExecution, weight 100) ensures the scheduler prefers spreading replicas across nodes; topologySpreadConstraints (maxSkew 1, DoNotSchedule) enforces hard spread for HA. All three rules scoped by per-component label selectors so the data planes don't cross-repel each other. Verified working on the foxygirl + pubs 2-node k3s cluster: orchestrator and envoy replicas distribute 1-per-node automatically, HPA-scaled envoy replicas spread evenly (5+5 at 10 replicas) instead of stacking on the older node."
+    - kind: fixed
+      description: "bootstrap.sh PHASE 1.5 publish flow no longer creates orphaned stashes or mid-rebase conflict states. The previous flow staged publish files, committed them, then ran `git stash push --keep-index --include-untracked` before rebasing — `--keep-index` left the committed-but-still-staged files in the working tree, creating ambiguity that confused subsequent rebases. New flow: stash dirty tree FIRST (no --keep-index), stage/commit publish files atomically on a clean tree, rebase, push, then pop via EXIT trap. Trap fires even on rebase failure, push rejection, or ctrl-C — orphaned-stash failure mode eliminated."
     - kind: added
       description: "Raised all the Envoy caps. Its a bottleneck."
     - kind: added
