@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap for magertron.com
+  https://magertron.com/sitemap.xml
+
+  Generated 2026-05-11. Update lastmod whenever a page content changes
+  meaningfully (not just a version bump). Submit this URL to Google Search
+  Console and Bing Webmaster Tools after deployment.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://magertron.com/</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://magertron.com/security.html</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://magertron.com/siem-integration.html</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://magertron.com/about.html</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!--
+    Add more URLs here as you publish new pages:
+    blog posts, comparison pages, getting-started guides, etc.
+
+    Template:
+    <url>
+      <loc>https://magertron.com/PATH</loc>
+      <lastmod>YYYY-MM-DD</lastmod>
+      <changefreq>weekly|monthly|yearly</changefreq>
+      <priority>0.0-1.0</priority>
+    </url>
+  -->
+
+</urlset>
