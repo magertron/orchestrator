@@ -1,0 +1,5 @@
+
+# Astro blog
+blog/node_modules/
+blog/dist/
+blog/.astro/
