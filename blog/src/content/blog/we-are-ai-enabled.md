@@ -7,7 +7,7 @@ heroImageUrl: '/blog-banner.svg'
 
 *We are AI-enabled!!*
 
-I've heard some version of that sentence from more enterprise IT leadership in the past six months than I can count. Because what they actually mean is: *we paid for Claude Desktop licenses, and our developers installed them.* What they think it means is: *we have an AI strategy.*
+I've heard some version of that sentence from more enterprise IT leadership in the past six months than I can count. Because what they actually mean is: *we paid for Claude Desktop licenses, and our employees installed them.* What they think it means is: *we have an AI strategy.*
 
 At the heart of the problem is that some IT directors and AI platform leadership teams think their subscription to Claude Desktop in the enterprise is what completes their company's AI agenda. *"We have had Claude for months now, and we are fully AI governed,"* they will say. But the gap couldn't be wider. Enterprises with tens of thousands of developers, and multiple organizational units across multiple geographies, will undoubtedly build — or attempt to build — their own self-serving MCP servers. These un-governed shadow processes are already rampant on the network, with no clear way to inventory each one nor identify the agents they serve without intrusive network scanning.
 
