@@ -1,5 +1,5 @@
 ---
-title: 'AgentCore Hosts MCP. MCP Orchestrator Governs It.'
+title: 'AWS AgentCore versus MCP Orchestrator'
 description: 'AWS AgentCore is a capable managed runtime for MCP servers — if your MCP servers are the ones AWS knows about. Most enterprise MCP servers are not. Here is why hosting and governance are different problems, and why the enterprise needs both.'
 pubDate: 'May 15 2026'
 heroImageUrl: '/blog-banner.svg'
