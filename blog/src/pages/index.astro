@@ -1,48 +1,407 @@
 ---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 3);
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			body { padding-top: 64px; }
+
+			/* Override the global main width — we want full-bleed sections here */
+			main.landing {
+				width: 100%;
+				max-width: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			/* Hero */
+			.hero {
+				padding: 100px 0 60px;
+				text-align: center;
+				position: relative;
+				overflow: hidden;
+			}
+			.hero::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 800px;
+				height: 600px;
+				background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+				pointer-events: none;
+			}
+			.hero-badge {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				padding: 6px 16px;
+				border-radius: 100px;
+				border: 1px solid var(--border);
+				background: var(--bg-card);
+				font-size: 13px;
+				color: var(--text-secondary);
+				margin-bottom: 32px;
+				position: relative;
+			}
+			.hero-badge .dot {
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: var(--success);
+				animation: pulse 2s ease-in-out infinite;
+			}
+			.hero h1 {
+				font-family: var(--serif);
+				font-weight: 700;
+				font-size: clamp(40px, 6vw, 72px);
+				line-height: 1.05;
+				letter-spacing: -0.04em;
+				margin-bottom: 24px;
+				position: relative;
+			}
+			.hero h1 em {
+				font-style: normal;
+				background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+			.hero p {
+				font-size: 18px;
+				color: var(--text-secondary);
+				max-width: 580px;
+				margin: 0 auto;
+				line-height: 1.7;
+				position: relative;
+			}
+
+			/* Section heading style */
+			.section-label {
+				font-family: var(--mono);
+				font-size: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.1em;
+				color: var(--accent-text);
+				margin-bottom: 16px;
+			}
+			.section-title {
+				font-family: var(--serif);
+				font-size: clamp(32px, 4vw, 44px);
+				font-weight: 700;
+				line-height: 1.1;
+				letter-spacing: -0.03em;
+				margin-bottom: 48px;
+			}
+
+			/* Posts grid */
+			.posts-section { padding: 60px 0; }
+			.posts {
+				display: grid;
+				grid-template-columns: repeat(2, 1fr);
+				gap: 24px;
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.posts li {
+				background: var(--bg-card);
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				overflow: hidden;
+				transition: all 0.3s;
+			}
+			.posts li:hover {
+				border-color: var(--border-accent);
+				background: var(--bg-card-hover);
+				transform: translateY(-2px);
+			}
+			.posts li:first-child {
+				grid-column: 1 / -1;
+			}
+			.posts li a {
+				display: block;
+				color: inherit;
+				text-decoration: none;
+			}
+			.posts li a:hover { text-decoration: none; }
+			.posts li img {
+				width: 100%;
+				height: auto;
+				display: block;
+				border-radius: 0;
+			}
+			.posts li:first-child img {
+				aspect-ratio: 21 / 9;
+				object-fit: cover;
+			}
+			.posts .card-body { padding: 24px 28px 28px; }
+			.posts li:first-child .card-body { padding: 32px 40px 40px; }
+			.posts .title {
+				font-family: var(--serif);
+				font-size: 22px;
+				font-weight: 700;
+				color: var(--text);
+				margin: 0 0 8px;
+				line-height: 1.25;
+				letter-spacing: -0.02em;
+			}
+			.posts li:first-child .title { font-size: 32px; }
+			.posts li:hover .title { color: var(--accent-text); }
+			.posts .date {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--text-tertiary);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin: 0 0 12px;
+			}
+			.posts .desc {
+				font-size: 14px;
+				color: var(--text-secondary);
+				line-height: 1.6;
+				margin: 0;
+			}
+			.see-all {
+				text-align: center;
+				margin-top: 40px;
+			}
+			.see-all a {
+				font-family: var(--mono);
+				font-size: 13px;
+				color: var(--accent-text);
+				text-transform: uppercase;
+				letter-spacing: 0.1em;
+			}
+
+			/* About Magertron block */
+			.showcase {
+				padding: 80px 0;
+				border-top: 1px solid var(--border);
+			}
+			.showcase-row {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 64px;
+				align-items: center;
+			}
+			.showcase-content h3 {
+				font-family: var(--serif);
+				font-size: 32px;
+				font-weight: 700;
+				margin-bottom: 16px;
+				line-height: 1.2;
+				letter-spacing: -0.02em;
+			}
+			.showcase-content p {
+				font-size: 15px;
+				color: var(--text-secondary);
+				line-height: 1.7;
+				margin-bottom: 16px;
+			}
+			.showcase-actions {
+				display: flex;
+				gap: 16px;
+				flex-wrap: wrap;
+				margin-top: 24px;
+			}
+			.btn-primary {
+				background: var(--accent);
+				color: white;
+				padding: 12px 24px;
+				border-radius: 8px;
+				font-weight: 600;
+				font-size: 14px;
+				transition: all 0.2s;
+				display: inline-block;
+				text-decoration: none;
+			}
+			.btn-primary:hover {
+				background: #1d4ed8;
+				transform: translateY(-1px);
+				text-decoration: none;
+				color: white;
+			}
+			.btn-secondary {
+				background: transparent;
+				color: var(--text);
+				padding: 12px 24px;
+				border-radius: 8px;
+				font-weight: 500;
+				font-size: 14px;
+				border: 1px solid var(--border);
+				transition: all 0.2s;
+				display: inline-block;
+				text-decoration: none;
+			}
+			.btn-secondary:hover {
+				border-color: var(--text-tertiary);
+				text-decoration: none;
+				color: var(--text);
+			}
+			.showcase-image {
+				border-radius: 12px;
+				overflow: hidden;
+				border: 1px solid var(--border);
+				background: var(--bg-card);
+				box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+			}
+			.showcase-image img {
+				width: 100%;
+				height: auto;
+				display: block;
+				border-radius: 0;
+			}
+
+			/* Author block */
+			.author {
+				padding: 60px 0;
+				border-top: 1px solid var(--border);
+				text-align: center;
+			}
+			.author .section-label { margin-bottom: 8px; }
+			.author h2 {
+				font-family: var(--serif);
+				font-size: 28px;
+				font-weight: 700;
+				margin-bottom: 16px;
+				letter-spacing: -0.02em;
+			}
+			.author p {
+				color: var(--text-secondary);
+				max-width: 640px;
+				margin: 0 auto 24px;
+				line-height: 1.7;
+			}
+			.author .links {
+				display: flex;
+				gap: 32px;
+				justify-content: center;
+			}
+			.author .links a {
+				font-family: var(--mono);
+				font-size: 13px;
+				color: var(--accent-text);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+
+			@keyframes pulse {
+				0%, 100% { opacity: 1; }
+				50% { opacity: 0.5; }
+			}
+
+			@media (max-width: 768px) {
+				.posts { grid-template-columns: 1fr; }
+				.showcase-row { grid-template-columns: 1fr; gap: 32px; }
+				.posts li:first-child .card-body { padding: 24px 28px 28px; }
+				.posts li:first-child .title { font-size: 24px; }
+			}
+		</style>
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+		<main class="landing">
+			<section class="hero">
+				<div class="container">
+					<div class="hero-badge">
+						<span class="dot"></span>
+						<span>Notes from the MCP frontier</span>
+					</div>
+					<h1>The Magertron <em>Blog</em></h1>
+					<p>
+						Field notes on building Kubernetes-native MCP infrastructure —
+						governance, control planes, and the agentic enterprise.
+					</p>
+				</div>
+			</section>
+
+			<section class="posts-section">
+				<div class="container">
+					<div class="section-label">Latest posts</div>
+					<h2 class="section-title">Recent writing</h2>
+					<ul class="posts">
+						{
+							posts.map((post) => (
+								<li>
+									<a href={`/blog/${post.id}/`}>
+										{post.data.heroImage && (
+											<Image width={1200} height={600} src={post.data.heroImage} alt="" />
+										)}
+										<div class="card-body">
+											<p class="date">
+												<FormattedDate date={post.data.pubDate} />
+											</p>
+											<h4 class="title">{post.data.title}</h4>
+											{post.data.description && <p class="desc">{post.data.description}</p>}
+										</div>
+									</a>
+								</li>
+							))
+						}
+					</ul>
+					<p class="see-all"><a href="/blog">See all posts →</a></p>
+				</div>
+			</section>
+
+			<section class="showcase">
+				<div class="container">
+					<div class="showcase-row">
+						<div class="showcase-content">
+							<div class="section-label">About Magertron</div>
+							<h3>The Kubernetes-native MCP control plane.</h3>
+							<p>
+								Magertron is a South Florida-based startup building infrastructure for the
+								Model Context Protocol era. Our first product, <strong>MCP Orchestrator</strong>,
+								is a Kubernetes-native control plane for deploying, governing, and observing
+								MCP servers in your own cluster — self-hosted, language-agnostic,
+								OSS Free up to 20 servers.
+							</p>
+							<p>
+								Every wave of enterprise integration has needed the same thing: a control plane
+								between developers shipping fast and operators keeping the lights on. SOAP needed it.
+								REST needed it. Now MCP needs it.
+							</p>
+							<div class="showcase-actions">
+								<a href="https://magertron.com" class="btn-primary">Visit magertron.com →</a>
+								<a href="https://github.com/curtismager20/magertron-mcpm" class="btn-secondary" target="_blank" rel="noopener">View on GitHub →</a>
+							</div>
+						</div>
+						<div class="showcase-image">
+							<img src="https://magertron.com/screenshots/dashboard.png" alt="MCP Orchestrator dashboard" />
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="author">
+				<div class="container">
+					<div class="section-label">About the author</div>
+					<h2>Curtis Mager</h2>
+					<p>
+						Founder of Magertron. 33 years in enterprise middleware — BEA Systems, Apigee,
+						Akana, Curity, Tyk. Now building the control plane for the MCP era.
+					</p>
+					<div class="links">
+						<a href="https://github.com/curtismager20" target="_blank" rel="noopener">GitHub →</a>
+						<a href="https://www.linkedin.com/company/magertronc" target="_blank" rel="noopener">LinkedIn →</a>
+					</div>
+				</div>
+			</section>
 		</main>
 		<Footer />
 	</body>
