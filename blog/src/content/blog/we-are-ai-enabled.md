@@ -15,7 +15,11 @@ The shadow MCP server is the most dominant deployment model in practice. Some de
 
 ## An approach to mitigate risk
 
-Discovery as "scan the network" is the wrong mental model for MCP specifically. The better approach is **multi-source inventory aggregation**, where the network is one source among several. The other sources could be:
+Discovery as "scan the network" is the wrong mental model for MCP specifically. The better approach is **multi-source inventory aggregation**, where the network is one source among several:
+
+![MCP multi-source inventory aggregation: four discovery sources feeding into the Magertron control plane, producing a unified inventory](/mcp-federation-diagram.svg)
+
+The other sources could be:
 
 **1. MCP host config files.** Authoritative. Trivially parseable. Just JSON. Every IDE plugin, every desktop client, every CLI tool that hosts MCP has one. An endpoint agent — or even just a Cursor/VS Code extension or a corp-distributed script run on login — can enumerate these in milliseconds and post them upstream. This is the single highest-value discovery source for MCP servers.
 
