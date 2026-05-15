@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="">
+  <defs>
+    <radialGradient id="glow-blue" cx="35%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.55" />
+      <stop offset="40%" stop-color="#2563eb" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#06080c" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glow-cyan" cx="75%" cy="40%" r="40%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#60a5fa" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#06080c" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glow-purple" cx="85%" cy="85%" r="35%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#06080c" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e14" />
+      <stop offset="100%" stop-color="#06080c" />
+    </linearGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2030" stroke-width="0.5" opacity="0.5" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="360" fill="url(#base)" />
+  <rect width="1200" height="360" fill="url(#grid)" />
+  <rect width="1200" height="360" fill="url(#glow-blue)" />
+  <rect width="1200" height="360" fill="url(#glow-cyan)" />
+  <rect width="1200" height="360" fill="url(#glow-purple)" />
+</svg>

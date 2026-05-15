@@ -2,7 +2,7 @@
 title: 'We Are AI-Enabled'
 description: 'Enterprises are buying Claude Desktop and calling it an AI strategy. Meanwhile, shadow MCP servers are multiplying across their networks with no inventory, no governance, and credentials to internal systems. Here is why network scanning will not find them — and what will.'
 pubDate: 'May 15 2026'
-heroImage: '../../assets/blog-placeholder-1.jpg'
+heroImageUrl: '/blog-banner.svg'
 ---
 
 *We are AI-enabled!!*
@@ -40,4 +40,4 @@ The enterprises that figure this out in the next twelve months will treat MCP th
 
 *"We have Claude Desktop"* is not an AI strategy.
 
-*"We know every MCP server in our environment, who owns it, what it can reach, and what's calling it"* — that's the start of one.
+*"We know every MCP server in our environment"* is the beginning of one.
