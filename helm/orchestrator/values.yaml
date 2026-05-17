@@ -213,7 +213,7 @@ envoy:
   # until v3 proves out under load.
   v3:
     enabled: true
-    replicaCount: 1
+    replicaCount: 3
     listenerPort: 10444
     nodePort: 30444
     nodeId: mcp-gateway-v3
@@ -222,6 +222,18 @@ envoy:
       repository: ""
       tag: ""
     resources: {}
+    # ── V3 production HA defaults (shipped in v2.2.1) ──────────────────────
+    # Mirrors legacy envoy autoscaling shape. min=3 floor based on 5/17/26
+    # load testing: single-replica v3 envoy saturates at ~500 rps and the
+    # crash-restart cycle takes 5+ minutes to recover. 3 replicas at idle
+    # gives reliable headroom for transient bursts; HPA scales up beyond
+    # that on observed CPU/memory pressure. max=10 matches legacy ceiling.
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPU: 70
+      targetMemory: 80
 
 # ─── Load Balancer ────────────────────────────────────────────────────────────
 # Controls how the Envoy gateway is exposed outside the cluster.
