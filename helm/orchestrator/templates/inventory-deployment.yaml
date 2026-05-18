@@ -76,11 +76,24 @@ spec:
             # Same RS256 keypair the orchestrator uses for data-plane auth.
             # Endpoint agents carry tokens with scope "inventory:write" and
             # audience "mcp-inventory".
+            #
+            # We pass BOTH the public and private key from the orchestrator's
+            # secret. The binary prefers MCP_INVENTORY_JWT_PUBLIC_KEY when it
+            # is non-empty; otherwise it derives the public key from
+            # MCP_INVENTORY_JWT_PRIVATE_KEY at startup. The chart's Free-tier
+            # auto-gen path produces only a private key (orchestrator derives
+            # the public at runtime), so the derivation fallback is the
+            # common case — not an edge case.
             - name: MCP_INVENTORY_JWT_PUBLIC_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "mcp.fullname" . }}-secrets
                   key: MCP_JWT_PUBLIC_KEY
+            - name: MCP_INVENTORY_JWT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp.fullname" . }}-secrets
+                  key: MCP_JWT_PRIVATE_KEY
             - name: MCP_INVENTORY_JWT_AUDIENCE
               value: "mcp-inventory"
 
