@@ -1,0 +1,140 @@
+{{- if and .Values.inventory.enabled .Values.inventory.postgresql.enabled }}
+# ─────────────────────────────────────────────────────────────────────────────
+# Inventory Postgres — federation/discovery state store
+# ─────────────────────────────────────────────────────────────────────────────
+# Separate Postgres instance for mcp-inventory. Physically isolated from the
+# operations DB for several reasons:
+#   1. Different access patterns. Inventory is write-heavy from agents,
+#      read-heavy from admin/CMDB queries. Ops is fast-path read-heavy
+#      (ext_authz). Different tuning, different pool sizes.
+#   2. Different data sensitivity. Inventory holds endpoint observation
+#      metadata ("Bob's laptop runs these MCP servers"); ops holds runtime
+#      state. Easier to apply different retention / handling policies.
+#   3. Failure isolation. A flaky inventory poll can't impact ext_authz.
+#   4. Rebuildable. Inventory state can always be reconstructed from the
+#      discovery sources; ops state is more authoritative.
+#
+# Node placement: this Deployment pins to nodes labeled
+# `workload-inventory=true`. Decoupled from the ops `workload=stateful`
+# selector even though both labels point to the same node today (foxygirl).
+# Different LABEL KEYS — kubernetes labels only store one value per key,
+# so a single key with two values like `workload=stateful` AND
+# `workload=inventory` is not possible. Two distinct keys make the
+# selectors independent.
+# Decoupling lets ops migrate to a dedicated stateful node later via a
+# label change, no chart edit.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-postgres-data
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: inventory-postgresql
+spec:
+  {{- if .Values.inventory.postgresql.storage.storageClassName }}
+  storageClassName: {{ .Values.inventory.postgresql.storage.storageClassName }}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.inventory.postgresql.storage.size }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-postgres
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: inventory-postgresql
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate                                  # never run two pods sharing the PV
+  selector:
+    matchLabels:
+      app: {{ include "mcp.fullname" . }}-inventory-postgres
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp.fullname" . }}-inventory-postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      {{- with .Values.inventory.postgresql.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.inventory.postgresql.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.inventory.postgresql.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: postgres
+          image: "{{ .Values.inventory.postgresql.image.repository }}:{{ .Values.inventory.postgresql.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.inventory.postgresql.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.inventory.postgresql.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp.fullname" . }}-secrets
+                  key: MCP_INVENTORY_DB_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: inventory-postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: inventory-postgres-init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          resources:
+            {{- toYaml .Values.inventory.postgresql.resources | nindent 12 }}
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.inventory.postgresql.username | quote }}, "-d", {{ .Values.inventory.postgresql.database | quote }}]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.inventory.postgresql.username | quote }}, "-d", {{ .Values.inventory.postgresql.database | quote }}]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: inventory-postgres-data
+          persistentVolumeClaim:
+            claimName: {{ include "mcp.fullname" . }}-inventory-postgres-data
+        - name: inventory-postgres-init
+          configMap:
+            name: {{ include "mcp.fullname" . }}-inventory-postgres-init
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-postgres
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: inventory-postgresql
+spec:
+  selector:
+    app: {{ include "mcp.fullname" . }}-inventory-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+{{- end }}

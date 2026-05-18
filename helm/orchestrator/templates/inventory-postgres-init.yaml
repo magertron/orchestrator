@@ -1,0 +1,138 @@
+{{- if and .Values.inventory.enabled .Values.inventory.postgresql.enabled }}
+# ─────────────────────────────────────────────────────────────────────────────
+# Inventory Postgres init schema
+# ─────────────────────────────────────────────────────────────────────────────
+# Mounted into the Postgres pod at /docker-entrypoint-initdb.d/01-schema.sql.
+# The official postgres image runs every .sql file in that directory in
+# lexical order on first container boot (when PGDATA is empty). Idempotent
+# by construction — all CREATE statements use IF NOT EXISTS.
+#
+# Schema mirrors the version embedded in mcp-inventory's binary
+# (services/mcp-inventory/internal/db/migrations/001_initial.sql). Keep these
+# in sync. The binary's startup migration is a no-op safety net once this
+# init runs successfully — schema_migrations row marks 001_initial as
+# applied, so the binary's Migrate() finds it and skips.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-postgres-init
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: inventory-postgresql
+data:
+  01-schema.sql: |
+    -- Inventory schema v1 — federation/discovery state for mcp-inventory.
+    -- Applied automatically by the postgres image on first start
+    -- (anything in /docker-entrypoint-initdb.d/ runs in alphabetical order).
+    -- Idempotent: every CREATE uses IF NOT EXISTS so reinstalls are safe.
+
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+        version     TEXT PRIMARY KEY,
+        applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    -- ── inventory_servers ────────────────────────────────────────────────────
+    -- The canonical record for an MCP server. Multiple observations from
+    -- multiple sources roll up into one row via the correlation cascade
+    -- in mcp-inventory's writer:
+    --   1. endpoint_url match (http/sse transports)
+    --   2. (package_ecosystem, package_name) match (stdio + package)
+    --   3. (name, transport) match (fallback for bare commands)
+    CREATE TABLE IF NOT EXISTS inventory_servers (
+        id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name                 TEXT NOT NULL,
+        transport            TEXT NOT NULL CHECK (transport IN ('stdio','http','sse')),
+        endpoint_url         TEXT,
+        package_ecosystem    TEXT,
+        package_name         TEXT,
+        state                TEXT NOT NULL DEFAULT 'discovered'
+                                CHECK (state IN ('discovered','adopted','deprecated')),
+        first_seen_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_seen_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+        observation_count    INTEGER NOT NULL DEFAULT 0,
+        distinct_host_count  INTEGER NOT NULL DEFAULT 0,
+        created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_inventory_servers_endpoint_url
+        ON inventory_servers(endpoint_url)
+        WHERE endpoint_url IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_inventory_servers_package
+        ON inventory_servers(package_ecosystem, package_name)
+        WHERE package_name IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_inventory_servers_name
+        ON inventory_servers(name);
+
+    CREATE INDEX IF NOT EXISTS idx_inventory_servers_state_last_seen
+        ON inventory_servers(state, last_seen_at);
+
+    -- ── inventory_observations ───────────────────────────────────────────────
+    -- One row per raw sighting from a source. UNIQUE on observation_id
+    -- makes ingest idempotent — re-sends produce SQLSTATE 23505 which
+    -- mcp-inventory detects and treats as success.
+    CREATE TABLE IF NOT EXISTS inventory_observations (
+        id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        observation_id       TEXT NOT NULL UNIQUE,
+        server_id            UUID NOT NULL REFERENCES inventory_servers(id) ON DELETE CASCADE,
+        agent_id             TEXT NOT NULL,
+        host_id              TEXT NOT NULL,
+        user_id              TEXT,
+        source_kind          TEXT NOT NULL,
+        source_path          TEXT,
+        declared_name        TEXT,
+        transport            TEXT,
+        command              TEXT,
+        args                 JSONB,
+        env_keys             TEXT[],
+        raw                  JSONB,
+        observed_at          TIMESTAMPTZ NOT NULL,
+        received_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_obs_server
+        ON inventory_observations(server_id);
+
+    CREATE INDEX IF NOT EXISTS idx_obs_host_observed
+        ON inventory_observations(host_id, observed_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_obs_agent
+        ON inventory_observations(agent_id);
+
+    -- ── inventory_agents ─────────────────────────────────────────────────────
+    -- Per-agent liveness state. Upserted on every observation batch +
+    -- heartbeat. Used later for "agents that stopped reporting" alerting.
+    CREATE TABLE IF NOT EXISTS inventory_agents (
+        agent_id                TEXT PRIMARY KEY,
+        host_id                 TEXT NOT NULL,
+        host_os                 TEXT,
+        host_os_version         TEXT,
+        agent_version           TEXT,
+        first_seen_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_seen_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_observation_count  INTEGER DEFAULT 0
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agents_last_seen
+        ON inventory_agents(last_seen_at);
+
+    -- ── inventory_source_state ───────────────────────────────────────────────
+    -- Per-source poll bookmarks. Endpoint agents push (don't get polled),
+    -- so they don't use this. Future pull-based adapters (egress proxy
+    -- log scraper, MDM connector) will.
+    CREATE TABLE IF NOT EXISTS inventory_source_state (
+        source_kind       TEXT NOT NULL,
+        source_instance   TEXT NOT NULL,
+        cursor            JSONB,
+        last_poll_at      TIMESTAMPTZ,
+        last_success_at   TIMESTAMPTZ,
+        last_error        TEXT,
+        PRIMARY KEY (source_kind, source_instance)
+    );
+
+    INSERT INTO schema_migrations (version) VALUES ('001_initial')
+        ON CONFLICT (version) DO NOTHING;
+{{- end }}

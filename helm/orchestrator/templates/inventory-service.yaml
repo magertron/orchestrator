@@ -1,0 +1,25 @@
+{{- if .Values.inventory.enabled }}
+# ─────────────────────────────────────────────────────────────────────────────
+# mcp-inventory Service
+# ─────────────────────────────────────────────────────────────────────────────
+# ClusterIP-only for 2.2.4. External access (for endpoint agents + CMDB
+# integrations) ships in 2.2.5 via the Envoy /inventory/* route. Until then,
+# reach the service in-cluster or via kubectl port-forward for testing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: inventory
+spec:
+  type: {{ .Values.inventory.service.type }}
+  selector:
+    app: {{ include "mcp.fullname" . }}-inventory
+  ports:
+    - name: http
+      port: {{ .Values.inventory.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

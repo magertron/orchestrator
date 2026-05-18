@@ -1,0 +1,112 @@
+{{- if .Values.inventory.enabled }}
+# ─────────────────────────────────────────────────────────────────────────────
+# mcp-inventory — federation / discovery sidecar
+# ─────────────────────────────────────────────────────────────────────────────
+# Separate Deployment (not a sidecar in the orchestrator pod) because
+# endpoint agents talk to it independently of the orchestrator data plane.
+# Different scaling characteristics, different failure isolation.
+#
+# Connection wiring at startup:
+#   • DB:   {{ include "mcp.fullname" . }}-inventory-postgres:5432 (ClusterIP, in-cluster)
+#   • Auth: MCP_JWT_PUBLIC_KEY from the existing orchestrator secret.
+#           Agent tokens validate against this key with audience
+#           "mcp-inventory" and scope "inventory:write".
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: inventory
+spec:
+  replicas: {{ .Values.inventory.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "mcp.fullname" . }}-inventory
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp.fullname" . }}-inventory
+        component: inventory
+    spec:
+      {{- with .Values.inventory.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.inventory.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.inventory.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mcp-inventory
+          image: "{{ .Values.inventory.image.repository }}:{{ .Values.inventory.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.inventory.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          env:
+            # ── HTTP listener ───────────────────────────────────────────
+            - name: MCP_INVENTORY_LISTEN_ADDR
+              value: ":8090"
+
+            # ── DB connection ───────────────────────────────────────────
+            - name: MCP_INVENTORY_DB_HOST
+              value: {{ include "mcp.fullname" . }}-inventory-postgres
+            - name: MCP_INVENTORY_DB_PORT
+              value: "5432"
+            - name: MCP_INVENTORY_DB_NAME
+              value: {{ .Values.inventory.postgresql.database | quote }}
+            - name: MCP_INVENTORY_DB_USER
+              value: {{ .Values.inventory.postgresql.username | quote }}
+            - name: MCP_INVENTORY_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp.fullname" . }}-secrets
+                  key: MCP_INVENTORY_DB_PASSWORD
+            - name: MCP_INVENTORY_DB_POOL_SIZE
+              value: {{ .Values.inventory.dbPoolSize | quote }}
+
+            # ── Auth ────────────────────────────────────────────────────
+            # Same RS256 keypair the orchestrator uses for data-plane auth.
+            # Endpoint agents carry tokens with scope "inventory:write" and
+            # audience "mcp-inventory".
+            - name: MCP_INVENTORY_JWT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp.fullname" . }}-secrets
+                  key: MCP_JWT_PUBLIC_KEY
+            - name: MCP_INVENTORY_JWT_AUDIENCE
+              value: "mcp-inventory"
+
+            # ── Pipeline tuning ─────────────────────────────────────────
+            - name: MCP_INVENTORY_QUEUE_SIZE
+              value: {{ .Values.inventory.config.queueSize | quote }}
+            - name: MCP_INVENTORY_WRITER_BATCH
+              value: {{ .Values.inventory.config.writerBatch | quote }}
+            - name: MCP_INVENTORY_MAX_OBS_PER_BATCH
+              value: {{ .Values.inventory.config.maxObservationsPerBatch | quote }}
+            - name: MCP_INVENTORY_LOG_LEVEL
+              value: {{ .Values.inventory.config.logLevel | quote }}
+
+          resources:
+            {{- toYaml .Values.inventory.resources | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+{{- end }}

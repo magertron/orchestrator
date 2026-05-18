@@ -318,6 +318,86 @@ postgresql:
   username: mcp
   # Password is read from the secret (key: MCP_DB_PASSWORD)
 
+# ─── Inventory (federation/discovery plane, 2.2.4+) ──────────────────────────
+# mcp-inventory accepts observations from endpoint agents and writes a
+# canonical inventory record set into a dedicated Postgres instance.
+# See: services/mcp-inventory/README.md
+#
+# Default off so existing customer upgrades don't unexpectedly deploy a new
+# sidecar + Postgres. Dev clusters opt in via bootstrap.sh's --set or by
+# flipping this to true here (single values.yaml — no separate dev-values).
+inventory:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: curtismager20/mcp-inventory
+    # Empty string ("") = use .Chart.AppVersion (same convention as the
+    # orchestrator/sync images). Pin only when overriding.
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # Placement for the mcp-inventory pod itself (the Go binary). Stateless,
+  # can run anywhere. Defaults to "no preference"; override per cluster if
+  # you want it co-located with the inventory DB to minimize SQL latency.
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+  service:
+    type: ClusterIP
+    port: 8090
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  # DB connection pool size. Inventory's access pattern is bursty writes
+  # from agents + occasional reads from admin/CMDB — nothing like ext_authz's
+  # sustained read pressure. 4 connections is more than enough.
+  dbPoolSize: 4
+
+  # Pipeline tuning (see services/mcp-inventory/internal/config/config.go).
+  config:
+    queueSize: 1000                # bounded ingest channel; full → 503
+    writerBatch: 50                # reserved for batched writes (future)
+    maxObservationsPerBatch: 1000  # per-request observation cap
+    logLevel: "info"               # "info" or "debug"
+
+  # ── Inventory Postgres ───────────────────────────────────────────────────
+  # Physically isolated from the operations DB. Pinned to a node carrying
+  # `workload-inventory=true`. We use a DIFFERENT LABEL KEY from the ops
+  # `workload=stateful` selector (not just a different value) because
+  # kubernetes node labels store one value per key — `workload=stateful`
+  # and `workload=inventory` would be mutually exclusive on the same node.
+  # Distinct keys let foxygirl carry both labels today, and make a future
+  # split onto separate nodes a label change rather than a chart edit.
+  postgresql:
+    enabled: true
+    image:
+      repository: postgres
+      tag: 16-alpine
+    nodeSelector:
+      workload-inventory: "true"
+    tolerations: []
+    affinity: {}
+    storage:
+      size: 5Gi
+      storageClassName: local-path
+    database: mcp_inventory
+    username: mcp
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+
 # ─── API Configuration ──────────────────────────────────────────────────────
 api:
   httpPort: 8080
@@ -393,6 +473,17 @@ secrets:
   #   kubectl get secret -n <ns> <release>-secrets \
   #     -o jsonpath='{.data.MCP_DB_PASSWORD}' | base64 -d
   dbPassword: ""
+
+  # Inventory Postgres password (mcp-inventory's DB, separate from ops DB).
+  # Same three-tier semantics as dbPassword:
+  #   1. existing secret → reuse (upgrade-safe)
+  #   2. this value      → operator-supplied
+  #   3. empty           → chart generates a random 32-char password
+  #
+  # Retrieve later via:
+  #   kubectl get secret -n <ns> <release>-secrets \
+  #     -o jsonpath='{.data.MCP_INVENTORY_DB_PASSWORD}' | base64 -d
+  inventoryDbPassword: ""
   # JWT keys — PEM-encoded RSA private and public keys.
   #
   # Leave both empty to have the chart auto-generate a private key at install
