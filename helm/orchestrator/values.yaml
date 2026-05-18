@@ -298,6 +298,12 @@ postgresql:
   image:
     repository: postgres
     tag: 16-alpine
+  # Pin Postgres to a node labeled workload=stateful. Required for local-path PV
+  # locality — the PV physically lives on whichever node first scheduled the pod.
+  nodeSelector:
+    workload: stateful
+  tolerations: []
+  affinity: {}
   resources:
     requests:
       cpu: 100m
