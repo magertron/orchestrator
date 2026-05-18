@@ -61,6 +61,7 @@ spec:
     metadata:
       labels:
         app: {{ include "mcp.fullname" . }}-inventory-postgres
+        component: inventory-postgresql
     spec:
       securityContext:
         fsGroup: 999
