@@ -3,3 +3,16 @@
 blog/node_modules/
 blog/dist/
 blog/.astro/
+
+# Local helper scripts (not part of the chart)
+gr
+pr
+pullrebase.sh
+.pullrebase.sh
+ws
+
+# Branding work-in-progress (not part of the chart)
+docs/magerLinkedIN*.png
+docs/magertron*.png
+docs/magertron*.svg
+docs/magertron*.jpg

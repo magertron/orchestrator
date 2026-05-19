@@ -135,4 +135,50 @@ data:
 
     INSERT INTO schema_migrations (version) VALUES ('001_initial')
         ON CONFLICT (version) DO NOTHING;
+  02-token-grants.sql: |
+    -- ─── inventory_token_grants ────────────────────────────────────────────
+    -- Audit + revocation for inventory JWT bearer tokens (Pass 2).
+    --
+    -- The JWT signature/aud/exp checks are mcp-inventory's source of truth
+    -- for auth. This table provides:
+    --   1. Audit — who minted what, when, with what scopes
+    --   2. Revocation — rows with revoked_at IS NOT NULL form the deny-list
+    --      consumed by the in-memory revocation cache (60s refresh).
+    --
+    -- `id` is the JWT's jti claim. Tokens are NEVER stored in this table —
+    -- the raw JWT is returned to the operator once at mint time only.
+
+    CREATE TABLE IF NOT EXISTS inventory_token_grants (
+        id          UUID         PRIMARY KEY,
+        name        TEXT         NOT NULL,
+        subject     TEXT         NOT NULL,
+        scopes      TEXT[]       NOT NULL,
+        created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        expires_at  TIMESTAMPTZ  NOT NULL,
+        revoked_at  TIMESTAMPTZ,
+        created_by  TEXT         NOT NULL,
+
+        CONSTRAINT inventory_token_grants_name_len
+            CHECK (length(name) BETWEEN 1 AND 128),
+        CONSTRAINT inventory_token_grants_subject_len
+            CHECK (length(subject) BETWEEN 1 AND 128),
+        CONSTRAINT inventory_token_grants_scopes_nonempty
+            CHECK (cardinality(scopes) > 0),
+        CONSTRAINT inventory_token_grants_expiry_after_creation
+            CHECK (expires_at > created_at)
+    );
+
+    -- Hot path: the revocation cache refresh runs the active-revocations
+    -- query every 60s. Partial index on revoked_at IS NOT NULL keeps it
+    -- tiny (only revoked rows are indexed) and the query lightning fast.
+    CREATE INDEX IF NOT EXISTS inventory_token_grants_revoked_active_idx
+        ON inventory_token_grants (revoked_at)
+        WHERE revoked_at IS NOT NULL;
+
+    -- Audit UI ordering.
+    CREATE INDEX IF NOT EXISTS inventory_token_grants_created_at_idx
+        ON inventory_token_grants (created_at DESC);
+
+    INSERT INTO schema_migrations (version) VALUES ('002_token_grants')
+        ON CONFLICT (version) DO NOTHING;
 {{- end }}

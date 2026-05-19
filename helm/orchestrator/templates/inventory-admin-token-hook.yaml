@@ -1,0 +1,205 @@
+{{- /*
+  inventory-admin-token-hook.yaml
+
+  Helm post-install / post-upgrade hook that mints a long-lived JWT for
+  the orchestrator to use when calling mcp-inventory's admin endpoints.
+
+  Token claims:
+    iss: mcp-orchestrator
+    aud: mcp-inventory
+    sub: mcp-orchestrator-bootstrap
+    jti: <random uuid>
+    iat: now
+    exp: now + 10 years          (effectively non-expiring; rotate via re-run)
+    scopes: ["inventory:admin"]
+
+  Output: Kubernetes Secret named "mcp-orchestrator-inventory-admin-token"
+  with a single key MCP_INVENTORY_ADMIN_TOKEN containing the signed JWT.
+
+  Hook lifecycle:
+
+    hook: post-install,post-upgrade
+    hook-weight: 5                       (after secrets, before deployment)
+    hook-delete-policy: hook-succeeded   (clean up job after success)
+
+  Rotation: `helm upgrade` re-runs the hook → mints a fresh token →
+  overwrites the Secret. Orchestrator pods pick up the new token on
+  their next restart (`kubectl rollout restart deploy/...-orchestrator`).
+  No automated rotation in V1.
+
+  Implementation: a tiny Python script in an inline ConfigMap, run by
+  a Job that mounts the orchestrator's RSA private key. PyJWT + cryptography
+  are already used by tools/jwt-mint.sh, so the same image works.
+*/}}
+{{- if .Values.inventory.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+  namespace: {{ include "mcp.namespace" . }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  mint.py: |
+    #!/usr/bin/env python3
+    """
+    Mint the orchestrator's inventory admin bootstrap token and write it
+    to the target Secret. Runs inside the Helm hook job.
+    """
+    import base64
+    import json
+    import os
+    import sys
+    import time
+    import uuid
+
+    import jwt
+    from kubernetes import client, config
+
+    PRIVATE_KEY_PATH = "/keys/MCP_JWT_PRIVATE_KEY"
+    NAMESPACE        = os.environ["MCP_NAMESPACE"]
+    SECRET_NAME      = "{{ include "mcp.fullname" . }}-inventory-admin-token"
+    TTL_SECONDS      = 10 * 365 * 24 * 60 * 60  # 10 years
+
+    with open(PRIVATE_KEY_PATH) as f:
+        private_key = f.read()
+
+    now = int(time.time())
+    claims = {
+        "iss":    "mcp-orchestrator",
+        "aud":    "mcp-inventory",
+        "sub":    "mcp-orchestrator-bootstrap",
+        "jti":    str(uuid.uuid4()),
+        "iat":    now,
+        "exp":    now + TTL_SECONDS,
+        "scopes": ["inventory:admin"],
+    }
+    token = jwt.encode(claims, private_key, algorithm="RS256")
+    if isinstance(token, bytes):
+        token = token.decode("utf-8")
+
+    config.load_incluster_config()
+    v1 = client.CoreV1Api()
+
+    secret_body = client.V1Secret(
+        metadata=client.V1ObjectMeta(name=SECRET_NAME),
+        type="Opaque",
+        string_data={"MCP_INVENTORY_ADMIN_TOKEN": token},
+    )
+
+    try:
+        v1.read_namespaced_secret(SECRET_NAME, NAMESPACE)
+        v1.replace_namespaced_secret(SECRET_NAME, NAMESPACE, secret_body)
+        print(f"updated secret {SECRET_NAME}", file=sys.stderr)
+    except client.exceptions.ApiException as e:
+        if e.status == 404:
+            v1.create_namespaced_secret(NAMESPACE, secret_body)
+            print(f"created secret {SECRET_NAME}", file=sys.stderr)
+        else:
+            raise
+
+    print(f"jti={claims['jti']} exp={claims['exp']}", file=sys.stderr)
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-admin-token-mint
+  namespace: {{ include "mcp.namespace" . }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      name: inventory-admin-token-mint
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+      containers:
+        - name: mint
+          image: python:3.12-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              pip install --quiet pyjwt cryptography kubernetes
+              python3 /scripts/mint.py
+          env:
+            - name: MCP_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+            - name: jwt-key
+              mountPath: /keys
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+            defaultMode: 0555
+        - name: jwt-key
+          secret:
+            secretName: {{ include "mcp.fullname" . }}-secrets
+            items:
+              - key: MCP_JWT_PRIVATE_KEY
+                path: MCP_JWT_PRIVATE_KEY
+            defaultMode: 0400
+---
+# RBAC: the bootstrap job needs create/read/replace on Secrets in its own
+# namespace. Scoped to ONE secret name via resourceNames where possible.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+  namespace: {{ include "mcp.namespace" . }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+  namespace: {{ include "mcp.namespace" . }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  # `get` is needed to detect-and-update; `create` for first-install;
+  # `update`/`patch` for re-runs.
+  #
+  # We can't scope by resourceNames AND allow create — Kubernetes RBAC
+  # requires permission on the type to create. We allow at the type level
+  # because the SA is short-lived (deleted after hook-succeeded).
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+  namespace: {{ include "mcp.namespace" . }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+    namespace: {{ include "mcp.namespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+{{- end }}
