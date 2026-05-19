@@ -26,6 +26,8 @@ spec:
               containerPort: 10080
             - name: https
               containerPort: 10443
+            - name: inventory
+              containerPort: 10347
             - name: admin
               containerPort: 9901
           volumeMounts:

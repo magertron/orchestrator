@@ -117,6 +117,25 @@ data:
                           address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
+        # mcp-inventory REST cluster — Pass 3 (Option C, static bootstrap).
+        # Mirror of the legacy bootstrap's cluster of the same name. Both
+        # Envoys forward /inventory/v1/* to the same inventory plane;
+        # customers can hit either Envoy on its inventory listener port.
+        # See legacy bootstrap for the full rationale.
+        - name: mcp_inventory
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: mcp_inventory
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-inventory.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: 8090
+
       listeners:
         # ── HTTPS listener on 10444 — TLS-terminated, ext_authz-gated ────────
         # Mirrors legacy mcp_https_listener (10443). Same TLS, same
@@ -199,6 +218,67 @@ data:
                               # v3 marker — lets log-aggregation systems
                               # filter v3 vs legacy traffic at a glance.
                               path_version: "v3"
+
+        # ─── Inventory plane listener (Pass 3, Option C) ────────────────────────
+        # Mirror of legacy bootstrap's mcp_inventory_listener. Same port
+        # (10347) so customers can hit either Envoy on a single well-known
+        # port. See legacy bootstrap for the full rationale; differences
+        # from the v3 main listener:
+        #   - NO ext_authz filter (inventory verifies its own JWTs)
+        #   - INLINE static route_config (no rds)
+        #   - Catch-all "/" → mcp_inventory cluster
+        - name: mcp_inventory_listener_v3
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 10347
+          filter_chains:
+            - transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  common_tls_context:
+                    tls_certificates:
+                      - certificate_chain:
+                          filename: /etc/envoy/tls/tls.crt
+                        private_key:
+                          filename: /etc/envoy/tls/tls.key
+              filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: mcp_inventory_ingress_v3
+                    codec_type: AUTO
+                    use_remote_address: true
+                    route_config:
+                      name: mcp_inventory_route
+                      virtual_hosts:
+                        - name: mcp_inventory_vhost
+                          domains: ["*"]
+                          routes:
+                            - match:
+                                prefix: "/"
+                              route:
+                                cluster: mcp_inventory
+                                timeout: 30s
+                    http_filters:
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                    access_log:
+                      - name: envoy.access_loggers.stdout
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                          log_format:
+                            json_format:
+                              plane: "inventory"
+                              path_version: "v3"
+                              method: "%REQ(:METHOD)%"
+                              path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                              status: "%RESPONSE_CODE%"
+                              duration_ms: "%DURATION%"
+                              upstream: "%UPSTREAM_HOST%"
+                              trace_id: "%REQ(X-REQUEST-ID)%"
 
     # Envoy admin API on a distinct port so legacy and v3 admin
     # interfaces don't collide if both are debugged via port-forward.

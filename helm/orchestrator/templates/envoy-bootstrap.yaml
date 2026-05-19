@@ -172,6 +172,30 @@ data:
                           address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
 
+        # mcp-inventory REST cluster — Pass 3 (Option C, static bootstrap).
+        # External /inventory/v1/* traffic on the dedicated inventory listener
+        # (port 10347 below) is forwarded here. Plain HTTP/1.1 REST upstream,
+        # no HTTP/2 protocol options, no ext_authz on the route — the
+        # inventory plane verifies its own bearer JWTs (audience
+        # mcp-inventory, scope claims, revocation cache w/ 60s refresh).
+        #
+        # Hardcoded literal port (8090) intentionally — there's exactly one
+        # inventory service in the cluster and it's a fixed wire contract
+        # with the mcp-inventory image; not worth a values.yaml entry.
+        - name: mcp_inventory
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: mcp_inventory
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-inventory.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: 8090
+
       listeners:
         # HTTPS listener on 10443 — TLS-terminated, ext_authz-gated.
         # The ONLY customer-facing entry point. Every request:
@@ -285,6 +309,78 @@ data:
                               trace_id: "%REQ(X-REQUEST-ID)%"
                               authz_flags: "%RESPONSE_FLAGS%"
                               authz_reason: "%RESP(x-mcp-authz-denied)%"
+
+        # ─── Inventory plane listener (Pass 3, Option C) ────────────────────────
+        # Dedicated HTTPS listener for /inventory/v1/* traffic. Sits on
+        # container port 10347, exposed externally via NodePort 30347 on the
+        # legacy Envoy Service. Architecturally independent of the main MCP
+        # listener (10443) — different port, different filter chain, separate
+        # blast radius.
+        #
+        # Differences from mcp_https_listener:
+        #   - NO ext_authz filter. mcp-inventory verifies its own bearer
+        #     JWTs (audience mcp-inventory) and the orchestrator's ext_authz
+        #     expects a different audience. Skipping ext_authz here is the
+        #     entire reason this listener exists as a separate listener.
+        #   - INLINE static route_config (no rds:). Routes never change at
+        #     runtime, so we don't need the dynamic discovery surface that
+        #     bit us in Pass 3 (xDS) iteration 1.
+        #   - Catch-all "/" route forwards to mcp_inventory. The customer
+        #     URL is .../inventory/v1/stats — no prefix_rewrite needed since
+        #     the upstream expects exactly that path.
+        - name: mcp_inventory_listener
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 10347
+          filter_chains:
+            - transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  common_tls_context:
+                    tls_certificates:
+                      - certificate_chain:
+                          filename: /etc/envoy/tls/tls.crt
+                        private_key:
+                          filename: /etc/envoy/tls/tls.key
+              filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: mcp_inventory_ingress
+                    codec_type: AUTO
+                    use_remote_address: true
+                    route_config:
+                      name: mcp_inventory_route
+                      virtual_hosts:
+                        - name: mcp_inventory_vhost
+                          domains: ["*"]
+                          routes:
+                            - match:
+                                prefix: "/"
+                              route:
+                                cluster: mcp_inventory
+                                timeout: 30s
+                    http_filters:
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                    access_log:
+                      - name: envoy.access_loggers.stdout
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                          log_format:
+                            json_format:
+                              # Distinct from mcp_ingress so log aggregation
+                              # can split inventory traffic from MCP traffic.
+                              plane: "inventory"
+                              method: "%REQ(:METHOD)%"
+                              path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                              status: "%RESPONSE_CODE%"
+                              duration_ms: "%DURATION%"
+                              upstream: "%UPSTREAM_HOST%"
+                              trace_id: "%REQ(X-REQUEST-ID)%"
 
     # Envoy admin API (internal only)
     admin:
