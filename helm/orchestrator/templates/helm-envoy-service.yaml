@@ -49,6 +49,17 @@ spec:
       {{- if eq .Values.loadBalancer.provider "nodeport" }}
       nodePort: {{ .Values.loadBalancer.nodeport.httpsPort }}
       {{- end }}
+    # Inventory plane port (Pass 3 Option C). Dedicated listener on a
+    # distinct port so inventory traffic is isolated from the MCP plane
+    # at the network level. NodePort hardcoded to 30347 — feature is
+    # always-on, no config flag.
+    - name: inventory
+      port: 10347
+      targetPort: 10347
+      protocol: TCP
+      {{- if eq .Values.loadBalancer.provider "nodeport" }}
+      nodePort: 30347
+      {{- end }}
 {{- end }}
 
 ---

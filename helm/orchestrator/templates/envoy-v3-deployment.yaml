@@ -55,6 +55,11 @@ spec:
             # Customer-facing TLS+ext_authz listener
             - name: https
               containerPort: {{ .Values.envoy.v3.listenerPort }}
+            # Inventory plane listener (Pass 3 Option C). Same container
+            # port 10347 as legacy Envoy — distinct NodePort (30348)
+            # exposes this Envoy's inventory listener externally.
+            - name: inventory
+              containerPort: 10347
             # Envoy admin API (distinct from legacy's 9901)
             - name: admin
               containerPort: 9902

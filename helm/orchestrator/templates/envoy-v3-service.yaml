@@ -30,4 +30,13 @@ spec:
       targetPort: {{ .Values.envoy.v3.listenerPort }}
       nodePort: {{ .Values.envoy.v3.nodePort }}
       protocol: TCP
+    # Inventory plane port (Pass 3 Option C). Companion to legacy Envoy's
+    # inventory NodePort 30347. Distinct NodePort (30348) because k8s
+    # disallows two Services sharing a NodePort. Same container port
+    # (10347) inside the v3 Envoy pod.
+    - name: inventory
+      port: 10347
+      targetPort: 10347
+      nodePort: 30348
+      protocol: TCP
 {{- end }}
