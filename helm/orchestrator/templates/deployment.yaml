@@ -180,6 +180,32 @@ spec:
             # values flag.
             - name: MCP_NETWORK_POLICY_ENABLED
               value: {{ .Values.networkPolicy.enabled | default true | quote }}
+            # ── Pass 2: inventory admin client wiring ──────────────────────
+            # The orchestrator's inventory token mint/list/revoke handlers
+            # proxy to mcp-inventory's /inventory/v1/_admin/* endpoints
+            # using the bootstrap admin token minted by the post-install
+            # Helm hook (templates/inventory-admin-token-hook.yaml).
+            #
+            # MCP_INVENTORY_URL — in-cluster DNS for the inventory service.
+            # Hardcoded to the standard port 8090 (matches inventory-service.yaml
+            # template). If you ever need to change the port, update both the
+            # service template and this env var together.
+            - name: MCP_INVENTORY_URL
+              value: "http://{{ include "mcp.fullname" . }}-inventory:8090"
+            # MCP_INVENTORY_ADMIN_TOKEN — long-lived JWT (10y TTL, scope
+            # inventory:admin) minted by the post-install hook into a
+            # Secret. `optional: true` lets the pod start on FIRST install
+            # before the hook has run; the orchestrator's
+            # InventoryAdminClient handles the empty-token case by
+            # returning a clear "not configured" error on mint attempts.
+            # After the hook completes, restart the orchestrator pod to
+            # pick up the token.
+            - name: MCP_INVENTORY_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp.fullname" . }}-inventory-admin-token
+                  key:  MCP_INVENTORY_ADMIN_TOKEN
+                  optional: true
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
