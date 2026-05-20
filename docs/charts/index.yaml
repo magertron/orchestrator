@@ -102,10 +102,10 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.12
-    created: "2026-05-20T11:23:32.969340356-04:00"
+    created: "2026-05-20T15:23:46.176412491Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
-    digest: cc2d8eb912e4d7c166c7dcadb243ecb89586491eec416afca38e982d292a66a9
+    digest: 52c87655792a889b3ab5eb5b163cf898a881b61d88fcb3eb81daae18233cd115
     home: https://magertron.com
     icon: https://magertron.com/logo.svg
     keywords:
@@ -227,7 +227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.11
-    created: "2026-05-20T11:23:32.967363225-04:00"
+    created: "2026-05-20T15:23:46.174124351Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4cd89e8c87b08f5d7996b03582a2ad1876ec0c5e3b6656928f3cdd62979a2583
@@ -352,7 +352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.10
-    created: "2026-05-20T11:23:32.966085647-04:00"
+    created: "2026-05-20T15:23:46.171824077Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2f8c29be4198c50990d0fff1bde4ecc8ce4deda3b52f2b44d490599b2cc92aac
@@ -477,7 +477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.9
-    created: "2026-05-20T11:23:32.983983954-04:00"
+    created: "2026-05-20T15:23:46.196550457Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 08b56e2ed21dfc784f5a803fce8308987a24aaa3a8b888b171b95cd19ee14b57
@@ -602,7 +602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.8
-    created: "2026-05-20T11:23:32.981209345-04:00"
+    created: "2026-05-20T15:23:46.194260504Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 26a43de9b64e0dd26c8e6af4f3a1b993f16759bb23dd176d36d02a5bd88bb10b
@@ -727,7 +727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.7
-    created: "2026-05-20T11:23:32.979431578-04:00"
+    created: "2026-05-20T15:23:46.191887272Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: ce6a6c6017fdfc4db86a2a5edb8a5bf7c32188796244a4e2e5bac873d32d7ca9
@@ -852,7 +852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.6
-    created: "2026-05-20T11:23:32.97762119-04:00"
+    created: "2026-05-20T15:23:46.189559427Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5a8bb3aedcc9f89dd8ad0fdaabcfa5cee3efcc87fccaee4ac9d36fe4bce79278
@@ -977,7 +977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.5
-    created: "2026-05-20T11:23:32.975737765-04:00"
+    created: "2026-05-20T15:23:46.186489094Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 71dd1f66912e247e02daf123e92939863d734fb5c7e61c74134abd74d9f40459
@@ -1102,7 +1102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.4
-    created: "2026-05-20T11:23:32.972958798-04:00"
+    created: "2026-05-20T15:23:46.184218006Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9484a7bb986eec610e1ef390e69eabf21c1439e5b410aac228249a967332d4fa
@@ -1227,7 +1227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.3
-    created: "2026-05-20T11:23:32.971771479-04:00"
+    created: "2026-05-20T15:23:46.181886774Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7aafe75d11880c604dcfb6ef489d267239aa72f5329a3d13e022c9529170a787
@@ -1352,7 +1352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.2
-    created: "2026-05-20T11:23:32.970565566-04:00"
+    created: "2026-05-20T15:23:46.17871546Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: aa879bc40ef1243d481115997f072c66434cc62b6f170e9cbaec0dce59e76a67
@@ -1477,7 +1477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.1
-    created: "2026-05-20T11:23:32.964822996-04:00"
+    created: "2026-05-20T15:23:46.168654247Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6e7fc919635dadd8d91c2ba5a72d19fd32527d23f84c6bd3bda993bf825404f0
@@ -1602,7 +1602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.3.0
-    created: "2026-05-20T11:23:32.963534337-04:00"
+    created: "2026-05-20T15:23:46.165755854Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 52eca341f21d0b7175bff1210d181180286ccf90b9d154882386dd33fcb0360f
@@ -1727,7 +1727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.9
-    created: "2026-05-20T11:23:32.961172374-04:00"
+    created: "2026-05-20T15:23:46.162826783Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 10657fe182e1839aa8ee8d84c308bea5660e64381692458c92788a3ddf0583a7
@@ -1852,7 +1852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.8
-    created: "2026-05-20T11:23:32.959387263-04:00"
+    created: "2026-05-20T15:23:46.15995768Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c221c78d99bac550289acb9c495b38604653b49d317fd8233453d89e511142ae
@@ -1977,7 +1977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.7
-    created: "2026-05-20T11:23:32.957589208-04:00"
+    created: "2026-05-20T15:23:46.157719754Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: bc9e0256f44e0b9d7f62f23a56de507cf2b3d465296146680077200e97c53ea5
@@ -2102,7 +2102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.6
-    created: "2026-05-20T11:23:32.955729958-04:00"
+    created: "2026-05-20T15:23:46.155525871Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 54ce0e618a0e8575cb3e5852f049e00fb0fc81c88c2401b435166063a9cf6331
@@ -2227,7 +2227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.5
-    created: "2026-05-20T11:23:32.953113356-04:00"
+    created: "2026-05-20T15:23:46.152626061Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 11859b81baddc70919cfdf7ba48834bd6cb35b214c649f165283339b6de678b9
@@ -2352,7 +2352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.4
-    created: "2026-05-20T11:23:32.951941316-04:00"
+    created: "2026-05-20T15:23:46.150420457Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 11c47162fa53819802c499050669a6477c19ab8ab430801d742d626a71dd8203
@@ -2477,7 +2477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.3
-    created: "2026-05-20T11:23:32.950769687-04:00"
+    created: "2026-05-20T15:23:46.148215763Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3a7d41bc1ff68f0056f729a8be13b0b5dca4fc6cf6ea935c02f3bccadd455a6b
@@ -2602,7 +2602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.2
-    created: "2026-05-20T11:23:32.949625679-04:00"
+    created: "2026-05-20T15:23:46.146228892Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6a6f4f594308e0084efd3c575729810ab289607851a823fa27d7ac2271d7c781
@@ -2727,7 +2727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.1
-    created: "2026-05-20T11:23:32.947978277-04:00"
+    created: "2026-05-20T15:23:46.143477941Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: de051b47f2bcc7d3ac5faf5b1092961344f14626dba166c82b5eb22455cbce35
@@ -2852,7 +2852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.2.0
-    created: "2026-05-20T11:23:32.946930861-04:00"
+    created: "2026-05-20T15:23:46.141544731Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e688ad60e4c38303feef02c2aab61e2d787efd5c35b3a6493fc8939fb348febf
@@ -2936,7 +2936,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.9
-    created: "2026-05-20T11:23:32.945818222-04:00"
+    created: "2026-05-20T15:23:46.139566676Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d9e143c7d4e7403a9cd4e0246ab5266239b7d082a18ab8e9b490f0f0356fda31
@@ -3015,7 +3015,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.8
-    created: "2026-05-20T11:23:32.944743675-04:00"
+    created: "2026-05-20T15:23:46.137774572Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a48ebf5d1d44fc36fc6e662149fe1fce9bc13a06fd434d46cba983becf899e78
@@ -3094,7 +3094,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.7
-    created: "2026-05-20T11:23:32.9422741-04:00"
+    created: "2026-05-20T15:23:46.135332208Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c4a2309ba351e01142fc3d18abe3412526592f0da0fe92b6cad0d1a55c228738
@@ -3173,7 +3173,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.6
-    created: "2026-05-20T11:23:32.941281687-04:00"
+    created: "2026-05-20T15:23:46.133551295Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: ffb08775e37e77f3b7aea82a2dfbb9b4654c344a9cd9f86163ff13da586c87a0
@@ -3252,7 +3252,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.5
-    created: "2026-05-20T11:23:32.940269427-04:00"
+    created: "2026-05-20T15:23:46.131768269Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9f70cb756cb46afa5e811c69ad248277e0e6ed17e6ebe6ae5db9844af512b4c9
@@ -3331,7 +3331,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.4
-    created: "2026-05-20T11:23:32.938672169-04:00"
+    created: "2026-05-20T15:23:46.129864774Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3631fd737299ee9983a77927f0f8645ec0a5e4158c1657233542d8b1fcb44583
@@ -3410,7 +3410,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.3
-    created: "2026-05-20T11:23:32.936758997-04:00"
+    created: "2026-05-20T15:23:46.127342592Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b4aa8f8ab3dbff1caca4841905abbcb46f22c198931e68b6376df54916ac29ac
@@ -3489,7 +3489,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.2
-    created: "2026-05-20T11:23:32.934900048-04:00"
+    created: "2026-05-20T15:23:46.125523867Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4837151772e19808600fc2540c92c68dd7ee7f21f4b2e42f97668101a53d1ac0
@@ -3568,7 +3568,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.1
-    created: "2026-05-20T11:23:32.933886916-04:00"
+    created: "2026-05-20T15:23:46.123746391Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 05ea3fb3b1d09cfdf3b1e5c456ee47541b5bde393b717d573dcea56a91102b77
@@ -3647,7 +3647,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.1.0
-    created: "2026-05-20T11:23:32.932904121-04:00"
+    created: "2026-05-20T15:23:46.121891699Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d47c8b913f605164c33f0dddee4d1e84c92a4cfa8a08d75bb46afb8a26019d05
@@ -3726,7 +3726,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.9
-    created: "2026-05-20T11:23:32.931888976-04:00"
+    created: "2026-05-20T15:23:46.119425943Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8c18a0bfd4c6ac5255b7eb3faa20e5e02c3d3bd47e1bac3b6bfe7912de061d3c
@@ -3805,7 +3805,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.8
-    created: "2026-05-20T11:23:32.930376477-04:00"
+    created: "2026-05-20T15:23:46.117610545Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 97a8c8a7740849e6282c77c6c4fd434bc538b3a863759b1e868630ee882a4ac6
@@ -3884,7 +3884,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.7
-    created: "2026-05-20T11:23:32.928984464-04:00"
+    created: "2026-05-20T15:23:46.115766863Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 101455ee589787cb913ac10d55400f523da4d245e664a7cd93cdad54f543cd71
@@ -3963,7 +3963,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.6
-    created: "2026-05-20T11:23:32.927542076-04:00"
+    created: "2026-05-20T15:23:46.11328814Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 587aa982d0edfa687944155dd47c1ceaa8cafbc4f6cfb7807ae8616f020049e7
@@ -4042,7 +4042,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.5
-    created: "2026-05-20T11:23:32.926070414-04:00"
+    created: "2026-05-20T15:23:46.111464898Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 92d725298f1680cf7cdfb936d78780d9c742601e163ec3a061c1970f80539fe0
@@ -4121,7 +4121,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.4
-    created: "2026-05-20T11:23:32.923500299-04:00"
+    created: "2026-05-20T15:23:46.109330457Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9bfa44af78cb8068872519bc3f33f3b27068800b264868ae58b6f52ed9d6357a
@@ -4200,7 +4200,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.3
-    created: "2026-05-20T11:23:32.922433757-04:00"
+    created: "2026-05-20T15:23:46.106504305Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5f9549abd76ff11e1aa1a73c866b4f19aeba81fe4a682314731fd93a07fb3338
@@ -4279,7 +4279,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.2
-    created: "2026-05-20T11:23:32.921406138-04:00"
+    created: "2026-05-20T15:23:46.104714986Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c14d4444a09adfb9c09bd5d00a0ff662ed5eb2cf2752860ed7e112c584ab1749
@@ -4358,7 +4358,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.1
-    created: "2026-05-20T11:23:32.920360516-04:00"
+    created: "2026-05-20T15:23:46.102919435Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4d03d76f04711adc24f2871d7dc2481b35f29b75660150c713ef4592250dd58a
@@ -4437,7 +4437,7 @@ entries:
           description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
     apiVersion: v2
     appVersion: 2.0.0
-    created: "2026-05-20T11:23:32.919278565-04:00"
+    created: "2026-05-20T15:23:46.100980534Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a11f6499bf405ce5139b097d9e353ecef1910ae2686f5383b4cd58ac2c6a67c1
@@ -4456,4 +4456,4 @@ entries:
     urls:
     - https://magertron.com/charts/mcp-orchestrator-2.0.0.tgz
     version: 2.0.0
-generated: "2026-05-20T11:23:32.91715553-04:00"
+generated: "2026-05-20T15:23:46.09805871Z"
