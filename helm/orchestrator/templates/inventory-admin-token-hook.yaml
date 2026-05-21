@@ -40,7 +40,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "4"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": hook-succeeded
 data:
   mint.py: |
     #!/usr/bin/env python3
@@ -174,7 +174,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "1"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": hook-succeeded
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -184,7 +184,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "2"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": hook-succeeded
 rules:
   # `get` is needed to detect-and-update; `create` for first-install;
   # `update`/`patch` for re-runs.
@@ -204,7 +204,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "3"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": hook-succeeded
 subjects:
   - kind: ServiceAccount
     name: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
