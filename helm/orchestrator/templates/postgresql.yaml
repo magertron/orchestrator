@@ -4,6 +4,20 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "mcp.fullname" . }}-postgres-data
   namespace: {{ include "mcp.namespace" . }}
+  annotations:
+    # CRITICAL: keep the PVC across helm uninstall. Without this,
+    # `helm uninstall mcp` deletes the ops Postgres PVC and all
+    # data is lost — deployed servers table, users, audit log, RBAC
+    # assignments. With this annotation Helm leaves the PVC alone
+    # and it re-binds on the next `helm install`.
+    #
+    # Mirrors the same pattern on the inventory Postgres PVC
+    # (templates/inventory-postgres.yaml) — together they guarantee
+    # data preservation across reinstall.sh MODE=upgrade runs.
+    #
+    # To genuinely delete the PVC (intentional reset), an operator can:
+    #     kubectl delete pvc -n mcp-system -l component=postgresql
+    helm.sh/resource-policy: keep
   labels:
     {{- include "mcp.labels" . | nindent 4 }}
     component: postgresql
