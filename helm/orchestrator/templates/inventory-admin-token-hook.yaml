@@ -119,6 +119,17 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: {{ include "mcp.fullname" . }}-inventory-admin-bootstrap
+      # ── Pin to control-plane (or whichever node carries the stateful label) ──
+      # The mint Job authenticates to the K8s API using its projected
+      # ServiceAccount token. On multi-node clusters, worker-node kubelets
+      # have shown a token-projection issue that causes 401 even when the
+      # SA, Role, and RoleBinding are all correctly in place. Pinning to
+      # the same node that runs Postgres (label workload=stateful) ensures
+      # the kubelet that issues the token is the control-plane kubelet,
+      # which is reliable. If your cluster doesn't use this label, override
+      # with --set inventory.adminTokenHook.nodeSelector=... at install.
+      nodeSelector:
+        workload: stateful
       containers:
         - name: mint
           image: python:3.12-slim
