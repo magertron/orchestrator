@@ -60,7 +60,7 @@
     {
       "@type": "Offer",
       "name": "Pro",
-      "description": "SSO, governance policies, audit trail, multi-namespace.",
+      "description": "CLI, live metrics, history & rollback, webhooks, audit trail, custom RBAC, rug-pull protection. Up to 50 MCP servers.",
       "price": "499",
       "priceCurrency": "USD",
       "category": "Subscription"
@@ -806,7 +806,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="section-label" style="text-align: center;">Pricing</div>
     <div class="section-title" style="text-align: center;">Choose your plan</div>
-    <div class="section-desc" style="text-align: center; margin-left: auto; margin-right: auto;">Start free with core server management. Scale to Pro for the full toolkit, or Enterprise for governance and compliance.</div>
+    <div class="section-desc" style="text-align: center; margin-left: auto; margin-right: auto;">Start free with core server management. Scale to Pro for a single team running their own MCP servers — or Enterprise for identity, compliance, and platform-team needs.</div>
 
     <div class="pricing-grid">
       <!-- Free -->
@@ -838,21 +838,24 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <div class="pricing-tier">Subscription</div>
         <div class="pricing-name">Pro</div>
         <div class="pricing-price">$499/mo · billed annually</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 50 MCP servers · For a single team running their own servers</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Everything in Free, plus:</li>
           <li>CLI tool (mcpctl)</li>
           <li>Live metrics charts</li>
-          <li>Multiple namespaces</li>
           <li>Deployment history &amp; rollback</li>
-          <li>Email &amp; Slack support</li>
+          <li>Multiple namespaces</li>
+          <li>Webhook notifications (Slack, email)</li>
+          <li>Audit trail</li>
+          <li>Custom RBAC roles</li>
+          <li>Rug-pull protection</li>
+          <li>Priority email &amp; Slack support</li>
           <li class="disabled">SSO (OIDC &amp; SAML)</li>
-          <li class="disabled">SCIM 2.0 user provisioning</li>
-          <li class="disabled">Multi-tenant namespace isolation</li>
+          <li class="disabled">SCIM 2.0 &amp; JIT provisioning</li>
           <li class="disabled">Governance policy engine</li>
-          <li class="disabled">Webhook notifications</li>
-          <li class="disabled">Audit trail &amp; compliance</li>
-          <li class="disabled">Custom RBAC roles</li>
+          <li class="disabled">Multi-tenant namespace isolation</li>
+          <li class="disabled">Advanced telemetry (SIEM/Datadog/Splunk)</li>
         </ul>
         <a href="#" class="pricing-btn primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
       </div>
@@ -862,21 +865,23 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <div class="pricing-tier">Commercial</div>
         <div class="pricing-name">Enterprise</div>
         <div class="pricing-price">Contact us for pricing</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For identity, compliance &amp; platform teams</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Everything in Pro, plus:</li>
           <li>SSO (OIDC &amp; SAML) — Okta, Azure AD, Google</li>
           <li>SCIM 2.0 automated user provisioning</li>
           <li>Just-in-time user provisioning on first login</li>
-          <li>Multi-tenant namespace isolation</li>
           <li>Governance policy engine</li>
-          <li>Custom RBAC roles &amp; namespace scoping</li>
-          <li>Webhook notifications (Slack, email)</li>
-          <li>Full audit trail for compliance</li>
+          <li>Quarantine kill switch &amp; bulk approvals</li>
+          <li>Multi-tenant namespace isolation</li>
+          <li>Advanced telemetry (SIEM, Datadog, Splunk)</li>
           <li>Governance policy export/import</li>
+          <li>Multi-cluster federation</li>
+          <li>Air-gapped deployment</li>
           <li>Priority support with SLA</li>
-          <li>Dedicated onboarding</li>
-          <li>Custom integrations</li>
+          <li>Dedicated onboarding &amp; custom integrations</li>
+          <li>Custom procurement (PO, MSA, security review)</li>
         </ul>
         <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales →</a>
       </div>
