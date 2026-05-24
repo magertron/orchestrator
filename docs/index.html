@@ -60,7 +60,7 @@
     {
       "@type": "Offer",
       "name": "Pro",
-      "description": "CLI, live metrics, history & rollback, webhooks, audit trail, custom RBAC, rug-pull protection. Up to 50 MCP servers.",
+      "description": "Live metrics, history & rollback, webhooks, audit trail, custom RBAC, rug-pull protection. Up to 50 MCP servers.",
       "price": "499",
       "priceCurrency": "USD",
       "category": "Subscription"
@@ -798,6 +798,30 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <div><span class="accent">doc-retriever</span>     mcp-staging  Running   1/1       ghcr.io/acme/docs:v1.4</div>
       </div>
     </div>
+
+    <!-- Install options -->
+    <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
+        <div style="font-weight: 600; margin-bottom: 8px;">Quick install</div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">macOS &amp; Linux, one line:</div>
+        <div style="background: var(--bg-terminal, #0d1117); border-radius: 8px; padding: 12px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-x: auto;">
+          <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/install-mcpctl.sh | sh</span>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
+        <div style="font-weight: 600; margin-bottom: 8px;">Direct download</div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Pre-built binaries from GitHub Releases:</div>
+        <a href="https://github.com/curtismager20/magertron-mcpm/releases/latest" target="_blank" style="display: inline-block; color: var(--accent-text); text-decoration: none; font-weight: 500;">View latest release →</a>
+        <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 8px;">macOS arm64 · macOS amd64 · Linux amd64 · Linux arm64</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary);">
+      Apache 2.0 licensed. Source at
+      <a href="https://github.com/curtismager20/magertron-mcpm/tree/main/mcpctl" target="_blank" style="color: var(--accent-text);">magertron-mcpm/mcpctl</a>.
+      Free for all customers. Commands that hit Pro or Enterprise features will return a clear license error unless your orchestrator is licensed for them.
+    </div>
   </div>
 </section>
 
@@ -821,9 +845,9 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <li>Health monitoring &amp; metrics</li>
           <li>Envoy gateway with xDS</li>
           <li>Helm chart deployment</li>
+          <li>CLI tool (mcpctl) — Apache 2.0</li>
           <li>Basic RBAC (admin + viewer)</li>
           <li>Community support via GitHub</li>
-          <li class="disabled">CLI tool (mcpctl)</li>
           <li class="disabled">Live metrics charts</li>
           <li class="disabled">Namespace isolation</li>
           <li class="disabled">SSO &amp; SCIM provisioning</li>
@@ -842,7 +866,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Everything in Free, plus:</li>
-          <li>CLI tool (mcpctl)</li>
           <li>Live metrics charts</li>
           <li>Deployment history &amp; rollback</li>
           <li>Multiple namespaces</li>
