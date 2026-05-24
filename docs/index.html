@@ -514,13 +514,17 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
     </div>
 
-    <!-- 5-minute install snippet — visible above the fold for HN/listicle visitors
+    <!-- Install snippet — visible above the fold for HN/listicle visitors
          who want to see "can I try this in 5 minutes?" answered immediately. -->
-    <div id="install" style="max-width: 620px; margin: 32px auto 0; text-align: left;">
+    <div id="install" style="max-width: 720px; margin: 32px auto 0; text-align: left;">
       <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; text-align: center;">Install in 5 minutes</div>
-      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> helm repo add magertron https://magertron.com/charts
-<span style="color: var(--text-secondary);">$</span> helm repo update
-<span style="color: var(--text-secondary);">$</span> helm install magertron magertron/orchestrator</pre>
+      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> git clone https://github.com/curtismager20/magertron-mcpm.git
+<span style="color: var(--text-secondary);">$</span> cd magertron-mcpm
+<span style="color: var(--text-secondary);">$</span> ./install.sh                                <span style="color: var(--text-secondary);"># Free tier — no license needed</span>
+<span style="color: var(--text-secondary);">$</span> ./install.sh --license /path/to/license.json   <span style="color: var(--text-secondary);"># With a license</span></pre>
+      <div style="margin-top: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">
+        Free tier covers up to 20 MCP servers. Run <code style="background: var(--bg-card); padding: 1px 5px; border-radius: 3px; color: var(--text-primary);">./install.sh --help</code> for options (NodePort, LoadBalancer, custom namespace, etc.).
+      </div>
     </div>
 
     <!-- Main dashboard screenshot -->
@@ -1095,7 +1099,7 @@ function submitDemoForm() {
           <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
             Your message is on its way to our team. Expect a reply within one business day.
             In the meantime, you can <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
-            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">helm install magertron magertron/orchestrator</code>.
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
           </p>
         `;
       }

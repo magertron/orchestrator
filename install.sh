@@ -6,10 +6,13 @@
 # controlled by --mode.
 #
 # Usage:
-#   ./install.sh --license <path> [options]
+#   ./install.sh [--license <path>] [options]
 #
 # Quick examples:
-#   # First-time install, NodePort, latest chart, interactive node prompt:
+#   # Free tier evaluation (no license required):
+#   ./install.sh
+#
+#   # First-time install with license, NodePort, interactive node prompt:
 #   ./install.sh --license ~/Downloads/license.json
 #
 #   # Upgrade in place, preserve data, pin chart:
@@ -19,7 +22,7 @@
 #   ./install.sh --license ./license.json --mode reinstall --service-type loadbalancer
 #
 #   # CI / automation (no prompts):
-#   ./install.sh --license ./license.json --skip-node-label --non-interactive
+#   ./install.sh --skip-node-label --non-interactive
 #
 # Two modes:
 #
@@ -64,10 +67,14 @@ RELEASE_NAME="${RELEASE_NAME:-mcp}"
 usage() {
     cat <<'EOF'
 Usage:
-  ./install.sh --license <path> [options]
+  ./install.sh [--license <path>] [options]
 
-Required:
-  --license <path>            Path to license.json (or set LICENSE_FILE env var)
+License (optional):
+  --license <path>            Path to license.json (or set LICENSE_FILE env var).
+                              Omit to run in Free tier — all core platform
+                              features work; paid features (SSO, SCIM, governance,
+                              webhooks, audit export) remain gated until a
+                              license is later applied.
 
 Common options:
   --mode <upgrade|reinstall>  upgrade preserves data (default).
@@ -129,35 +136,35 @@ case "$SERVICE_TYPE" in
     *) echo "ERROR: --service-type must be nodeport|loadbalancer|clusterip (got: $SERVICE_TYPE)" >&2; exit 1 ;;
 esac
 
-if [ -z "$LICENSE_FILE" ]; then
-    echo "ERROR: --license <path> is required." >&2
-    echo "" >&2
-    usage >&2
-    exit 1
+if [ -n "$LICENSE_FILE" ]; then
+    if [ ! -f "$LICENSE_FILE" ]; then
+        echo "ERROR: license file not found at: $LICENSE_FILE" >&2
+        exit 1
+    fi
+    # License-file shape check. Magertron license files are JWTs (despite the
+    # `.json` extension on disk) — three dot-separated base64url segments.
+    # We don't verify the signature here; the orchestrator does that at
+    # startup with its embedded public key. This catches the common "wrong
+    # file" mistake (pointed at an empty file, a different doc, an HTML
+    # download error page, etc.) before we waste time installing.
+    LICENSE_FIRST_BYTES=$(head -c 2048 "$LICENSE_FILE" | tr -d '[:space:]')
+    if [ -z "$LICENSE_FIRST_BYTES" ]; then
+        echo "ERROR: license file is empty: $LICENSE_FILE" >&2
+        exit 1
+    fi
+    # A JWT has exactly two dots in its first 2KB and only base64url chars
+    # (A-Z, a-z, 0-9, -, _) plus the dots. Quick character-class check:
+    if ! printf '%s' "$LICENSE_FIRST_BYTES" | grep -qE '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'; then
+        echo "ERROR: license file doesn't look like a JWT: $LICENSE_FILE" >&2
+        echo "       Expected three dot-separated base64url segments." >&2
+        echo "       First 80 chars of file: ${LICENSE_FIRST_BYTES:0:80}" >&2
+        exit 1
+    fi
 fi
-if [ ! -f "$LICENSE_FILE" ]; then
-    echo "ERROR: license file not found at: $LICENSE_FILE" >&2
-    exit 1
-fi
-# License-file shape check. Magertron license files are JWTs (despite the
-# `.json` extension on disk) — three dot-separated base64url segments.
-# We don't verify the signature here; the orchestrator does that at
-# startup with its embedded public key. This catches the common "wrong
-# file" mistake (pointed at an empty file, a different doc, an HTML
-# download error page, etc.) before we waste time installing.
-LICENSE_FIRST_BYTES=$(head -c 2048 "$LICENSE_FILE" | tr -d '[:space:]')
-if [ -z "$LICENSE_FIRST_BYTES" ]; then
-    echo "ERROR: license file is empty: $LICENSE_FILE" >&2
-    exit 1
-fi
-# A JWT has exactly two dots in its first 2KB and only base64url chars
-# (A-Z, a-z, 0-9, -, _) plus the dots. Quick character-class check:
-if ! printf '%s' "$LICENSE_FIRST_BYTES" | grep -qE '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'; then
-    echo "ERROR: license file doesn't look like a JWT: $LICENSE_FILE" >&2
-    echo "       Expected three dot-separated base64url segments." >&2
-    echo "       First 80 chars of file: ${LICENSE_FIRST_BYTES:0:80}" >&2
-    exit 1
-fi
+# When --license is omitted, the orchestrator boots in Free tier (the
+# default). All core deployment / health / RBAC features work; SSO,
+# SCIM, governance, audit export, webhooks remain gated until a license
+# is later added via 'kubectl create secret generic mcp-license ...'.
 
 # ─── Banner ──────────────────────────────────────────────────────────────────
 echo ""
@@ -167,7 +174,7 @@ echo "================================================================"
 echo "  mode:           $MODE"
 echo "  namespace:      $NAMESPACE"
 echo "  service type:   $SERVICE_TYPE$([ "$SERVICE_TYPE" = "nodeport" ] && echo " (port $NODE_PORT)" || true)"
-echo "  license file:   $LICENSE_FILE"
+echo "  license file:   ${LICENSE_FILE:-<none — Free tier>}"
 echo "  chart version:  ${CHART_VERSION:-<auto-detect latest>}"
 echo "  helm repo:      $HELM_REPO_NAME"
 echo "  release name:   $RELEASE_NAME"
@@ -407,7 +414,21 @@ fi
 echo ""
 echo "========= License Secret ================================"
 kubectl create namespace "$NAMESPACE" 2>/dev/null || true
-if [ "$MODE" = "upgrade" ] && kubectl get secret -n "$NAMESPACE" mcp-license >/dev/null 2>&1; then
+if [ -z "$LICENSE_FILE" ]; then
+    # No license provided — Free tier. If an existing license secret is
+    # present from a prior install (upgrade mode), leave it; otherwise
+    # skip secret creation entirely. The orchestrator boots in Free tier
+    # when no license secret is mounted.
+    if kubectl get secret -n "$NAMESPACE" mcp-license >/dev/null 2>&1; then
+        echo "  Existing license secret present (preserved)."
+    else
+        echo "  No license provided — running in Free tier."
+        echo "  To add a license later:"
+        echo "    kubectl create secret generic mcp-license \\"
+        echo "      --from-file=license.json=/path/to/license.json -n $NAMESPACE"
+        echo "    kubectl rollout restart deployment/mcp-orchestrator -n $NAMESPACE"
+    fi
+elif [ "$MODE" = "upgrade" ] && kubectl get secret -n "$NAMESPACE" mcp-license >/dev/null 2>&1; then
     echo "  License secret already exists, leaving as-is (mode=upgrade)."
     echo "  To replace, delete the secret first:"
     echo "    kubectl delete secret -n $NAMESPACE mcp-license"
