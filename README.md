@@ -1,10 +1,37 @@
 # MCP Orchestrator — Helm Chart
 
-**Current release:** v2.1.1 — Helm chart on [magertron.com/charts](https://magertron.com/charts).
+**Current release:** v2.4.x family (latest: v2.4.12) — Helm chart on [magertron.com/charts](https://magertron.com/charts).
 
 Install guide for the MCP Orchestrator Helm chart, focused on **on-prem and
 private-cloud Kubernetes deployments**. If you're on a managed cloud
 (EKS / GKE / AKS), the chart works there too — see the last appendix.
+
+> **New in v2.4.x:** Service account lifecycle (create, rotate, revoke,
+> expiry reminders), audit log with configurable retention, owner-email
+> identity linking, HMAC-SHA256-signed webhooks. See
+> [Service Account Lifecycle](#service-account-lifecycle) below.
+
+---
+
+## Quickstart
+
+The fastest path to a working install is the bundled script. It does
+everything below (preflight, license setup, node labeling, `helm install`,
+post-install verification) with one command:
+
+```
+git clone https://github.com/curtismager20/magertron-mcpm.git
+cd magertron-mcpm
+./install.sh --license /path/to/your-license.json
+```
+
+The script supports both fresh installs and upgrade-in-place. Pass
+`--mode reinstall` for a destructive fresh start (it requires typing
+'destroy' to confirm); the default `--mode upgrade` preserves data.
+
+The rest of this README walks through the same install **manually** — use
+it to understand exactly what the script is doing, or when your
+environment needs custom values the script doesn't expose.
 
 ---
 
@@ -15,9 +42,12 @@ The chart deploys the full MCP Orchestrator platform to your cluster:
 - **Orchestrator** (2 replicas by default) — the control plane, REST API, and
   admin UI
 - **Envoy gateway** — TLS termination and HTTP routing to MCP servers
-- **PostgreSQL** — in-cluster database for users, roles, policies, audit,
-  SSO providers, SCIM tokens
+- **PostgreSQL (×2)** — one in-cluster database for orchestrator identity
+  & audit, one for the mcp-inventory service that tracks deployed servers,
+  service accounts, and grants
 - **mcp-sync sidecar** — watches MCP server CRDs and pushes Envoy routes
+- **mcp-inventory** — durable store for service accounts, orgs, and
+  per-SA lifecycle state (expiry, rotation, last-used, owner email)
 - **Namespaces** for MCP servers (`mcp-prod`, `mcp-staging`, `mcp-dev`)
 - **Network policies** isolating MCP server namespaces
 - **RBAC** — a ServiceAccount + ClusterRole granting the orchestrator the
@@ -26,7 +56,7 @@ The chart deploys the full MCP Orchestrator platform to your cluster:
 
 After install you retrieve the auto-generated `admin` password from the
 Kubernetes Secret (instructions printed in the post-install notes), log
-in, change the password, optionally apply an Enterprise license, and
+in, change the password, apply your license, and
 start deploying MCP servers.
 
 ---
@@ -88,7 +118,9 @@ openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
 openssl rsa -in jwt.key -pubout -out jwt.pub
 ```
 
-Keep these files safe. Rotating them invalidates all active user sessions.
+Keep these files safe. Rotating them invalidates all active user sessions
+AND all service-account JWTs (existing SAs will need to be re-rotated
+through the API or UI to mint new tokens).
 
 ### 5. metrics-server (optional but recommended)
 
@@ -102,14 +134,18 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 For non-cloud clusters you may need to add `--kubelet-insecure-tls` to the
 metrics-server deployment args.
 
-### 6. License file (optional — Enterprise tier only)
+### 6. License file (required)
 
-Free tier covers core deployment, health monitoring, scaling, RBAC.
-Enterprise tier adds SSO, SCIM, governance, audit export, webhooks,
-deployment history, rollback.
+The orchestrator validates a signed license at startup. The license is
+issued by Magertron per customer deployment and authorizes the running
+features of the platform — service account lifecycle, audit, SSO, SCIM,
+governance, webhooks, deployment history, rollback, and configurable
+audit retention.
 
-If you have a license JSON file, you can apply it at install time or
-later. See "Apply a license" below.
+If you don't have a license yet, contact Magertron to obtain one.
+
+The license file is a signed JWT (despite the `.json` extension on disk).
+See "Apply a license" below for how it's mounted into the cluster.
 
 ---
 
@@ -176,24 +212,36 @@ public IP automatically. See the cloud appendix at the bottom.
 
 ---
 
-## Install
+## Install (manual)
 
-### Minimum viable install (Free tier, self-signed cert, NodePort)
+> **Most users should use the `install.sh` script above.** This section
+> documents the same steps the script performs, useful when you need to
+> customize values the script doesn't expose, or when you want to read
+> every step before running anything.
+
+### Add the helm repo (one time)
+
+```
+helm repo add magertron https://magertron.com/charts
+helm repo update
+```
+
+### Minimum viable install (self-signed cert, NodePort)
 
 Fine for kicking the tires. **Not for production.**
 
 ```
-helm install mcp ./helm/orchestrator \
+helm install mcp magertron/mcp-orchestrator \
   --namespace mcp-system --create-namespace \
   --set loadBalancer.provider=nodeport \
   --set-file secrets.jwtPrivateKey=jwt.key \
   --set-file secrets.jwtPublicKey=jwt.pub
 ```
 
-### Production install (Free tier)
+### Production install
 
 ```
-helm install mcp ./helm/orchestrator \
+helm install mcp magertron/mcp-orchestrator \
   --namespace mcp-system --create-namespace \
   --set loadBalancer.provider=nodeport \
   --set orchestrator.env.apiPublicUrl=https://mcp.yourcompany.com \
@@ -204,12 +252,23 @@ helm install mcp ./helm/orchestrator \
   --set-file tls.key=tls.key
 ```
 
-### Production install (Enterprise tier with license)
+### Apply the license
 
-Same as above plus one more flag:
+The license JWT lives in a Secret. Create it after the namespace exists:
 
 ```
-  --set-file license.file=license.json
+kubectl create namespace mcp-system   # if not already created
+kubectl create secret generic mcp-license \
+  --from-file=license.json=/path/to/license.json \
+  -n mcp-system
+```
+
+If the secret is in place before `helm install`, the orchestrator picks
+it up on first startup. If you create it later, restart the orchestrator
+pods so they re-read the license:
+
+```
+kubectl rollout restart deployment/mcp-orchestrator -n mcp-system
 ```
 
 ### What the flags mean
@@ -224,7 +283,6 @@ Same as above plus one more flag:
 | `--set-file secrets.jwtPublicKey=...` | JWT verification key (RS256 PEM) |
 | `--set-file tls.cert=...` | Your TLS cert (full chain PEM) |
 | `--set-file tls.key=...` | Your TLS private key (PEM) |
-| `--set-file license.file=...` | Enterprise license JSON (optional) |
 
 ---
 
@@ -239,15 +297,21 @@ kubectl get pods -n mcp-system -w
 Expected pods (give it 2-3 minutes on first install):
 
 ```
-mcp-mcp-orchestrator-xxxxx-xxxx     2/2 Running
-mcp-mcp-orchestrator-xxxxx-xxxx     2/2 Running
-mcp-mcp-orchestrator-envoy-xxxxx    1/1 Running
-mcp-mcp-orchestrator-envoy-xxxxx    1/1 Running
-mcp-mcp-orchestrator-postgres-xxxx  1/1 Running
+mcp-orchestrator-xxxxx                       2/2 Running
+mcp-orchestrator-xxxxx                       2/2 Running
+mcp-orchestrator-envoy-xxxxx                 1/1 Running
+mcp-orchestrator-envoy-xxxxx                 1/1 Running
+mcp-orchestrator-postgres-xxxxx              1/1 Running
+mcp-orchestrator-inventory-xxxxx             1/1 Running
+mcp-orchestrator-inventory-postgres-xxxxx    1/1 Running
 ```
 
 If anything stays in `Init` or `Pending` for more than a minute, see
 Troubleshooting below.
+
+> **Note:** `mcp-orchestrator-inventory` typically restarts once or twice
+> in the first 30 seconds while it waits for its Postgres to accept
+> connections. This is normal and self-resolves.
 
 ### 2. Access the dashboard
 
@@ -255,7 +319,7 @@ For NodePort mode, if you haven't configured your firewall yet, quick test
 via port-forward:
 
 ```
-kubectl port-forward svc/mcp-mcp-orchestrator-envoy \
+kubectl port-forward svc/mcp-orchestrator-envoy \
   -n mcp-system 8443:443
 ```
 
@@ -266,7 +330,7 @@ Log in as `admin`. Retrieve the auto-generated password from the
 Kubernetes Secret:
 
 ```
-kubectl get secret -n mcp-system mcp-mcp-orchestrator-secrets \
+kubectl get secret -n mcp-system mcp-orchestrator-secrets \
   -o jsonpath='{.data.MCP_SEED_ADMIN_PASSWORD}' | base64 -d ; echo
 ```
 
@@ -276,26 +340,15 @@ install, use that instead.)
 **Change the password immediately** via Users tab → admin → Password.
 This is a bootstrap credential — treat it like an initial root password:
 use it once, change it, then rotate the Secret value to invalidate the
-bootstrap. See the post-install notes (`helm get notes mcp-orchestrator
--n mcp-system`) for full rotation guidance.
+bootstrap. See the post-install notes (`helm get notes mcp -n mcp-system`)
+for full rotation guidance.
 
-### 3. Apply a license (skip if Free tier is fine)
+**Set the admin email** while you're there — Users → admin → Email. As
+of v2.4.x, email is required for new users and is used for password
+reset and account event notifications. See
+[Identity linking](#identity-linking-users--service-accounts).
 
-If you didn't pass `--set-file license.file=...` at install:
-
-```
-kubectl create secret generic mcp-license \
-  --from-file=license.json=/path/to/license.json \
-  -n mcp-system
-
-kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
-```
-
-After the pods restart, check that Enterprise features unlock:
-- In the UI, the "Governance" tab should no longer show an upgrade prompt
-- The "Identity Providers" page should be accessible
-
-### 4. Configure SSO (Enterprise — optional)
+### 3. Configure SSO (optional)
 
 Admin → "Identity Providers" tab → "+ Add provider"
 
@@ -316,7 +369,7 @@ orchestrator:
 
 Then `helm upgrade` to apply.
 
-### 5. Configure SCIM (Enterprise — optional)
+### 4. Configure SCIM (optional)
 
 Admin → "Identity Providers" tab → "SCIM Tokens" sub-tab → "+ Mint token"
 
@@ -332,6 +385,103 @@ In your IdP, create a SCIM 2.0 app pointing at:
 Most IdPs have a "Test API Credentials" button. That's the fastest way
 to confirm the integration works.
 
+### 5. Configure webhooks for expiry reminders (recommended)
+
+The orchestrator fires HMAC-SHA256-signed webhooks 30, 10, and 5 days
+before any service account expires (see
+[Service Account Lifecycle](#service-account-lifecycle)). Configure at
+least one webhook so credentials don't silently rot:
+
+Admin → "Webhooks" tab → "+ Add webhook"
+
+Provide a URL (Slack incoming webhook, generic HTTPS endpoint, etc.) and
+a shared secret. The orchestrator signs the payload with HMAC-SHA256;
+your endpoint should verify the `X-Magertron-Signature` header matches
+`sha256=<hex>` computed over the request body.
+
+---
+
+## Service Account Lifecycle
+
+Service accounts represent machine identities (AI agents, automation
+scripts, CI runners) that authenticate to MCP servers behind the
+orchestrator. Full lifecycle is built into the platform:
+
+- **Create** — Service Accounts tab → New. Set name, subject, role(s),
+  scopes, TTL (default 90 days), and optional owner email.
+- **List** — see expiry status, last-used timestamp, owner email at a glance.
+- **Rotate** — generates a new JWT for an existing SA, soft-revokes the old
+  credential. Used when the agent's environment has been compromised or as
+  routine credential rotation. The owner email and audit history carry
+  forward.
+- **Revoke** — soft-delete; preserves the audit chain. The JTI is added
+  to the orchestrator's in-memory revocation set (refreshed every 30
+  seconds), so the old JWT stops authenticating across all replicas.
+- **Owner email** — optional contact field. Plumbs through to the
+  expiry-reminder webhook payload so you can route reminders to a
+  specific person.
+- **Expiry reminders** — 30 / 10 / 5 days before expiry, the orchestrator
+  fires a webhook for each matching SA. Webhook payload includes SA id,
+  subject, role IDs, owner email, days remaining, threshold matched.
+
+All SA lifecycle events emit OCSF-aligned audit events
+(`ServiceAccountCreated`, `Rotated`, `Revoked`, `ExpiringSoon`) that
+appear in the Audit Log tab.
+
+---
+
+## Identity linking (users + service accounts)
+
+As of v2.4.x, both users and service accounts can be linked to a contact
+email:
+
+- **users.email** — required for new password-provisioned password users.
+  Used for password reset and account event notifications. Set via the
+  Create User modal at create time, or via Users → row → Email after.
+  (SSO and SCIM users use their IdP-provided email; this field is
+  separate and only applies to local password users.)
+
+- **service_accounts.owner_email** — optional contact for the human owner
+  of a machine identity. Set via Create SA modal or PATCH after.
+  Surfaced in the expiry-reminder webhook payload for routing.
+
+Neither field is unique at the schema level — one human may have multiple
+usernames (e.g. `alice` / `alice-admin`) intentionally sharing an email,
+and one human may own many service accounts.
+
+---
+
+## Audit log & retention
+
+The Audit Log tab shows OCSF-aligned events across two planes:
+
+- **Admin plane** — user logins, service account lifecycle, policy
+  changes, license events, retention events
+- **Data plane** — every request that traversed the Envoy gateway, with
+  the principal, target, scopes consulted, and decision
+
+A retention worker prunes old rows daily at 03:00 UTC. Default retention:
+
+| Table | Default retention |
+|---|---|
+| `audit_events` | 90 days |
+| `runtime_policy_audit` | 30 days |
+
+Both thresholds are operator-configurable down to a 7-day safety floor
+(values below that are clamped to prevent accidentally wiping recent
+audit data). Configure via values:
+
+```yaml
+retention:
+  auditEventsDays: 90
+  runtimePolicyAuditDays: 30
+  cronExpression: "0 3 * * *"   # daily at 03:00 UTC
+```
+
+The worker is leader-elected — only one orchestrator pod runs the pruning
+even with multiple replicas — and emits a `RetentionPruneCompleted`
+audit event after each pass.
+
 ---
 
 ## Production hardening
@@ -342,9 +492,9 @@ use. These are appropriate for development, demos, and proofs of concept.
 management system** (Vault, AWS Secrets Manager, GCP Secret Manager,
 Sealed Secrets, etc).
 
-This section mirrors the post-install notes (`helm get notes
-mcp-orchestrator -n mcp-system`) and is included here so customers
-evaluating the chart see the security story before installing.
+This section mirrors the post-install notes (`helm get notes mcp
+-n mcp-system`) and is included here so customers evaluating the chart
+see the security story before installing.
 
 ### TLS certificate
 
@@ -363,7 +513,7 @@ Two production-grade alternatives:
 **Option A — Bring your own certificate at install time.**
 
 ```
-helm upgrade --install mcp ./helm/orchestrator \
+helm upgrade --install mcp magertron/mcp-orchestrator \
   --namespace mcp-system \
   --set-file tls.cert=/path/to/your-cert.pem \
   --set-file tls.key=/path/to/your-key.pem
@@ -405,7 +555,8 @@ helm upgrade --install mcp ./helm/orchestrator \
 ### JWT signing key
 
 The JWT private key signs every authentication token issued by the
-orchestrator. **If exposed, an attacker can forge tokens for any user.**
+orchestrator (user sessions AND service-account JWTs). **If exposed, an
+attacker can forge tokens for any user or service account.**
 
 For production:
 
@@ -415,7 +566,7 @@ For production:
 openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
 openssl rsa -in jwt.key -pubout -out jwt.pub
 
-helm upgrade --install mcp ./helm/orchestrator \
+helm upgrade --install mcp magertron/mcp-orchestrator \
   --namespace mcp-system \
   --set-file secrets.jwtPrivateKey=jwt.key \
   --set-file secrets.jwtPublicKey=jwt.pub
@@ -430,7 +581,7 @@ and pre-create the Secret externally:
 vault read -field=private secret/mcp-orch/jwt > /tmp/jwt.key
 vault read -field=public  secret/mcp-orch/jwt > /tmp/jwt.pub
 
-kubectl create secret generic mcp-mcp-orchestrator-secrets \
+kubectl create secret generic mcp-orchestrator-secrets \
   --from-file=MCP_JWT_PRIVATE_KEY=/tmp/jwt.key \
   --from-file=MCP_JWT_PUBLIC_KEY=/tmp/jwt.pub \
   -n mcp-system
@@ -443,9 +594,15 @@ existing Secret first, so pre-creating the Secret externally takes
 precedence over auto-generation.
 
 The auto-generated key lives in the Kubernetes Secret
-`mcp-mcp-orchestrator-secrets`. Anyone with `get secrets` permission in
+`mcp-orchestrator-secrets`. Anyone with `get secrets` permission in
 the orchestrator's namespace can retrieve it. **RBAC discipline is the
 only enforcement boundary** — see *RBAC hardening* below.
+
+> **Important:** the chart preserves the existing JWT keypair across
+> `helm upgrade` (verified via Secret fingerprint comparison). Existing
+> user sessions and service-account JWTs continue to work through chart
+> upgrades. **Manually rotating the keypair invalidates all of them**
+> and requires re-minting every service account through the API or UI.
 
 ### PostgreSQL password
 
@@ -457,7 +614,7 @@ action.
 Retrieve if needed (debugging, manual psql, backup tooling):
 
 ```
-kubectl get secret -n mcp-system mcp-mcp-orchestrator-secrets \
+kubectl get secret -n mcp-system mcp-orchestrator-secrets \
   -o jsonpath='{.data.MCP_DB_PASSWORD}' | base64 -d ; echo
 ```
 
@@ -532,8 +689,22 @@ everything else.
 
 ### Upgrade the chart
 
+The bundled `install.sh` handles upgrades cleanly:
+
 ```
-helm upgrade mcp ./helm/orchestrator \
+./install.sh --license /path/to/license.json --mode upgrade
+```
+
+`--mode upgrade` (default) preserves all data:
+- All Postgres data (users, service accounts, audit history)
+- All deployed MCP servers
+- The JWT signing keypair (so existing sessions / service-account JWTs survive)
+- The license secret
+
+**Manual upgrade equivalent:**
+
+```
+helm upgrade mcp magertron/mcp-orchestrator \
   --namespace mcp-system \
   --reuse-values         # keeps your install-time --set values
 ```
@@ -543,14 +714,30 @@ treats CRDs as install-only because they can be destructive). If the
 chart ships new CRD versions, apply them manually:
 
 ```
-kubectl apply -f helm/orchestrator/crds/
+kubectl apply -f https://magertron.com/charts/crds/
 ```
+
+### Schema migrations during upgrade
+
+Some chart versions add new database columns. The inventory PostgreSQL
+runs its own migration scripts on pod boot; those are automatic.
+
+The orchestrator PostgreSQL is initialized from a `postgres-init`
+ConfigMap that **only runs on first PV creation**. For existing installs,
+chart upgrades that add new columns to the orchestrator's tables (e.g.
+the `users.email` column added in v2.4.x) require a manual `ALTER TABLE`
+step. Per-version migration steps are documented in
+[UPGRADING.md](./UPGRADING.md).
+
+> A SchemaGuard-style migration runner for the orchestrator (matching
+> what inventory already does) is on the near-term roadmap; once it
+> ships, manual ALTERs will no longer be needed for column additions.
 
 ### Roll pods after a config change
 
 ```
-kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
-kubectl rollout restart deployment/mcp-mcp-orchestrator-envoy -n mcp-system
+kubectl rollout restart deployment/mcp-orchestrator -n mcp-system
+kubectl rollout restart deployment/mcp-orchestrator-envoy -n mcp-system
 ```
 
 ### Uninstall
@@ -559,12 +746,14 @@ kubectl rollout restart deployment/mcp-mcp-orchestrator-envoy -n mcp-system
 helm uninstall mcp -n mcp-system
 ```
 
-This removes Deployments, Services, Secrets, ConfigMaps. The PersistentVolumeClaim
-for PostgreSQL is **preserved** — your data survives uninstall. To also drop
-the database:
+This removes Deployments, Services, Secrets, ConfigMaps. The
+PersistentVolumeClaims for both PostgreSQL instances are **preserved**
+(`helm.sh/resource-policy: keep` annotation) — your data survives
+uninstall. To also drop the databases:
 
 ```
-kubectl delete pvc -l app=mcp-orchestrator -n mcp-system
+kubectl delete pvc -l app=mcp-orchestrator-postgres -n mcp-system
+kubectl delete pvc -l app=mcp-orchestrator-inventory-postgres -n mcp-system
 kubectl delete namespace mcp-system
 ```
 
@@ -586,17 +775,17 @@ Most common cause: **PostgreSQL isn't ready yet**. The orchestrator waits
 for Postgres readiness before starting. Check the Postgres pod:
 
 ```
-kubectl logs mcp-mcp-orchestrator-postgres-xxxxx -n mcp-system
+kubectl logs mcp-orchestrator-postgres-xxxxx -n mcp-system
 ```
 
 If you see `initdb` errors, the schema init scripts may have failed.
-Delete the PVC and reinstall (data loss acceptable on first install):
+For a fresh-slate fix (data loss acceptable on first install):
 
 ```
-helm uninstall mcp -n mcp-system
-kubectl delete pvc -l app=mcp-orchestrator -n mcp-system
-helm install mcp ... # (rerun your install command)
+./install.sh --license /path/to/license.json --mode reinstall
 ```
+
+You'll be prompted to type 'destroy' to confirm.
 
 ### Envoy pod won't start — "cannot load TLS certificate"
 
@@ -610,6 +799,17 @@ If it's missing, your install didn't pass `--set-file tls.cert=...` AND
 you also disabled auto-generation. Re-run install with a valid cert+key
 OR with `tls.create=true` (the default) to let the chart self-sign.
 
+### Inventory pod restarts a couple of times on first install
+
+Expected. The inventory service waits for its Postgres to accept
+connections at startup. Two or three restarts in the first ~30 seconds
+is normal; it stabilizes after Postgres is ready. If it's still
+restarting after 2 minutes, check the inventory logs:
+
+```
+kubectl logs -n mcp-system -l app=mcp-orchestrator-inventory --tail=100
+```
+
 ### Cannot log in — "Invalid credentials"
 
 The admin seed runs only against an empty database. If you've reinstalled
@@ -619,22 +819,21 @@ the Secret is unused. Login with the *original* password (whatever was
 generated or set on first install) — that's the one in the database.
 
 If you've genuinely lost it, the safe recovery path is to truncate the
-users and roles tables and let the orchestrator's seed code re-run
-against an empty database, picking up the current Secret value as the
-new admin password:
+users table and let the orchestrator's seed code re-run against an empty
+database, picking up the current Secret value as the new admin password:
 
 ```
 PG_POD=$(kubectl get pods -n mcp-system -l app=mcp-orchestrator-postgres \
   -o jsonpath='{.items[0].metadata.name}')
 
-# WARNING: this removes ALL users and roles — including any operators
-# you've added, any SSO-provisioned users, and any custom RBAC roles.
-# For a non-destructive reset, change the password via psql instead
-# (you'd need to compute a bcrypt hash externally — out of scope here).
+# WARNING: this removes ALL users — including any operators you've added,
+# any SSO-provisioned users, and any custom RBAC. For a non-destructive
+# reset, change the password via psql instead (you'd need to compute a
+# bcrypt hash externally — out of scope here).
 kubectl exec -n mcp-system $PG_POD -- psql -U mcp -d mcp_platform -c \
-  "TRUNCATE users, roles CASCADE;"
+  "TRUNCATE users CASCADE;"
 
-kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
+kubectl rollout restart deployment/mcp-orchestrator -n mcp-system
 ```
 
 After restart, retrieve the admin password from the Secret as documented
@@ -663,11 +862,11 @@ with for actual requests), but meta.location in response bodies will
 be cosmetically wrong. Fix with:
 
 ```
-helm upgrade mcp ./helm/orchestrator \
+helm upgrade mcp magertron/mcp-orchestrator \
   --namespace mcp-system --reuse-values \
   --set orchestrator.env.apiPublicUrl=https://mcp.yourcompany.com
 
-kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
+kubectl rollout restart deployment/mcp-orchestrator -n mcp-system
 ```
 
 ### OIDC login redirects to localhost
@@ -676,6 +875,27 @@ Same root cause as above — `apiPublicUrl` not set. Fix the same way,
 then go to Identity Providers and click through the OIDC provider's
 details to re-trigger the redirect URL calculation. You may need to
 delete and re-create the provider if the cached URL persists.
+
+### Webhooks aren't firing for expiry reminders
+
+Three things to check:
+
+1. **At least one webhook is configured.** Admin → Webhooks tab. The
+   expiry-reminder worker fires whichever webhooks are configured.
+
+2. **The orchestrator is the leader.** Reminders are leader-only — only
+   one of the two orchestrator replicas fires the cron. Check both pods'
+   logs; one should show `ExpiryReminderWorker: started`, and that pod
+   logs the actual fires.
+
+3. **Network reachability.** Test the webhook URL from inside the cluster:
+   ```
+   kubectl run -it --rm curl --image=curlimages/curl -- \
+     curl -X POST https://your-webhook-url/test
+   ```
+
+Failed deliveries also emit audit events (`WebhookDeliveryFailed`),
+visible in the Audit Log tab.
 
 ### Network policies block legit traffic
 
@@ -688,18 +908,19 @@ Options:
 1. Switch to a CNI that supports NetworkPolicy (Calico, Cilium)
 2. Disable network policies: `--set networkPolicy.enabled=false`
 
-### "Still showing Free tier after applying license"
+### License not loading / orchestrator refuses to start
 
-Two things to check:
+If the orchestrator logs say the license is missing, expired, or
+malformed, two things to check:
 
 1. Did you restart the orchestrator pods after creating the Secret?
    ```
-   kubectl rollout restart deployment/mcp-mcp-orchestrator -n mcp-system
+   kubectl rollout restart deployment/mcp-orchestrator -n mcp-system
    ```
 
 2. Is the Secret actually mounted? Exec into the orchestrator and check:
    ```
-   kubectl exec -it mcp-mcp-orchestrator-xxxxx -c orchestrator -n mcp-system -- \
+   kubectl exec -it mcp-orchestrator-xxxxx -c orchestrator -n mcp-system -- \
      ls -la /etc/mcp-license/
    ```
    You should see `license.json`. If not, the Secret name probably doesn't
@@ -714,21 +935,23 @@ knobs you'll commonly override:
 
 | Key | Default | Purpose |
 |---|---|---|
-| `orchestrator.replicaCount` | 2 | Orchestrator replicas. HA via leader election + LISTEN/NOTIFY fanout (default; tested through v2.1.1). See [HA-DEPLOYMENT.md](./docs/HA-DEPLOYMENT.md). |
+| `orchestrator.replicaCount` | 2 | Orchestrator replicas. HA via leader election + LISTEN/NOTIFY fanout. See [HA-DEPLOYMENT.md](./docs/HA-DEPLOYMENT.md). |
 | `orchestrator.env.apiPublicUrl` | `""` | Public URL for SCIM/OIDC |
 | `orchestrator.env.ssoAutoProvisionDomains` | `""` | SSO JIT allowlist |
 | `orchestrator.env.leaderElectionEnabled` | `""` (auto) | Auto-enabled when replicaCount > 1; force on/off with `"true"`/`"false"` |
 | `orchestrator.env.useNotifyFanout` | `"true"` | Postgres LISTEN/NOTIFY for sub-millisecond xDS fanout. Default ON since v2.0; turn off only for debugging. |
 | `envoy.replicaCount` | 2 | Envoy replicas (default; HPA scales to 10) |
 | `loadBalancer.provider` | `cloud` | `cloud`/`metallb`/`nodeport`/`existing` |
-| `postgresql.storage.size` | `5Gi` | DB volume size |
+| `postgresql.storage.size` | `10Gi` | Orchestrator DB volume size |
+| `inventory.postgresql.storage.size` | `10Gi` | Inventory DB volume size |
 | `postgresql.storage.storageClassName` | (default) | Pick a storage class if needed |
 | `namespaces` | `[mcp-prod, mcp-staging, mcp-dev]` | MCP server namespaces to create |
 | `networkPolicy.enabled` | `true` | NetworkPolicy creation |
-| `secrets.dbPassword` | `changeme` | PostgreSQL password |
+| `secrets.dbPassword` | (auto) | PostgreSQL password |
 | `license.secretName` | `mcp-license` | Name of the license Secret |
-| `seed.adminPassword` | `admin` | Default admin password (display only) |
-| `seed.adminPasswordHash` | (bcrypt of admin) | Actual hash applied to the users table |
+| `retention.auditEventsDays` | 90 | Daily prune threshold for `audit_events` |
+| `retention.runtimePolicyAuditDays` | 30 | Daily prune threshold for `runtime_policy_audit` |
+| `retention.cronExpression` | `"0 3 * * *"` | When the retention worker fires (UTC) |
 
 ---
 
@@ -739,7 +962,7 @@ handles the public IP automatically. You still bring your own cert and JWT
 keys:
 
 ```
-helm install mcp ./helm/orchestrator \
+helm install mcp magertron/mcp-orchestrator \
   --namespace mcp-system --create-namespace \
   --set orchestrator.env.apiPublicUrl=https://mcp.yourcompany.com \
   --set-file secrets.jwtPrivateKey=jwt.key \
@@ -751,7 +974,7 @@ helm install mcp ./helm/orchestrator \
 Then point `mcp.yourcompany.com` DNS at the LoadBalancer IP:
 
 ```
-kubectl get svc mcp-mcp-orchestrator-envoy -n mcp-system
+kubectl get svc mcp-orchestrator-envoy -n mcp-system
 # Look at EXTERNAL-IP column
 ```
 
