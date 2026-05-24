@@ -56,7 +56,7 @@ The chart deploys the full MCP Orchestrator platform to your cluster:
 
 After install you retrieve the auto-generated `admin` password from the
 Kubernetes Secret (instructions printed in the post-install notes), log
-in, change the password, apply your license, and
+in, change the password, optionally apply an Enterprise license, and
 start deploying MCP servers.
 
 ---
@@ -134,18 +134,14 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 For non-cloud clusters you may need to add `--kubelet-insecure-tls` to the
 metrics-server deployment args.
 
-### 6. License file (required)
+### 6. License file (optional — Enterprise tier only)
 
-The orchestrator validates a signed license at startup. The license is
-issued by Magertron per customer deployment and authorizes the running
-features of the platform — service account lifecycle, audit, SSO, SCIM,
-governance, webhooks, deployment history, rollback, and configurable
-audit retention.
+Free tier covers core deployment, health monitoring, scaling, RBAC.
+Enterprise tier adds SSO, SCIM, governance, audit export, webhooks,
+deployment history, rollback.
 
-If you don't have a license yet, contact Magertron to obtain one.
-
-The license file is a signed JWT (despite the `.json` extension on disk).
-See "Apply a license" below for how it's mounted into the cluster.
+If you have a license JSON file, you can apply it at install time or
+later. See "Apply a license" below.
 
 ---
 
@@ -226,7 +222,7 @@ helm repo add magertron https://magertron.com/charts
 helm repo update
 ```
 
-### Minimum viable install (self-signed cert, NodePort)
+### Minimum viable install (Free tier, self-signed cert, NodePort)
 
 Fine for kicking the tires. **Not for production.**
 
@@ -238,7 +234,7 @@ helm install mcp magertron/mcp-orchestrator \
   --set-file secrets.jwtPublicKey=jwt.pub
 ```
 
-### Production install
+### Production install (Free tier)
 
 ```
 helm install mcp magertron/mcp-orchestrator \
@@ -252,24 +248,19 @@ helm install mcp magertron/mcp-orchestrator \
   --set-file tls.key=tls.key
 ```
 
-### Apply the license
+### Production install (Enterprise tier with license)
 
-The license JWT lives in a Secret. Create it after the namespace exists:
+Same as above plus the license. The license JWT lives in a Secret:
 
 ```
-kubectl create namespace mcp-system   # if not already created
+kubectl create namespace mcp-system
 kubectl create secret generic mcp-license \
   --from-file=license.json=/path/to/license.json \
   -n mcp-system
 ```
 
-If the secret is in place before `helm install`, the orchestrator picks
-it up on first startup. If you create it later, restart the orchestrator
-pods so they re-read the license:
-
-```
-kubectl rollout restart deployment/mcp-orchestrator -n mcp-system
-```
+Then `helm install ...` as above. The orchestrator reads the license from
+this Secret at startup.
 
 ### What the flags mean
 
@@ -348,7 +339,7 @@ of v2.4.x, email is required for new users and is used for password
 reset and account event notifications. See
 [Identity linking](#identity-linking-users--service-accounts).
 
-### 3. Configure SSO (optional)
+### 3. Configure SSO (Enterprise — optional)
 
 Admin → "Identity Providers" tab → "+ Add provider"
 
@@ -369,7 +360,7 @@ orchestrator:
 
 Then `helm upgrade` to apply.
 
-### 4. Configure SCIM (optional)
+### 4. Configure SCIM (Enterprise — optional)
 
 Admin → "Identity Providers" tab → "SCIM Tokens" sub-tab → "+ Mint token"
 
@@ -908,10 +899,9 @@ Options:
 1. Switch to a CNI that supports NetworkPolicy (Calico, Cilium)
 2. Disable network policies: `--set networkPolicy.enabled=false`
 
-### License not loading / orchestrator refuses to start
+### "Still showing Free tier after applying license"
 
-If the orchestrator logs say the license is missing, expired, or
-malformed, two things to check:
+Two things to check:
 
 1. Did you restart the orchestrator pods after creating the Secret?
    ```
