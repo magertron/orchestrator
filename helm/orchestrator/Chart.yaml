@@ -13,10 +13,10 @@ keywords:
   - llm
 home: https://magertron.com
 sources:
-  - https://github.com/curtismager20/magertron-mcpm
+  - https://github.com/magertron/orchestrator
 icon: https://magertron.com/logo.svg
 maintainers:
-  - name: Curtis Mager
+  - name: Magertron
     email: sales@magertron.com
     url: https://magertron.com
 annotations:
@@ -53,9 +53,9 @@ annotations:
     - name: About
       url: https://magertron.com/about.html
     - name: Source Code
-      url: https://github.com/curtismager20/magertron-mcpm
+      url: https://github.com/magertron/orchestrator
     - name: Documentation
-      url: https://github.com/curtismager20/magertron-mcpm#readme
+      url: https://github.com/magertron/orchestrator#readme
 
   # Screenshot carousel on the chart page. Renders inline.
   # Each screenshot needs a public URL and a title that becomes alt text +
@@ -71,7 +71,7 @@ annotations:
   # Maintainer cards — richer than the top-level `maintainers:` field.
   # Each appears with avatar + name + role on the chart page.
   artifacthub.io/maintainers: |
-    - name: Curtis Mager
+    - name: Magertron
       email: sales@magertron.com
 
   artifacthub.io/changes: |
