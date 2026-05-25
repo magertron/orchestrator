@@ -51,6 +51,242 @@
 
 set -euo pipefail
 
+# ─── Polish: colors, glyphs, box drawing, spinners ──────────────────────────
+# Pure-bash terminal polish with graceful degradation. Honors NO_COLOR env
+# var (standard convention). Falls back to ASCII glyphs if the locale isn't
+# UTF-8. Spinners and in-place updates disabled when stdout isn't a TTY
+# (CI logs, piped output) or when --non-interactive is set.
+
+# Detect TTY (stdout connected to terminal)
+if [ -t 1 ]; then
+    IS_TTY=1
+else
+    IS_TTY=0
+fi
+
+# Detect color support. NO_COLOR=anything disables. Otherwise enable if TTY.
+if [ -n "${NO_COLOR:-}" ] || [ "$IS_TTY" = "0" ]; then
+    C_RESET="" C_BOLD="" C_DIM=""
+    C_RED="" C_GREEN="" C_YELLOW="" C_BLUE="" C_CYAN="" C_MAGENTA=""
+else
+    C_RESET=$'\033[0m'      C_BOLD=$'\033[1m'      C_DIM=$'\033[2m'
+    C_RED=$'\033[31m'       C_GREEN=$'\033[32m'    C_YELLOW=$'\033[33m'
+    C_BLUE=$'\033[34m'      C_CYAN=$'\033[36m'     C_MAGENTA=$'\033[35m'
+fi
+
+# Detect Unicode support — if the locale claims UTF-8, use fancy glyphs;
+# else fall back to ASCII so old terminals don't render boxes as `?` chars.
+case "${LANG:-}${LC_ALL:-}" in
+    *UTF-8*|*utf8*|*UTF8*)
+        G_CHECK="✓" G_CROSS="✗" G_WARN="⚠" G_ARROW="→" G_BULLET="•"
+        BX_TL="┌" BX_TR="┐" BX_BL="└" BX_BR="┘" BX_H="─" BX_V="│" BX_X="├" BX_Y="┤"
+        ;;
+    *)
+        G_CHECK="OK" G_CROSS="X" G_WARN="!" G_ARROW=">" G_BULLET="*"
+        BX_TL="+" BX_TR="+" BX_BL="+" BX_BR="+" BX_H="-" BX_V="|" BX_X="+" BX_Y="+"
+        ;;
+esac
+
+# Progress step tracking — we update STEP_CURRENT as we go through the
+# major install phases. STEP_TOTAL is the count of phases the user sees.
+STEP_CURRENT=0
+STEP_TOTAL=14   # default; recomputed after arg parsing based on flags
+
+# ─── Output helpers ──────────────────────────────────────────────────────────
+
+# Print a styled section header. Numbered if step tracking is on.
+section() {
+    STEP_CURRENT=$((STEP_CURRENT + 1))
+    local label="$1"
+    echo ""
+    printf "${C_CYAN}${C_BOLD}[%d/%d] %s${C_RESET}\n" "$STEP_CURRENT" "$STEP_TOTAL" "$label"
+    printf "${C_DIM}%s${C_RESET}\n" "$(printf '%.0s─' $(seq 1 60))"
+}
+
+# Status indicators — used inside a section for individual line items.
+ok()   { printf "  ${C_GREEN}${G_CHECK}${C_RESET} %s\n" "$*"; }
+warn() { printf "  ${C_YELLOW}${G_WARN}${C_RESET} %s\n" "$*"; }
+err()  { printf "  ${C_RED}${G_CROSS}${C_RESET} %s\n" "$*" >&2; }
+info() { printf "  ${C_DIM}%s${C_RESET}\n" "$*"; }
+note() { printf "  ${C_DIM}%s${C_RESET} %s\n" "$G_ARROW" "$*"; }
+
+# A simple spinner that runs while a command executes. Disabled when not
+# on a TTY (so CI logs aren't filled with \r noise) or in --non-interactive.
+# Usage:  spinner "Waiting for rollout..." kubectl rollout status ...
+spinner() {
+    local msg="$1"; shift
+    if [ "$IS_TTY" = "0" ] || [ "${NON_INTERACTIVE:-0}" = "1" ]; then
+        printf "  %s\n" "$msg"
+        "$@"
+        return $?
+    fi
+    local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    case "${LANG:-}${LC_ALL:-}" in
+        *UTF-8*|*utf8*|*UTF8*) ;;
+        *) frames='|/-\\' ;;
+    esac
+    "$@" &
+    local pid=$!
+    local i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        local frame="${frames:$((i % ${#frames})):1}"
+        printf "\r  ${C_CYAN}%s${C_RESET} %s" "$frame" "$msg"
+        i=$((i + 1))
+        sleep 0.1
+    done
+    wait "$pid"
+    local rc=$?
+    # Clear the spinner line. Then print outcome.
+    printf "\r%-$(($(tput cols 2>/dev/null || echo 80)))s\r" ""
+    if [ "$rc" = "0" ]; then
+        ok "$msg"
+    else
+        err "$msg (exit $rc)"
+    fi
+    return $rc
+}
+
+# Live rollout progress bar — polls all pods in the namespace whose name
+# starts with the given prefix and counts how many are Ready. Truthful
+# (not decorative) — reflects platform-wide readiness, not just one
+# deployment.
+#
+# Usage:  rollout_progress <namespace> <pod-name-prefix> <timeout-seconds>
+# Returns 0 if all pods become Ready, 1 on timeout.
+#
+# Falls back to a plain wait when stdout isn't a TTY (CI logs).
+rollout_progress() {
+    local ns="$1" prefix="$2" timeout="$3"
+    local bar_width=24
+
+    if [ "$IS_TTY" = "0" ] || [ "${NON_INTERACTIVE:-0}" = "1" ]; then
+        # No fancy rendering in CI — wait for the main orchestrator
+        # deployment via the canonical kubectl rollout status call.
+        kubectl rollout status -n "$ns" "deploy/${prefix}" --timeout="${timeout}s"
+        return $?
+    fi
+
+    # Pick bar glyphs based on Unicode support.
+    local g_full g_empty
+    case "${LANG:-}${LC_ALL:-}" in
+        *UTF-8*|*utf8*|*UTF8*) g_full="█" g_empty="░" ;;
+        *)                     g_full="#" g_empty="-" ;;
+    esac
+
+    local start_ts=$(date +%s)
+    while :; do
+        local now=$(date +%s)
+        local elapsed=$((now - start_ts))
+
+        # Timeout?
+        if [ "$elapsed" -ge "$timeout" ]; then
+            printf "\r%-$(($(tput cols 2>/dev/null || echo 80)))s\r" ""
+            return 1
+        fi
+
+        # Query all matching pods. For each, capture:
+        #  - name (for prefix match)
+        #  - Ready condition status (True / False)
+        #  - deletionTimestamp (set when pod is terminating)
+        # Terminating pods report Ready=True until they exit but are not
+        # serving traffic — count them as NOT ready so the bar reflects
+        # what the customer actually has up.
+        local counts
+        counts=$(kubectl get pods -n "$ns" \
+            -o jsonpath='{range .items[?(@.metadata.name)]}{.metadata.name}{"\t"}{.status.conditions[?(@.type=="Ready")].status}{"\t"}{.metadata.deletionTimestamp}{"\n"}{end}' \
+            2>/dev/null \
+            | awk -v p="^${prefix}" '
+                $1 ~ p {
+                    total++
+                    # $2 = Ready status, $3 = deletionTimestamp (empty if not terminating)
+                    if ($2 == "True" && $3 == "") ready++
+                }
+                END { printf "%d %d\n", (ready ? ready : 0), (total ? total : 0) }
+            ')
+        local ready="${counts%% *}"
+        local total="${counts##* }"
+        ready="${ready:-0}"
+        total="${total:-0}"
+
+        # If no pods yet (deployment still being created), render an
+        # empty bar with placeholder total so user sees something happening.
+        local display_total=$total
+        [ "$total" = "0" ] && display_total=1
+
+        # Compute filled width.
+        local filled=$((ready * bar_width / display_total))
+        [ "$filled" -gt "$bar_width" ] && filled=$bar_width
+        local empty=$((bar_width - filled))
+
+        # Build the bar string.
+        local bar=""
+        local i=0
+        while [ "$i" -lt "$filled" ]; do bar="${bar}${g_full}";  i=$((i + 1)); done
+        while [ "$i" -lt "$bar_width" ]; do bar="${bar}${g_empty}"; i=$((i + 1)); done
+
+        # Render. \r at start, no newline — overwrites previous line.
+        local total_display="$total"
+        [ "$total" = "0" ] && total_display="?"
+        printf "\r  ${C_CYAN}[%s]${C_RESET} ${C_BOLD}%d/%s${C_RESET} pods ready ${C_DIM}· %ds elapsed${C_RESET}   " \
+            "$bar" "$ready" "$total_display" "$elapsed"
+
+        # Done? Only "done" if we found at least one pod AND all matching
+        # pods are Ready. Avoid the false-positive of "0/0 done" before
+        # any pods have been scheduled.
+        if [ "$total" -gt 0 ] && [ "$ready" = "$total" ]; then
+            # Clear, then print final OK line.
+            printf "\r%-$(($(tput cols 2>/dev/null || echo 80)))s\r" ""
+            ok "Rollout complete · ${total}/${total} pods ready (${elapsed}s)"
+            return 0
+        fi
+
+        sleep 1
+    done
+}
+
+# Draw a box around content. Pass content as multiple args, each becomes
+# a line. Auto-sizes width to longest line.
+box() {
+    # Find the widest line (without ANSI codes — strip them for measurement)
+    local lines=("$@")
+    local max_w=0
+    for line in "${lines[@]}"; do
+        # Strip ANSI escape sequences for accurate width.
+        local stripped
+        stripped=$(printf '%s' "$line" | sed -E 's/\x1B\[[0-9;]*[mK]//g')
+        local w=${#stripped}
+        [ "$w" -gt "$max_w" ] && max_w=$w
+    done
+    local total_w=$((max_w + 4))
+    local hline=""
+    local i=0
+    while [ "$i" -lt "$total_w" ]; do
+        hline="${hline}${BX_H}"
+        i=$((i + 1))
+    done
+    printf "  ${C_CYAN}${BX_TL}%s${BX_TR}${C_RESET}\n" "$hline"
+    for line in "${lines[@]}"; do
+        local stripped
+        stripped=$(printf '%s' "$line" | sed -E 's/\x1B\[[0-9;]*[mK]//g')
+        local pad=$((max_w - ${#stripped}))
+        printf "  ${C_CYAN}${BX_V}${C_RESET}  %s%*s  ${C_CYAN}${BX_V}${C_RESET}\n" "$line" "$pad" ""
+    done
+    printf "  ${C_CYAN}${BX_BL}%s${BX_BR}${C_RESET}\n" "$hline"
+}
+
+# Print the Magertron banner.
+banner() {
+    if [ -n "${NO_COLOR:-}" ]; then
+        echo ""
+        echo "  | MAGERTRON  MCP Orchestrator Installer"
+        echo ""
+    else
+        echo ""
+        printf "  ${C_CYAN}${C_BOLD}▌${C_RESET} ${C_BOLD}MAGERTRON${C_RESET}  ${C_DIM}MCP Orchestrator Installer${C_RESET}\n"
+        echo ""
+    fi
+}
+
 # ─── Defaults ───────────────────────────────────────────────────────────────
 LICENSE_FILE="${LICENSE_FILE:-}"
 MODE="${MODE:-upgrade}"
@@ -167,37 +403,55 @@ fi
 # is later added via 'kubectl create secret generic mcp-license ...'.
 
 # ─── Banner ──────────────────────────────────────────────────────────────────
-echo ""
-echo "================================================================"
-echo "  Magertron MCP Orchestrator install / upgrade"
-echo "================================================================"
-echo "  mode:           $MODE"
-echo "  namespace:      $NAMESPACE"
-echo "  service type:   $SERVICE_TYPE$([ "$SERVICE_TYPE" = "nodeport" ] && echo " (port $NODE_PORT)" || true)"
-echo "  license file:   ${LICENSE_FILE:-<none — Free tier>}"
-echo "  chart version:  ${CHART_VERSION:-<auto-detect latest>}"
-echo "  helm repo:      $HELM_REPO_NAME"
-echo "  release name:   $RELEASE_NAME"
-echo "================================================================"
+# Compute STEP_TOTAL based on which conditional sections will fire.
+# Baseline (always run): preflight tools, preflight cluster, preflight helm,
+#   node labeling, chart version, teardown release, cleaning leftovers,
+#   license secret, helm install, rollout wait, self-mint verify, final state,
+#   access info = 13 unconditional sections.
+STEP_TOTAL=13
+case "$MODE" in
+    upgrade)
+        STEP_TOTAL=$((STEP_TOTAL + 1))  # "Preserving namespaces"
+        ;;
+    reinstall)
+        STEP_TOTAL=$((STEP_TOTAL + 3))  # tear down ns, clean slate, defensive PVC
+        ;;
+esac
+[ "$SERVICE_TYPE" = "nodeport" ] && STEP_TOTAL=$((STEP_TOTAL + 1))  # NodePort pin
+
+banner
+
+# Configuration summary in a box.
+SVC_DISPLAY="$SERVICE_TYPE"
+[ "$SERVICE_TYPE" = "nodeport" ] && SVC_DISPLAY="$SERVICE_TYPE (port $NODE_PORT)"
+box \
+    "${C_BOLD}Installation plan${C_RESET}" \
+    "" \
+    "  mode             $C_BOLD$MODE$C_RESET" \
+    "  namespace        $NAMESPACE" \
+    "  service type     $SVC_DISPLAY" \
+    "  license          ${LICENSE_FILE:-${C_DIM}<none — Free tier>${C_RESET}}" \
+    "  chart version    ${CHART_VERSION:-${C_DIM}<auto-detect latest>${C_RESET}}" \
+    "  helm repo        $HELM_REPO_NAME" \
+    "  release name     $RELEASE_NAME"
 
 if [ "$MODE" = "reinstall" ]; then
     echo ""
-    echo "WARNING: --mode reinstall will DESTROY all data in $NAMESPACE,"
-    echo "         including all service accounts, audit history, and"
-    echo "         deployed MCP servers in customer namespaces."
+    warn "${C_BOLD}${C_YELLOW}--mode reinstall will DESTROY all data in $NAMESPACE${C_RESET}"
+    info "including all service accounts, audit history, and"
+    info "deployed MCP servers in customer namespaces."
     if [ "$NON_INTERACTIVE" != "1" ]; then
         echo ""
-        read -r -p "Type 'destroy' to confirm: " confirm
+        read -r -p "  Type ${C_BOLD}destroy${C_RESET} to confirm: " confirm
         if [ "$confirm" != "destroy" ]; then
-            echo "Aborted."
+            err "Aborted."
             exit 1
         fi
     fi
 fi
 
 # ─── Preflight: required tools ───────────────────────────────────────────────
-echo ""
-echo "========= Preflight: tools =============================="
+section "Preflight: tools"
 for tool in kubectl helm python3; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "ERROR: $tool is not installed or not on PATH." >&2
@@ -207,8 +461,7 @@ for tool in kubectl helm python3; do
 done
 
 # ─── Preflight: cluster reachable ────────────────────────────────────────────
-echo ""
-echo "========= Preflight: cluster ============================"
+section "Preflight: cluster"
 if ! kubectl cluster-info >/dev/null 2>&1; then
     echo "ERROR: cannot reach Kubernetes cluster." >&2
     echo "       Check that kubectl is configured and your context is correct." >&2
@@ -227,8 +480,7 @@ fi
 echo "  perms:      ok (can create namespaces)"
 
 # ─── Preflight: helm repo ────────────────────────────────────────────────────
-echo ""
-echo "========= Preflight: helm repo =========================="
+section "Preflight: helm repo"
 if ! helm repo list 2>/dev/null | grep -q "^${HELM_REPO_NAME}\b"; then
     echo "ERROR: helm repo '$HELM_REPO_NAME' is not configured." >&2
     echo "       Add it first:" >&2
@@ -246,8 +498,7 @@ echo "  repo cache updated"
 # node without the right PV mount. The two labels are deliberately
 # distinct keys (workload=stateful AND workload-inventory=true) so they
 # can later live on different nodes if a customer wants to separate them.
-echo ""
-echo "========= Node labeling ================================="
+section "Node labeling"
 if [ "$SKIP_NODE_LABEL" = "1" ]; then
     echo "  Skipping node labeling (--skip-node-label)."
     echo "  Postgres pods will rely on your cluster's default StorageClass"
@@ -309,8 +560,7 @@ else
 fi
 
 # ─── Chart version resolution ────────────────────────────────────────────────
-echo ""
-echo "========= Chart version ================================="
+section "Chart version"
 if [ -z "$CHART_VERSION" ]; then
     CHART_VERSION=$(helm search repo "${HELM_REPO_NAME}/mcp-orchestrator" --devel -o json 2>/dev/null \
         | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["version"] if d else "")')
@@ -328,8 +578,7 @@ echo "  target version: $CHART_VERSION"
 # inventory PVC, which causes helm uninstall to leave that one resource
 # alone, plus from not deleting the namespaces holding the PVCs and
 # customer deployments.
-echo ""
-echo "========= Tearing down existing release ================="
+section "Tearing down existing release"
 helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" 2>/dev/null || true
 kubectl delete secret -n "$NAMESPACE" -l "name=${RELEASE_NAME},owner=helm" 2>/dev/null || true
 kubectl delete crd mcproutes.mcp.io 2>/dev/null || true
@@ -343,14 +592,13 @@ kubectl delete crd mcproutes.mcp.io 2>/dev/null || true
 #
 # Delete them here in both modes. The orchestrator recreates them on
 # startup as part of its reconcile loop against the deploy_servers DB.
-echo ""
-echo "========= Cleaning orchestrator-managed leftovers ======="
+section "Cleaning orchestrator-managed leftovers"
 kubectl delete networkpolicy -A -l managed-by=mcp-orchestrator --ignore-not-found 2>/dev/null || true
 
 # ─── Tear down namespaces (reinstall mode only) ──────────────────────────────
 if [ "$MODE" = "reinstall" ]; then
     echo ""
-    echo "========= Tearing down namespaces (mode=reinstall) ======"
+    section "Tearing down namespaces (mode=reinstall)"
     # Discover orchestrator-managed namespaces dynamically. The chart
     # labels namespaces it creates with managed-by=mcp-orchestrator;
     # this covers any namespaces auto-created for MCP server deployments
@@ -375,7 +623,7 @@ if [ "$MODE" = "reinstall" ]; then
     done
 
     echo ""
-    echo "========= Clean slate check ============================="
+    section "Clean slate check"
     remaining_ns=$(kubectl get ns -l managed-by=mcp-orchestrator -o name 2>/dev/null || true)
     remaining_np=$(kubectl get networkpolicies -A -l managed-by=mcp-orchestrator 2>/dev/null | grep -v "^NAMESPACE" || true)
     remaining_crd=$(kubectl get crd 2>/dev/null | grep mcp || true)
@@ -384,7 +632,7 @@ if [ "$MODE" = "reinstall" ]; then
     [ -n "${remaining_crd}" ] && echo "  crds:      ${remaining_crd}" || echo "  crds:      clean"
 else
     echo ""
-    echo "========= Preserving namespaces (mode=upgrade) =========="
+    section "Preserving namespaces (mode=upgrade)"
     echo "  $NAMESPACE + customer namespaces stay."
     echo "  Inventory PVC + license secret + customer deployments preserved."
 fi
@@ -395,7 +643,7 @@ fi
 # already gone (or PVC outlived it for some reason).
 if [ "$MODE" = "reinstall" ]; then
     echo ""
-    echo "========= Defensive PVC cleanup ========================="
+    section "Defensive PVC cleanup"
     kubectl create namespace "$NAMESPACE" 2>/dev/null || true
     kubectl delete pod -n "$NAMESPACE" -l component=inventory-postgresql --ignore-not-found=true >/dev/null
     kubectl delete pvc -n "$NAMESPACE" -l component=inventory-postgresql --ignore-not-found=true >/dev/null
@@ -411,8 +659,7 @@ if [ "$MODE" = "reinstall" ]; then
 fi
 
 # ─── License Secret ──────────────────────────────────────────────────────────
-echo ""
-echo "========= License Secret ================================"
+section "License Secret"
 kubectl create namespace "$NAMESPACE" 2>/dev/null || true
 if [ -z "$LICENSE_FILE" ]; then
     # No license provided — Free tier. If an existing license secret is
@@ -441,8 +688,7 @@ else
 fi
 
 # ─── Helm install ────────────────────────────────────────────────────────────
-echo ""
-echo "========= Helm install =================================="
+section "Helm install"
 
 # Map our service-type to the chart's loadBalancer.provider value.
 # The chart accepts: nodeport, loadbalancer, clusterip.
@@ -453,19 +699,28 @@ HELM_VALUES=(
     --set "loadBalancer.provider=$SERVICE_TYPE"
 )
 
-helm install "$RELEASE_NAME" "${HELM_REPO_NAME}/mcp-orchestrator" \
-    "${HELM_VALUES[@]}" \
-    > install.out
-echo "  Helm install complete (output: install.out)"
+# Wrapper function so we can pass it to spinner.
+do_helm_install() {
+    helm install "$RELEASE_NAME" "${HELM_REPO_NAME}/mcp-orchestrator" \
+        "${HELM_VALUES[@]}" \
+        > install.out 2>&1
+}
+
+if spinner "Installing chart ${HELM_REPO_NAME}/mcp-orchestrator @ $CHART_VERSION" do_helm_install; then
+    info "Output saved to install.out"
+else
+    err "Helm install failed. Last 20 lines of install.out:"
+    tail -20 install.out | sed 's/^/    /' >&2
+    exit 1
+fi
 
 # ─── Wait for orchestrator rollout ───────────────────────────────────────────
-echo ""
-echo "========= Waiting for orchestrator rollout =============="
-if ! kubectl rollout status -n "$NAMESPACE" deploy/mcp-orchestrator --timeout=180s; then
-    echo "ERROR: orchestrator rollout did not finish in 180s." >&2
-    echo "  Check pod status:" >&2
-    echo "    kubectl get pods -n $NAMESPACE" >&2
-    echo "    kubectl describe pod -n $NAMESPACE -l app=mcp-orchestrator" >&2
+section "Waiting for orchestrator rollout"
+if ! rollout_progress "$NAMESPACE" "mcp-orchestrator" 180; then
+    err "Orchestrator rollout did not finish in 180s."
+    note "Check pod status:"
+    info "    kubectl get pods -n $NAMESPACE"
+    info "    kubectl describe pod -n $NAMESPACE -l app=mcp-orchestrator"
     exit 1
 fi
 
@@ -474,37 +729,45 @@ fi
 # specific port (default 30443 to match the historical tooling), patch it
 # in here. Skip for loadbalancer / clusterip.
 if [ "$SERVICE_TYPE" = "nodeport" ]; then
-    echo ""
-    echo "========= Pinning Envoy NodePort to $NODE_PORT ==============="
+    section "Pinning Envoy NodePort to $NODE_PORT"
     kubectl patch svc -n "$NAMESPACE" mcp-orchestrator-envoy \
         -p "{\"spec\":{\"ports\":[{\"name\":\"https\",\"port\":443,\"nodePort\":${NODE_PORT},\"targetPort\":10443,\"protocol\":\"TCP\"}]}}" \
         >/dev/null
-    echo "  NodePort pinned to $NODE_PORT"
+    ok "NodePort pinned to $NODE_PORT"
 fi
 
 # ─── Verify orchestrator inventory admin bootstrap ───────────────────────────
 # The orchestrator self-mints its own inventory admin bootstrap token at
-# startup using MCP_JWT_PRIVATE_KEY. Grep startup logs to confirm. If the
-# line isn't there, the binary may be too old or the env may be overriding;
-# log it but don't block — operator can investigate.
-echo ""
-echo "========= Verifying orchestrator self-mint =============="
+# startup using MCP_JWT_PRIVATE_KEY. Grep startup logs to confirm. We
+# COUNT matching lines rather than displaying them — the raw JSON log
+# output is implementation detail customers don't need to read.
+section "Verifying orchestrator self-mint"
 sleep 3
 INV_LOG=$(kubectl logs -n "$NAMESPACE" -l app.kubernetes.io/name=mcp-orchestrator \
-    --tail=200 2>/dev/null | grep -iE "self-minted bootstrap|InventoryAdminClient configured|inventory client NOT configured" \
-    | head -5 || true)
-if [ -n "${INV_LOG}" ]; then
-    echo "${INV_LOG}" | sed 's/^/  /'
+    --tail=200 2>/dev/null || true)
+
+SELFMINT_COUNT=$(echo "$INV_LOG" | grep -c "self-minted bootstrap" 2>/dev/null || echo 0)
+INVCLIENT_COUNT=$(echo "$INV_LOG" | grep -c "InventoryAdminClient configured" 2>/dev/null || echo 0)
+INVCLIENT_FAIL=$(echo "$INV_LOG" | grep -c "inventory client NOT configured" 2>/dev/null || echo 0)
+
+if [ "$SELFMINT_COUNT" -gt 0 ] && [ "$INVCLIENT_COUNT" -gt 0 ] && [ "$INVCLIENT_FAIL" = "0" ]; then
+    ok "Self-mint token issued (${SELFMINT_COUNT} orchestrator pod$([ "$SELFMINT_COUNT" -gt 1 ] && echo s))"
+    ok "Inventory admin client configured (${INVCLIENT_COUNT} pod$([ "$INVCLIENT_COUNT" -gt 1 ] && echo s))"
+elif [ "$INVCLIENT_FAIL" -gt 0 ]; then
+    err "Inventory admin client failed to configure on ${INVCLIENT_FAIL} pod(s)"
+    note "Service account creation will not work until this is resolved."
+    info "    kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=mcp-orchestrator | grep -i inventory"
+elif [ "$SELFMINT_COUNT" = "0" ] && [ "$INVCLIENT_COUNT" = "0" ]; then
+    warn "No inventory-admin log lines found yet (pods may still be starting)"
+    info "    Re-check after a few seconds:"
+    info "    kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=mcp-orchestrator | grep -i bootstrap"
 else
-    echo "  WARN: no inventory-admin log lines found in orchestrator logs."
-    echo "        The install may still work; check logs manually if you see"
-    echo "        problems creating service accounts:"
-    echo "          kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=mcp-orchestrator"
+    # Partial state — some pods did one thing, not the other.
+    warn "Self-mint partial: self-mint=${SELFMINT_COUNT}, client-config=${INVCLIENT_COUNT}"
 fi
 
 # ─── Final state ─────────────────────────────────────────────────────────────
-echo ""
-echo "========= Final cluster state ==========================="
+section "Final cluster state"
 kubectl get pods -n "$NAMESPACE"
 echo ""
 kubectl get svc -n "$NAMESPACE" mcp-orchestrator-envoy 2>/dev/null || true
@@ -514,8 +777,7 @@ kubectl get svc -n "$NAMESPACE" mcp-orchestrator-envoy 2>/dev/null || true
 # service type. NodePort → http://<any-node-ip>:<NODE_PORT>.
 # LoadBalancer → look for assigned external IP/hostname.
 # ClusterIP → tell user to port-forward.
-echo ""
-echo "========= Access ========================================"
+section "Access"
 case "$SERVICE_TYPE" in
     nodeport)
         # Pick any node's external or internal IP.
@@ -544,18 +806,38 @@ esac
 
 # ─── Closing summary ────────────────────────────────────────────────────────
 echo ""
-echo "========================================================"
+# Capture access URL into a clean variable for the summary box.
+ACCESS_URL="(see above)"
+case "$SERVICE_TYPE" in
+    nodeport)    [ -n "${NODE_IP:-}" ] && ACCESS_URL="https://${NODE_IP}:${NODE_PORT}" ;;
+    loadbalancer) [ -n "${LB:-}" ] && ACCESS_URL="https://${LB}" ;;
+    clusterip)   ACCESS_URL="https://localhost:8443 (via port-forward)" ;;
+esac
+
 if [ "$MODE" = "upgrade" ]; then
-    echo "  Done. mode=upgrade complete."
-    echo "  Data preserved. JWT keypair may have regenerated;"
-    echo "  if so, existing JWTs are invalid and must be re-minted."
+    box \
+        "${C_GREEN}${C_BOLD}${G_CHECK} Upgrade complete${C_RESET}" \
+        "" \
+        "  URL                $C_BOLD$ACCESS_URL$C_RESET" \
+        "  Data preserved     ${C_GREEN}${G_CHECK}${C_RESET} all PVCs intact" \
+        "  JWT keypair        ${C_GREEN}${G_CHECK}${C_RESET} preserved across helm upgrade" \
+        "" \
+        "  ${C_DIM}Existing user sessions and service-account JWTs${C_RESET}" \
+        "  ${C_DIM}continue to work without re-minting.${C_RESET}"
 else
-    echo "  Done. mode=reinstall complete; clean slate."
-    echo "  Log in at the URL above as 'admin' and:"
-    echo "    1. Change the admin password"
-    echo "    2. Set the admin user's email"
-    echo "    3. Configure webhooks if you want expiry reminders"
-    echo "    4. Deploy MCP servers from the UI"
+    box \
+        "${C_GREEN}${C_BOLD}${G_CHECK} Installation complete${C_RESET}" \
+        "" \
+        "  URL                $C_BOLD$ACCESS_URL$C_RESET" \
+        "  Username           ${C_BOLD}admin${C_RESET}" \
+        "  Password           ${C_DIM}kubectl get secret -n $NAMESPACE \\${C_RESET}" \
+        "                     ${C_DIM}  mcp-orchestrator-secrets \\${C_RESET}" \
+        "                     ${C_DIM}  -o jsonpath='{.data.MCP_SEED_ADMIN_PASSWORD}' | base64 -d${C_RESET}" \
+        "" \
+        "  ${C_BOLD}Next steps${C_RESET}" \
+        "    ${G_BULLET} Log in and change the admin password" \
+        "    ${G_BULLET} Set the admin user's email" \
+        "    ${G_BULLET} Configure webhooks for expiry reminders" \
+        "    ${G_BULLET} Deploy MCP servers from the UI"
 fi
-echo "========================================================"
 echo ""
