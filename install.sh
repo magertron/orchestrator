@@ -515,8 +515,13 @@ else
         # Interactive prompt
         echo "  Choose a node to label for stateful workloads (Postgres):"
         echo ""
-        # List nodes with a 1-indexed picker
-        mapfile -t NODES < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+        # List nodes with a 1-indexed picker.
+        # Use a portable read-loop instead of `mapfile` so this works on
+        # macOS bash 3.2 (which doesn't have mapfile) as well as Linux.
+        NODES=()
+        while IFS= read -r line; do
+            [ -n "$line" ] && NODES+=("$line")
+        done < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
         if [ ${#NODES[@]} -eq 0 ]; then
             echo "ERROR: no nodes found in the cluster." >&2
             exit 1
