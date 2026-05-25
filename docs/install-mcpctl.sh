@@ -19,11 +19,11 @@
 # This script is safe to inspect before running:
 #   curl -fsSL https://magertron.com/install-mcpctl.sh
 #
-# License: Apache 2.0. Source: github.com/curtismager20/magertron-mcpm
+# License: Apache 2.0. Source: github.com/magertron/orchestrator
 
 set -eu
 
-REPO="curtismager20/magertron-mcpm"
+REPO="magertron/orchestrator"
 BINARY="mcpctl"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 MCPCTL_VERSION="${MCPCTL_VERSION:-latest}"
@@ -40,7 +40,7 @@ case "$OS" in
         echo "  mcpctl currently ships for macOS (Darwin) and Linux." >&2
         echo "  For other platforms, build from source:" >&2
         echo "    git clone https://github.com/$REPO" >&2
-        echo "    cd magertron-mcpm/mcpctl && make build" >&2
+        echo "    cd orchestrator/mcpctl && make build" >&2
         exit 1
         ;;
 esac
@@ -53,7 +53,7 @@ case "$ARCH" in
         echo "  mcpctl ships binaries for amd64 and arm64." >&2
         echo "  For other architectures, build from source:" >&2
         echo "    git clone https://github.com/$REPO" >&2
-        echo "    cd magertron-mcpm/mcpctl && make build" >&2
+        echo "    cd orchestrator/mcpctl && make build" >&2
         exit 1
         ;;
 esac

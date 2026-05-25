@@ -45,7 +45,7 @@
   "softwareVersion": "2.4.12",
   "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
   "url": "https://magertron.com",
-  "downloadUrl": "https://github.com/curtismager20/magertron-mcpm",
+  "downloadUrl": "https://github.com/magertron/orchestrator",
   "screenshot": "https://magertron.com/screenshots/dashboard.png",
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
   "offers": [
@@ -71,7 +71,7 @@
     "name": "Magertron",
     "url": "https://magertron.com",
     "sameAs": [
-      "https://github.com/curtismager20/magertron-mcpm",
+      "https://github.com/magertron/orchestrator",
       "https://www.linkedin.com/company/magertronc"
     ]
   }
@@ -98,7 +98,7 @@
     "name": "Curtis Mager"
   },
   "sameAs": [
-    "https://github.com/curtismager20/magertron-mcpm",
+    "https://github.com/magertron/orchestrator",
     "https://www.linkedin.com/company/magertronc"
   ]
 }
@@ -494,7 +494,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <a href="#features">MCP Orchestrator</a>
       <a href="#pricing">Pricing</a>
       <a href="security.html">Security</a>
-      <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a>
+      <a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a>
       <a href="#" class="nav-cta" onclick="openDemoModal(event)">Schedule a Demo</a>
     </div>
   </div>
@@ -511,15 +511,15 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <p>Deploy MCP servers as pods in your own cluster. Any language, any image. Full lifecycle from a single Helm chart. OSS Free up to 20 servers — no signup, no credit card.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
-      <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
+      <a href="https://github.com/magertron/orchestrator" target="_blank" class="btn-secondary">View on GitHub →</a>
     </div>
 
     <!-- Install snippet — visible above the fold for HN/listicle visitors
          who want to see "can I try this in 5 minutes?" answered immediately. -->
     <div id="install" style="max-width: 720px; margin: 32px auto 0; text-align: left;">
       <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; text-align: center;">Install in 5 minutes</div>
-      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> git clone https://github.com/curtismager20/magertron-mcpm.git
-<span style="color: var(--text-secondary);">$</span> cd magertron-mcpm
+      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);">$</span> git clone https://github.com/magertron/orchestrator.git
+<span style="color: var(--text-secondary);">$</span> cd orchestrator
 <span style="color: var(--text-secondary);">$</span> ./install.sh                                  <span style="color: var(--text-secondary);"># Free tier — no license needed</span>
 <span style="color: var(--text-secondary);">$</span> ./install.sh --license /path/to/license.json  <span style="color: var(--text-secondary);"># With a license</span></pre>
     </div>
@@ -813,14 +813,14 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
         <div style="font-weight: 600; margin-bottom: 8px;">Direct download</div>
         <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Pre-built binaries from GitHub Releases:</div>
-        <a href="https://github.com/curtismager20/magertron-mcpm/releases/latest" target="_blank" style="display: inline-block; color: var(--accent-text); text-decoration: none; font-weight: 500;">View latest release →</a>
+        <a href="https://github.com/magertron/orchestrator/releases/latest" target="_blank" style="display: inline-block; color: var(--accent-text); text-decoration: none; font-weight: 500;">View latest release →</a>
         <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 8px;">macOS arm64 · macOS amd64 · Linux amd64 · Linux arm64</div>
       </div>
     </div>
 
     <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary);">
       Apache 2.0 licensed. Source at
-      <a href="https://github.com/curtismager20/magertron-mcpm/tree/main/mcpctl" target="_blank" style="color: var(--accent-text);">magertron-mcpm/mcpctl</a>.
+      <a href="https://github.com/magertron/orchestrator/tree/main/mcpctl" target="_blank" style="color: var(--accent-text);">magertron/orchestrator/mcpctl</a>.
       Free for all customers. Commands that hit Pro or Enterprise features will return a clear license error unless your orchestrator is licensed for them.
     </div>
   </div>
@@ -855,7 +855,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <li class="disabled">Governance policies</li>
           <li class="disabled">Webhooks &amp; audit trail</li>
         </ul>
-        <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="pricing-btn secondary">Get started on GitHub →</a>
+        <a href="https://github.com/magertron/orchestrator" target="_blank" class="pricing-btn secondary">Get started on GitHub →</a>
       </div>
 
       <!-- Pro -->
@@ -921,7 +921,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <p>Start free on GitHub, or talk to us about Pro and Enterprise.</p>
       <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
         <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
-        <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" class="btn-secondary">View on GitHub →</a>
+        <a href="https://github.com/magertron/orchestrator" target="_blank" class="btn-secondary">View on GitHub →</a>
       </div>
     </div>
   </div>
@@ -942,7 +942,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <li><a href="#features">MCP Orchestrator</a></li>
           <li><a href="#pricing">Pricing</a></li>
           <li><a href="#install">Install</a></li>
-          <li><a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
         </ul>
       </div>
 
@@ -952,7 +952,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <li><a href="security.html">Security</a></li>
           <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">MCP Orchestrator vs. AWS AgentCore</a></li>
-          <li><a href="https://github.com/curtismager20/magertron-mcpm#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
         </ul>
       </div>
 
@@ -968,7 +968,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="footer-col">
         <h4>Social</h4>
         <ul>
-          <li><a href="https://github.com/curtismager20/magertron-mcpm" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
           <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
         </ul>
       </div>
@@ -1095,7 +1095,7 @@ function submitDemoForm() {
           <h3>Thanks — we'll be in touch.</h3>
           <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
             Your message is on its way to our team. Expect a reply within one business day.
-            In the meantime, you can <a href="https://github.com/curtismager20/magertron-mcpm" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
             or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
           </p>
         `;

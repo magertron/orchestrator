@@ -20,8 +20,8 @@ everything below (preflight, license setup, node labeling, `helm install`,
 post-install verification) with one command:
 
 ```
-git clone https://github.com/curtismager20/magertron-mcpm.git
-cd magertron-mcpm
+git clone https://github.com/magertron/orchestrator.git
+cd orchestrator
 ./install.sh --license /path/to/your-license.json
 ```
 
