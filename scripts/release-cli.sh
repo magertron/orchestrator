@@ -411,17 +411,25 @@ fi
 CURRENT_VERSION=$(grep -E '^const version = "' "$MCPCTL_DIR/main.go" | sed -E 's/.*"(.+)".*/\1/')
 [ -n "$CURRENT_VERSION" ] || fatal "Could not read current version from main.go"
 
-if [ "$CURRENT_VERSION" = "$VERSION" ]; then
-    fatal "main.go already at version $VERSION. Nothing to release."
-fi
+if [ "$AUTO_DETECT" = "1" ]; then
+    # In auto-detect mode, main.go IS the source of truth — the dev already
+    # bumped the constant and committed it. CURRENT_VERSION == VERSION is
+    # the correct state, not an error.
+    info "Auto-detect: main.go at v${VERSION} (matches detected target)"
+    ok "Version validated by auto-detect"
+else
+    if [ "$CURRENT_VERSION" = "$VERSION" ]; then
+        fatal "main.go already at version $VERSION. Nothing to release."
+    fi
 
-# Crude version comparison via sort -V. If new version sorts after current, we're good.
-HIGHEST=$(printf '%s\n%s\n' "$CURRENT_VERSION" "$VERSION" | sort -V | tail -1)
-if [ "$HIGHEST" != "$VERSION" ]; then
-    fatal "New version $VERSION is not higher than current $CURRENT_VERSION"
+    # Crude version comparison via sort -V. If new version sorts after current, we're good.
+    HIGHEST=$(printf '%s\n%s\n' "$CURRENT_VERSION" "$VERSION" | sort -V | tail -1)
+    if [ "$HIGHEST" != "$VERSION" ]; then
+        fatal "New version $VERSION is not higher than current $CURRENT_VERSION"
+    fi
+    info "Current: $CURRENT_VERSION  →  New: $VERSION"
+    ok "Version bump is valid"
 fi
-info "Current: $CURRENT_VERSION  →  New: $VERSION"
-ok "Version bump is valid"
 
 # 1f: Verify release doesn't already exist on GitHub.
 if gh release view "v${VERSION}" -R magertron/orchestrator >/dev/null 2>&1; then
@@ -433,7 +441,13 @@ ok "No conflicting GitHub release"
 
 section "Bumping version in main.go"
 
-if [ "$DRY_RUN" = "0" ]; then
+if [ "$AUTO_DETECT" = "1" ]; then
+    # In auto-detect mode, main.go is already at the target version (the
+    # dev's explicit version-bump commit IS the release trigger). Skip the
+    # sed-mutation; verify the state instead and move on.
+    info "Auto-detect: main.go already at v${VERSION} (no edit needed)"
+    ok "Skipped (dev already bumped)"
+elif [ "$DRY_RUN" = "0" ]; then
     sed -i.bak \
         "s|^const version = \"${CURRENT_VERSION}\"|const version = \"${VERSION}\"|" \
         "$MCPCTL_DIR/main.go"
@@ -618,11 +632,23 @@ if [ "$DRY_RUN" = "0" ]; then
     if git diff --cached --quiet; then
         warn "Nothing staged to commit (versions match? repos already current?)"
     else
-        git commit -m "mcpctl: v${VERSION}
+        if [ "$AUTO_DETECT" = "1" ]; then
+            # Auto-detect mode: main.go was already at v${VERSION}, so only
+            # docs/apt + docs/yum are the actual changes here.
+            git commit -m "release: APT + YUM repos for mcpctl v${VERSION}
+
+- regenerated APT repo (docs/apt) for v${VERSION}
+- regenerated YUM repo (docs/yum) for v${VERSION}
+
+(version constant in mcpctl/main.go was bumped in the trigger commit
+that activated bootstrap's Phase 1.7 auto-release)" 2>&1 | sed 's/^/    /'
+        else
+            git commit -m "mcpctl: v${VERSION}
 
 - bumped version constant in main.go
 - regenerated APT repo (docs/apt) for v${VERSION}
 - regenerated YUM repo (docs/yum) for v${VERSION}" 2>&1 | sed 's/^/    /'
+        fi
         git push 2>&1 | sed 's/^/    /'
         ok "orchestrator pushed"
     fi
