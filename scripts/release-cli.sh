@@ -371,12 +371,25 @@ remind_commit_steps() {
 }
 
 if [ "$FORCE" = "0" ]; then
-    if ! git -C "$ORCH_REPO" diff --quiet HEAD 2>/dev/null; then
-        remind_commit_steps "$ORCH_REPO" "orchestrator repo"
+    # SCOPED check: release-cli only owns mcpctl/. The orchestrator repo
+    # also holds helm/orchestrator/ (owned by bootstrap.sh in the private
+    # repo, which modifies Chart.yaml then commits at its Phase 1.5) and
+    # docs/charts /docs/apt /docs/yum (also bootstrap-owned). Checking the
+    # whole tree would put us in an infinite loop with bootstrap:
+    #
+    #    bootstrap modifies Chart.yaml → calls release-cli
+    #    release-cli sees Chart.yaml uncommitted → refuses
+    #    operator resets Chart.yaml, re-runs bootstrap
+    #    bootstrap modifies Chart.yaml again → same crash
+    #
+    # So we ONLY check mcpctl/ and Formula files we touch ourselves.
+    # Everything else in the repo is somebody else's concern.
+    if ! git -C "$ORCH_REPO" diff --quiet -- mcpctl/ 2>/dev/null; then
+        remind_commit_steps "$ORCH_REPO/mcpctl" "orchestrator/mcpctl"
         exit 1
     fi
-    if ! git -C "$ORCH_REPO" diff --cached --quiet 2>/dev/null; then
-        remind_commit_steps "$ORCH_REPO" "orchestrator repo (staged-but-uncommitted)"
+    if ! git -C "$ORCH_REPO" diff --cached --quiet -- mcpctl/ 2>/dev/null; then
+        remind_commit_steps "$ORCH_REPO/mcpctl" "orchestrator/mcpctl (staged-but-uncommitted)"
         exit 1
     fi
     if [ "$SKIP_TAP" = "0" ]; then
@@ -389,7 +402,7 @@ if [ "$FORCE" = "0" ]; then
             exit 1
         fi
     fi
-    ok "Working trees clean"
+    ok "Working trees clean (mcpctl/ + tap)"
 else
     warn "--force: skipping clean-tree check"
 fi
