@@ -584,6 +584,30 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   </div>
 </section>
 
+<!-- Three deployment patterns -->
+<section style="padding:80px 0; border-top: 1px solid var(--border);">
+  <div class="container" style="max-width:1200px;">
+    <div style="text-align:center; max-width:720px; margin:0 auto 48px;">
+      <div class="section-label">Deployment Patterns</div>
+      <h2 class="section-title">Three deployment patterns. One policy plane.</h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>Internal MCP servers</h3>
+        <p>MCP servers run as pods in your cluster. Traffic stays inside your network.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Hybrid MCP servers</h3>
+        <p>Internal MCP server pods that reach external APIs for data enrichment.</p>
+      </div>
+      <div class="feature-card">
+        <h3>External MCP servers</h3>
+        <p>SaaS or cloud-hosted MCP servers, registered in Magertron and governed by the same policies as your internal servers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="showcase" id="server-management">
   <div class="container">
     <div class="showcase-row">
@@ -641,37 +665,37 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <a href="#server-management" class="feature-card clickable">
         <div class="feature-icon">⬡</div>
         <h3>Server Lifecycle</h3>
-        <p>Deploy MCP servers as Kubernetes pods. Scale, restart, rollback, undeploy from a single console. Full history with one-click rollback.</p>
+        <p>Deploy, scale, restart, and roll back MCP servers from a single console.</p>
       </a>
       <a href="#server-management" class="feature-card clickable">
         <div class="feature-icon">▦</div>
         <h3>MCP Server Registry</h3>
-        <p>Central catalog of every MCP server in your organization. Discover, version, and reference servers across teams. Most MCP platforms don't have a registry at all — Magertron does, and it runs in your cluster.</p>
+        <p>Central catalog of every MCP server in your organization. Most MCP platforms don't have a registry — Magertron does, in your cluster.</p>
       </a>
       <a href="#governance" class="feature-card clickable">
         <div class="feature-icon">◈</div>
         <h3>Governance Engine</h3>
-        <p>Define policies that enforce resource limits, transport requirements, naming standards, and security rules. Namespace-scoped — different rules for prod vs dev.</p>
+        <p>Policies for resource limits, transport, naming, and security. Namespace-scoped for prod vs dev.</p>
       </a>
       <div class="feature-card">
         <div class="feature-icon">⛊</div>
         <h3>Multi-Tenant RBAC</h3>
-        <p>Role-based access with namespace isolation. Platform admins, deploy managers, operators, and viewers — each scoped to their allowed namespaces.</p>
+        <p>Role-based access with namespace isolation. Admins, deployers, operators, viewers.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">⚿</div>
         <h3>Enterprise Identity</h3>
-        <p>OIDC and SAML single sign-on with Okta, Azure AD, and Google Workspace. SCIM 2.0 for automated user provisioning. Just-in-time account creation on first login. Your IdP stays the source of truth.</p>
+        <p>OIDC and SAML SSO. SCIM 2.0 provisioning. Just-in-time accounts. Your IdP is the source of truth.</p>
       </div>
       <a href="siem-integration.html" class="feature-card clickable">
         <div class="feature-icon">◷</div>
         <h3>Audit & Compliance</h3>
-        <p>Every deployment, scale, restart, and config change logged with OCSF-aligned schema. Validated end-to-end with Splunk Cloud — fields auto-extract for SIEM queries. Built for regulated environments.</p>
+        <p>OCSF-aligned audit events. SIEM-ready, validated with Splunk Cloud. Built for regulated environments.</p>
       </a>
       <div class="feature-card">
         <div class="feature-icon">⇌</div>
         <h3>Envoy Gateway</h3>
-        <p>Dynamic xDS-powered Envoy gateway with push-based route updates. Sub-second latency from deploy to routable. HTTPS termination built in.</p>
+        <p>Dynamic xDS-powered Envoy. Sub-second route updates. HTTPS termination built in.</p>
       </div>
     </div>
   </div>
