@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const version = "2.0.1"
+const version = "2.0.2"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -984,17 +984,34 @@ func cmdListUsers(gf globalFlags) {
 		fmt.Println("No users.")
 		return
 	}
+	// v2.0.2: surface email + provisioning provenance so operators can see
+	// at-a-glance what they just configured via `users update-email` AND
+	// which users are managed externally (sso_jit / scim) vs. password-
+	// authenticated. Provisioned column matters before you go disabling
+	// SSO and accidentally lock yourself out.
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "USERNAME\tROLES")
+	fmt.Fprintln(w, "USERNAME\tEMAIL\tPROVISIONED\tROLES")
 	for _, item := range items {
 		u, _ := item.(map[string]interface{})
 		username, _ := u["username"].(string)
+		email, _ := u["email"].(string)
+		// provisioned_via can be password / sso_jit / scim / null (legacy
+		// rows seeded before the column existed). Display "-" for missing
+		// so the column doesn't collapse and confuse the eye.
+		provisioned, _ := u["provisioned_via"].(string)
+		if provisioned == "" {
+			provisioned = "-"
+		}
+		if email == "" {
+			email = "-"
+		}
 		roles, _ := u["roles"].([]interface{})
 		roleStrs := make([]string, len(roles))
 		for i, r := range roles {
 			roleStrs[i], _ = r.(string)
 		}
-		fmt.Fprintf(w, "%s\t%s\n", username, strings.Join(roleStrs, ", "))
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+			username, email, provisioned, strings.Join(roleStrs, ", "))
 	}
 	w.Flush()
 }
