@@ -48,6 +48,7 @@ DRY_RUN=0
 SKIP_TAP=0
 FORCE=0
 NOTES=""
+AUTO_DETECT=0   # Session 2.12: set by --auto-detect mode (bootstrap.sh hand-off)
 
 # ─── Polish helpers (mirror install.sh's style) ──────────────────────────────
 
@@ -98,7 +99,122 @@ Environment:
   GPG_KEY             GPG key ID to sign APT/YUM repos with
                       (default: 7D435C1D166D3BAF — Magertron Packages)
   NO_COLOR            Disable colored output.
+
+Auto-detect mode (called from bootstrap.sh):
+  --auto-detect       Inspect mcpctl/ + tags and decide whether to release.
+                      Exit codes:
+                        0  = nothing to do (caller continues)
+                        1  = hard failure (uncommitted changes, etc.)
+                        2  = release happened (caller sees this as success)
 EOF
+}
+
+# ─── Auto-detect mode (Session 2.12) ─────────────────────────────────────────
+#
+# Called by bootstrap.sh in the mc-platform-private repo to keep the chart
+# release and the mcpctl release in lockstep without forcing the operator
+# to manually pick versions every time.
+#
+# Semantics:
+#   (a) Uncommitted changes in orchestrator/mcpctl/ → HARD FAIL (exit 1)
+#       Refusing to release stale code prevents shipping binaries that don't
+#       match a tagged commit.
+#   (b) Commits in mcpctl/ since highest v* tag, but version constant unchanged
+#       → WARN + exit 0. Caller proceeds (chart-only release). Operator must
+#       explicitly bump const version in main.go to opt in to releasing.
+#   (c) Version constant in main.go > highest v* tag → PROCEED with release
+#       using the version from main.go.
+#   (d) Version constant matches highest tag, no commits since → exit 0
+#       (nothing to do, caller continues).
+#
+# No --auto-detect flag = normal explicit-version mode (unchanged behavior).
+
+detect_release_intent() {
+    cd "$ORCH_REPO"
+
+    local mcpctl_relpath="mcpctl"
+
+    # (a) Uncommitted changes in mcpctl/?
+    if ! git diff --quiet -- "$mcpctl_relpath" 2>/dev/null; then
+        err "mcpctl/ has uncommitted changes."
+        info "Refusing to auto-release stale source. Commit (or stash) first:"
+        info "  git -C $ORCH_REPO status mcpctl/"
+        return 1
+    fi
+    # Also check staged-but-not-committed.
+    if ! git diff --cached --quiet -- "$mcpctl_relpath" 2>/dev/null; then
+        err "mcpctl/ has staged (but uncommitted) changes."
+        info "Refusing to auto-release stale source. Commit them first."
+        return 1
+    fi
+
+    # Unpushed commits would create a GitHub release that points at a SHA
+    # github.com doesn't yet have — broken state. Refuse and tell the
+    # operator to push first.
+    #
+    # We check the current branch's upstream. If no upstream is configured
+    # (detached HEAD, branch never pushed) we conservatively bail — release
+    # pipelines should run from a tracked branch.
+    local upstream
+    upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "")
+    if [ -z "$upstream" ]; then
+        err "No upstream configured for current branch."
+        info "Refusing to release: GitHub release would point at a SHA that"
+        info "github.com cannot resolve. Push the branch and set tracking first:"
+        info "  git push -u origin \$(git symbolic-ref --short HEAD)"
+        return 1
+    fi
+    local unpushed
+    unpushed=$(git log "$upstream..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$unpushed" != "0" ] && [ -n "$unpushed" ]; then
+        err "$unpushed commit(s) on $(git symbolic-ref --short HEAD) not yet pushed to $upstream."
+        info "Refusing to release: GitHub release would point at a SHA that"
+        info "github.com cannot resolve. Push first:"
+        info "  git -C $ORCH_REPO push"
+        return 1
+    fi
+
+    # Current version from main.go.
+    local current_version
+    current_version=$(grep -E '^const version = "' "$MCPCTL_DIR/main.go" | sed -E 's/.*"(.+)".*/\1/')
+    [ -z "$current_version" ] && { err "Could not parse 'const version' from main.go"; return 1; }
+
+    # Highest v* tag (semver-sorted).
+    local highest_tag
+    highest_tag=$(git tag -l 'v*' | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+    [ -z "$highest_tag" ] && highest_tag="0.0.0"
+
+    # (c) Version bumped explicitly?
+    if [ "$current_version" != "$highest_tag" ]; then
+        # Sanity: current must be GREATER than highest. A regression (current < highest)
+        # is a sign of operator error and we refuse silently.
+        local cmp_higher
+        cmp_higher=$(printf '%s\n%s\n' "$current_version" "$highest_tag" | sort -V | tail -1)
+        if [ "$cmp_higher" != "$current_version" ]; then
+            err "main.go has version=$current_version but tag v$highest_tag is higher."
+            info "Refusing to release backwards. Fix main.go or delete the bad tag."
+            return 1
+        fi
+        info "Auto-detect: version bumped ($highest_tag → $current_version) — releasing."
+        VERSION="$current_version"
+        return 2
+    fi
+
+    # Versions match. Are there commits in mcpctl/ since the tag?
+    local commits_since
+    commits_since=$(git log "v${highest_tag}..HEAD" --oneline -- "$mcpctl_relpath" 2>/dev/null | wc -l | tr -d ' ')
+
+    if [ "$commits_since" != "0" ] && [ -n "$commits_since" ]; then
+        # (b) Commits exist but version unchanged. Warn, don't act.
+        warn "mcpctl/ has $commits_since commits since v$highest_tag but const version unchanged."
+        info "To release, bump 'const version' in $MCPCTL_DIR/main.go and re-run."
+        info "Continuing without mcpctl release."
+        return 0
+    fi
+
+    # (d) Truly nothing to do.
+    info "mcpctl already at v$highest_tag and no new commits — nothing to release."
+    return 0
 }
 
 if [ $# -lt 1 ]; then
@@ -112,8 +228,37 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-VERSION="$1"
-shift
+# Handle --auto-detect: scan repo state and decide whether to release.
+# This branch sets VERSION (if release proceeds) or exits.
+if [ "$1" = "--auto-detect" ]; then
+    AUTO_DETECT=1
+    shift
+    echo ""
+    printf "  ${C_CYAN}${C_BOLD}▌${C_RESET} ${C_BOLD}MAGERTRON${C_RESET}  ${C_DIM}CLI Release · auto-detect${C_RESET}\n"
+    echo ""
+    section "Auto-detect: should we release?"
+
+    # Capture detect_release_intent's exit code WITHOUT letting set -e
+    # abort the script on a non-zero return. We use return codes 1 and 2
+    # as semantic signals (hard-fail / proceed-with-release), not errors.
+    # The `|| true` here disables pipefail for this one call; the case
+    # statement below interprets the code.
+    set +e
+    detect_release_intent
+    intent_code=$?
+    set -e
+    case $intent_code in
+        0) ok "Nothing to release — caller continues."; exit 0 ;;
+        1) err "Auto-detect refused."; exit 1 ;;
+        2) ok "Proceeding with release of v$VERSION" ;;
+        *) err "Unexpected exit code from detect_release_intent: $intent_code"; exit 1 ;;
+    esac
+    # Fall through to the existing flow with VERSION already set.
+else
+    AUTO_DETECT=0
+    VERSION="$1"
+    shift
+fi
 
 while [ $# -gt 0 ]; do
     case "$1" in
