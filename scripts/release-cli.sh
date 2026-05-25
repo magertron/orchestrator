@@ -136,15 +136,29 @@ detect_release_intent() {
 
     # (a) Uncommitted changes in mcpctl/?
     if ! git diff --quiet -- "$mcpctl_relpath" 2>/dev/null; then
-        err "mcpctl/ has uncommitted changes."
-        info "Refusing to auto-release stale source. Commit (or stash) first:"
-        info "  git -C $ORCH_REPO status mcpctl/"
+        err "orchestrator/mcpctl has uncommitted changes at: $MCPCTL_DIR"
+        info "Modified files:"
+        git -C "$ORCH_REPO" status --short mcpctl/ 2>/dev/null | sed 's/^/    /'
+        info ""
+        info "Refusing to auto-release stale source. To fix:"
+        info "    cd $ORCH_REPO"
+        info "    git add mcpctl/<file>..."
+        info "    git commit -m 'mcpctl <version>: <what changed>'"
+        info "    git push"
+        info ""
+        info "Then re-run ./bootstrap.sh."
         return 1
     fi
     # Also check staged-but-not-committed.
     if ! git diff --cached --quiet -- "$mcpctl_relpath" 2>/dev/null; then
-        err "mcpctl/ has staged (but uncommitted) changes."
-        info "Refusing to auto-release stale source. Commit them first."
+        err "orchestrator/mcpctl has staged-but-uncommitted changes at: $MCPCTL_DIR"
+        info "Staged files:"
+        git -C "$ORCH_REPO" status --short mcpctl/ 2>/dev/null | sed 's/^/    /'
+        info ""
+        info "Commit and push them:"
+        info "    cd $ORCH_REPO"
+        info "    git commit -m 'mcpctl <version>: <what changed>'"
+        info "    git push"
         return 1
     fi
 
@@ -158,19 +172,32 @@ detect_release_intent() {
     local upstream
     upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "")
     if [ -z "$upstream" ]; then
-        err "No upstream configured for current branch."
+        err "orchestrator repo has no upstream configured for the current branch."
         info "Refusing to release: GitHub release would point at a SHA that"
-        info "github.com cannot resolve. Push the branch and set tracking first:"
-        info "  git push -u origin \$(git symbolic-ref --short HEAD)"
+        info "github.com cannot resolve."
+        info ""
+        info "To fix:"
+        info "    cd $ORCH_REPO"
+        info "    git push -u origin \$(git symbolic-ref --short HEAD)"
+        info ""
+        info "Then re-run ./bootstrap.sh."
         return 1
     fi
     local unpushed
     unpushed=$(git log "$upstream..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
     if [ "$unpushed" != "0" ] && [ -n "$unpushed" ]; then
-        err "$unpushed commit(s) on $(git symbolic-ref --short HEAD) not yet pushed to $upstream."
-        info "Refusing to release: GitHub release would point at a SHA that"
-        info "github.com cannot resolve. Push first:"
-        info "  git -C $ORCH_REPO push"
+        err "orchestrator repo at $ORCH_REPO has $unpushed unpushed commit(s) on $(git symbolic-ref --short HEAD)."
+        info "Unpushed commits:"
+        git -C "$ORCH_REPO" log "$upstream..HEAD" --oneline 2>/dev/null | sed 's/^/    /'
+        info ""
+        info "Refusing to release: GitHub release would point at SHAs that"
+        info "github.com hasn't seen yet."
+        info ""
+        info "To fix:"
+        info "    cd $ORCH_REPO"
+        info "    git push"
+        info ""
+        info "Then re-run ./bootstrap.sh."
         return 1
     fi
 
@@ -320,19 +347,46 @@ fi
 ok "gh authenticated"
 
 # 1d: Verify working trees are clean (unless --force).
+#
+# These error messages are the WHOLE POINT of having this check. The script
+# exists to remind the developer of the steps they forgot — commit, push,
+# bump version. So when these fire, print the exact repo path, the exact
+# files, and the exact commands to copy-paste. No vague "uncommitted changes"
+# scolding; that just makes the dev hunt for what's wrong.
+remind_commit_steps() {
+    local repo_path="$1"
+    local repo_label="$2"
+    err "$repo_label has uncommitted changes at: $repo_path"
+    info "Modified files:"
+    git -C "$repo_path" status --short 2>/dev/null | sed 's/^/    /'
+    info ""
+    info "To fix:"
+    info "    cd $repo_path"
+    info "    git status                     # review what changed"
+    info "    git add <file>...              # stage what you want shipped"
+    info "    git commit -m '...'"
+    info "    git push                       # release-cli refuses unpushed commits"
+    info ""
+    info "Then re-run ./bootstrap.sh from mc-platform-private."
+}
+
 if [ "$FORCE" = "0" ]; then
     if ! git -C "$ORCH_REPO" diff --quiet HEAD 2>/dev/null; then
-        fatal "orchestrator has uncommitted changes. Commit them or use --force."
+        remind_commit_steps "$ORCH_REPO" "orchestrator repo"
+        exit 1
     fi
     if ! git -C "$ORCH_REPO" diff --cached --quiet 2>/dev/null; then
-        fatal "orchestrator has staged but uncommitted changes."
+        remind_commit_steps "$ORCH_REPO" "orchestrator repo (staged-but-uncommitted)"
+        exit 1
     fi
     if [ "$SKIP_TAP" = "0" ]; then
         if ! git -C "$TAP_REPO" diff --quiet HEAD 2>/dev/null; then
-            fatal "homebrew-tap has uncommitted changes."
+            remind_commit_steps "$TAP_REPO" "homebrew-tap repo"
+            exit 1
         fi
         if ! git -C "$TAP_REPO" diff --cached --quiet 2>/dev/null; then
-            fatal "homebrew-tap has staged but uncommitted changes."
+            remind_commit_steps "$TAP_REPO" "homebrew-tap repo (staged-but-uncommitted)"
+            exit 1
         fi
     fi
     ok "Working trees clean"
