@@ -35,6 +35,37 @@ environment needs custom values the script doesn't expose.
 
 ---
 
+## Installing the CLI
+
+`mcpctl` is the command-line client. It talks to a running orchestrator over
+HTTPS to deploy MCP servers, manage users and service accounts, and inspect
+cluster state. The CLI is Apache 2.0 licensed and free for all customers.
+
+Pick your platform:
+
+```
+# Homebrew (macOS or Linux)
+brew install magertron/tap/mcpctl
+
+# curl one-liner (macOS or Linux)
+curl -fsSL https://magertron.com/install-mcpctl.sh | sh
+
+# Debian / Ubuntu (one-time setup, then apt install)
+curl -fsSL https://magertron.com/apt/magertron-archive-keyring.gpg \
+    | sudo tee /etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg] https://magertron.com/apt stable main" \
+    | sudo tee /etc/apt/sources.list.d/magertron.list
+sudo apt update && sudo apt install mcpctl
+
+# RHEL / Fedora / Rocky
+sudo curl -fsSL https://magertron.com/yum/magertron.repo -o /etc/yum.repos.d/magertron.repo
+sudo dnf install mcpctl
+```
+
+Full CLI usage guide: see [mcpctl/README.md](mcpctl/README.md).
+
+---
+
 ## What you're installing
 
 The chart deploys the full MCP Orchestrator platform to your cluster:
