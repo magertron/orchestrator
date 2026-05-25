@@ -1,3 +1,3 @@
-module github.com/curtismager20/magertron-mcpm/mcpctl
+module github.com/magertron/orchestrator/mcpctl
 
 go 1.21
