@@ -892,14 +892,19 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <details class="install-card">
         <summary>
           <span class="label">Debian / Ubuntu</span>
-          <span class="tag">.deb · amd64 · arm64</span>
+          <span class="tag">apt · amd64 · arm64</span>
           <span class="caret">▸</span>
         </summary>
         <div class="body">
-          <div class="tagline">Download and install with dpkg:</div>
-          <div class="snippet" style="font-size: 12px;">
-            <span class="dim">$</span> <span class="cmd">wget https://github.com/magertron/orchestrator/releases/latest/download/mcpctl_2.0.1_amd64.deb</span><br>
-            <span class="dim">$</span> <span class="cmd">sudo dpkg -i mcpctl_2.0.1_amd64.deb</span>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">One-time setup</div>
+          <div class="snippet" style="font-size: 12px; margin-bottom: 14px;">
+            <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/apt/magertron-archive-keyring.gpg | sudo tee /etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg &gt; /dev/null</span><br>
+            <span class="dim">$</span> <span class="cmd">echo "deb [signed-by=/etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg] https://magertron.com/apt stable main" | sudo tee /etc/apt/sources.list.d/magertron.list</span><br>
+            <span class="dim">$</span> <span class="cmd">sudo apt update</span>
+          </div>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Install</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">sudo apt install mcpctl</span>
           </div>
         </div>
       </details>
@@ -908,13 +913,17 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <details class="install-card">
         <summary>
           <span class="label">RHEL / Fedora / Rocky</span>
-          <span class="tag">.rpm · x86_64</span>
+          <span class="tag">dnf · x86_64</span>
           <span class="caret">▸</span>
         </summary>
         <div class="body">
-          <div class="tagline">Install directly from the release:</div>
-          <div class="snippet" style="font-size: 12px;">
-            <span class="dim">$</span> <span class="cmd">sudo rpm -i https://github.com/magertron/orchestrator/releases/latest/download/mcpctl-2.0.1-1.x86_64.rpm</span>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">One-time setup</div>
+          <div class="snippet" style="font-size: 12px; margin-bottom: 14px;">
+            <span class="dim">$</span> <span class="cmd">sudo curl -fsSL https://magertron.com/yum/magertron.repo -o /etc/yum.repos.d/magertron.repo</span>
+          </div>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Install</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">sudo dnf install mcpctl</span>
           </div>
         </div>
       </details>
