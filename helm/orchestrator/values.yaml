@@ -298,10 +298,15 @@ postgresql:
   image:
     repository: postgres
     tag: 16-alpine
-  # Pin Postgres to a node labeled workload=stateful. Required for local-path PV
-  # locality — the PV physically lives on whichever node first scheduled the pod.
-  nodeSelector:
-    workload: stateful
+  # Postgres pod placement. Defaults to no node preference so single-node
+  # clusters (Docker Desktop, kind, k3d, minikube) work out of the box.
+  #
+  # PRODUCTION multi-node: pin to a labeled node so local-path PV stays
+  # physically co-located with the pod across reschedules:
+  #   nodeSelector:
+  #     workload: stateful
+  # Then label one node:  kubectl label node <name> workload=stateful
+  nodeSelector: {}
   tolerations: []
   affinity: {}
   resources:
@@ -369,20 +374,26 @@ inventory:
     logLevel: "info"               # "info" or "debug"
 
   # ── Inventory Postgres ───────────────────────────────────────────────────
-  # Physically isolated from the operations DB. Pinned to a node carrying
-  # `workload-inventory=true`. We use a DIFFERENT LABEL KEY from the ops
-  # `workload=stateful` selector (not just a different value) because
-  # kubernetes node labels store one value per key — `workload=stateful`
-  # and `workload=inventory` would be mutually exclusive on the same node.
-  # Distinct keys let foxygirl carry both labels today, and make a future
-  # split onto separate nodes a label change rather than a chart edit.
+  # Physically isolated from the operations DB. Defaults to no node preference
+  # so single-node clusters (Docker Desktop, kind, k3d, minikube) work out of
+  # the box.
+  #
+  # PRODUCTION multi-node: pin to a node carrying `workload-inventory=true`.
+  # We use a DIFFERENT LABEL KEY from the ops `workload=stateful` selector
+  # (not just a different value) because kubernetes node labels store one
+  # value per key — `workload=stateful` and `workload=inventory` would be
+  # mutually exclusive on the same node. Distinct keys let one node carry
+  # both labels today, and make a future split onto separate nodes a label
+  # change rather than a chart edit.
+  #
+  #   nodeSelector:
+  #     workload-inventory: "true"
   postgresql:
     enabled: true
     image:
       repository: postgres
       tag: 16-alpine
-    nodeSelector:
-      workload-inventory: "true"
+    nodeSelector: {}
     tolerations: []
     affinity: {}
     storage:

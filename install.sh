@@ -22,7 +22,10 @@
 #   ./install.sh --license ./license.json --mode reinstall --service-type loadbalancer
 #
 #   # CI / automation (no prompts):
-#   ./install.sh --skip-node-label --non-interactive
+#   ./install.sh --non-interactive
+#
+#   # Multi-node production with postgres pinning (opt-in):
+#   ./install.sh --label-nodes --node-name worker-stateful-1 --non-interactive
 #
 # Two modes:
 #
@@ -295,6 +298,14 @@ NODE_PORT="${NODE_PORT:-30443}"
 CHART_VERSION="${CHART_VERSION:-}"
 NAMESPACE="${NAMESPACE:-mcp-system}"
 SKIP_NODE_LABEL="${SKIP_NODE_LABEL:-0}"
+LABEL_NODES="${LABEL_NODES:-0}"   # Session 2.13: opt-IN to labeling. Chart's default
+                                  # values.yaml no longer sets nodeSelector on postgres
+                                  # pods, so labeling isn't required for the pods to
+                                  # schedule. Customers running multi-node production
+                                  # with local-path PVs should pass --label-nodes
+                                  # AND add the matching nodeSelector overrides in
+                                  # their values file. SKIP_NODE_LABEL is kept as a
+                                  # no-op for backward compat (was an opt-OUT flag).
 NON_INTERACTIVE="${NON_INTERACTIVE:-0}"
 NODE_NAME="${NODE_NAME:-}"
 HELM_REPO_NAME="${HELM_REPO_NAME:-magertron}"
@@ -321,19 +332,31 @@ Common options:
   --chart-version <version>   Pin chart version (default: latest --devel)
   --namespace <name>          Install namespace (default mcp-system)
   --node-name <node>          Node to label workload=stateful and
-                              workload-inventory=true. If unset and the
-                              shell is interactive, you'll be prompted.
-  --skip-node-label           Skip node labeling entirely. Use this only
-                              if your cluster has a default StorageClass
-                              that handles PVC placement without node
-                              affinity.
+                              workload-inventory=true. Only used with
+                              --label-nodes. If --label-nodes is set
+                              and --node-name is unset and the shell
+                              is interactive, you'll be prompted.
+  --label-nodes               Opt in to labeling a node for postgres
+                              pinning. Required ONLY for multi-node
+                              production clusters where you want
+                              postgres pinned to a specific node (and
+                              you've added matching nodeSelector
+                              overrides in your values file). Default
+                              behavior (no flag) is no labeling, which
+                              works out of the box on single-node
+                              clusters (Docker Desktop, kind, k3d,
+                              minikube) and on multi-node clusters
+                              with a default StorageClass.
+  --skip-node-label           Deprecated no-op. Labeling is off by
+                              default. Flag retained for backward
+                              compat with existing scripts.
   --non-interactive           Fail on any prompt instead of asking. Use
                               for CI / automation.
   -h, --help                  Show this message
 
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
-  NAMESPACE, NODE_NAME, SKIP_NODE_LABEL, NON_INTERACTIVE,
+  NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
   HELM_REPO_NAME, RELEASE_NAME
 
 EOF
@@ -349,7 +372,11 @@ while [ $# -gt 0 ]; do
         --chart-version)   CHART_VERSION="$2"; shift 2 ;;
         --namespace)       NAMESPACE="$2"; shift 2 ;;
         --node-name)       NODE_NAME="$2"; shift 2 ;;
-        --skip-node-label) SKIP_NODE_LABEL=1; shift ;;
+        --skip-node-label)
+            # Deprecated as of Session 2.13 (chart defaults no longer
+            # require labels). Accept silently for backward compat.
+            SKIP_NODE_LABEL=1; shift ;;
+        --label-nodes)     LABEL_NODES=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -492,24 +519,45 @@ echo "  repo $HELM_REPO_NAME is configured"
 helm repo update "$HELM_REPO_NAME" >/dev/null
 echo "  repo cache updated"
 
-# ─── Node labeling (interactive prompt or skip) ──────────────────────────────
-# Postgres pods (orchestrator's and inventory's) use nodeSelector to pin to
-# a specific node. This protects data from accidental rescheduling onto a
-# node without the right PV mount. The two labels are deliberately
-# distinct keys (workload=stateful AND workload-inventory=true) so they
-# can later live on different nodes if a customer wants to separate them.
+# ─── Node labeling (opt-in via --label-nodes) ────────────────────────────────
+# Session 2.13 inversion: the chart's default values.yaml no longer sets
+# nodeSelector on postgres pods, so node labeling isn't needed for pods to
+# schedule. Default behavior: skip this section.
+#
+# Customers running multi-node production who want postgres pinned to a
+# specific node (e.g. for local-path PV affinity) must do TWO things:
+#   1. Add the nodeSelector to their values.yaml override:
+#        postgresql:
+#          nodeSelector:
+#            workload: stateful
+#        inventory:
+#          postgresql:
+#            nodeSelector:
+#              workload-inventory: "true"
+#   2. Pass --label-nodes to this installer (or pre-label the node manually).
+#
+# The two labels are deliberately distinct keys (workload=stateful AND
+# workload-inventory=true) so they can later live on different nodes if
+# a customer wants to separate them.
 section "Node labeling"
-if [ "$SKIP_NODE_LABEL" = "1" ]; then
-    echo "  Skipping node labeling (--skip-node-label)."
-    echo "  Postgres pods will rely on your cluster's default StorageClass"
-    echo "  for PV placement. Confirm a default StorageClass exists:"
-    echo "    kubectl get storageclass"
+if [ "$LABEL_NODES" != "1" ]; then
+    echo "  Skipping node labeling (default behavior)."
+    echo "  Postgres pods will schedule on any node via your cluster's"
+    echo "  default StorageClass. For multi-node production with local-path"
+    echo "  PV pinning, see --label-nodes in the help text."
+    if [ "$SKIP_NODE_LABEL" = "1" ]; then
+        echo ""
+        echo "  Note: --skip-node-label is now a no-op (labeling is off by"
+        echo "  default). The flag is retained for backward compatibility."
+    fi
 else
+    # User opted IN to labeling via --label-nodes.
     # Determine which node to label.
     if [ -z "$NODE_NAME" ]; then
         if [ "$NON_INTERACTIVE" = "1" ]; then
-            echo "ERROR: --node-name not set and --non-interactive prevents prompting." >&2
-            echo "       Either pass --node-name <node>, or use --skip-node-label." >&2
+            echo "ERROR: --label-nodes was set but --node-name was not, and" >&2
+            echo "       --non-interactive prevents prompting. Either pass" >&2
+            echo "       --node-name <node>, or drop --label-nodes." >&2
             exit 1
         fi
         # Interactive prompt
@@ -539,7 +587,7 @@ else
         read -r -p "  Select node [1-${#NODES[@]}, or s]: " choice
         case "$choice" in
             s|S|skip)
-                SKIP_NODE_LABEL=1
+                LABEL_NODES=0
                 echo "  Skipping node labeling."
                 ;;
             *[!0-9]*|"")
@@ -556,11 +604,16 @@ else
         esac
     fi
 
-    if [ "$SKIP_NODE_LABEL" != "1" ]; then
+    if [ "$LABEL_NODES" = "1" ]; then
         echo "  Labeling '$NODE_NAME' workload=stateful and workload-inventory=true"
         kubectl label node "$NODE_NAME" workload=stateful --overwrite >/dev/null
         kubectl label node "$NODE_NAME" workload-inventory=true --overwrite >/dev/null
         echo "  Labels applied."
+        echo ""
+        echo "  REMINDER: --label-nodes only adds the labels to the node."
+        echo "  For postgres pods to actually use them, your values.yaml"
+        echo "  must set the matching nodeSelector. See --help for the"
+        echo "  exact YAML."
     fi
 fi
 
