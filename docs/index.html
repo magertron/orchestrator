@@ -800,22 +800,67 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       </div>
     </div>
 
-    <!-- Install options -->
-    <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
-        <div style="font-weight: 600; margin-bottom: 8px;">Quick install</div>
-        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">macOS &amp; Linux, one line:</div>
-        <div style="background: var(--bg-terminal, #0d1117); border-radius: 8px; padding: 12px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-x: auto;">
+    <!-- Install options — four parallel paths -->
+    <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+      <!-- Homebrew (Mac + Linux) -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+          <div style="font-weight: 600;">Homebrew</div>
+          <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;">macOS · Linux</div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Cleanest install if you have brew:</div>
+        <div style="background: var(--bg-terminal, #0d1117); border-radius: 8px; padding: 10px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-x: auto;">
+          <span class="dim">$</span> <span class="cmd">brew install magertron/tap/mcpctl</span>
+        </div>
+      </div>
+
+      <!-- curl one-liner (Mac + Linux) -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+          <div style="font-weight: 600;">curl one-liner</div>
+          <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;">macOS · Linux</div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">No package manager required:</div>
+        <div style="background: var(--bg-terminal, #0d1117); border-radius: 8px; padding: 10px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; overflow-x: auto;">
           <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/install-mcpctl.sh | sh</span>
         </div>
       </div>
 
-      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
-        <div style="font-weight: 600; margin-bottom: 8px;">Direct download</div>
-        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Pre-built binaries from GitHub Releases:</div>
-        <a href="https://github.com/magertron/orchestrator/releases/latest" target="_blank" style="display: inline-block; color: var(--accent-text); text-decoration: none; font-weight: 500;">View latest release →</a>
-        <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 8px;">macOS arm64 · macOS amd64 · Linux amd64 · Linux arm64</div>
+      <!-- apt (Debian / Ubuntu) -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+          <div style="font-weight: 600;">Debian / Ubuntu</div>
+          <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;">.deb · amd64 · arm64</div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Download and install with dpkg:</div>
+        <div style="background: var(--bg-terminal, #0d1117); border-radius: 8px; padding: 10px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow-x: auto; line-height: 1.5;">
+          <span class="dim">$</span> <span class="cmd">wget https://github.com/magertron/orchestrator/releases/latest/download/mcpctl_2.0.1_amd64.deb</span><br>
+          <span class="dim">$</span> <span class="cmd">sudo dpkg -i mcpctl_2.0.1_amd64.deb</span>
+        </div>
       </div>
+
+      <!-- rpm (RHEL / Fedora) -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+          <div style="font-weight: 600;">RHEL / Fedora / Rocky</div>
+          <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;">.rpm · x86_64</div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Install directly from the release:</div>
+        <div style="background: var(--bg-terminal, #0d1117); border-radius: 8px; padding: 10px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow-x: auto; line-height: 1.5;">
+          <span class="dim">$</span> <span class="cmd">sudo rpm -i https://github.com/magertron/orchestrator/releases/latest/download/mcpctl-2.0.1-1.x86_64.rpm</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Direct download fallback -->
+    <div style="margin-top: 20px; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div style="font-weight: 600; margin-bottom: 4px;">Or download a binary directly</div>
+        <div style="font-size: 12px; color: var(--text-tertiary);">macOS arm64 · macOS amd64 · Linux amd64 · Linux arm64</div>
+      </div>
+      <a href="https://github.com/magertron/orchestrator/releases/latest" target="_blank" style="color: var(--accent-text); text-decoration: none; font-weight: 500; white-space: nowrap;">View latest release →</a>
     </div>
 
     <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary);">
