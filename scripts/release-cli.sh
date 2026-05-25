@@ -206,6 +206,22 @@ detect_release_intent() {
     current_version=$(grep -E '^const version = "' "$MCPCTL_DIR/main.go" | sed -E 's/.*"(.+)".*/\1/')
     [ -z "$current_version" ] && { err "Could not parse 'const version' from main.go"; return 1; }
 
+    # Session 2.13: refresh tags from origin before comparing.
+    #
+    # Bug exposed during the second mcpctl ship of the day: gh release create
+    # makes a release on github.com (which creates a tag on the remote), but
+    # that tag isn't automatically in the local repo until you fetch. Without
+    # the fetch, auto-detect was comparing a current version (e.g., 2.0.2)
+    # against a stale local highest-tag (e.g., v2.0.1) and concluded "version
+    # bumped, release!" — then Step 1f's "release already exists on github"
+    # check rightly refused.
+    #
+    # Fetch is cheap. Run it unconditionally so we always compare against
+    # the same view of the world that gh sees.
+    if ! git fetch --tags --quiet origin 2>/dev/null; then
+        warn "Could not fetch tags from origin (offline? auth issue?). Continuing with local tags only."
+    fi
+
     # Highest v* tag (semver-sorted).
     local highest_tag
     highest_tag=$(git tag -l 'v*' | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
