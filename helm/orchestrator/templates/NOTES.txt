@@ -348,7 +348,7 @@ Documentation:  https://github.com/mcp-platform/mcp-orchestrator/blob/main/READM
   For multi-replica deployment guidance (sizing, configuration, failover
   recovery, SCIM operational notes, monitoring), see the HA Deployment
   Guide:
-    https://github.com/curtismager20/magertron-mcpm/blob/main/docs/HA-DEPLOYMENT.md
+    https://github.com/magertron/orchestrator/blob/main/docs/HA-DEPLOYMENT.md
 
   Track v{{ .Chart.AppVersion }} progress or report issues:
     https://github.com/mcp-platform/mcp-orchestrator/issues
