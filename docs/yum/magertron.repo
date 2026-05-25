@@ -1,0 +1,7 @@
+[magertron]
+name=Magertron Packages
+baseurl=https://magertron.com/yum
+enabled=1
+gpgcheck=1
+gpgkey=https://magertron.com/yum/RPM-GPG-KEY-magertron
+type=rpm
