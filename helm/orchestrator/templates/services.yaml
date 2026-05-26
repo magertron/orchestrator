@@ -25,6 +25,15 @@ spec:
     - name: ext-authz
       port: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
       targetPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+    # Session 2.13, Step 6b-i: parallel ext_authz for External MCP servers.
+    # Receives Check() calls for traffic destined for vendor-hosted (External)
+    # MCP server registrations. Step 6d will configure Envoy v3 to route
+    # External-path requests here (instead of the port-9092 cluster above).
+    # Until then, this port is bound by the orchestrator but no traffic
+    # reaches it — safe scaffolding.
+    - name: ext-authz-external
+      port: {{ .Values.orchestrator.extAuthzExternalPort | default 9093 }}
+      targetPort: {{ .Values.orchestrator.extAuthzExternalPort | default 9093 }}
 
 ---
 # Headless service for xDS gRPC + REST + ext_authz — STRICT_DNS resolves
@@ -66,6 +75,13 @@ spec:
     - name: ext-authz
       port: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
       targetPort: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+    # Session 2.13, Step 6b-i: parallel ext_authz for External MCP servers
+    # also published on headless so Envoy can resolve per-pod IPs and
+    # bypass kube-proxy (same rationale as the port-9092 headless entry
+    # above — see Bug E note).
+    - name: ext-authz-external
+      port: {{ .Values.orchestrator.extAuthzExternalPort | default 9093 }}
+      targetPort: {{ .Values.orchestrator.extAuthzExternalPort | default 9093 }}
 
 # Slice 6e Option A: v3-ads NodePort service removed. v3 ADS traffic now
 # rides the legacy xDS port (18000) and the unified AdsServiceImpl in the
