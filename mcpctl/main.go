@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const version = "2.0.3"
+const version = "2.0.4"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -449,21 +449,54 @@ func cmdListServers(gf globalFlags) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	// v1.6.0+ flattened the server response shape — name/namespace/image/state
-	// live at the top level, not under a "spec" sub-object. Replicas counts
-	// also moved out of "health" into top-level "replicas" / "ready_replicas".
-	// gateway_url is the most useful per-row field for developers — show it.
-	fmt.Fprintln(w, "NAME\tNAMESPACE\tSTATE\tREPLICAS\tIMAGE\tGATEWAY URL")
+	// v2.0.4: type-aware columns. External rows have no image / replicas /
+	// gateway_url; they have endpoint_url. Show the appropriate TARGET per
+	// row so the table is meaningful for all three deployment patterns.
+	// Pre-2.0.4: hard-coded image + gateway columns made External rows
+	// read as broken (REPLICAS '0/0', IMAGE blank) rather than as proxy
+	// registrations with their own shape.
+	fmt.Fprintln(w, "NAME\tNAMESPACE\tTYPE\tSTATE\tREPLICAS\tTARGET")
 	for _, s := range servers {
 		name, _ := s["name"].(string)
 		ns, _ := s["namespace"].(string)
 		state, _ := s["state"].(string)
-		image, _ := s["image"].(string)
-		gatewayURL, _ := s["gateway_url"].(string)
-		ready, _ := s["ready_replicas"].(float64)
-		total, _ := s["replicas"].(float64)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%.0f/%.0f\t%s\t%s\n",
-			name, ns, state, ready, total, image, gatewayURL)
+		serverType, _ := s["server_type"].(string)
+		if serverType == "" {
+			// Backward-compat for pre-2.4.24 server rows where the column
+			// hadn't been added yet (defaulted to internal at the DB
+			// level, but the API response may still omit it).
+			serverType = "internal"
+		}
+
+		var replicas, target string
+		if serverType == "external" {
+			// External: no pod, no replicas counter is meaningful.
+			// endpoint_url is what the operator wants to see.
+			replicas = "-"
+			target, _ = s["endpoint_url"].(string)
+		} else {
+			// Internal/Hybrid: image is the deploy target; replicas count
+			// reflects actual pods. gateway_url is the in-cluster URL
+			// operators hit for testing/debugging — append it if present.
+			ready, _ := s["ready_replicas"].(float64)
+			total, _ := s["replicas"].(float64)
+			replicas = fmt.Sprintf("%.0f/%.0f", ready, total)
+			image, _ := s["image"].(string)
+			tag, _ := s["image_tag"].(string)
+			if tag != "" && tag != "latest" {
+				target = image + ":" + tag
+			} else {
+				target = image
+			}
+			if gw, _ := s["gateway_url"].(string); gw != "" {
+				// Two-space separator keeps the column count consistent
+				// across rows; tabwriter aligns the columns to the left.
+				target = target + "  " + gw
+			}
+		}
+
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			name, ns, serverType, state, replicas, target)
 	}
 	w.Flush()
 }
