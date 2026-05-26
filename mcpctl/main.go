@@ -639,6 +639,159 @@ func cmdDeploy(gf globalFlags, args []string) {
 	os.Exit(1)
 }
 
+// cmdRegisterExternal registers an external (vendor-hosted) MCP server.
+//
+// Unlike cmdDeploy (which builds a pod in-cluster), this records a proxy
+// registration: Magertron will forward MCP traffic to the vendor endpoint
+// using credentials from a referenced K8s Secret, applying RBAC, audit,
+// and (future) DLP policy at the boundary.
+//
+// The row lands in 'Registered' state — operator must approve via the
+// approval endpoint (mcpctl servers approve, forthcoming) before the
+// proxy code path forwards any traffic.
+func cmdRegisterExternal(gf globalFlags, args []string) {
+	if len(args) < 1 || args[0] == "--help" || args[0] == "-h" {
+		fmt.Println("Usage: mcpctl register-external --name <name> --namespace <ns> \\")
+		fmt.Println("                                --endpoint-url <url> --auth-type <type> \\")
+		fmt.Println("                                [--credential-secret <secret-name>]")
+		fmt.Println()
+		fmt.Println("Registers an external (vendor-hosted) MCP server as a proxy registration.")
+		fmt.Println("Magertron forwards MCP traffic to the endpoint using the referenced K8s Secret.")
+		fmt.Println()
+		fmt.Println("Required:")
+		fmt.Println("  --name <name>                   Server name (unique per namespace)")
+		fmt.Println("  --namespace <ns>                Tenant namespace (e.g. mcp-prod)")
+		fmt.Println("  --endpoint-url <url>            HTTPS URL of the vendor MCP endpoint")
+		fmt.Println("  --auth-type <type>              How Magertron authenticates to the vendor.")
+		fmt.Println("                                  One of: none, bearer, api-key,")
+		fmt.Println("                                  oauth2-client-credentials, mtls")
+		fmt.Println()
+		fmt.Println("Conditional:")
+		fmt.Println("  --credential-secret <name>      Name of the K8s Secret holding credentials.")
+		fmt.Println("                                  Required unless --auth-type is 'none'.")
+		fmt.Println()
+		fmt.Println("Example:")
+		fmt.Println("  mcpctl register-external \\")
+		fmt.Println("    --name nitro-prod --namespace mcp-prod \\")
+		fmt.Println("    --endpoint-url https://api.nitro.cloud/mcp \\")
+		fmt.Println("    --auth-type bearer \\")
+		fmt.Println("    --credential-secret nitro-bearer-token")
+		fmt.Println()
+		fmt.Println("After registration, the server lands in 'Registered' state. An operator")
+		fmt.Println("with the appropriate role must approve it before traffic is proxied.")
+		os.Exit(1)
+	}
+
+	var name, namespace, endpointURL, authType, credentialSecret string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--name":
+			i++
+			if i >= len(args) {
+				flagError("--name requires a value")
+			}
+			name = args[i]
+		case "--namespace":
+			i++
+			if i >= len(args) {
+				flagError("--namespace requires a value")
+			}
+			namespace = args[i]
+		case "--endpoint-url":
+			i++
+			if i >= len(args) {
+				flagError("--endpoint-url requires a value")
+			}
+			endpointURL = args[i]
+		case "--auth-type":
+			i++
+			if i >= len(args) {
+				flagError("--auth-type requires a value")
+			}
+			authType = args[i]
+		case "--credential-secret":
+			i++
+			if i >= len(args) {
+				flagError("--credential-secret requires a value")
+			}
+			credentialSecret = args[i]
+		default:
+			flagError("unknown option: " + args[i])
+		}
+	}
+
+	// Required-field validation. The orchestrator also validates server-side
+	// (and the DB CHECK constraint is the third line of defense), but
+	// catching obvious omissions client-side gives faster feedback.
+	if name == "" {
+		fmt.Fprintln(os.Stderr, "Error: --name is required")
+		os.Exit(1)
+	}
+	if namespace == "" {
+		fmt.Fprintln(os.Stderr, "Error: --namespace is required")
+		os.Exit(1)
+	}
+	if endpointURL == "" {
+		fmt.Fprintln(os.Stderr, "Error: --endpoint-url is required")
+		os.Exit(1)
+	}
+	if authType == "" {
+		fmt.Fprintln(os.Stderr, "Error: --auth-type is required")
+		os.Exit(1)
+	}
+
+	// Allow-list. Server also enforces this; client check is for usability
+	// (fail fast with a helpful message rather than waiting for HTTP 400).
+	validAuthTypes := map[string]bool{
+		"none":                      true,
+		"bearer":                    true,
+		"api-key":                   true,
+		"oauth2-client-credentials": true,
+		"mtls":                      true,
+	}
+	if !validAuthTypes[authType] {
+		fmt.Fprintf(os.Stderr,
+			"Error: --auth-type must be one of: none, bearer, api-key, oauth2-client-credentials, mtls (got '%s')\n",
+			authType)
+		os.Exit(1)
+	}
+	if authType != "none" && credentialSecret == "" {
+		fmt.Fprintf(os.Stderr,
+			"Error: --credential-secret is required when --auth-type is '%s'\n", authType)
+		os.Exit(1)
+	}
+
+	spec := map[string]interface{}{
+		"type":         "external",
+		"name":         name,
+		"namespace":    namespace,
+		"endpoint_url": endpointURL,
+		"auth_type":    authType,
+	}
+	if credentialSecret != "" {
+		spec["credential_secret_ref"] = credentialSecret
+	}
+
+	fmt.Printf("Registering external MCP server %s in namespace %s...\n", name, namespace)
+
+	body, err := apiPost(gf, "/servers", spec)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: malformed registration response: %v\n", err)
+		os.Exit(1)
+	}
+
+	state, _ := result["state"].(string)
+	fmt.Printf("✓ External server registered (state: %s)\n", state)
+	fmt.Println("  Next: an operator must approve this registration before traffic is proxied.")
+	fmt.Println("        (Approval endpoint: forthcoming.)")
+}
+
 func cmdUndeploy(gf globalFlags, args []string) {
 	if len(args) < 2 {
 		fmt.Println("Usage: mcpctl undeploy <namespace> <name>")
@@ -1067,6 +1220,7 @@ CONNECTION:
 SERVERS:
   servers                              List all deployed servers
   deploy <name> <ns> <image> [opts]    Deploy a new MCP server (--wait to block on Running)
+  register-external [opts]             Register an external (vendor-hosted) MCP server proxy
   undeploy <ns> <name>                 Remove a server
   scale <ns> <name> <replicas>         Scale server replicas
   restart <ns> <name>                  Rolling restart
@@ -2155,6 +2309,8 @@ func main() {
 		cmdListServers(gf)
 	case "deploy":
 		cmdDeploy(gf, cmdArgs)
+	case "register-external", "register":
+		cmdRegisterExternal(gf, cmdArgs)
 	case "undeploy":
 		cmdUndeploy(gf, cmdArgs)
 	case "scale":
