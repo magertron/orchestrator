@@ -35,18 +35,30 @@ data:
         provisioned_via TEXT,
         created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        last_login      TIMESTAMPTZ
+        last_login      TIMESTAMPTZ,
+        -- Primary contact email. Separate from sso_email so a user can have
+        -- a stable contact address that's distinct from their IdP-resolved
+        -- email (e.g. for expiry reminders, audit attribution). Set via
+        -- `mcpctl users update-email` or the admin UI. Lowercased for
+        -- case-insensitive lookup via users_email_lower_idx.
+        email           TEXT
     );
     -- For existing installs (upgrade path from pre-SSO / pre-SCIM schema):
     ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_email       TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS external_id     TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS provisioned_via TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email           TEXT;
     -- Each sso_email / external_id can map to at most one user; NULLs exempt.
     CREATE UNIQUE INDEX IF NOT EXISTS users_sso_email_unique_idx
         ON users (sso_email) WHERE sso_email IS NOT NULL;
     CREATE UNIQUE INDEX IF NOT EXISTS users_external_id_unique_idx
         ON users (external_id) WHERE external_id IS NOT NULL;
+    -- Case-insensitive lookup on the primary contact email.
+    -- Non-unique on purpose: a user's contact email and sso_email could be
+    -- the same string; uniqueness across users is enforced on sso_email above.
+    CREATE INDEX IF NOT EXISTS users_email_lower_idx
+        ON users (lower(email)) WHERE email IS NOT NULL;
 
     -- ── Audit Events ───────────────────────────────────────────────────────────
     -- OCSF-aligned shape (Phase F.1, 2026-04-25). 22 columns supporting:
