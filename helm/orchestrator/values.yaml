@@ -398,7 +398,12 @@ inventory:
     affinity: {}
     storage:
       size: 5Gi
-      storageClassName: local-path
+      # Storage class for the inventory PV. Defaults to empty so the
+      # cluster's default StorageClass is used (Docker Desktop, kind,
+      # k3d, minikube, EKS gp2, AKS azurefile, GKE standard, etc).
+      # For k3s with local-path-provisioner (foxygirl reference setup),
+      # set to "local-path".
+      storageClassName: ""
     database: mcp_inventory
     username: mcp
     resources:
