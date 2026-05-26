@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const version = "2.0.4"
+const version = "2.0.5"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -839,6 +839,84 @@ func cmdUndeploy(gf globalFlags, args []string) {
 	fmt.Printf("✓ Server %s/%s undeployed\n", ns, name)
 }
 
+// cmdApprove flips an External MCP server registration to 'Active'.
+//
+// Backed by POST /api/v1/servers/{ns}/{name}/approve (Session 2.13, Step 3.5).
+// State machine: Registered → Active, or Inactive → Active.
+// Idempotent: approving an already-Active server succeeds with no DB write.
+// Rejects: 404 if not found; 400 if the server is not server_type='external'.
+func cmdApprove(gf globalFlags, args []string) {
+	if len(args) < 2 {
+		fmt.Println("Usage: mcpctl approve <namespace> <name>")
+		fmt.Println()
+		fmt.Println("Approves an External MCP server registration so Magertron's proxy")
+		fmt.Println("starts forwarding traffic to its vendor endpoint.")
+		fmt.Println()
+		fmt.Println("Only valid for External (vendor-hosted) MCP servers. Internal and")
+		fmt.Println("Hybrid servers are deployed directly via 'mcpctl deploy'.")
+		fmt.Println()
+		fmt.Println("Example:")
+		fmt.Println("  mcpctl approve mcp-prod nitro-prod")
+		os.Exit(1)
+	}
+	ns, name := args[0], args[1]
+	fmt.Printf("Approving external server %s/%s...\n", ns, name)
+	body, err := apiPost(gf, fmt.Sprintf("/servers/%s/%s/approve", ns, name), nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: malformed approve response: %v\n", err)
+		os.Exit(1)
+	}
+	state, _ := result["state"].(string)
+	fmt.Printf("✓ External server %s/%s state: %s\n", ns, name, state)
+}
+
+// cmdDisable flips an External MCP server registration to 'Inactive'.
+//
+// Backed by POST /api/v1/servers/{ns}/{name}/disable (Session 2.13, Step 3.5).
+// State machine: Active → Inactive, or Registered → Inactive ("park" an
+// unapproved registration without deleting it).
+// Idempotent: disabling an already-Inactive server succeeds with no DB write.
+// Rejects: 404 if not found; 400 if the server is not server_type='external'.
+//
+// While a server is Inactive, the proxy code path refuses to forward traffic
+// (returns 503 to clients). The registration row is preserved — call approve
+// again to re-enable.
+func cmdDisable(gf globalFlags, args []string) {
+	if len(args) < 2 {
+		fmt.Println("Usage: mcpctl disable <namespace> <name>")
+		fmt.Println()
+		fmt.Println("Disables an External MCP server registration, blocking proxy traffic")
+		fmt.Println("to its vendor endpoint. The registration is preserved; call approve")
+		fmt.Println("to re-enable.")
+		fmt.Println()
+		fmt.Println("Only valid for External (vendor-hosted) MCP servers. To remove an")
+		fmt.Println("Internal or Hybrid server, use 'mcpctl undeploy'.")
+		fmt.Println()
+		fmt.Println("Example:")
+		fmt.Println("  mcpctl disable mcp-prod nitro-prod")
+		os.Exit(1)
+	}
+	ns, name := args[0], args[1]
+	fmt.Printf("Disabling external server %s/%s...\n", ns, name)
+	body, err := apiPost(gf, fmt.Sprintf("/servers/%s/%s/disable", ns, name), nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: malformed disable response: %v\n", err)
+		os.Exit(1)
+	}
+	state, _ := result["state"].(string)
+	fmt.Printf("✓ External server %s/%s state: %s\n", ns, name, state)
+}
+
 func cmdScale(gf globalFlags, args []string) {
 	if len(args) < 3 {
 		fmt.Println("Usage: mcpctl scale <namespace> <name> <replicas>")
@@ -1254,6 +1332,8 @@ SERVERS:
   servers                              List all deployed servers
   deploy <name> <ns> <image> [opts]    Deploy a new MCP server (--wait to block on Running)
   register-external [opts]             Register an external (vendor-hosted) MCP server proxy
+  approve <ns> <name>                  Approve an external MCP server registration (→ Active)
+  disable <ns> <name>                  Disable an external MCP server (block proxy traffic)
   undeploy <ns> <name>                 Remove a server
   scale <ns> <name> <replicas>         Scale server replicas
   restart <ns> <name>                  Rolling restart
@@ -2344,6 +2424,10 @@ func main() {
 		cmdDeploy(gf, cmdArgs)
 	case "register-external", "register":
 		cmdRegisterExternal(gf, cmdArgs)
+	case "approve":
+		cmdApprove(gf, cmdArgs)
+	case "disable":
+		cmdDisable(gf, cmdArgs)
 	case "undeploy":
 		cmdUndeploy(gf, cmdArgs)
 	case "scale":
