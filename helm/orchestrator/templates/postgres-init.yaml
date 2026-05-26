@@ -134,13 +134,39 @@ data:
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
         name          VARCHAR(255) NOT NULL,
         namespace     VARCHAR(255) NOT NULL,
-        image         VARCHAR(512) NOT NULL,
-        image_tag     VARCHAR(128) NOT NULL DEFAULT 'latest',
+        -- ── Server type discriminator ────────────────────────────────────────
+        -- 'internal' = MCP server runs as a pod in this cluster (default).
+        -- 'hybrid'   = same as internal at the registration layer; outbound
+        --              egress policies applied separately at runtime.
+        -- 'external' = MCP server runs at a vendor SaaS endpoint; this row
+        --              represents a proxy registration, not a deployable pod.
+        --              endpoint_url, auth_type, credential_secret_ref required;
+        --              image / image_tag / mcp_port columns are NULL for these.
+        server_type   VARCHAR(32) NOT NULL DEFAULT 'internal'
+                      CHECK (server_type IN ('internal', 'hybrid', 'external')),
+        -- ── Internal/Hybrid columns (NULL for external) ──────────────────────
+        -- image-related fields are NULL when server_type='external' because no
+        -- pod is deployed. The composite CHECK constraint below enforces this.
+        image         VARCHAR(512),
+        image_tag     VARCHAR(128) DEFAULT 'latest',
         replicas      INT         NOT NULL DEFAULT 1,
-        mcp_port      INT         NOT NULL DEFAULT 3000,
+        mcp_port      INT,
         transport     VARCHAR(32) NOT NULL DEFAULT 'http',
         cluster_ip    VARCHAR(64),
         cluster_port  INT,
+        -- ── External-only columns (NULL for internal/hybrid) ─────────────────
+        -- Where the vendor MCP server lives (HTTPS URL).
+        endpoint_url  TEXT,
+        -- How magertron authenticates to the vendor endpoint.
+        -- 'none' is a valid choice (public endpoint, no auth).
+        auth_type     VARCHAR(32)
+                      CHECK (auth_type IS NULL OR auth_type IN
+                            ('none', 'bearer', 'api-key',
+                             'oauth2-client-credentials', 'mtls')),
+        -- Name of the K8s Secret holding credentials. NULL allowed even when
+        -- auth_type IS NOT NULL if auth_type='none' (no secret needed).
+        credential_secret_ref VARCHAR(255),
+        -- ── Common columns ───────────────────────────────────────────────────
         state         VARCHAR(32) NOT NULL DEFAULT 'Pending',
         deployed_by   VARCHAR(255),
         tools         JSONB       NOT NULL DEFAULT '[]',
@@ -166,12 +192,81 @@ data:
         routing_mode  VARCHAR(16) NOT NULL DEFAULT 'legacy',
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        UNIQUE (name, namespace)
+        UNIQUE (name, namespace),
+        -- ── Per-type data invariants ─────────────────────────────────────────
+        -- Internal and Hybrid require an image; External requires an endpoint.
+        -- This constraint catches any malformed row at insert/update time
+        -- regardless of whether the C++ or UI layer validates correctly.
+        CONSTRAINT deployed_servers_type_invariant CHECK (
+            (server_type IN ('internal', 'hybrid')
+             AND image IS NOT NULL
+             AND endpoint_url IS NULL
+             AND auth_type IS NULL
+             AND credential_secret_ref IS NULL)
+            OR
+            (server_type = 'external'
+             AND image IS NULL
+             AND image_tag IS NULL
+             AND mcp_port IS NULL
+             AND endpoint_url IS NOT NULL
+             AND auth_type IS NOT NULL)
+        )
     );
     -- For existing installs (upgrade path from pre-1.15 schema):
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS command JSONB NOT NULL DEFAULT '[]';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(16) NOT NULL DEFAULT 'legacy';
+    -- ── External MCP server support (session 2.13) ───────────────────────────
+    -- server_type discriminator. Default 'internal' for any pre-existing rows.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS server_type VARCHAR(32) NOT NULL DEFAULT 'internal';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS endpoint_url TEXT;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS auth_type    VARCHAR(32);
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_secret_ref VARCHAR(255);
+    -- Fast filtering by type when listing servers per tenant or rendering
+    -- type-specific UI sections. Most queries scope by namespace + server_type.
+    CREATE INDEX IF NOT EXISTS deployed_servers_type_idx
+        ON deployed_servers (namespace, server_type);
+    -- Prevent duplicate External-server registrations against the same vendor
+    -- endpoint within a tenant namespace. Two operators registering "Nitro"
+    -- twice with different credentials would create ambiguous routing and
+    -- billing. Partial index (WHERE server_type = 'external') so Internal/
+    -- Hybrid rows with NULL endpoint_url don't conflict with each other.
+    CREATE UNIQUE INDEX IF NOT EXISTS deployed_servers_external_endpoint_unique_idx
+        ON deployed_servers (namespace, endpoint_url)
+        WHERE server_type = 'external';
+
+    -- ── External MCP server architecture (session 2.13) ──────────────────────
+    -- The deployed_servers table holds rows for all three deployment patterns:
+    --
+    --   server_type='internal'  → MCP server runs as a pod in this cluster.
+    --                             Magertron manages full lifecycle. image and
+    --                             image_tag specify what to deploy.
+    --
+    --   server_type='hybrid'    → Same as internal at registration; the
+    --                             distinction is operational (the server's
+    --                             tools reach external APIs at runtime,
+    --                             governed by NetworkPolicy egress rules).
+    --
+    --   server_type='external'  → MCP server runs at a vendor SaaS endpoint
+    --                             (e.g. Nitro Cloud). This row represents a
+    --                             proxy registration, not a deployable pod.
+    --                             endpoint_url + auth_type + credential_secret_ref
+    --                             tell Magertron's proxy where to forward
+    --                             traffic and how to authenticate. image is
+    --                             NULL because no in-cluster pod exists.
+    --
+    -- The deployed_servers_type_invariant CHECK constraint above enforces
+    -- per-type data integrity at the DB layer. Any code path that tries to
+    -- insert a malformed row (e.g. type='external' with NULL endpoint_url)
+    -- is rejected by Postgres regardless of whether the C++ or UI validator
+    -- ran correctly.
+    --
+    -- External-server rows are ONLY ever written by the admin API
+    -- (mcpctl / UI authenticated by an operator with the appropriate RBAC
+    -- permission). The inventory-plane ingestion path NEVER auto-registers
+    -- External servers — the security blast radius of an auto-discovered
+    -- external endpoint (DNS spoofing, vendor identity confusion) is too
+    -- large to permit. See design/external-mcp-servers.md (internal).
 
     -- ── RBAC Roles ─────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS roles (
