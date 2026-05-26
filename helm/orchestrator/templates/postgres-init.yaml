@@ -194,9 +194,20 @@ data:
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace),
         -- ── Per-type data invariants ─────────────────────────────────────────
-        -- Internal and Hybrid require an image; External requires an endpoint.
-        -- This constraint catches any malformed row at insert/update time
-        -- regardless of whether the C++ or UI layer validates correctly.
+        -- The load-bearing invariant: Internal/Hybrid rows REQUIRE an image
+        -- (because Magertron deploys a pod for them); External rows REQUIRE
+        -- an endpoint_url + auth_type (because Magertron proxies to a vendor
+        -- endpoint, no pod involved). Image absence is the signal of
+        -- "external", image presence is the signal of "internal/hybrid".
+        --
+        -- We do NOT enforce that image_tag/mcp_port/replicas/transport are
+        -- NULL on External rows. Postgres column DEFAULTS (image_tag='latest',
+        -- transport='http', replicas=1) fire automatically on INSERT before
+        -- the CHECK constraint runs, and overriding them per-type would
+        -- require either dropping the defaults (breaks every Internal INSERT)
+        -- or special-cased default suppression in every code path. C++ already
+        -- type-switches on server_type and ignores irrelevant fields for
+        -- External rows, so harmless default values riding along do no damage.
         CONSTRAINT deployed_servers_type_invariant CHECK (
             (server_type IN ('internal', 'hybrid')
              AND image IS NOT NULL
@@ -206,8 +217,6 @@ data:
             OR
             (server_type = 'external'
              AND image IS NULL
-             AND image_tag IS NULL
-             AND mcp_port IS NULL
              AND endpoint_url IS NOT NULL
              AND auth_type IS NOT NULL)
         )
@@ -222,6 +231,26 @@ data:
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS endpoint_url TEXT;
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS auth_type    VARCHAR(32);
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_secret_ref VARCHAR(255);
+    -- Session 2.13 fix: the original (chart 2.4.24) version of
+    -- deployed_servers_type_invariant required image_tag/mcp_port to be NULL
+    -- on External rows. That conflicted with Postgres column DEFAULTS firing
+    -- on INSERT (image_tag DEFAULT 'latest', etc), making External INSERTs
+    -- impossible. Drop and recreate with the relaxed version that only
+    -- enforces the load-bearing invariants (image presence/absence).
+    -- Idempotent: drop only if present, then recreate.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_type_invariant;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_type_invariant CHECK (
+        (server_type IN ('internal', 'hybrid')
+         AND image IS NOT NULL
+         AND endpoint_url IS NULL
+         AND auth_type IS NULL
+         AND credential_secret_ref IS NULL)
+        OR
+        (server_type = 'external'
+         AND image IS NULL
+         AND endpoint_url IS NOT NULL
+         AND auth_type IS NOT NULL)
+    );
     -- Fast filtering by type when listing servers per tenant or rendering
     -- type-specific UI sections. Most queries scope by namespace + server_type.
     CREATE INDEX IF NOT EXISTS deployed_servers_type_idx
