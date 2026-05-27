@@ -113,6 +113,53 @@ err()  { printf "  ${C_RED}${G_CROSS}${C_RESET} %s\n" "$*" >&2; }
 info() { printf "  ${C_DIM}%s${C_RESET}\n" "$*"; }
 note() { printf "  ${C_DIM}%s${C_RESET} %s\n" "$G_ARROW" "$*"; }
 
+# ─── Spinner helper ─────────────────────────────────────────────────────────
+# Runs a background spinner with a label until killed. Used to indicate
+# progress during slow operations whose own output may scroll past or
+# arrive in bursts (e.g., helm uninstall).
+#
+# Usage:
+#   spinner_start "Doing slow thing"
+#   ... your slow commands ...
+#   spinner_stop
+#
+# The spinner runs in a child shell, redrawing the same line via \r.
+# Output from concurrent commands MAY interleave with the spinner — we
+# don't try to capture it. Worst case the spinner's frame gets bumped to
+# a new line, which still reads cleanly because the spinner is just a
+# visual hint, not authoritative state.
+SPINNER_PID=""
+spinner_start() {
+    local label="$1"
+    # Skip if not a TTY (CI/non-interactive) — printing \r to a file is noise.
+    if ! [ -t 1 ]; then
+        info "$label"
+        return
+    fi
+    local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    (
+        local i=0
+        while :; do
+            printf "\r  ${C_CYAN}%s${C_RESET} %s" "${frames[$((i % 10))]}" "$label"
+            i=$((i + 1))
+            sleep 0.1
+        done
+    ) &
+    SPINNER_PID=$!
+    # Disown so the kill doesn't print "[1] Terminated" noise later.
+    disown "$SPINNER_PID" 2>/dev/null || true
+}
+
+spinner_stop() {
+    if [ -n "$SPINNER_PID" ]; then
+        kill "$SPINNER_PID" 2>/dev/null || true
+        wait "$SPINNER_PID" 2>/dev/null || true
+        SPINNER_PID=""
+        # Clear the spinner line so trailing output renders cleanly.
+        printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 80)" ""
+    fi
+}
+
 # A simple spinner that runs while a command executes. Disabled when not
 # on a TTY (so CI logs aren't filled with \r noise) or in --non-interactive.
 # Usage:  spinner "Waiting for rollout..." kubectl rollout status ...
@@ -637,9 +684,11 @@ echo "  target version: $CHART_VERSION"
 # alone, plus from not deleting the namespaces holding the PVCs and
 # customer deployments.
 section "Tearing down existing release"
+spinner_start "Tearing down existing release (this can take 30-60s)"
 helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" 2>/dev/null || true
 kubectl delete secret -n "$NAMESPACE" -l "name=${RELEASE_NAME},owner=helm" 2>/dev/null || true
 kubectl delete crd mcproutes.mcp.io 2>/dev/null || true
+spinner_stop
 
 # ─── Orchestrator-managed resource cleanup (both modes) ──────────────────────
 # The orchestrator auto-creates NetworkPolicies named mcp-server-isolation
