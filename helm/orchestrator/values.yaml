@@ -39,6 +39,23 @@ orchestrator:
   # Do not change unless you also update the envoy-bootstrap ConfigMap's
   # grpc_service.envoy_grpc.cluster_name endpoint — they must agree.
   extAuthzPort: 9092
+
+  # Session 2.13, Step 6b-i / 6e: parallel ext_authz port for External
+  # (vendor-hosted) MCP server proxy traffic. The orchestrator binary
+  # serves a SEPARATE gRPC server on this port for routes that target
+  # External servers — completely isolated code path from extAuthzPort
+  # above. See ext_authz/external_server.cpp and the
+  # mcp_ext_authz_external cluster in envoy-v3-bootstrap.yaml.
+  #
+  # The Service template (services.yaml) exposes this port on both the
+  # main ClusterIP and headless services. Envoy v3 references it via
+  # the mcp_ext_authz_external upstream cluster; per-route ext_authz
+  # overrides (Step 6d) bind External-path routes to that cluster.
+  #
+  # Internal/Hybrid traffic continues to use extAuthzPort (9092)
+  # unchanged. Both ports must agree between this value and the
+  # bootstrap ConfigMap.
+  extAuthzExternalPort: 9093
   resources:
     requests:
       cpu: 250m
