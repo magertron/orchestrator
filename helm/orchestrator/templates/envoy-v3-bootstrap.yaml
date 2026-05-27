@@ -250,6 +250,48 @@ data:
                             pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_v3
+                      # ── ext_authz.external filter (Session 2.13, Step 6d-i) ─────────────
+                      # Parallel ext_authz filter for External (vendor-hosted) MCP
+                      # server traffic. Points at the mcp_ext_authz_external upstream
+                      # cluster (port 9093, defined in Step 6e) which is served by
+                      # the orchestrator's ExternalAuthzServer (Step 6b-ii).
+                      #
+                      # DISABLED BY DEFAULT at listener level — only External routes
+                      # opt-IN via typed_per_filter_config (set by AdsSubscriber when
+                      # building the route entry for a server with server_type='external').
+                      #
+                      # Internal/Hybrid traffic NEVER hits this filter because routes
+                      # for those servers don't carry the enable override. This is
+                      # the parallel-isolation guarantee from external-mcp-servers-step6.md
+                      # (v2) Commit 3, now reflected in the data plane.
+                      #
+                      # Filter name 'envoy.filters.http.ext_authz.external' is the
+                      # KEY callers use in typed_per_filter_config to enable this
+                      # filter on a per-route basis. Envoy distinguishes filter
+                      # instances by this name within the chain.
+                      - name: envoy.filters.http.ext_authz.external
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: mcp_ext_authz_external
+                            timeout: 2s
+                          transport_api_version: V3
+                          failure_mode_allow: false
+                          with_request_body:
+                            max_request_bytes: 65536
+                            allow_partial_message: true
+                            pack_as_bytes: false
+                          include_peer_certificate: false
+                          stat_prefix: mcp_ext_authz_external_v3
+                        # disabled: true at the filter-instance level is what makes
+                        # this filter SKIP all routes unless they explicitly
+                        # re-enable it via typed_per_filter_config. The Envoy
+                        # documentation for ExtAuthz refers to this idiom for
+                        # selective ext_authz; routes that DO want this filter
+                        # set typed_per_filter_config[envoy.filters.http.ext_authz.external]
+                        # to an ExtAuthzPerRoute with check_settings present.
+                        disabled: true
                       - name: envoy.filters.http.router
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
