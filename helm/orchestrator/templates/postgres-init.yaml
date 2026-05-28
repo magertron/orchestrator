@@ -507,6 +507,38 @@ data:
     CREATE INDEX IF NOT EXISTS idx_xds_snapshots_id_desc
         ON xds_snapshots (id DESC);
 
+    -- ── Slice C: delegated OAuth (SEP-990 authorization-code) ────────────────
+    -- Short-lived correlation between START AUTH and the OAuth callback. The
+    -- random `state` token ties a browser redirect back to the originating
+    -- registration + user + PKCE verifier. Rows are one-shot (deleted on
+    -- callback) and swept on expiry. server_id FK matches mcp_tools (UUID).
+    CREATE TABLE IF NOT EXISTS oauth_pending_flows (
+        state             VARCHAR(64)  PRIMARY KEY,
+        server_id         UUID         NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        requesting_email  VARCHAR(320) NOT NULL,
+        code_verifier     VARCHAR(128) NOT NULL,
+        redirect_uri      TEXT         NOT NULL,
+        created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+        expires_at        TIMESTAMPTZ  NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_oauth_pending_flows_expiry
+        ON oauth_pending_flows (expires_at);
+
+    -- Per-user delegated tokens. The operator's probe token is simply the
+    -- first row for a given server. Keyed (email, server_id). refresh_token is
+    -- nullable (some authorization servers don't issue one).
+    CREATE TABLE IF NOT EXISTS external_user_tokens (
+        requesting_email  VARCHAR(320) NOT NULL,
+        server_id         UUID         NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        access_token      TEXT         NOT NULL,
+        refresh_token     TEXT,
+        expires_at        TIMESTAMPTZ  NOT NULL,
+        obtained_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
+        PRIMARY KEY (requesting_email, server_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_external_user_tokens_server
+        ON external_user_tokens (server_id);
+
   02-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
