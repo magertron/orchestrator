@@ -160,9 +160,11 @@ data:
         -- How magertron authenticates to the vendor endpoint.
         -- 'none' is a valid choice (public endpoint, no auth).
         auth_type     VARCHAR(32)
+                      CONSTRAINT deployed_servers_auth_type_check
                       CHECK (auth_type IS NULL OR auth_type IN
                             ('none', 'bearer', 'api-key',
-                             'oauth2-client-credentials', 'mtls')),
+                             'oauth2-client-credentials',
+                             'oauth2-authorization-code', 'mtls')),
         -- Name of the K8s Secret holding credentials. NULL allowed even when
         -- auth_type IS NOT NULL if auth_type='none' (no secret needed).
         credential_secret_ref VARCHAR(255),
@@ -250,6 +252,16 @@ data:
     -- Default 'centralized' so any pre-existing External rows get a sane value
     -- with no data migration. See the inline column comment above for semantics.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized';
+
+    -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
+    -- (delegated authorization-code flow). The original inline constraint was
+    -- anonymous and auto-named deployed_servers_auth_type_check; drop + re-add
+    -- idempotently so existing DBs pick up the new value.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_auth_type_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_auth_type_check
+        CHECK (auth_type IS NULL OR auth_type IN
+            ('none', 'bearer', 'api-key',
+             'oauth2-client-credentials', 'oauth2-authorization-code', 'mtls'));
     -- Session 2.13 fix: the original (chart 2.4.24) version of
     -- deployed_servers_type_invariant required image_tag/mcp_port to be NULL
     -- on External rows. That conflicted with Postgres column DEFAULTS firing
