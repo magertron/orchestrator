@@ -92,7 +92,7 @@ orchestrator:
     #   - OIDC redirect_uri when building provider login URLs
     # Example: "https://mcp.example.com"
     # Empty string = orchestrator uses request-relative URLs.
-    apiPublicUrl: ""
+    apiPublicUrl: "http://localhost:8080"   # dev: browser hits localhost via kubectl port-forward to the leader pod
 
     # ── Leader election (v1.7 multi-replica HA) ──────────────────────────
     # Override the auto-derived setting. By default, the chart enables
