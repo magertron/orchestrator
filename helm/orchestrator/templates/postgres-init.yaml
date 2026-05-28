@@ -551,6 +551,93 @@ data:
     CREATE INDEX IF NOT EXISTS idx_external_user_tokens_server
         ON external_user_tokens (server_id);
 
+    -- ─── Slice C6b: polymorphic principal (user_email | service_account) ────
+    -- The (email, server_id) cache key only fit human users. Service accounts
+    -- have no email — they identify by subject. Migration: add a kind+id pair
+    -- to BOTH tables, backfill from requesting_email, swap the
+    -- external_user_tokens PK to use the new key. oauth_pending_flows PK stays
+    -- on `state` (already-unique correlator); the new columns are just
+    -- denormalized identity attached to the pending row.
+    -- requesting_email is KEPT (back-compat / audit) — populated alongside
+    -- principal_id when principal_kind='user_email', NULL/empty for SA rows.
+
+    ALTER TABLE oauth_pending_flows
+        ADD COLUMN IF NOT EXISTS principal_kind VARCHAR(32) NOT NULL DEFAULT 'user_email';
+    ALTER TABLE oauth_pending_flows
+        ADD COLUMN IF NOT EXISTS principal_id   TEXT        NOT NULL DEFAULT '';
+
+    ALTER TABLE external_user_tokens
+        ADD COLUMN IF NOT EXISTS principal_kind VARCHAR(32) NOT NULL DEFAULT 'user_email';
+    ALTER TABLE external_user_tokens
+        ADD COLUMN IF NOT EXISTS principal_id   TEXT        NOT NULL DEFAULT '';
+
+    -- Backfill existing rows. Only touches rows that haven't been migrated
+    -- (principal_id is still the default empty string) AND have a non-empty
+    -- requesting_email. Idempotent on re-run.
+    UPDATE oauth_pending_flows
+       SET principal_id = requesting_email
+     WHERE principal_id = '' AND requesting_email IS NOT NULL AND requesting_email <> '';
+
+    UPDATE external_user_tokens
+       SET principal_id = requesting_email
+     WHERE principal_id = '' AND requesting_email IS NOT NULL AND requesting_email <> '';
+
+    -- Enforce principal kind values. Strict allow-list.
+    ALTER TABLE oauth_pending_flows DROP CONSTRAINT IF EXISTS oauth_pending_flows_principal_kind_check;
+    ALTER TABLE oauth_pending_flows ADD CONSTRAINT oauth_pending_flows_principal_kind_check
+        CHECK (principal_kind IN ('user_email', 'service_account'));
+
+    ALTER TABLE external_user_tokens DROP CONSTRAINT IF EXISTS external_user_tokens_principal_kind_check;
+    ALTER TABLE external_user_tokens ADD CONSTRAINT external_user_tokens_principal_kind_check
+        CHECK (principal_kind IN ('user_email', 'service_account'));
+
+    -- Refuse blank principal_id. The default '' was only to make the
+    -- ADD COLUMN safe on existing rows; backfill above populates it, and
+    -- new INSERTs must supply it.
+    ALTER TABLE oauth_pending_flows DROP CONSTRAINT IF EXISTS oauth_pending_flows_principal_id_nonempty;
+    ALTER TABLE oauth_pending_flows ADD CONSTRAINT oauth_pending_flows_principal_id_nonempty
+        CHECK (principal_id <> '');
+
+    ALTER TABLE external_user_tokens DROP CONSTRAINT IF EXISTS external_user_tokens_principal_id_nonempty;
+    ALTER TABLE external_user_tokens ADD CONSTRAINT external_user_tokens_principal_id_nonempty
+        CHECK (principal_id <> '');
+
+    -- Swap the external_user_tokens PK from (requesting_email, server_id) to
+    -- (principal_kind, principal_id, server_id). The pkey is auto-named
+    -- external_user_tokens_pkey. Idempotent: drop if it has the old shape,
+    -- then add the new. We probe shape by looking at the index columns; if
+    -- the PK already includes principal_id, we leave it alone.
+    DO $$
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM pg_index i
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+            WHERE i.indrelid = 'external_user_tokens'::regclass
+              AND i.indisprimary
+              AND a.attname = 'requesting_email'
+        ) AND NOT EXISTS (
+            SELECT 1
+            FROM pg_index i
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+            WHERE i.indrelid = 'external_user_tokens'::regclass
+              AND i.indisprimary
+              AND a.attname = 'principal_id'
+        ) THEN
+            ALTER TABLE external_user_tokens DROP CONSTRAINT external_user_tokens_pkey;
+            ALTER TABLE external_user_tokens
+                ADD CONSTRAINT external_user_tokens_pkey
+                PRIMARY KEY (principal_kind, principal_id, server_id);
+        END IF;
+    END
+    $$;
+
+    -- Index for the new lookup pattern (kind, id, server) — the PK already
+    -- provides this, but explicit index on (principal_kind, principal_id)
+    -- helps "all tokens for this user across servers" queries (audit/UI).
+    CREATE INDEX IF NOT EXISTS idx_external_user_tokens_principal
+        ON external_user_tokens (principal_kind, principal_id);
+
   02-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
