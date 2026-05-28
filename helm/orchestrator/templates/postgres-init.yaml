@@ -166,6 +166,21 @@ data:
         -- Name of the K8s Secret holding credentials. NULL allowed even when
         -- auth_type IS NOT NULL if auth_type='none' (no secret needed).
         credential_secret_ref VARCHAR(255),
+        -- credential_mode: WHO authenticates to the External endpoint.
+        --   'centralized' = Magertron holds one credential and presents it for
+        --                   all agent traffic (SEP-1046 client-credentials / M2M).
+        --                   The External provider sees a single tenant (Magertron);
+        --                   per-agent cost attribution is tracked internally via
+        --                   the email anchor on each account.
+        --   'delegated'   = per-user token exchange; each agent authenticates as
+        --                   themselves (SEP-990 cross-app-access). The operator is
+        --                   simply the first such user at probe time.
+        -- Only meaningful for External rows. Internal/Hybrid rows carry the
+        -- harmless default. Cross-field rule (delegated REQUIRES an OAuth-family
+        -- auth_type) is enforced in handle_register_external_server, not here,
+        -- so the API can return a clean 400 instead of an opaque CHECK error.
+        credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized'
+                        CHECK (credential_mode IN ('centralized', 'delegated')),
         -- ── Common columns ───────────────────────────────────────────────────
         state         VARCHAR(32) NOT NULL DEFAULT 'Pending',
         deployed_by   VARCHAR(255),
@@ -231,6 +246,10 @@ data:
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS endpoint_url TEXT;
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS auth_type    VARCHAR(32);
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_secret_ref VARCHAR(255);
+    -- Session 2.14: credential_mode discriminator for the External auth model.
+    -- Default 'centralized' so any pre-existing External rows get a sane value
+    -- with no data migration. See the inline column comment above for semantics.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized';
     -- Session 2.13 fix: the original (chart 2.4.24) version of
     -- deployed_servers_type_invariant required image_tag/mcp_port to be NULL
     -- on External rows. That conflicted with Postgres column DEFAULTS firing
