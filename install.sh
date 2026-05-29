@@ -355,6 +355,13 @@ LABEL_NODES="${LABEL_NODES:-0}"   # Session 2.13: opt-IN to labeling. Chart's de
                                   # no-op for backward compat (was an opt-OUT flag).
 NON_INTERACTIVE="${NON_INTERACTIVE:-0}"
 NODE_NAME="${NODE_NAME:-}"
+# External HTTPS URL where users' browsers reach this orchestrator
+# (e.g. https://magertron.customer.com). Injected as
+# orchestrator.env.apiPublicUrl -> MCP_API_PUBLIC_URL, which drives the
+# delegated-OAuth callback redirect_uri. Empty = chart default (request-
+# relative / localhost dev fallback). Prompted interactively if unset and
+# not --non-interactive.
+API_PUBLIC_URL="${API_PUBLIC_URL:-}"
 HELM_REPO_NAME="${HELM_REPO_NAME:-magertron}"
 RELEASE_NAME="${RELEASE_NAME:-mcp}"
 
@@ -397,6 +404,13 @@ Common options:
   --skip-node-label           Deprecated no-op. Labeling is off by
                               default. Flag retained for backward
                               compat with existing scripts.
+  --api-public-url <url>      External HTTPS URL where users' browsers
+                              reach this orchestrator (e.g.
+                              https://magertron.example.com). Sets the
+                              delegated-OAuth callback redirect target.
+                              If unset and the shell is interactive,
+                              you'll be prompted (empty answer = use the
+                              chart's request-relative/localhost default).
   --non-interactive           Fail on any prompt instead of asking. Use
                               for CI / automation.
   -h, --help                  Show this message
@@ -404,6 +418,7 @@ Common options:
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
   NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
+  API_PUBLIC_URL,
   HELM_REPO_NAME, RELEASE_NAME
 
 EOF
@@ -419,6 +434,7 @@ while [ $# -gt 0 ]; do
         --chart-version)   CHART_VERSION="$2"; shift 2 ;;
         --namespace)       NAMESPACE="$2"; shift 2 ;;
         --node-name)       NODE_NAME="$2"; shift 2 ;;
+        --api-public-url)  API_PUBLIC_URL="$2"; shift 2 ;;
         --skip-node-label)
             # Deprecated as of Session 2.13 (chart defaults no longer
             # require labels). Accept silently for backward compat.
@@ -797,6 +813,76 @@ fi
 # ─── Helm install ────────────────────────────────────────────────────────────
 section "Helm install"
 
+# ── External public URL (delegated-OAuth callback target) ────────────────────
+# This is the one value the chart genuinely cannot infer: the externally-
+# reachable URL a customer's browser uses to hit the orchestrator. It drives
+# the delegated-OAuth callback redirect_uri. If a customer forgets to set it,
+# delegated callbacks redirect to a localhost dev default the browser can't
+# reach — a silent dead-redirect. So prompt for it interactively when unset.
+#
+# Validation (when a value IS provided): must have an http(s):// scheme and no
+# trailing slash, because the redirect_uri is built by string concatenation
+# ({public_url}/api/v1/oauth/callback) and a trailing slash or missing scheme
+# produces a redirect_uri the AS will reject at consent time, not at install.
+validate_public_url() {
+    # $1 = candidate URL. Echoes a normalized URL on success; returns non-zero
+    # with a message on stderr on failure. Empty input is allowed (caller maps
+    # empty -> chart default).
+    local u="$1"
+    [ -z "$u" ] && { printf '%s' ""; return 0; }
+    case "$u" in
+        http://*|https://*) ;;
+        *) echo "    must start with http:// or https:// (got: $u)" >&2; return 1 ;;
+    esac
+    # Strip a single trailing slash so concat doesn't double it.
+    u="${u%/}"
+    # Reject obvious garbage: needs a host after the scheme.
+    case "$u" in
+        http://|https://) echo "    missing host after scheme" >&2; return 1 ;;
+    esac
+    printf '%s' "$u"
+    return 0
+}
+
+if [ -z "$API_PUBLIC_URL" ]; then
+    if [ "$NON_INTERACTIVE" = "1" ]; then
+        # Non-interactive + unset is allowed: fall through to the chart's
+        # request-relative default. Note it so CI logs are explicit.
+        info "API_PUBLIC_URL unset (non-interactive) — using chart default (request-relative URLs)."
+    elif [ "$IS_TTY" = "0" ]; then
+        info "API_PUBLIC_URL unset (no TTY) — using chart default (request-relative URLs)."
+    else
+        echo "  External URL where users' browsers will reach Magertron."
+        echo "  Used for delegated-OAuth callback redirects."
+        echo "    Example: https://magertron.example.com"
+        echo "    Leave blank to use the chart default (request-relative / dev localhost)."
+        echo ""
+        while :; do
+            read -r -p "  Public URL [blank to skip]: " _apu
+            if normalized=$(validate_public_url "$_apu"); then
+                API_PUBLIC_URL="$normalized"
+                break
+            fi
+            echo "  Invalid URL. Try again, or leave blank to skip." >&2
+        done
+        if [ -n "$API_PUBLIC_URL" ]; then
+            echo "  Public URL set to: $API_PUBLIC_URL"
+        else
+            echo "  No public URL set — using chart default (request-relative URLs)."
+        fi
+        echo ""
+    fi
+else
+    # Value came from --api-public-url or the env var: validate it too, so a
+    # bad scripted value fails fast at install rather than at consent time.
+    if normalized=$(validate_public_url "$API_PUBLIC_URL"); then
+        API_PUBLIC_URL="$normalized"
+    else
+        echo "ERROR: invalid --api-public-url / API_PUBLIC_URL value." >&2
+        exit 1
+    fi
+fi
+
 # Map our service-type to the chart's loadBalancer.provider value.
 # The chart accepts: nodeport, loadbalancer, clusterip.
 HELM_VALUES=(
@@ -805,6 +891,12 @@ HELM_VALUES=(
     --set "envoy.v3.enabled=true"
     --set "loadBalancer.provider=$SERVICE_TYPE"
 )
+
+# Only inject apiPublicUrl when set — otherwise let the chart's own default
+# (values.yaml) stand, rather than forcing an empty override.
+if [ -n "$API_PUBLIC_URL" ]; then
+    HELM_VALUES+=( --set "orchestrator.env.apiPublicUrl=$API_PUBLIC_URL" )
+fi
 
 # Wrapper function so we can pass it to spinner.
 do_helm_install() {
