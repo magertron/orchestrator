@@ -283,6 +283,16 @@ data:
                             allow_partial_message: true
                             pack_as_bytes: false
                           include_peer_certificate: false
+                          # C6b: explicitly list which ExtAuthz response headers
+                          # propagate to the upstream request. Without this,
+                          # Envoy's default produces a malformed empty `: \r`
+                          # header that ASGI servers (uvicorn, hypercorn) reject
+                          # with 400. We inject `Authorization: Bearer <vendor>` —
+                          # whitelist exactly that.
+                          allowed_upstream_headers:
+                            patterns:
+                              - exact: Authorization
+                              - exact: authorization
                           stat_prefix: mcp_ext_authz_external_v3
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
