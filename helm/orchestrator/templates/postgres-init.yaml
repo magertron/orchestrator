@@ -206,7 +206,8 @@ data:
         -- ADS pull-driven handler (slice 6e Option A). The v3 ADS subscriber
         -- in src/gateway/v3/ads_subscriber.cpp filters on this field —
         -- only servers with routing_mode='v3' are exposed to v3 Envoy.
-        routing_mode  VARCHAR(16) NOT NULL DEFAULT 'legacy',
+        routing_mode  VARCHAR(16) NOT NULL DEFAULT 'v3',
+        upstream_path VARCHAR(255) NOT NULL DEFAULT '/',
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace),
@@ -241,7 +242,8 @@ data:
     -- For existing installs (upgrade path from pre-1.15 schema):
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS command JSONB NOT NULL DEFAULT '[]';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
-    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(16) NOT NULL DEFAULT 'legacy';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(16) NOT NULL DEFAULT 'v3';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_path VARCHAR(255) NOT NULL DEFAULT '/';
     -- ── External MCP server support (session 2.13) ───────────────────────────
     -- server_type discriminator. Default 'internal' for any pre-existing rows.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS server_type VARCHAR(32) NOT NULL DEFAULT 'internal';
