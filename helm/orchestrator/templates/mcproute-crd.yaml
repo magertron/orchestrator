@@ -44,8 +44,6 @@ spec:
                 - serverName
                 - prefix
                 - clusterName
-                - clusterIP
-                - clusterPort
               properties:
                 serverName:
                   type: string
@@ -76,6 +74,32 @@ spec:
                   default: "/"
                   pattern: "^/.*"
                   description: "Path on the upstream MCP server. Envoy strips the inbound `prefix` and rewrites to this. Default `/` matches today's behavior; set to e.g. `/v1/mcp` for servers serving their MCP API at non-root paths. Multi-tenant: same server can be exposed via multiple McpRoutes with different upstreamPath values."
+
+                # ── External MCP server fields (Bug D fix) ───────────────────
+                # Present only for external (vendor) servers, which route by
+                # endpointUrl rather than clusterIP/clusterPort and need the
+                # auth/transport selectors so every pod's mcp-sync →
+                # /internal/routes can rebuild the full mTLS upstream cluster.
+                # Internal McpRoutes omit these entirely.
+                isExternal:
+                  type: boolean
+                  default: false
+                  description: "True for external/vendor MCP servers (routed by endpointUrl over (m)TLS) rather than internal in-cluster pods."
+                endpointUrl:
+                  type: string
+                  description: "External server endpoint, e.g. https://vendor.example.com:8766/mcp. Drives the upstream cluster address/SNI for external servers."
+                authType:
+                  type: string
+                  description: "Upstream auth mode for an external server: 'mtls' (present client cert), 'none', etc."
+                credentialSecretRef:
+                  type: string
+                  description: "Name of the k8s Secret (in mcp-system) holding cert.pem/key.pem for mTLS to the external server."
+                tlsMinVersion:
+                  type: string
+                  description: "Minimum upstream TLS version floor: 'tls1_2' (default) or 'tls1_3'."
+                upstreamHttpVersion:
+                  type: string
+                  description: "Upstream HTTP protocol for the external cluster: 'http1' (default), 'http2', or 'auto' (ALPN-negotiated)."
 
             status:
               type: object
