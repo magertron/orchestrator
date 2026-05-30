@@ -208,6 +208,8 @@ data:
         -- only servers with routing_mode='v3' are exposed to v3 Envoy.
         routing_mode  VARCHAR(16) NOT NULL DEFAULT 'v3',
         upstream_path VARCHAR(255) NOT NULL DEFAULT '/',
+        upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1',
+        tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2',
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace),
@@ -244,6 +246,16 @@ data:
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(16) NOT NULL DEFAULT 'v3';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_path VARCHAR(255) NOT NULL DEFAULT '/';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2';
+    -- Default-flip migration (legacy → v3): on clusters created BEFORE the flip,
+    -- the routing_mode column already exists with DEFAULT 'legacy', so the
+    -- ADD COLUMN IF NOT EXISTS above is a no-op and would NOT change the default.
+    -- This explicit SET DEFAULT ensures upgrading customers also default new
+    -- servers to v3 — no manual ALTER required. Idempotent (safe every deploy).
+    -- NOTE: only changes the column DEFAULT for future inserts; it does NOT
+    -- rewrite existing rows (those keep their stored routing_mode).
+    ALTER TABLE deployed_servers ALTER COLUMN routing_mode SET DEFAULT 'v3';
     -- ── External MCP server support (session 2.13) ───────────────────────────
     -- server_type discriminator. Default 'internal' for any pre-existing rows.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS server_type VARCHAR(32) NOT NULL DEFAULT 'internal';
