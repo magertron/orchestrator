@@ -86,3 +86,38 @@ spec:
 # Slice 6e Option A: v3-ads NodePort service removed. v3 ADS traffic now
 # rides the legacy xDS port (18000) and the unified AdsServiceImpl in the
 # orchestrator branches on incoming node.id to dispatch v3 vs legacy.
+
+---
+# C2: leader-targeted Service. The selector includes role=leader, a label that
+# ONLY the pod currently holding the orchestrator Lease carries — it is set at
+# runtime by the on_become_leader callback (main.cpp) and removed on
+# on_lose_leadership, never baked into the pod template. The Envoy REST cluster
+# (mcp_orchestrator in envoy-bootstrap.yaml) targets this Service so admin
+# mutations (POST/PUT/DELETE /api/v1/servers*) always land on the leader,
+# eliminating the follower 503-bounce and the 504/dup-key it caused under rapid
+# registration in the regression suite.
+#
+# NORMAL ClusterIP (NOT headless): Envoy STRICT_DNS resolves the stable VIP and
+# kube-proxy forwards it to whichever pod currently carries role=leader. On
+# failover the VIP is unchanged — only the backing endpoint moves — so Envoy
+# never needs to re-resolve and there is no stale-address window. During the
+# brief election gap the Service simply has no endpoints; mutations get a fast
+# connection error that clients retry (bounded, safe).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-leader
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+    role: leader
+  ports:
+    - name: http
+      port: {{ .Values.api.httpPort }}
+      targetPort: {{ .Values.api.httpPort }}
+    - name: grpc
+      port: {{ .Values.api.grpcPort }}
+      targetPort: {{ .Values.api.grpcPort }}
