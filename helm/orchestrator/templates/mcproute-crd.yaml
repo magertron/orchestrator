@@ -62,9 +62,9 @@ spec:
                   description: "IP address of the MCP server pod/service"
                 clusterPort:
                   type: integer
-                  minimum: 1
+                  minimum: 0
                   maximum: 65535
-                  description: "Port the MCP server listens on"
+                  description: "Port the MCP server listens on. Internal servers use 1-65535; external servers route by endpointUrl and pass 0 (the cluster address comes from endpointUrl, not clusterIP/clusterPort)."
                 enabled:
                   type: boolean
                   default: true
