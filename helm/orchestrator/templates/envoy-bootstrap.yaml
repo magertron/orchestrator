@@ -72,7 +72,18 @@ data:
                   - endpoint:
                       address:
                         socket_address:
-                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          # C2: control-plane REST → leader-only Service (selector
+                          # role=leader, set at runtime by the leader's self-label).
+                          # Admin mutations (POST/PUT/DELETE /api/v1/servers*) and all
+                          # other /api/v1/* control-plane traffic land on whichever pod
+                          # currently holds the Lease — eliminating the follower
+                          # 503-bounce and the 504/dup-key it caused under rapid
+                          # registration. Normal ClusterIP (NOT xds-headless) so
+                          # STRICT_DNS resolves a stable VIP unchanged across failover;
+                          # only the backing endpoint moves. MCP data-plane traffic
+                          # (/mcp/<ns>/<server>/*) routes via the v3 gateway to per-server
+                          # clusters and is entirely unaffected by this.
+                          address: {{ include "mcp.fullname" . }}-leader.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.api.httpPort }}
 
         # ext_authz gRPC cluster — the Policy Decision Point.
