@@ -97,12 +97,19 @@ spec:
 # eliminating the follower 503-bounce and the 504/dup-key it caused under rapid
 # registration in the regression suite.
 #
-# NORMAL ClusterIP (NOT headless): Envoy STRICT_DNS resolves the stable VIP and
-# kube-proxy forwards it to whichever pod currently carries role=leader. On
-# failover the VIP is unchanged — only the backing endpoint moves — so Envoy
-# never needs to re-resolve and there is no stale-address window. During the
-# brief election gap the Service simply has no endpoints; mutations get a fast
-# connection error that clients retry (bounded, safe).
+# HEADLESS (clusterIP: None), NOT a ClusterIP VIP. With STRICT_DNS, Envoy
+# resolves this name directly to the leader pod's IP, bypassing kube-proxy
+# entirely. This is the same fix as the Bug #3 follow-up on the xds-headless
+# service: on a multi-node cluster (foxygirl + pubs), a ClusterIP here forces
+# the Envoy replica that is NOT co-located with the leader to route the VIP
+# cross-node via kube-proxy/flannel — which drops the connection and produces a
+# 15s upstream-request-timeout (504). A headless service sidesteps kube-proxy
+# so every Envoy replica connects to the leader pod IP directly regardless of
+# node. The selector matches exactly one pod (the leader), so DNS returns a
+# single A record. On failover the label moves to the new leader; STRICT_DNS
+# re-resolves on its refresh interval and converges on the new pod IP (a brief
+# re-resolution window on the control plane, vastly preferable to cross-node
+# 504s). MCP data-plane traffic is unaffected — it never touches this Service.
 apiVersion: v1
 kind: Service
 metadata:
@@ -111,6 +118,7 @@ metadata:
   labels:
     {{- include "mcp.labels" . | nindent 4 }}
 spec:
+  clusterIP: None
   selector:
     {{- include "mcp.selectorLabels" . | nindent 4 }}
     role: leader
