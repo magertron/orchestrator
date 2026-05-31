@@ -652,7 +652,185 @@ data:
     CREATE INDEX IF NOT EXISTS idx_external_user_tokens_principal
         ON external_user_tokens (principal_kind, principal_id);
 
-  02-seed.sql: |
+  02-cost-metering.sql: |
+    -- ════════════════════════════════════════════════════════════════════════
+    -- Magertron Cost Metering & Contract Rating (v1)
+    -- USD-only · credit-based · 1:1 operation→credit (tool-call-group ready)
+    -- Layering:  meter_event (dumb) → cost_contract/rate_schedule → rated_cost
+    -- All statements idempotent so reinstalls / upgrades are safe.
+    -- FKs target deployed_servers(id) which is UUID. caller_user_id is the JWT
+    -- subject (TEXT, no FK — agents are not necessarily rows in users).
+    -- ════════════════════════════════════════════════════════════════════════
+
+    -- ── Departments / cost centers (allocation dimension) ───────────────────────
+    CREATE TABLE IF NOT EXISTS departments (
+        id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name         VARCHAR(255) NOT NULL UNIQUE,
+        cost_center  TEXT,                              -- finance GL / cost-center code
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Effective-dated user→department membership (SCD type 2). Lets us resolve a
+    -- user's department AS OF any incurred_at so org moves never restate history.
+    CREATE TABLE IF NOT EXISTS user_departments (
+        id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id        TEXT        NOT NULL,            -- identity subject (JWT sub)
+        dept_id        UUID        NOT NULL REFERENCES departments(id),
+        effective_from TIMESTAMPTZ NOT NULL,
+        effective_to   TIMESTAMPTZ,                     -- NULL = current
+        CONSTRAINT user_dept_range_ck
+            CHECK (effective_to IS NULL OR effective_to > effective_from)
+    );
+    CREATE INDEX IF NOT EXISTS user_departments_lookup_idx
+        ON user_departments (user_id, effective_from DESC);
+
+    -- ── METER (append-only, immutable, PRICELESS — Magertron is a dumb meter) ───
+    CREATE TABLE IF NOT EXISTS meter_events (
+        event_id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        incurred_at       TIMESTAMPTZ NOT NULL,         -- when the call happened (period attribution)
+        recorded_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        caller_user_id    TEXT        NOT NULL,
+        caller_dept_id    UUID        REFERENCES departments(id),  -- snapshot at incurred_at
+        server_id         UUID        NOT NULL REFERENCES deployed_servers(id),
+        tool_id           TEXT        NOT NULL,
+        method            TEXT        NOT NULL,          -- the billable atom
+        billing_group_id  UUID,                          -- v1: = event_id; future: batch group
+        quantity          NUMERIC(20,6) NOT NULL CHECK (quantity >= 0),
+        unit              TEXT        NOT NULL DEFAULT 'credit'
+                            CHECK (unit IN ('credit','call','token','byte')),
+        status            TEXT        NOT NULL DEFAULT 'success'
+                            CHECK (status IN ('success','error')),
+        session_id        TEXT,
+        idempotency_key   TEXT        UNIQUE             -- retries must not double-count
+    );
+    -- Default a row to its own billing group (v1 behavior).
+    CREATE OR REPLACE FUNCTION meter_events_default_group() RETURNS TRIGGER AS $$
+    BEGIN
+        IF NEW.billing_group_id IS NULL THEN
+            NEW.billing_group_id := NEW.event_id;
+        END IF;
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS meter_events_group_trg ON meter_events;
+    CREATE TRIGGER meter_events_group_trg
+        BEFORE INSERT ON meter_events
+        FOR EACH ROW EXECUTE FUNCTION meter_events_default_group();
+
+    CREATE INDEX IF NOT EXISTS meter_events_incurred_idx ON meter_events (incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_server_idx   ON meter_events (server_id, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_dept_idx     ON meter_events (caller_dept_id, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_method_idx   ON meter_events (server_id, tool_id, method, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_group_idx    ON meter_events (billing_group_id);
+
+    -- ── CONTRACT (digital twin of the vendor agreement) ─────────────────────────
+    CREATE TABLE IF NOT EXISTS cost_contracts (
+        id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id           UUID        NOT NULL REFERENCES deployed_servers(id),
+        vendor_name         TEXT        NOT NULL,
+        currency            TEXT        NOT NULL DEFAULT 'USD',   -- dormant in v1
+        term_start          DATE        NOT NULL,
+        term_end            DATE        NOT NULL,
+        commitment_credits  NUMERIC(20,6),               -- committed/prepaid, in CREDITS
+        minimum_amount_usd  NUMERIC(20,2),               -- true-up floor
+        billing_period      TEXT        NOT NULL DEFAULT 'monthly'
+                              CHECK (billing_period IN ('monthly','quarterly','annual')),
+        status              TEXT        NOT NULL DEFAULT 'active'
+                              CHECK (status IN ('active','expired','suspended')),
+        created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT cost_contract_term_ck CHECK (term_end > term_start)
+    );
+    -- At most one ACTIVE contract per server.
+    CREATE UNIQUE INDEX IF NOT EXISTS cost_contracts_active_uq
+        ON cost_contracts (server_id) WHERE status = 'active';
+
+    -- ── CREDIT BALANCE (prepaid credit packs → burn-down) ───────────────────────
+    CREATE TABLE IF NOT EXISTS credit_purchases (
+        id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        contract_id        UUID        NOT NULL REFERENCES cost_contracts(id),
+        credits_purchased  NUMERIC(20,6) NOT NULL CHECK (credits_purchased > 0),
+        usd_paid           NUMERIC(20,2) NOT NULL CHECK (usd_paid >= 0),
+        purchased_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        note               TEXT
+    );
+    CREATE INDEX IF NOT EXISTS credit_purchases_contract_idx
+        ON credit_purchases (contract_id, purchased_at);
+
+    -- ── RATE SCHEDULE + TIERS (per-method pricing, versioned, tiered) ───────────
+    CREATE TABLE IF NOT EXISTS rate_schedules (
+        id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        contract_id       UUID        NOT NULL REFERENCES cost_contracts(id),
+        tool_id           TEXT        NOT NULL,
+        method            TEXT        NOT NULL,          -- the billable atom
+        pricing_model     TEXT        NOT NULL DEFAULT 'flat'
+                            CHECK (pricing_model IN ('flat','tiered','bundled')),
+        included_credits  NUMERIC(20,6) DEFAULT 0,       -- bundle free before charges
+        bill_errors       BOOLEAN     NOT NULL DEFAULT FALSE,
+        effective_from    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        effective_to      TIMESTAMPTZ,                   -- NULL = current version
+        CONSTRAINT rate_sched_range_ck
+            CHECK (effective_to IS NULL OR effective_to > effective_from)
+    );
+    CREATE INDEX IF NOT EXISTS rate_schedules_lookup_idx
+        ON rate_schedules (contract_id, tool_id, method, effective_from DESC);
+
+    CREATE TABLE IF NOT EXISTS rate_tiers (
+        id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        rate_id         UUID         NOT NULL REFERENCES rate_schedules(id) ON DELETE CASCADE,
+        tier_seq        INT          NOT NULL,           -- 1,2,3...
+        up_to_credits   NUMERIC(20,6),                   -- NULL = unbounded top tier
+        usd_per_credit  NUMERIC(20,8) NOT NULL CHECK (usd_per_credit >= 0),
+        CONSTRAINT rate_tier_seq_uq UNIQUE (rate_id, tier_seq)
+    );
+
+    -- ── RATED COST (rating-engine output: ESTIMATED → FINAL) ────────────────────
+    CREATE TABLE IF NOT EXISTS rated_costs (
+        id                     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        billing_group_id       UUID        NOT NULL,     -- what was priced (v1: one event)
+        contract_id            UUID        NOT NULL REFERENCES cost_contracts(id),
+        rate_id                UUID        NOT NULL REFERENCES rate_schedules(id),
+        period                 DATE        NOT NULL,      -- first day of accounting period
+        credits                NUMERIC(20,6) NOT NULL,
+        usd_per_credit_applied NUMERIC(20,8) NOT NULL,
+        amount_usd             NUMERIC(20,6) NOT NULL,
+        tier_applied           INT,                       -- explainability
+        cost_state             TEXT        NOT NULL DEFAULT 'ESTIMATED'
+                                 CHECK (cost_state IN ('ESTIMATED','FINAL')),
+        rated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    -- One ESTIMATED and/or one FINAL per group keeps re-rating idempotent.
+    CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_state_uq
+        ON rated_costs (billing_group_id, cost_state);
+    CREATE INDEX IF NOT EXISTS rated_costs_period_idx
+        ON rated_costs (contract_id, period, cost_state);
+
+    -- ── VIEW: credit balance & commitment burn-down ─────────────────────────────
+    CREATE OR REPLACE VIEW contract_balances AS
+    SELECT
+        c.id            AS contract_id,
+        c.server_id,
+        c.vendor_name,
+        c.commitment_credits,
+        COALESCE(p.credits_purchased, 0)                       AS credits_purchased,
+        COALESCE(u.credits_consumed, 0)                        AS credits_consumed,
+        COALESCE(p.credits_purchased, 0)
+          - COALESCE(u.credits_consumed, 0)                    AS credits_remaining,
+        CASE WHEN COALESCE(p.usd_paid,0) > 0 AND COALESCE(p.credits_purchased,0) > 0
+             THEN p.usd_paid / p.credits_purchased END         AS implied_usd_per_credit
+    FROM cost_contracts c
+    LEFT JOIN (
+        SELECT contract_id,
+               SUM(credits_purchased) AS credits_purchased,
+               SUM(usd_paid)          AS usd_paid
+        FROM credit_purchases GROUP BY contract_id
+    ) p ON p.contract_id = c.id
+    LEFT JOIN (
+        SELECT contract_id, SUM(credits) AS credits_consumed
+        FROM rated_costs
+        WHERE cost_state = 'FINAL'      -- settled credits; include ESTIMATED for live view
+        GROUP BY contract_id
+    ) u ON u.contract_id = c.id;
+  03-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
     -- provisioned_via='password' ensures no provenance badge appears next to admin
