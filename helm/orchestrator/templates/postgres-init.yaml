@@ -210,6 +210,26 @@ data:
         upstream_path VARCHAR(255) NOT NULL DEFAULT '/',
         upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1',
         tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2',
+        -- ── Provenance discriminator (provenance-gate slice) ─────────────────
+        -- WHERE this server record came from. The system is deliberately
+        -- UNIDIRECTIONAL: there is exactly one path per origin and they never
+        -- cross, so a server can never exist as a duplicate under two origins.
+        --   'application' = created INSIDE Magertron (mcpctl deploy / register-
+        --                   external → deployment_manager → upsert_server). This
+        --                   row IS the source of truth / the original. It is NOT
+        --                   an inventory object; it has no external attestation
+        --                   to diff against, so the inventory "observed + approved
+        --                   + drift-clean" gate does not apply to it.
+        --   'inventory'   = ingested from the external source of truth (CMDB/MDM)
+        --                   via the inventory push → Stage → Approve → Register
+        --                   flow. These ARE inventory objects; the RUG drift model
+        --                   and the tool-approval gate apply in full.
+        -- Default 'application' is correct for EVERY pre-existing row: today the
+        -- only writer of deployed_servers is in-app creation (upsert_server /
+        -- the external-registration path). The inventory Register path does not
+        -- write this table. If/when it does, it stamps 'inventory' explicitly.
+        origin        VARCHAR(16) NOT NULL DEFAULT 'application'
+                      CHECK (origin IN ('application', 'inventory')),
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace),
@@ -266,6 +286,27 @@ data:
     -- Default 'centralized' so any pre-existing External rows get a sane value
     -- with no data migration. See the inline column comment above for semantics.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized';
+
+    -- Provenance-gate slice: origin discriminator. Additive, idempotent —
+    -- regular install, no wipe (same pattern as server_type / credential_mode).
+    -- Default 'application' backfills every pre-existing row correctly: in-app
+    -- creation (upsert_server / external-registration) is the ONLY writer of
+    -- deployed_servers today, so all existing rows ARE application-origin. The
+    -- inventory push path does not write this table; the dormant 'inventory'
+    -- branch is ready for the day a Register path does and stamps it explicitly.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS origin VARCHAR(16) NOT NULL DEFAULT 'application';
+    -- Add the CHECK separately + guarded, so re-running deploy doesn't error on
+    -- an already-present constraint (ADD CONSTRAINT is not IF-NOT-EXISTS-able).
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'deployed_servers_origin_check'
+        ) THEN
+            ALTER TABLE deployed_servers
+                ADD CONSTRAINT deployed_servers_origin_check
+                CHECK (origin IN ('application', 'inventory'));
+        END IF;
+    END $$;
 
     -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
     -- (delegated authorization-code flow). The original inline constraint was
