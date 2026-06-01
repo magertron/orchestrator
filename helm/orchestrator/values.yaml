@@ -56,6 +56,12 @@ orchestrator:
   # unchanged. Both ports must agree between this value and the
   # bootstrap ConfigMap.
   extAuthzExternalPort: 9093
+
+  # Brick 3 (ALS cost-meter true-up): port the orchestrator's ALS sink binds.
+  # Envoy's mcp_https_listener_v3 streams access logs to the als_sink cluster
+  # at this port (over the headless service, like extAuthzPort). Must agree
+  # between this value and the bootstrap ConfigMap's als_sink cluster.
+  alsPort: 9094
   resources:
     requests:
       cpu: 250m

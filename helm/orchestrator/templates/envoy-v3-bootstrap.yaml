@@ -189,6 +189,32 @@ data:
                           address: {{ include "mcp.fullname" . }}-inventory.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: 8090
 
+        # als_sink cluster — Brick 3 (ALS cost-meter true-up). Envoy's
+        # mcp_https_listener_v3 HCM streams per-request access logs here; the
+        # orchestrator's ALS sink (port 9094) flips meter_events.status
+        # success→error for calls that failed upstream. gRPC, so HTTP/2 via
+        # typed_extension_protocol_options (mirrors the v3 ADS cluster).
+        # Reaches the pod over the headless service exactly like ext_authz
+        # (9092/9093) — the port need not be enumerated on the Service.
+        - name: als_sink
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
+          load_assignment:
+            cluster_name: als_sink
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.orchestrator.alsPort | default 9094 }}
+
       listeners:
         # ── HTTPS listener on 10444 — TLS-terminated, ext_authz-gated ────────
         # Mirrors legacy mcp_https_listener (10443). Same TLS, same
@@ -313,6 +339,21 @@ data:
                               # v3 marker — lets log-aggregation systems
                               # filter v3 vs legacy traffic at a glance.
                               path_version: "v3"
+                      # Brick 3: stream per-request access logs to the
+                      # orchestrator's ALS sink (als_sink cluster → :9094) for
+                      # cost-meter true-up. Sits beside stdout (both run); the
+                      # MeterUpdater flips meter_events.status on >=400. Only on
+                      # THIS listener (the metered tool-traffic path) — the
+                      # inventory listener below deliberately has no http_grpc.
+                      - name: envoy.access_loggers.http_grpc
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+                          common_config:
+                            log_name: mcp_meter_als
+                            grpc_service:
+                              envoy_grpc:
+                                cluster_name: als_sink
+                            transport_api_version: V3
 
         # ─── Inventory plane listener (Pass 3, Option C) ────────────────────────
         # Mirror of legacy bootstrap's mcp_inventory_listener. Same port
