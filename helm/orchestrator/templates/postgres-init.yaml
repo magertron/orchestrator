@@ -210,6 +210,16 @@ data:
         upstream_path VARCHAR(255) NOT NULL DEFAULT '/',
         upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1',
         tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2',
+        -- Provenance discriminator (Brick 2b provenance gate). WHO/WHAT
+        -- registered this row, independent of where the server runs:
+        --   'application' = registered IN-APP by an operator (Deploy wizard,
+        --                   mcpctl, REST API). The default for all interactive
+        --                   deploys.
+        --   'inventory'   = pushed by the mcp-inventory reconcile path.
+        -- Set once on INSERT; deliberately NOT updated on conflict (provenance
+        -- is immutable — a re-registration must not silently flip origin).
+        origin        VARCHAR(32) NOT NULL DEFAULT 'application'
+                      CHECK (origin IN ('application', 'inventory')),
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (name, namespace),
@@ -248,6 +258,13 @@ data:
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_path VARCHAR(255) NOT NULL DEFAULT '/';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2';
+    -- Brick 2b provenance gate: origin discriminator (application | inventory).
+    -- Default 'application' so any pre-existing rows are treated as operator-
+    -- registered. Set once on INSERT, never flipped on conflict (see db_client).
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS origin VARCHAR(32) NOT NULL DEFAULT 'application';
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_origin_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_origin_check
+        CHECK (origin IN ('application', 'inventory'));
     -- Default-flip migration (legacy → v3): on clusters created BEFORE the flip,
     -- the routing_mode column already exists with DEFAULT 'legacy', so the
     -- ADD COLUMN IF NOT EXISTS above is a no-op and would NOT change the default.
