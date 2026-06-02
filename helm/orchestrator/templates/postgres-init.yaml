@@ -797,6 +797,13 @@ data:
         pricing_model     TEXT        NOT NULL DEFAULT 'flat'
                             CHECK (pricing_model IN ('flat','tiered','bundled')),
         included_credits  NUMERIC(20,6) DEFAULT 0,       -- bundle free before charges
+        -- Move 2b: flat per-period fee for pricing_model='bundled'. A bundle is a
+        -- COMMITMENT — owed every period regardless of usage (you bought the combo
+        -- meal; the fee stands even if you eat none of it). The bundle CEILING is
+        -- included_credits (usage up to it is absorbed at $0 via the allowance),
+        -- and OVERAGE beyond the ceiling walks the tiers. The worker emits one
+        -- synthetic 'bundle_fee' rated_cost row per (contract, schedule, period).
+        bundle_fee_usd    NUMERIC(20,2) NOT NULL DEFAULT 0,
         bill_errors       BOOLEAN     NOT NULL DEFAULT FALSE,
         effective_from    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         effective_to      TIMESTAMPTZ,                   -- NULL = current version
@@ -807,6 +814,8 @@ data:
         ON rate_schedules (contract_id, tool_id, method, dimension, effective_from DESC);
     -- Move 1: dimension migration for upgrade paths (pre-existing schedules = 'calls').
     ALTER TABLE rate_schedules ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
+    -- Move 2b: per-period bundle fee (flat commitment charge). Default 0 = no fee.
+    ALTER TABLE rate_schedules ADD COLUMN IF NOT EXISTS bundle_fee_usd NUMERIC(20,2) NOT NULL DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS rate_tiers (
         id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
