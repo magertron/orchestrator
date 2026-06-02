@@ -21,6 +21,17 @@ orchestrator:
   # Set to 1 only for resource-constrained dev clusters or if you want
   # to verify single-replica behavior. Production should run 2 or more.
   replicaCount: 2
+
+  # Control-plane placement. The orchestrator is part of the CONTROL PLANE and
+  # pins to the control-plane node (foxygirl, labeled workload=stateful),
+  # co-located with its postgres. HA is provided by the DATA PLANE — deployed
+  # MCP servers scaling across worker nodes — NOT by spreading the orchestrator.
+  # Both replicas land on foxygirl: leader election + parallel Check() still
+  # work; node-failure HA is intentionally traded away (control plane is a
+  # foxygirl unit; if foxygirl is down, postgres is too, so the plane is down).
+  nodeSelector:
+    workload: stateful
+
   image:
     repository: curtismager20/mcp-orchestrator
     # Image tag. Empty string ("") = use .Chart.AppVersion (recommended).
