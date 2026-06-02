@@ -321,15 +321,18 @@ postgresql:
   image:
     repository: postgres
     tag: 16-alpine
-  # Postgres pod placement. Defaults to no node preference so single-node
-  # clusters (Docker Desktop, kind, k3d, minikube) work out of the box.
+  # Postgres pod placement. Pinned to a node labeled workload=stateful so the
+  # local-path PV stays physically co-located with the pod across reschedules
+  # (k3s local-path is node-local; an unpinned postgres that reschedules to
+  # another node strands its data and flaps — which breaks DB writes the
+  # orchestrator depends on for deploy registration and session/auth).
   #
-  # PRODUCTION multi-node: pin to a labeled node so local-path PV stays
-  # physically co-located with the pod across reschedules:
-  #   nodeSelector:
-  #     workload: stateful
-  # Then label one node:  kubectl label node <name> workload=stateful
-  nodeSelector: {}
+  # foxygirl (control-plane) carries workload=stateful in the reference setup.
+  # SINGLE-NODE dev clusters (Docker Desktop, kind, k3d, minikube): either
+  # label the single node `kubectl label node <name> workload=stateful`, or
+  # override this back to {} via --set postgresql.nodeSelector=null.
+  nodeSelector:
+    workload: stateful
   tolerations: []
   affinity: {}
   resources:
@@ -416,7 +419,8 @@ inventory:
     image:
       repository: postgres
       tag: 16-alpine
-    nodeSelector: {}
+    nodeSelector:
+      workload-inventory: "true"
     tolerations: []
     affinity: {}
     storage:
