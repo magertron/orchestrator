@@ -711,6 +711,12 @@ data:
         server_id         UUID        NOT NULL REFERENCES deployed_servers(id),
         tool_id           TEXT        NOT NULL,
         method            TEXT        NOT NULL,          -- the billable atom
+        -- Move 1: the priced DIMENSION of this event. 'calls' (one row = one call,
+        -- the v1 default) or a usage axis like 'input_tokens' / 'output_tokens'.
+        -- A tool call that bills on multiple axes emits one meter_events row PER
+        -- dimension. Open TEXT (no CHECK) — vendors invent dimensions ('images',
+        -- 'gb', 'seconds'); the rate card prices whatever a vendor bills.
+        dimension         TEXT        NOT NULL DEFAULT 'calls',
         billing_group_id  UUID,                          -- v1: = event_id; future: batch group
         quantity          NUMERIC(20,6) NOT NULL CHECK (quantity >= 0),
         unit              TEXT        NOT NULL DEFAULT 'credit'
@@ -737,8 +743,10 @@ data:
     CREATE INDEX IF NOT EXISTS meter_events_incurred_idx ON meter_events (incurred_at);
     CREATE INDEX IF NOT EXISTS meter_events_server_idx   ON meter_events (server_id, incurred_at);
     CREATE INDEX IF NOT EXISTS meter_events_dept_idx     ON meter_events (caller_dept_id, incurred_at);
-    CREATE INDEX IF NOT EXISTS meter_events_method_idx   ON meter_events (server_id, tool_id, method, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_method_idx   ON meter_events (server_id, tool_id, method, dimension, incurred_at);
     CREATE INDEX IF NOT EXISTS meter_events_group_idx    ON meter_events (billing_group_id);
+    -- Move 1: dimension migration for upgrade paths (pre-existing rows = 'calls').
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
 
     -- ── CONTRACT (digital twin of the vendor agreement) ─────────────────────────
     CREATE TABLE IF NOT EXISTS cost_contracts (
@@ -781,6 +789,11 @@ data:
         contract_id       UUID        NOT NULL REFERENCES cost_contracts(id),
         tool_id           TEXT        NOT NULL,
         method            TEXT        NOT NULL,          -- the billable atom
+        -- Move 1: the priced dimension this schedule governs ('calls' default,
+        -- 'input_tokens', 'output_tokens', …). Part of the selection key — the
+        -- rating engine matches a meter_event to its schedule on
+        -- (contract_id, tool_id, method, dimension) + SCD effective window.
+        dimension         TEXT        NOT NULL DEFAULT 'calls',
         pricing_model     TEXT        NOT NULL DEFAULT 'flat'
                             CHECK (pricing_model IN ('flat','tiered','bundled')),
         included_credits  NUMERIC(20,6) DEFAULT 0,       -- bundle free before charges
@@ -791,7 +804,9 @@ data:
             CHECK (effective_to IS NULL OR effective_to > effective_from)
     );
     CREATE INDEX IF NOT EXISTS rate_schedules_lookup_idx
-        ON rate_schedules (contract_id, tool_id, method, effective_from DESC);
+        ON rate_schedules (contract_id, tool_id, method, dimension, effective_from DESC);
+    -- Move 1: dimension migration for upgrade paths (pre-existing schedules = 'calls').
+    ALTER TABLE rate_schedules ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
 
     CREATE TABLE IF NOT EXISTS rate_tiers (
         id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -809,6 +824,7 @@ data:
         contract_id            UUID        NOT NULL REFERENCES cost_contracts(id),
         rate_id                UUID        NOT NULL REFERENCES rate_schedules(id),
         period                 DATE        NOT NULL,      -- first day of accounting period
+        dimension              TEXT        NOT NULL DEFAULT 'calls',  -- Move 1: which dimension priced
         credits                NUMERIC(20,6) NOT NULL,
         usd_per_credit_applied NUMERIC(20,8) NOT NULL,
         amount_usd             NUMERIC(20,6) NOT NULL,
@@ -817,11 +833,19 @@ data:
                                  CHECK (cost_state IN ('ESTIMATED','FINAL')),
         rated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    -- One ESTIMATED and/or one FINAL per group keeps re-rating idempotent.
+    -- One ESTIMATED and/or one FINAL per (group, dimension) keeps re-rating
+    -- idempotent. Move 1: dimension is in the key because one billing_group
+    -- (one call) can produce multiple rated rows — one per priced dimension
+    -- (calls, input_tokens, output_tokens) — which must coexist.
     CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_state_uq
-        ON rated_costs (billing_group_id, cost_state);
+        ON rated_costs (billing_group_id, dimension, cost_state);
     CREATE INDEX IF NOT EXISTS rated_costs_period_idx
         ON rated_costs (contract_id, period, cost_state);
+    -- Move 1 migrations (upgrade paths): dimension column + reshaped unique index.
+    ALTER TABLE rated_costs ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
+    DROP INDEX IF EXISTS rated_costs_group_state_uq;
+    CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_state_uq
+        ON rated_costs (billing_group_id, dimension, cost_state);
 
     -- ── VIEW: credit balance & commitment burn-down ─────────────────────────────
     CREATE OR REPLACE VIEW contract_balances AS
