@@ -924,6 +924,26 @@ data:
      '["*"]', TRUE)
     ON CONFLICT (id) DO NOTHING;
 
+    -- Billing / FinOps persona. Scoped to the cost/billing surface ONLY via the
+    -- BillingRead/BillingWrite actions — deliberately has NO Deploy/Scale/Write/
+    -- ManageRoles, so a finance user can see and manage contracts, rate cards,
+    -- rated costs, and period close, but cannot touch server governance or RBAC.
+    -- Enforcement: billing endpoints guard on Action::BillingRead/BillingWrite
+    -- (paired C++ change). AuditRead is included so finance can see the audit
+    -- trail behind a cost (compliance/chargeback defensibility).
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:finance-user', 'Finance User', 'Cost, contract, and budget visibility + management — no governance or deploy access',
+     '["BillingRead","BillingWrite","AuditRead"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Admin gains the billing actions so the superuser passes billing guards too.
+    -- Idempotent: only rewrites if the billing actions are not already present.
+    UPDATE roles
+       SET permissions = '["Deploy","Undeploy","Scale","Read","Write","ManageRoles","AuditRead","ViewLogs","BillingRead","BillingWrite"]'
+     WHERE id = 'system:platform-admin'
+       AND NOT (permissions @> '["BillingRead"]');
+
     -- ── Governance policy templates ────────────────────────────────────────────
     INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
     VALUES (

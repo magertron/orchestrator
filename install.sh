@@ -701,10 +701,17 @@ echo "  target version: $CHART_VERSION"
 # customer deployments.
 section "Tearing down existing release"
 spinner_start "Tearing down existing release (this can take 30-60s)"
-helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" 2>/dev/null || true
-kubectl delete secret -n "$NAMESPACE" -l "name=${RELEASE_NAME},owner=helm" 2>/dev/null || true
-kubectl delete crd mcproutes.mcp.io 2>/dev/null || true
+# Suppress BOTH stdout and stderr of teardown commands. Their chatter
+# (release "mcp" uninstalled / secret "..." deleted / crd "..." deleted) prints
+# to STDOUT and was interleaving with the spinner's \r line, garbling it
+# (stderr was already silenced; stdout was the real clobber). The spinner is the
+# progress indicator here; the command output is noise. Anything that matters is
+# surfaced after spinner_stop.
+helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" >/dev/null 2>&1 || true
+kubectl delete secret -n "$NAMESPACE" -l "name=${RELEASE_NAME},owner=helm" >/dev/null 2>&1 || true
+kubectl delete crd mcproutes.mcp.io >/dev/null 2>&1 || true
 spinner_stop
+ok "Existing release torn down"
 
 # ─── Orchestrator-managed resource cleanup (both modes) ──────────────────────
 # The orchestrator auto-creates NetworkPolicies named mcp-server-isolation
