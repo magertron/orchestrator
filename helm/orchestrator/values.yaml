@@ -635,3 +635,13 @@ seed:
   # Empty string is the default; do NOT set this unless you have an
   # existing hash workflow.
   adminPasswordHash: ""
+
+  # Email address seeded onto the default admin user (populates users.email).
+  # Set at first boot so the admin has a contact address from a fresh install
+  # instead of a NULL that has to be patched in by hand post-wipe.
+  #
+  # Empty string (default) leaves users.email NULL — the seed only writes the
+  # column when a non-empty value is provided. Override per-install with
+  #   --set seed.adminEmail=<address>
+  # or set it in your overrides values file.
+  adminEmail: ""

@@ -888,16 +888,18 @@ data:
     -- provisioned_via='password' ensures no provenance badge appears next to admin
     -- in the Users tab. The ON CONFLICT clause back-fills the column on upgrades
     -- where admin was seeded before provisioned_via existed.
-    INSERT INTO users (username, password_hash, roles, enabled, provisioned_via)
+    INSERT INTO users (username, password_hash, roles, enabled, provisioned_via{{ if .Values.seed.adminEmail }}, email{{ end }})
     VALUES (
         'admin',
         {{ .Values.seed.adminPasswordHash | quote }},
         ARRAY['system:platform-admin'],
         TRUE,
-        'password'
+        'password'{{ if .Values.seed.adminEmail }},
+        {{ .Values.seed.adminEmail | quote }}{{ end }}
     )
     ON CONFLICT (username) DO UPDATE
-        SET provisioned_via = COALESCE(users.provisioned_via, 'password');
+        SET provisioned_via = COALESCE(users.provisioned_via, 'password'){{ if .Values.seed.adminEmail }},
+            email = COALESCE(users.email, EXCLUDED.email){{ end }};
 
     -- ── System roles ───────────────────────────────────────────────────────────
     INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
