@@ -23,14 +23,19 @@ orchestrator:
   replicaCount: 2
 
   # Control-plane placement. The orchestrator is part of the CONTROL PLANE and
-  # pins to the control-plane node (foxygirl, labeled workload=stateful),
-  # co-located with its postgres. HA is provided by the DATA PLANE — deployed
-  # MCP servers scaling across worker nodes — NOT by spreading the orchestrator.
-  # Both replicas land on foxygirl: leader election + parallel Check() still
-  # work; node-failure HA is intentionally traded away (control plane is a
-  # foxygirl unit; if foxygirl is down, postgres is too, so the plane is down).
+  # pins to the control-plane node, co-located with its postgres. The
+  # node-role.kubernetes.io/control-plane label is applied automatically by
+  # k3s/kubeadm to the master, so this works on any cluster with no manual
+  # labeling. HA is provided by the DATA PLANE — deployed MCP servers scaling
+  # across worker nodes — NOT by spreading the orchestrator. Both replicas land
+  # on the control-plane node: leader election + parallel Check() still work;
+  # node-failure HA is intentionally traded away (if the control-plane node is
+  # down, postgres is too, so the plane is down regardless).
+  #
+  # NOTE: assumes the control-plane node is schedulable (k3s default — no
+  # NoSchedule taint). On a tainted control plane, add a matching toleration.
   nodeSelector:
-    workload: stateful
+    node-role.kubernetes.io/control-plane: "true"
 
   image:
     repository: curtismager20/mcp-orchestrator
@@ -332,18 +337,20 @@ postgresql:
   image:
     repository: postgres
     tag: 16-alpine
-  # Postgres pod placement. Pinned to a node labeled workload=stateful so the
-  # local-path PV stays physically co-located with the pod across reschedules
-  # (k3s local-path is node-local; an unpinned postgres that reschedules to
-  # another node strands its data and flaps — which breaks DB writes the
-  # orchestrator depends on for deploy registration and session/auth).
+  # Postgres pod placement. Pinned to the control-plane node so the local-path
+  # PV stays physically co-located with the pod across reschedules (k3s
+  # local-path is node-local; an unpinned postgres that reschedules to another
+  # node strands its data and flaps — which breaks DB writes the orchestrator
+  # depends on for deploy registration and session/auth).
   #
-  # foxygirl (control-plane) carries workload=stateful in the reference setup.
-  # SINGLE-NODE dev clusters (Docker Desktop, kind, k3d, minikube): either
-  # label the single node `kubectl label node <name> workload=stateful`, or
-  # override this back to {} via --set postgresql.nodeSelector=null.
+  # The node-role.kubernetes.io/control-plane label is auto-applied by k3s to
+  # the master, so this needs no manual labeling on any cluster — including
+  # single-node dev clusters (Docker Desktop, kind, k3d, minikube) where the
+  # one node is the control plane. To run postgres elsewhere, override via
+  # --set postgresql.nodeSelector=null (only safe with a networked
+  # StorageClass, not local-path).
   nodeSelector:
-    workload: stateful
+    node-role.kubernetes.io/control-plane: "true"
   tolerations: []
   affinity: {}
   resources:
@@ -411,27 +418,31 @@ inventory:
     logLevel: "info"               # "info" or "debug"
 
   # ── Inventory Postgres ───────────────────────────────────────────────────
-  # Physically isolated from the operations DB. Defaults to no node preference
-  # so single-node clusters (Docker Desktop, kind, k3d, minikube) work out of
-  # the box.
+  # Physically isolated from the operations DB, but — like the ops postgres —
+  # it is stateful on a node-local (k3s local-path) PV, so it MUST stay
+  # co-located with its data across reschedules. It pins to the control-plane
+  # node via the auto-applied node-role.kubernetes.io/control-plane label, so
+  # it needs no manual labeling on any cluster, including single-node dev
+  # clusters (Docker Desktop, kind, k3d, minikube) where the one node is the
+  # control plane. This also prevents the data-stranding flap an unpinned
+  # local-path postgres suffers when it reschedules onto a node without its PV.
   #
-  # PRODUCTION multi-node: pin to a node carrying `workload-inventory=true`.
-  # We use a DIFFERENT LABEL KEY from the ops `workload=stateful` selector
-  # (not just a different value) because kubernetes node labels store one
-  # value per key — `workload=stateful` and `workload=inventory` would be
-  # mutually exclusive on the same node. Distinct keys let one node carry
-  # both labels today, and make a future split onto separate nodes a label
-  # change rather than a chart edit.
+  # OPT-IN multi-node split: to run the inventory DB on a dedicated worker
+  # (e.g. to keep it off the control-plane node), override with a distinct
+  # label key — kept distinct from the ops selector because k8s node labels
+  # store one value per key, so a single node can carry both today and a future
+  # split becomes a label change rather than a chart edit:
   #
   #   nodeSelector:
   #     workload-inventory: "true"
+  # (only safe with a networked StorageClass, not node-local local-path)
   postgresql:
     enabled: true
     image:
       repository: postgres
       tag: 16-alpine
     nodeSelector:
-      workload-inventory: "true"
+      node-role.kubernetes.io/control-plane: "true"
     tolerations: []
     affinity: {}
     storage:
