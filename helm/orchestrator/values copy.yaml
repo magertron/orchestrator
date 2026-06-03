@@ -1,0 +1,626 @@
+# ─── MCP Orchestrator Helm Values ─────────────────────────────────────────────
+
+# Global settings
+global:
+  imageRegistry: docker.io
+
+# ─── Orchestrator ─────────────────────────────────────────────────────────────
+orchestrator:
+  # ── Multi-replica HA (shipped in v1.13.0-dev) ─────────────────────────────
+  # Default 2 replicas. The orchestrator runs Lease-based leader election
+  # for the singleton work (HealthMonitor polling, xDS push to Envoy,
+  # deploy state-machine ticks) while every replica serves the read-heavy
+  # ext_authz Check() hot path in parallel. Verified empirically:
+  # 2-replica configuration sustains ~3000 rps end-to-end with 100%
+  # success vs ~1500 rps for a single replica — near-linear scaling.
+  #
+  # Bumping to 3+ replicas continues to scale Check() throughput; the
+  # singleton work stays on whichever replica holds the Lease so
+  # additional replicas are pure capacity (no fanout overhead).
+  #
+  # Set to 1 only for resource-constrained dev clusters or if you want
+  # to verify single-replica behavior. Production should run 2 or more.
+  replicaCount: 2
+
+  # Control-plane placement. The orchestrator is part of the CONTROL PLANE and
+  # pins to the control-plane node (foxygirl, labeled workload=stateful),
+  # co-located with its postgres. HA is provided by the DATA PLANE — deployed
+  # MCP servers scaling across worker nodes — NOT by spreading the orchestrator.
+  # Both replicas land on foxygirl: leader election + parallel Check() still
+  # work; node-failure HA is intentionally traded away (control plane is a
+  # foxygirl unit; if foxygirl is down, postgres is too, so the plane is down).
+  nodeSelector:
+    workload: stateful
+
+  image:
+    repository: curtismager20/mcp-orchestrator
+    # Image tag. Empty string ("") = use .Chart.AppVersion (recommended).
+    # Pin to a specific tag (e.g. "1.8.2-dev", "v1") only when overriding
+    # the chart-version-implied default — for example, to roll back to a
+    # known-good image while staying on the current chart, or to test a
+    # pre-release image without bumping the chart.
+    tag: ""
+    # IfNotPresent is correct once tags are versioned (every release tag
+    # is immutable, so re-pulling on every restart is wasted work).
+    # Use Always only with mutable tags like :latest or :v1.
+    pullPolicy: IfNotPresent
+
+  # Port for the ext_authz gRPC Policy Decision Point.
+  # Envoy's ext_authz HTTP filter on :10093 calls Check() on this port.
+  # Do not change unless you also update the envoy-bootstrap ConfigMap's
+  # grpc_service.envoy_grpc.cluster_name endpoint — they must agree.
+  extAuthzPort: 9092
+
+  # Session 2.13, Step 6b-i / 6e: parallel ext_authz port for External
+  # (vendor-hosted) MCP server proxy traffic. The orchestrator binary
+  # serves a SEPARATE gRPC server on this port for routes that target
+  # External servers — completely isolated code path from extAuthzPort
+  # above. See ext_authz/external_server.cpp and the
+  # mcp_ext_authz_external cluster in envoy-v3-bootstrap.yaml.
+  #
+  # The Service template (services.yaml) exposes this port on both the
+  # main ClusterIP and headless services. Envoy v3 references it via
+  # the mcp_ext_authz_external upstream cluster; per-route ext_authz
+  # overrides (Step 6d) bind External-path routes to that cluster.
+  #
+  # Internal/Hybrid traffic continues to use extAuthzPort (9092)
+  # unchanged. Both ports must agree between this value and the
+  # bootstrap ConfigMap.
+  extAuthzExternalPort: 9093
+
+  # Brick 3 (ALS cost-meter true-up): port the orchestrator's ALS sink binds.
+  # Envoy's mcp_https_listener_v3 streams access logs to the als_sink cluster
+  # at this port (over the headless service, like extAuthzPort). Must agree
+  # between this value and the bootstrap ConfigMap's als_sink cluster.
+  alsPort: 9094
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # ── Health monitoring ─────────────────────────────────────────────────────
+  # How often the orchestrator polls Kubernetes for pod state changes and
+  # MCP server health. This drives how quickly the UI sees state transitions
+  # (Deploying → Probing → Running, or Probing → ProbeFailed). Lower values
+  # = snappier feedback but more API server load.
+  #
+  #   5s  — recommended for development and clusters with under ~100 servers
+  #   15s — balanced for clusters with 100-500 servers
+  #   30s — recommended for clusters with 500+ servers (reduces api-server load)
+  healthMonitor:
+    pollIntervalSeconds: 5
+
+  # Environment variables that configure SSO JIT and SCIM meta.location.
+  # Empty strings disable the respective feature (safe defaults).
+  env:
+    # Comma-separated allowlist of email domains for JIT provisioning via
+    # SSO login. A user logging in via SSO whose email domain is in this
+    # list gets auto-provisioned as a local user with role 'system:viewer'.
+    # Example: "example.com,partner.com"
+    # Empty string = SSO JIT disabled; users must be created manually.
+    ssoAutoProvisionDomains: ""
+
+    # Public HTTPS URL where external systems (IdPs, SCIM clients,
+    # browsers) reach this orchestrator. Used to construct:
+    #   - SCIM meta.location URLs in response bodies
+    #   - OIDC redirect_uri when building provider login URLs
+    # Example: "https://mcp.example.com"
+    # Empty string = orchestrator uses request-relative URLs.
+    apiPublicUrl: "http://localhost:8080"   # dev: browser hits localhost via kubectl port-forward to the leader pod
+
+    # ── Leader election (v1.7 multi-replica HA) ──────────────────────────
+    # Override the auto-derived setting. By default, the chart enables
+    # leader election when orchestrator.replicaCount > 1 and disables it
+    # otherwise. Set this to "true" or "false" to force a specific value
+    # regardless of replica count — useful for testing single-replica
+    # behavior with leader election machinery active, or vice versa.
+    #
+    # Empty string ("") means "auto" — derive from replicaCount.
+    leaderElectionEnabled: ""
+
+    # ── NOTIFY-based xDS fanout (shipped in v1.13.0-dev) ─────────────────
+    # When "true", followers run a Postgres LISTEN thread that wakes
+    # immediately on leader-issued NOTIFY events instead of waiting for
+    # the next 1s polling cycle. Achieves sub-100ms config propagation
+    # vs polling's 0-1s typical. Polling continues to run as fallback,
+    # so disabling NOTIFY (or NOTIFY connection failures) degrade
+    # cleanly to the polling-only behavior.
+    #
+    # Default: "true" (verified under sustained 3000 rps load with
+    # 2 orchestrator + 2 envoy replicas). Set to "false" if you need
+    # to fall back to the polling-only path for diagnostic reasons.
+    useNotifyFanout: "true"
+
+    # ── Deploy timeout (v1.8) ────────────────────────────────────────────
+    # Maximum time (seconds) a server can stay in "Deploying" state before
+    # HealthMonitor transitions it to Failed. This catches misconfigured
+    # deployments — wrong image, wrong port, container crashloops — that
+    # would otherwise sit in Deploying indefinitely waiting for k8s to
+    # produce a ready pod that's never coming.
+    #
+    # Default: 300s (5 min). Long enough that legitimate slow deploys
+    # (image pulls on slow registries, slow container init) complete
+    # naturally. Short enough that operators aren't left wondering why
+    # their broken deploy is still "in progress" 30 minutes later.
+    #
+    # Tuning guidance:
+    #   - Fast local clusters with cached images: "60" - "120"
+    #   - Default mixed environments: "300"  (recommended)
+    #   - Slow corporate networks / large images: "600"
+    #   - "0" disables the timeout (Deploying never auto-fails)
+    #
+    # The orchestrator reads this as MCP_DEPLOY_TIMEOUT_SECONDS at startup.
+    deployTimeoutSeconds: "60"
+
+# ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
+mcpSync:
+  image:
+    repository: curtismager20/mcp-sync
+    # Empty string ("") = use .Chart.AppVersion. Pin only when overriding.
+    tag: ""
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ─── Envoy Gateway ───────────────────────────────────────────────────────────
+envoy:
+  enabled: true
+  # ── Multi-replica HA (shipped in v1.13.0-dev) ──────────────────────────────
+  # Default 2 replicas. With orchestrator leader-elected xDS push, each
+  # Envoy independently consumes the same xDS stream via the headless
+  # service so multi-replica Envoy is consistent — there is no flapping
+  # config. NodePort/LoadBalancer fronts both pods so client traffic is
+  # spread across them at the connection level.
+  #
+  # Verified empirically: 2-Envoy + 2-orchestrator sustains ~3000 rps
+  # end-to-end with 100% success vs ~1500 rps single-replica. The
+  # autoscaling block below extends this up to 10 replicas under load.
+  replicaCount: 2
+  image:
+    repository: envoyproxy/envoy
+    tag: v1.28-latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # Service ports — these are the PORT numbers exposed on the Envoy
+  # Service resource. The Service TYPE is determined by loadBalancer.provider
+  # (below), not here. For NodePort mode, also see loadBalancer.nodeport.
+  service:
+    httpPort: 80
+    httpsPort: 443
+    # ext_authz-enforced MCP listener (see helm-envoy-service.yaml).
+    # Default 93 avoids the 80/443 well-known ports. Override only if
+    # it conflicts with your environment.
+    httpAuthzPort: 93
+  autoscaling:
+    enabled: true
+    # ── Production HA defaults (shipped in v1.13.0-dev) ───────────────────
+    # min=2 keeps a baseline of HA capacity even at idle load — single-pod
+    # Envoy is a SPOF and client traffic spikes can outpace HPA reaction
+    # time on cold-start.
+    # max=10 covers ~15000 rps headroom at observed per-pod throughput
+    # of ~1500 rps. Tune up for higher-traffic environments.
+    # CPU/memory targets unchanged — Envoy is CPU-light at ext_authz
+    # scale (TLS termination is the dominant cost) so 70%/80% triggers
+    # scale-up well before saturation.
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPU: 70
+    targetMemory: 80
+  xds:
+    listenAddress: "0.0.0.0"
+    port: 18000
+    nodeId: mcp-gateway
+
+  # ── V3 ADS gRPC server (experimental, slice 3-5) ───────────────────────────
+  # Greenfield xDS path on generated Envoy v3 protos. Lives entirely in a
+  # parallel C++ subtree (src/gateway/v3/) and a separate gRPC port so it
+  # cannot affect the legacy hand-rolled xDS path on envoy.xds.port (18000).
+  # Enabling this only starts the v3 ADS gRPC server in the orchestrator;
+  # it does NOT affect Envoy's bootstrap or routing — Envoy is unaware of
+  # this server until separate bootstrap config is added in a future slice.
+  # Safe to enable for testing.
+  v3ads:
+    enabled: true
+    port: 18100
+    nodePort: 30100
+    clusterName: mcp-gateway-cluster
+
+  # ── V3 Envoy data plane (slice 6e, experimental) ───────────────────────────
+  # Standalone Envoy pod consuming from the v3 ADS server (envoy.v3ads above).
+  # Runs in parallel with the legacy Envoy (envoy.* settings, port 30443) —
+  # both pods exist in the same cluster, with legacy serving routing_mode=
+  # "legacy" servers and v3 serving routing_mode="v3" servers. Default
+  # disabled; enable for slice 6e validation. Production-default stays off
+  # until v3 proves out under load.
+  v3:
+    enabled: true
+    replicaCount: 3
+    listenerPort: 10444
+    nodePort: 30444
+    nodeId: mcp-gateway-v3
+    clusterName: mcp-gateway-v3-cluster
+    image:
+      repository: ""
+      tag: ""
+    resources: {}
+    # ── V3 production HA defaults (shipped in v2.2.1) ──────────────────────
+    # Mirrors legacy envoy autoscaling shape. min=3 floor based on 5/17/26
+    # load testing: single-replica v3 envoy saturates at ~500 rps and the
+    # crash-restart cycle takes 5+ minutes to recover. 3 replicas at idle
+    # gives reliable headroom for transient bursts; HPA scales up beyond
+    # that on observed CPU/memory pressure. max=10 matches legacy ceiling.
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPU: 70
+      targetMemory: 80
+
+# ─── Load Balancer ────────────────────────────────────────────────────────────
+# Controls how the Envoy gateway is exposed outside the cluster.
+#
+# provider options:
+#   cloud     — AWS ELB / GCP LB / Azure LB (default for cloud deployments)
+#               No extra config needed — your cloud controller handles it.
+#
+#   metallb   — Bare-metal / private DC / kind dev clusters.
+#               Installs MetalLB and assigns IPs from the given pool.
+#               Use create-cluster.sh for dev — it handles this automatically.
+#
+#   nodeport  — Expose via NodePort only. No external IP assigned.
+#               Access via <node-ip>:<nodePort>. Useful for air-gapped clusters
+#               or when an upstream hardware LB handles external routing.
+#
+#   existing  — You already have an Ingress controller or LB in the cluster
+#               (nginx-ingress, Traefik, F5 CIS, etc). MCP will create the
+#               Service but NOT install any LB controller. Set annotations
+#               below to integrate with your existing infrastructure.
+#
+loadBalancer:
+  provider: cloud       # cloud | metallb | nodeport | existing
+
+  # ── MetalLB (provider: metallb) ───────────────────────────────────────────
+  metallb:
+    install: true                                   # set false if already installed
+    version: v0.14.5
+    ipRange: "172.18.0.200-172.18.0.250"            # adjust to your network
+    # bgp: false                                    # set true for BGP mode (advanced)
+
+  # ── NodePort (provider: nodeport) ─────────────────────────────────────────
+  nodeport:
+    httpPort: 30080      # customize to avoid conflicts
+    httpsPort: 30443
+    httpAuthzPort: 30093 # ext_authz-enforced MCP listener
+
+  # ── Existing LB / Ingress (provider: existing) ────────────────────────────
+  existing:
+    # Annotations added to the Envoy Service — use to integrate with your LB.
+    # Examples:
+    #   AWS NLB:      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    #   F5 BIG-IP:    cis.f5.com/ip-type: "cluster"
+    #   MetalLB pool: metallb.universe.tf/address-pool: "production-pool"
+    serviceAnnotations: {}
+    #   service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+    # Optional: pre-assigned static IP for the LoadBalancer service
+    loadBalancerIP: ""
+
+    # Optional: create an Ingress resource instead of relying on LoadBalancer
+    ingress:
+      enabled: false
+      className: nginx          # nginx | traefik | haproxy | istio | etc.
+      host: mcp.example.com
+      tls: true
+      tlsSecretName: mcp-envoy-tls
+
+# ─── PostgreSQL ──────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+  # Postgres pod placement. Pinned to a node labeled workload=stateful so the
+  # local-path PV stays physically co-located with the pod across reschedules
+  # (k3s local-path is node-local; an unpinned postgres that reschedules to
+  # another node strands its data and flaps — which breaks DB writes the
+  # orchestrator depends on for deploy registration and session/auth).
+  #
+  # foxygirl (control-plane) carries workload=stateful in the reference setup.
+  # SINGLE-NODE dev clusters (Docker Desktop, kind, k3d, minikube): either
+  # label the single node `kubectl label node <name> workload=stateful`, or
+  # override this back to {} via --set postgresql.nodeSelector=null.
+  nodeSelector:
+    workload: stateful
+  tolerations: []
+  affinity: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage:
+    size: 5Gi
+    # storageClassName: longhorn    # Set for your environment
+  database: mcp_platform
+  username: mcp
+  # Password is read from the secret (key: MCP_DB_PASSWORD)
+
+# ─── Inventory (federation/discovery plane, 2.2.4+) ──────────────────────────
+# mcp-inventory accepts observations from endpoint agents and writes a
+# canonical inventory record set into a dedicated Postgres instance.
+# See: services/mcp-inventory/README.md
+#
+# Default off so existing customer upgrades don't unexpectedly deploy a new
+# sidecar + Postgres. Dev clusters opt in via bootstrap.sh's --set or by
+# flipping this to true here (single values.yaml — no separate dev-values).
+inventory:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: curtismager20/mcp-inventory
+    # Empty string ("") = use .Chart.AppVersion (same convention as the
+    # orchestrator/sync images). Pin only when overriding.
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # Placement for the mcp-inventory pod itself (the Go binary). Stateless,
+  # can run anywhere. Defaults to "no preference"; override per cluster if
+  # you want it co-located with the inventory DB to minimize SQL latency.
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+  service:
+    type: ClusterIP
+    port: 8090
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  # DB connection pool size. Inventory's access pattern is bursty writes
+  # from agents + occasional reads from admin/CMDB — nothing like ext_authz's
+  # sustained read pressure. 4 connections is more than enough.
+  dbPoolSize: 4
+
+  # Pipeline tuning (see services/mcp-inventory/internal/config/config.go).
+  config:
+    queueSize: 1000                # bounded ingest channel; full → 503
+    writerBatch: 50                # reserved for batched writes (future)
+    maxObservationsPerBatch: 1000  # per-request observation cap
+    logLevel: "info"               # "info" or "debug"
+
+  # ── Inventory Postgres ───────────────────────────────────────────────────
+  # Physically isolated from the operations DB. Defaults to no node preference
+  # so single-node clusters (Docker Desktop, kind, k3d, minikube) work out of
+  # the box.
+  #
+  # PRODUCTION multi-node: pin to a node carrying `workload-inventory=true`.
+  # We use a DIFFERENT LABEL KEY from the ops `workload=stateful` selector
+  # (not just a different value) because kubernetes node labels store one
+  # value per key — `workload=stateful` and `workload=inventory` would be
+  # mutually exclusive on the same node. Distinct keys let one node carry
+  # both labels today, and make a future split onto separate nodes a label
+  # change rather than a chart edit.
+  #
+  #   nodeSelector:
+  #     workload-inventory: "true"
+  postgresql:
+    enabled: true
+    image:
+      repository: postgres
+      tag: 16-alpine
+    nodeSelector:
+      workload-inventory: "true"
+    tolerations: []
+    affinity: {}
+    storage:
+      size: 5Gi
+      # Storage class for the inventory PV. Defaults to empty so the
+      # cluster's default StorageClass is used (Docker Desktop, kind,
+      # k3d, minikube, EKS gp2, AKS azurefile, GKE standard, etc).
+      # For k3s with local-path-provisioner (foxygirl reference setup),
+      # set to "local-path".
+      storageClassName: ""
+    database: mcp_inventory
+    username: mcp
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+
+# ─── API Configuration ──────────────────────────────────────────────────────
+api:
+  httpPort: 8080
+  grpcPort: 9090
+  requestTimeout: 30
+
+# ─── JWT Configuration ──────────────────────────────────────────────────────
+jwt:
+  issuer: "https://auth.acme.internal"
+  audience: "mcp-orchestrator"
+  clockSkew: 30
+  tokenTTL: 3600
+
+# ─── Observability ───────────────────────────────────────────────────────────
+observability:
+  logLevel: info
+  logFormat: json
+  metricsPort: 9091
+  auditLogPath: /var/log/mcp/audit.log
+
+# ─── Tenant namespaces ───────────────────────────────────────────────────────
+# Tenant namespaces (e.g. mcp-prod, mcp-staging) are NOT created by this
+# chart. They are created on demand by the orchestrator when the first MCP
+# server is deployed into them — orchestrator-created namespaces carry the
+# label `app.kubernetes.io/managed-by: mcp-orchestrator` and survive helm
+# uninstall (they are not Helm-owned resources).
+#
+# This list seeds the orchestrator's defaults at first-install time:
+#
+#   - configmap.yaml:        first entry becomes the orchestrator's
+#                            `default_namespace` (used by the admin UI's
+#                            deploy form when no namespace is explicitly
+#                            chosen).
+#   - postgres-init.yaml:    seeds the default `mcp-deployer` role's
+#                            allowed_namespaces and the SSO providers'
+#                            allowed_namespaces with this list, so a
+#                            freshly-installed cluster has working RBAC
+#                            for these tenants out of the box.
+#
+# Deleting this list does NOT prevent operators from creating servers in
+# arbitrary namespaces — the orchestrator creates whichever namespace the
+# operator picks at deploy time. It only affects which namespaces are
+# pre-allowed in the seed RBAC policy.
+namespaces:
+  - mcp-prod
+  - mcp-staging
+  - mcp-dev
+
+# ─── Network Policy ─────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: true
+
+# ─── Secrets ─────────────────────────────────────────────────────────────────
+# If createSecrets is true, the chart creates a Secret from these values.
+# For production, set createSecrets=false and create the Secret externally.
+secrets:
+  create: true
+
+  # PostgreSQL password.
+  #
+  # Default behavior (empty string): the chart generates a random
+  # 32-character alphanumeric password at install time and stores it in
+  # the Secret. Subsequent upgrades reuse the existing Secret's value
+  # (see secrets.yaml lookup logic) so the password persists.
+  #
+  # To pin a specific password, set this value or pass:
+  #   --set secrets.dbPassword=<value>
+  #
+  # Postgres is internal-only (ClusterIP service), so the auto-generated
+  # default is appropriate for most installs.
+  #
+  # To retrieve the generated password later:
+  #   kubectl get secret -n <ns> <release>-secrets \
+  #     -o jsonpath='{.data.MCP_DB_PASSWORD}' | base64 -d
+  dbPassword: ""
+
+  # Inventory Postgres password (mcp-inventory's DB, separate from ops DB).
+  # Same three-tier semantics as dbPassword:
+  #   1. existing secret → reuse (upgrade-safe)
+  #   2. this value      → operator-supplied
+  #   3. empty           → chart generates a random 32-char password
+  #
+  # Retrieve later via:
+  #   kubectl get secret -n <ns> <release>-secrets \
+  #     -o jsonpath='{.data.MCP_INVENTORY_DB_PASSWORD}' | base64 -d
+  inventoryDbPassword: ""
+  # JWT keys — PEM-encoded RSA private and public keys.
+  #
+  # Leave both empty to have the chart auto-generate a private key at install
+  # time. The orchestrator will derive the public key from it at startup.
+  # This is the Free-tier / evaluation path.
+  #
+  # For production (Pro / Enterprise), generate and pass both explicitly so
+  # keys survive reinstalls and can be rotated on your schedule:
+  #   openssl genpkey -algorithm RSA -out jwt.key -pkeyopt rsa_keygen_bits:2048
+  #   openssl rsa -in jwt.key -pubout -out jwt.pub
+  #   helm install ... --set-file secrets.jwtPrivateKey=jwt.key \
+  #                    --set-file secrets.jwtPublicKey=jwt.pub
+  jwtPrivateKey: ""   # PEM-encoded RSA private key (leave empty for auto-gen)
+  jwtPublicKey: ""    # PEM-encoded RSA public key (derived from private if empty)
+
+# ─── License ─────────────────────────────────────────────────────────────────
+# License file for Enterprise tier features (SSO, SCIM, custom RBAC,
+# governance policies). Free tier does not require a license.
+#
+# Two ways to apply a license:
+#
+# 1. At install time:
+#    helm install mcp ./chart ... --set-file license.file=license.json
+#    (Chart creates the Secret.)
+#
+# 2. Pre-created externally:
+#    kubectl create secret generic mcp-license \
+#      --from-file=license.json=license.json -n mcp-system
+#    (Chart skips Secret creation; the orchestrator mounts the existing one.)
+#
+# In either case, the orchestrator reads /etc/mcp-license/license.json at
+# startup. Missing file = Free tier.
+license:
+  # Set at install time via --set-file to make the chart create the Secret.
+  # Must be empty in the default values — don't commit license content here.
+  file: ""
+
+  # Name of the Secret that contains the license. Both modes above use this
+  # same name. Override only if you already have a Secret named differently.
+  secretName: mcp-license
+
+# ─── TLS ─────────────────────────────────────────────────────────────────────
+tls:
+  create: true
+  # If you provide cert/key, they'll be used. Otherwise auto-generated.
+  cert: ""
+  key: ""
+  orchestratorSecretName: mcp-orchestrator-tls
+  envoySecretName: mcp-envoy-tls
+
+# ─── Seed Data ───────────────────────────────────────────────────────────────
+seed:
+  # Default admin user password.
+  #
+  # Default behavior (empty string): the chart generates a random
+  # 24-character password at install time, stores it in the orchestrator's
+  # Secret as MCP_SEED_ADMIN_PASSWORD, and prints retrieval instructions in
+  # the post-install notes. The orchestrator's seed code reads the
+  # plaintext from the Secret on first boot, bcrypts it in-process at
+  # work factor 12, and stores the hash in the database. Plaintext lives
+  # only in the Secret + memory; the database stores only the bcrypt hash.
+  #
+  # SECURITY: This is a *bootstrap credential*. Log in once with it,
+  # change the password via the UI immediately, and rotate the Secret.
+  # Retrieve the generated password:
+  #   kubectl get secret -n <ns> <release>-secrets \
+  #     -o jsonpath='{.data.MCP_SEED_ADMIN_PASSWORD}' | base64 -d
+  #
+  # To pin a specific password (e.g., for dev convenience), pass:
+  #   --set seed.adminPassword=<value>
+  # or set it in your overrides values file.
+  adminPassword: ""
+
+  # Pre-computed bcrypt hash for the admin password.
+  #
+  # DEPRECATED: Use seed.adminPassword (plaintext) instead — the
+  # orchestrator now bcrypts plaintext in-process at seed time.
+  #
+  # If both are set, the orchestrator gives priority to the hash for
+  # backward compatibility. This field is retained for installs that
+  # have an established hash-based workflow (e.g., generated by an
+  # external password tool) and want to keep using it.
+  #
+  # Empty string is the default; do NOT set this unless you have an
+  # existing hash workflow.
+  adminPasswordHash: ""
