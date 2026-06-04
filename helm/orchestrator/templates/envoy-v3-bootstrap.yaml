@@ -339,40 +339,6 @@ data:
                             pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_external_v3
-                          # ── allowed_upstream_headers (B2 fix, 2026-06-04) ──────────
-                          # Without this allow-list, envoy SILENTLY DROPS every header
-                          # the authz response (Check() ok_response) tries to inject
-                          # into the upstream request. The orchestrator's
-                          # ExternalAuthzService::Check correctly builds and returns
-                          # the vendor credential header (x-api-key for api-key auth,
-                          # Authorization for bearer/oauth2/c-c flows), but those
-                          # headers never reach the vendor unless they match a pattern
-                          # here.
-                          #
-                          # Symptom before fix: vendor returns 400/401 because request
-                          # arrives without credentials. authz_flags="-" (no envoy
-                          # complaint), upstream_service_time present (vendor really
-                          # was reached), but the request that arrived was naked.
-                          # Required hours of debugging on 2026-06-04 to localize:
-                          # discovered exa-search 400s while direct-to-Exa with the
-                          # same JSON/headers returned 200, isolating the gap to
-                          # ext_authz → upstream header forwarding.
-                          #
-                          # Pattern coverage:
-                          #   - exact "authorization" — Bearer / OAuth2 / c-c flows
-                          #   - prefix "x-"           — x-api-key (default) + any
-                          #                              custom header_name that
-                          #                              follows the x-* convention
-                          # Safe vs prefix:"" (allow-all) which could also forward
-                          # transport headers (host, content-length) from a buggy or
-                          # malicious authz response.
-                          authorization_response:
-                            allowed_upstream_headers:
-                              patterns:
-                                - exact: "authorization"
-                                  ignore_case: true
-                                - prefix: "x-"
-                                  ignore_case: true
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
                         # re-enable it via typed_per_filter_config. The Envoy
