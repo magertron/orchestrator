@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const version = "2.0.5"
+const version = "2.0.6"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -697,7 +697,8 @@ func cmdRegisterExternal(gf globalFlags, args []string) {
 		fmt.Println("  --endpoint-url <url>            HTTPS URL of the vendor MCP endpoint")
 		fmt.Println("  --auth-type <type>              How Magertron authenticates to the vendor.")
 		fmt.Println("                                  One of: none, bearer, api-key,")
-		fmt.Println("                                  oauth2-client-credentials, mtls")
+		fmt.Println("                                  oauth2-client-credentials,")
+		fmt.Println("                                  oauth2-authorization-code, mtls")
 		fmt.Println()
 		fmt.Println("Conditional:")
 		fmt.Println("  --credential-secret <name>      Name of the K8s Secret holding credentials.")
@@ -776,16 +777,21 @@ func cmdRegisterExternal(gf globalFlags, args []string) {
 
 	// Allow-list. Server also enforces this; client check is for usability
 	// (fail fast with a helpful message rather than waiting for HTTP 400).
+	//
+	// Stay in lock-step with secret_shapes() in src/api/rest_server.cpp.
+	// Adding a new auth_type there → add it here as well.
 	validAuthTypes := map[string]bool{
-		"none":                      true,
-		"bearer":                    true,
-		"api-key":                   true,
-		"oauth2-client-credentials": true,
-		"mtls":                      true,
+		"none":                       true,
+		"bearer":                     true,
+		"api-key":                    true,
+		"oauth2-client-credentials":  true,
+		"oauth2-authorization-code":  true,
+		"mtls":                       true,
 	}
 	if !validAuthTypes[authType] {
 		fmt.Fprintf(os.Stderr,
-			"Error: --auth-type must be one of: none, bearer, api-key, oauth2-client-credentials, mtls (got '%s')\n",
+			"Error: --auth-type must be one of: none, bearer, api-key, "+
+				"oauth2-client-credentials, oauth2-authorization-code, mtls (got '%s')\n",
 			authType)
 		os.Exit(1)
 	}
