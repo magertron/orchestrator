@@ -170,6 +170,35 @@ data:
                           address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.orchestrator.extAuthzExternalPort | default 9093 }}
 
+        # ── Orchestrator REST/UI cluster ─────────────────────────────────────
+        # Mirrors the legacy bootstrap's mcp_orchestrator cluster. Points at
+        # the leader-only Service so admin mutations (POST/PUT/DELETE
+        # /api/v1/servers*) and all other /api/v1/* control-plane traffic
+        # land on whichever pod currently holds the Lease — eliminating the
+        # follower 503-bounce that plagued rapid registration in v2.
+        #
+        # Used by routes pushed via v3 ADS for non-MCP traffic — REST API,
+        # UI static assets, and the "/" catchall. MCP data-plane traffic
+        # (/mcp/<ns>/<server>/*) continues to use the per-server clusters
+        # built by AdsSubscriber from DeploymentEvents; this cluster handles
+        # everything else.
+        #
+        # Normal ClusterIP (NOT xds-headless) so STRICT_DNS resolves a stable
+        # VIP unchanged across failover; only the backing endpoint moves.
+        - name: mcp_orchestrator
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: mcp_orchestrator
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-leader.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.api.httpPort }}
+
         # mcp-inventory REST cluster — Pass 3 (Option C, static bootstrap).
         # Mirror of the legacy bootstrap's cluster of the same name. Both
         # Envoys forward /inventory/v1/* to the same inventory plane;
