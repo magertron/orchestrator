@@ -191,7 +191,7 @@ envoy:
   replicaCount: 2
   image:
     repository: envoyproxy/envoy
-    tag: v1.28-latest
+    tag: v1.33-latest
   resources:
     requests:
       cpu: 100m
