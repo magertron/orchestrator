@@ -371,7 +371,7 @@ data:
                         # selective ext_authz; routes that DO want this filter
                         # set typed_per_filter_config[envoy.filters.http.ext_authz.external]
                         # to an ExtAuthzPerRoute with check_settings present.
-                        disabled: false
+                        disabled: true
                       - name: envoy.filters.http.router
                         typed_config:
                           "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
