@@ -355,15 +355,15 @@ data:
                           #   - x-api-key: api-key auth type (Exa, Tavily, etc)
                           #   - authorization: bearer + both OAuth2 paths
                           #   - x-magertron-*: future attribution headers
-                          authorization_response:
-                            allowed_upstream_headers:
-                              patterns:
-                                - exact: x-api-key
-                                  ignore_case: true
-                                - exact: authorization
-                                  ignore_case: true
-                                - prefix: x-magertron-
-                                  ignore_case: true
+                          #authorization_response:
+                          #  allowed_upstream_headers:
+                          #    patterns:
+                          #      - exact: x-api-key
+                          #        ignore_case: true
+                          #      - exact: authorization
+                          #        ignore_case: true
+                          #      - prefix: x-magertron-
+                          #        ignore_case: true
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
                         # re-enable it via typed_per_filter_config. The Envoy
