@@ -339,6 +339,34 @@ data:
                             pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_external_v3
+                          # ── B17 fix (2026-06-05): allowed_upstream_headers ──────
+                          # Without this allow-list, envoy SILENTLY DROPS every
+                          # header that ext_authz returns in ok_response.headers
+                          # before forwarding the request upstream. Default
+                          # behavior is "deny-all" — no headers pass through
+                          # unless listed here.
+                          #
+                          # This was a 7-hour debug session: orchestrator code
+                          # was correctly injecting x-api-key into ok_response,
+                          # the gRPC wire bytes contained the header (verified
+                          # via hex dump), envoy's stats said .ok=1 — but the
+                          # upstream request to Exa had no x-api-key. Envoy
+                          # was filtering it out per this config default.
+                          #
+                          # Patterns below cover the full BYOK credential
+                          # matrix:
+                          #   - x-api-key: api-key auth type
+                          #   - authorization: bearer, oauth2-client-creds,
+                          #                    oauth2-authorization-code
+                          #   - x-magertron-*: future attribution headers
+                          allowed_upstream_headers:
+                            patterns:
+                              - exact: x-api-key
+                                ignore_case: true
+                              - exact: authorization
+                                ignore_case: true
+                              - prefix: x-magertron-
+                                ignore_case: true
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
                         # re-enable it via typed_per_filter_config. The Envoy
