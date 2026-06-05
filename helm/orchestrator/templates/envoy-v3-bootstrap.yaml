@@ -345,33 +345,6 @@ data:
                           # through, byte-for-byte.
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_external_v3
-                          # ── B22 fix (Session 2.16, 2026-06-05): authorization_response.allowed_upstream_headers ──
-                          # Without this allow-list, envoy SILENTLY DROPS every
-                          # header that ext_authz returns in ok_response.headers
-                          # before forwarding the request upstream. Default
-                          # behavior with an unset list is "forward nothing".
-                          #
-                          # Field nests under `authorization_response`, NOT at
-                          # the filter root. Verified empirically: orchestrator
-                          # logs show correct wire bytes for (Authorization,
-                          # "Bearer ...") with append_action=2 — but envoy's
-                          # router decode shows empty ('', '') in its place.
-                          # Envoy is receiving the header from Check() but
-                          # dropping it on the upstream encode path.
-                          #
-                          # Patterns cover the full BYOK credential matrix:
-                          #   - authorization: bearer + both OAuth2 paths
-                          #   - x-api-key: api-key auth type (Exa, Tavily, etc)
-                          #   - x-magertron-*: future attribution headers
-                          authorization_response:
-                            allowed_upstream_headers:
-                              patterns:
-                                - exact: authorization
-                                  ignore_case: true
-                                - exact: x-api-key
-                                  ignore_case: true
-                                - prefix: x-magertron-
-                                  ignore_case: true
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
                         # re-enable it via typed_per_filter_config. The Envoy
