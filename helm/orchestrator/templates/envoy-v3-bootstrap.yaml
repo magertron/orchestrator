@@ -333,37 +333,18 @@ data:
                             timeout: 2s
                           transport_api_version: V3
                           failure_mode_allow: false
-                          with_request_body:
-                            max_request_bytes: 65536
-                            allow_partial_message: true
-                            pack_as_bytes: false
+                          # Session 2.16 (2026-06-05): with_request_body REMOVED.
+                          # The external ext_authz handler (port 9093) does
+                          # not need the request body — it routes on :path
+                          # (namespace + server) and looks up credentials via
+                          # the orchestrator's CredentialCache. Buffering the
+                          # body caused envoy to re-encode it before forwarding
+                          # upstream, which some strict edge WAFs (Cloudflare,
+                          # Vercel) reject as malformed HTTP/1.1 framing.
+                          # Without buffering, the body streams straight
+                          # through, byte-for-byte.
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_external_v3
-                          # ── B17 fix (2026-06-05): authorization_response.allowed_upstream_headers ──
-                          # Without this allow-list, envoy SILENTLY DROPS every
-                          # header that ext_authz returns in ok_response.headers
-                          # before forwarding the request upstream. Default
-                          # behavior with an unset list is "forward nothing".
-                          #
-                          # Field nests under `authorization_response`, NOT at
-                          # the filter root. (Spent an hour discovering this.)
-                          # Per envoy proto:
-                          #   ExtAuthz.authorization_response (field 8)
-                          #     → AuthorizationResponse.allowed_upstream_headers
-                          #
-                          # Patterns cover the full BYOK credential matrix:
-                          #   - x-api-key: api-key auth type (Exa, Tavily, etc)
-                          #   - authorization: bearer + both OAuth2 paths
-                          #   - x-magertron-*: future attribution headers
-                          #authorization_response:
-                          #  allowed_upstream_headers:
-                          #    patterns:
-                          #      - exact: x-api-key
-                          #        ignore_case: true
-                          #      - exact: authorization
-                          #        ignore_case: true
-                          #      - prefix: x-magertron-
-                          #        ignore_case: true
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
                         # re-enable it via typed_per_filter_config. The Envoy
