@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: MCP Orchestrator — Kubernetes-native control plane for managing MCP servers
 type: application
-version: 2.6.46
-appVersion: "2.6.46"
+version: 2.6.47
+appVersion: "2.6.47"
 keywords:
   - mcp
   - model-context-protocol
