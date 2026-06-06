@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>AI Cost Governance &amp; Chargeback for MCP | Magertron</title>
+<meta name="description" content="The first control plane a CFO relies on to govern AI agent spend. Per-server and per-tool budgets, real-time chargeback, and showback by team and agent — self-hosted in your own Kubernetes cluster.">
+<link rel="canonical" href="https://magertron.com/cost.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/cost.html">
+<meta property="og:title" content="AI Cost Governance & Chargeback for MCP | Magertron">
+<meta property="og:description" content="Per-tool budgets, real-time chargeback, showback by team and agent. The CFO's guardrail for the agent economy.">
+<meta property="og:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Magertron AI Cost Dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AI Cost Governance & Chargeback for MCP | Magertron">
+<meta name="twitter:description" content="Per-tool budgets, real-time chargeback, showback by team and agent.">
+<meta name="twitter:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* ── Nav ──────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero { padding: 100px 0 40px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 600px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px; border: 1px solid var(--border);
+  background: var(--bg-card); font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 32px; animation: fadeUp 0.6s ease-out;
+}
+.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s ease-in-out infinite; }
+.hero h1 {
+  font-family: var(--serif); font-weight: 700; font-style: normal;
+  font-size: clamp(48px, 7vw, 88px); line-height: 1.05; letter-spacing: -0.04em;
+  margin-bottom: 24px; animation: fadeUp 0.6s ease-out 0.1s both;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p {
+  font-size: 18px; color: var(--text-secondary); max-width: 560px;
+  margin: 0 auto 40px; line-height: 1.7; animation: fadeUp 0.6s ease-out 0.2s both;
+}
+.hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeUp 0.6s ease-out 0.3s both; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px;
+  font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; color: white; }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 14px 32px; border-radius: 8px;
+  font-weight: 500; font-size: 15px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Hero Screenshot ──────────────────────────────────────────────────── */
+.hero-screenshot {
+  max-width: 780px; margin: 36px auto 0; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border); background: var(--bg-card);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1);
+  animation: fadeUp 0.8s ease-out 0.4s both;
+  position: relative;
+}
+.hero-screenshot img {
+  width: 100%; height: auto; display: block;
+}
+.hero-screenshot .placeholder {
+  width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700; font-style: normal; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 16px;
+}
+.section-desc {
+  font-size: 16px; color: var(--text-secondary); max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+}
+
+/* ── Showcase (screenshot sections) ───────────────────────────────────── */
+.showcase { padding: 80px 0; }
+.showcase-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+}
+.showcase-row.reverse { direction: rtl; }
+.showcase-row.reverse > * { direction: ltr; }
+.showcase-content { max-width: 460px; }
+.showcase-content h3 {
+  font-family: var(--serif); font-size: 32px; font-weight: 600; font-style: normal;
+  margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.02em;
+}
+.showcase-content p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+.showcase-content ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+}
+.showcase-content ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;
+}
+.showcase-content ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.showcase-image {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.showcase-image:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+.showcase-image img { width: 100%; height: auto; display: block; }
+.showcase-image .placeholder {
+  width: 100%; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Features ─────────────────────────────────────────────────────────── */
+.features { padding: 80px 0; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card {
+  padding: 32px; border-radius: 12px; background: var(--bg-card);
+  border: 1px solid var(--border); transition: all 0.3s;
+  position: relative;
+}
+/* Hover affordance: only the clickable variant gets the lift + accent
+   treatment, so the visual difference between "click me" and "informational"
+   is obvious to a reader scanning the grid. */
+.feature-card.clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.feature-card.clickable:hover { border-color: var(--border-accent); background: var(--bg-card-hover); transform: translateY(-2px); text-decoration: none; }
+.feature-card.clickable::after {
+  content: "→";
+  position: absolute;
+  top: 32px; right: 32px;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  transition: transform 0.2s, color 0.2s;
+}
+.feature-card.clickable:hover::after { color: var(--accent-text); transform: translateX(4px); }
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--accent-glow); border: 1px solid rgba(37, 99, 235, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 20px;
+}
+.feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+/* ── CLI Section ──────────────────────────────────────────────────────── */
+.cli-section { padding: 80px 0; }
+.cli-section .container { max-width: 900px; }
+.terminal-preview {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: #0a0e14;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+.terminal-bar {
+  display: flex; gap: 6px; padding: 12px 16px; background: #111722;
+  border-bottom: 1px solid var(--border);
+}
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot:nth-child(1) { background: #ff5f57; }
+.terminal-dot:nth-child(2) { background: #febc2e; }
+.terminal-dot:nth-child(3) { background: #28c840; }
+.terminal-body {
+  padding: 20px 24px; font-family: var(--mono); font-size: 13px;
+  line-height: 1.8; color: var(--text-secondary);
+}
+.terminal-body .cmd { color: var(--text); }
+.terminal-body .accent { color: var(--accent-text); }
+.terminal-body .success { color: var(--success); }
+.terminal-body .dim { color: var(--text-tertiary); }
+
+/* ── Pricing ──────────────────────────────────────────────────────────── */
+.pricing { padding: 80px 0; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1000px; margin: 48px auto 0; }
+.pricing-card {
+  padding: 40px; border-radius: 16px; background: var(--bg-card);
+  border: 1px solid var(--border); position: relative; transition: all 0.3s;
+}
+.pricing-card:hover { border-color: var(--border-accent); }
+.pricing-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, var(--bg-card) 100%);
+}
+.pricing-card.featured::before {
+  content: 'RECOMMENDED'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: white; padding: 4px 16px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; font-family: var(--mono);
+}
+.pricing-tier {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 8px;
+}
+.pricing-name { font-family: var(--serif); font-size: 32px; font-style: normal; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+.pricing-price { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+.pricing-divider { height: 1px; background: var(--border); margin: 24px 0; }
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.pricing-features li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; }
+.pricing-features li::before { content: '✓'; color: var(--success); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.pricing-features li.disabled { color: var(--text-tertiary); }
+.pricing-features li.disabled::before { content: '—'; color: var(--text-tertiary); }
+.pricing-btn {
+  display: block; width: 100%; text-align: center; padding: 12px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none;
+}
+.pricing-btn.primary { background: var(--accent); color: white; border: none; }
+.pricing-btn.primary:hover { background: #1d4ed8; text-decoration: none; }
+.pricing-btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.pricing-btn.secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Demo Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #06080c; border: 1px solid #1a2030; border-radius: 8px;
+  padding: 10px 14px; color: #e8ecf4; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #0c1018; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+
+
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 72px 60px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700; font-style: normal; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; position: relative; }
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   Multi-column layout: brand block on the left (logo + tagline), navigation
+   columns on the right (Products / Resources / Company / Social). On mobile
+   the brand block stacks above the columns. The bottom strip carries the
+   copyright and a slim set of utility links. */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  color: var(--text-primary);
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand p {
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 13px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--text-primary); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .showcase-row, .showcase-row.reverse { grid-template-columns: 1fr; }
+  .hero { padding: 120px 0 60px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .cta-box { padding: 48px 32px; }
+  footer .container { flex-direction: column; gap: 16px; }
+}
+
+/* ── cost page local ── */
+.cost-hero{padding:120px 0 70px;text-align:center;position:relative}
+.cost-hero .hero-badge{margin-bottom:26px}
+.cost-hero h1{font-size:clamp(38px,5.4vw,62px);line-height:1.06;margin:0 auto;max-width:14ch}
+.cost-hero h1 em{color:var(--accent-text);font-style:normal}
+.cost-hero p.lede{max-width:680px;margin:24px auto 0;font-size:clamp(17px,1.9vw,20px);color:var(--text-secondary);line-height:1.55}
+.cost-hero .hero-actions{justify-content:center;margin-top:32px}
+.cost-metrics{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:46px}
+.cost-metric{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px 26px;min-width:170px}
+.cost-metric .v{font-family:var(--sans);font-weight:700;font-size:30px;color:var(--accent-text);letter-spacing:-.01em}
+.cost-metric .l{font-size:12.5px;color:var(--text-secondary);margin-top:5px}
+.shotwrap{max-width:1000px;margin:0 auto}
+.shot-frame{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0a0e16;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.shot-frame .bar{height:36px;background:#070a11;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 14px}
+.shot-frame .bar i{width:11px;height:11px;border-radius:50%}
+.shot-frame .bar i:nth-child(1){background:#ff5f56}.shot-frame .bar i:nth-child(2){background:#ffbd2e}.shot-frame .bar i:nth-child(3){background:#27c93f}
+.shot-frame .bar .u{margin-left:10px;font-family:var(--mono);font-size:11.5px;color:var(--text-tertiary)}
+.shot-frame img{display:block;width:100%;height:auto}
+.shot-cap{font-family:var(--mono);font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:14px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;margin-top:14px}
+.split.rev{direction:rtl}.split.rev>*{direction:ltr}
+.split h3{font-family:var(--sans);font-weight:700;font-size:clamp(22px,2.6vw,30px);margin:0 0 14px;color:var(--text)}
+.split p.k{font-size:16px;color:var(--text-secondary);margin:0 0 18px;line-height:1.55}
+.klist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+.klist li{display:flex;gap:11px;font-size:14.5px;color:var(--text);line-height:1.5}
+.klist li::before{content:"";flex:0 0 18px;height:18px;margin-top:2px;border-radius:5px;background:var(--accent);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/12px no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/12px no-repeat}
+.klist li b{font-weight:600}
+.cost-quote{text-align:center;max-width:860px;margin:0 auto;padding:14px 0}
+.cost-quote .q{font-family:var(--sans);font-weight:700;font-size:clamp(22px,3.1vw,34px);line-height:1.3;letter-spacing:-.01em;color:var(--text)}
+.cost-quote .q em{color:var(--accent-text);font-style:normal}
+.cost-quote .src{font-family:var(--mono);font-size:13px;color:var(--text-tertiary);margin-top:18px}
+@media(max-width:860px){.split,.split.rev{grid-template-columns:1fr;direction:ltr}}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron</a>
+    <div class="nav-links">
+      <a href="#features">MCP Orchestrator</a>
+      <a href="#pricing">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Schedule a Demo</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Cost Hero -->
+<section class="cost-hero">
+  <div class="container">
+    <div class="hero-badge"><span class="dot"></span> For the office of the CFO</div>
+    <h1>Govern the spend.<br><em>Not just the traffic.</em></h1>
+    <p class="lede">Tens of thousands of AI agents are transacting through metered MCP servers — and no one owns the budget line. Magertron gives finance a real-time lever on agent spend: per-tool budgets, chargeback by team, and a throttle at the gateway.</p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
+      <a href="#dashboard" class="btn-secondary">See the reporting →</a>
+    </div>
+    <div class="cost-metrics">
+      <div class="cost-metric"><div class="v">$0</div><div class="l">tools today give a CFO a budget lever on agent spend</div></div>
+      <div class="cost-metric"><div class="v">20K&ndash;1M</div><div class="l">agents per enterprise transacting through MCP</div></div>
+      <div class="cost-metric"><div class="v">Real-time</div><div class="l">enforcement at the gateway, before spend lands</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem -->
+<section class="features">
+  <div class="container">
+    <div class="section-label">The problem</div>
+    <div class="section-title">Agents are transacting.<br>Nobody is governing the spend.</div>
+    <div class="section-desc">MCP servers now bill on credit and usage models. Point tens of thousands of agents at them and an unbounded line item appears on the P&amp;L — with no owner, no forecast, and no brake.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">$</div>
+        <h3>Metered, runaway cost</h3>
+        <p>Usage-priced MCP servers turn agent activity into spend. At enterprise scale it compounds fast — and unpredictably.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⊘</div>
+        <h3>No budget lever</h3>
+        <p>There is no tool today that gives a CFO a real budget control on agent transactions. Finance can't cap what it can't see.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◔</div>
+        <h3>No attribution</h3>
+        <p>Which team drove the spend? Which agent? Without showback and chargeback, the bill lands in one undifferentiated lump.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Dashboard -->
+<section class="features" id="dashboard" style="border-top:1px solid var(--border)">
+  <div class="container">
+    <div class="section-label">Real-time visibility</div>
+    <div class="section-title">Every dollar of agent spend,<br>as it happens</div>
+    <div class="section-desc">A spend-anchored dashboard that speaks finance, not infrastructure. Committed pools and pay-as-you-go contracts represented honestly, side by side — down to the individual tool call.</div>
+    <div class="split">
+      <div>
+        <h3>Spend first. Infrastructure second.</h3>
+        <p class="k">The headline number is total spend — the one figure true for every contract, committed or usage-based. Commitment and pay-as-you-go sit beside it as context, never as the frame.</p>
+        <ul class="klist">
+          <li><b>Total spend</b> across every vendor, with success rate and active-contract count.</li>
+          <li><b>Committed vs pay-as-you-go</b> partitioned automatically — no commitment-biased totals.</li>
+          <li><b>By-vendor rollup</b> with committed, used, and remaining per contract.</li>
+          <li><b>Per-call drill-down</b> — caller, department, tool, cost, and status for every transaction.</li>
+        </ul>
+      </div>
+      <div class="shotwrap">
+        <div class="shot-frame">
+          <div class="bar"><i></i><i></i><i></i><span class="u">magertron · cost dashboard</span></div>
+          <img src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard showing total spend, committed and pay-as-you-go cards, daily trend, by-vendor table, and per-call detail.">
+        </div>
+        <div class="shot-cap">AI Cost Dashboard — spend-anchored cards, by-vendor rollup, per-call detail.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Chargeback -->
+<section class="features" style="border-top:1px solid var(--border)">
+  <div class="container">
+    <div class="section-label">Showback &amp; chargeback</div>
+    <div class="section-title">One lump bill becomes<br>a governed, forecastable line</div>
+    <div class="section-desc">An invoice-style chargeback statement that attributes spend down to the team, the cost center, and the individual caller — human user or service-account agent.</div>
+    <div class="split rev">
+      <div>
+        <h3>Spend, attributed to who spent it.</h3>
+        <p class="k">Per-vendor statements roll up by department and cost center, then break down to each caller with their share of the total. Value-based dollars computed from billable calls at the contract rate.</p>
+        <ul class="klist">
+          <li><b>Department → caller hierarchy</b> with cost-center codes and per-line percentages.</li>
+          <li><b>User and service-account</b> attribution — every agent identified.</li>
+          <li><b>Per-vendor scoping</b> so each statement foots to one contract.</li>
+          <li><b>Export to PDF</b> — a finance-ready document, not a raw export.</li>
+        </ul>
+      </div>
+      <div class="shotwrap">
+        <div class="shot-frame">
+          <div class="bar"><i></i><i></i><i></i><span class="u">magertron · chargeback statement</span></div>
+          <img src="screenshots/chargeback-statement.png" alt="Magertron chargeback statement attributing exa-search spend across Engineering, Quality Assurance, and unattributed callers, with per-caller dollar amounts and percentages.">
+        </div>
+        <div class="shot-cap">Chargeback statement — department and caller attribution, per-vendor scoped.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Wedge quote -->
+<section class="features" style="border-top:1px solid var(--border)">
+  <div class="container">
+    <div class="cost-quote">
+      <div class="q">Governance gets us in the door. <em>Cost control makes us indispensable</em> — and gives finance a budget lever it has never had on agent spend.</div>
+      <div class="src">— the Magertron thesis</div>
+    </div>
+  </div>
+</section>
+
+<!-- Capabilities -->
+<section class="features" style="border-top:1px solid var(--border)">
+  <div class="container">
+    <div class="section-label">Capabilities</div>
+    <div class="section-title">The CFO's guardrail —<br>not a kill switch</div>
+    <div class="section-desc">Budgets sized to keep the enterprise productive while capping the downside. Enforced in the transaction path, in real time, self-hosted in your own cluster.</div>
+    <div class="feature-grid">
+      <div class="feature-card"><div class="feature-icon">◉</div><h3>Per-server &amp; per-tool budgets</h3><p>Set hard and soft spend caps at the granularity that matters. Throttle or block transactions that exceed quota.</p></div>
+      <div class="feature-card"><div class="feature-icon">▦</div><h3>Showback &amp; chargeback</h3><p>Attribute every dollar to a team, cost center, and agent. Forecastable cost from an unbounded line item.</p></div>
+      <div class="feature-card"><div class="feature-icon">⇌</div><h3>Real-time gateway throttle</h3><p>A transactional rate limiter in the data path. Enforcement at the gateway, in real time — before the spend lands.</p></div>
+      <div class="feature-card"><div class="feature-icon">⛊</div><h3>Per-tool RBAC, default-deny</h3><p>Every agent call authorized against policy — design-time and run-time. No tool callable until explicitly granted.</p></div>
+      <div class="feature-card"><div class="feature-icon">⚿</div><h3>Data stays in your cluster</h3><p>Self-hosted, mTLS to every upstream. Your regulated data and spend records never leave your perimeter.</p></div>
+      <a href="siem-integration.html" class="feature-card clickable"><div class="feature-icon">◷</div><h3>Audit-ready evidence</h3><p>OCSF-formatted logs stream to your SIEM — the complete trail auditors require. Validated with Splunk and Datadog.</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="hero" style="padding:84px 0;text-align:center;border-top:1px solid var(--border)">
+  <div class="container">
+    <h1 style="font-size:clamp(30px,4vw,46px)">Put a brake on agent spend.</h1>
+    <p style="max-width:600px;margin:18px auto 0">See the dashboard and chargeback reporting against your own contracts. Free up to 20 MCP servers — the wedge into every team running MCP.</p>
+    <div class="hero-actions" style="justify-content:center;margin-top:30px">
+      <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
+      <a href="https://github.com/magertron/orchestrator" target="_blank" class="btn-secondary">View on GitHub →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> magertron</div>
+        <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">MCP Orchestrator</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">MCP Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Schedule a Demo</h3>
+    <p id="demo-modal-subtitle">Tell us about your use case and we'll reach out within one business day.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>Interested in</label>
+      <select id="demo-tier">
+        <option value="Pro">Pro — $499/mo</option>
+        <option value="Enterprise">Enterprise — Custom pricing</option>
+        <option value="Just looking">Just exploring</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Tell us about your use case</label>
+      <textarea id="demo-message" placeholder="How many MCP servers are you planning to deploy? What's your team size?"></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send request →</button>
+  </div>
+</div>
+
+
+
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Schedule a Demo';
+    if (subtitle) subtitle.textContent = 'Tell us about your use case and we\u2019ll reach out within one business day.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Thanks — we'll be in touch.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            Your message is on its way to our team. Expect a reply within one business day.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+
+</body>
+</html>
+
+
+</body>
+</html>
