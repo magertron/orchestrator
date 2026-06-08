@@ -882,6 +882,36 @@ data:
         WHERE cost_state = 'FINAL'      -- settled credits; include ESTIMATED for live view
         GROUP BY contract_id
     ) u ON u.contract_id = c.id;
+
+    -- ── Cost budgets (per-server dollar throttle) ───────────────────────────────
+    -- Authoritative here so fresh DBs match the live schema. (Previously this
+    -- table lived only in the standalone 02-cost-metering.sql with a stale
+    -- limit_usd-only shape; the live DB was migrated to threshold_pct. This
+    -- definition matches the live \d cost_budgets.)
+    --
+    --   threshold_pct : block point as a % of the contract commitment
+    --                   (limit = commitment * threshold_pct / 100)
+    --   limit_usd     : absolute dollar ceiling, independent of commitment
+    --                   (PAYG caps / limits beyond commitment). NULL = use the
+    --                   threshold_pct path. The gate PREFERS limit_usd when set.
+    --   override      : platform-admin "let it through" (resume traffic over budget)
+    CREATE TABLE IF NOT EXISTS cost_budgets (
+        id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+        scope_type    VARCHAR(16)   NOT NULL DEFAULT 'server'
+                      CHECK (scope_type IN ('server','tool','department')),
+        server_id     UUID          NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        threshold_pct NUMERIC(5,2)  NOT NULL DEFAULT 100
+                      CHECK (threshold_pct >= 0 AND threshold_pct <= 100),
+        override      BOOLEAN       NOT NULL DEFAULT FALSE,
+        created_by    TEXT          NOT NULL,
+        created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+    );
+    -- Absolute ceiling column (added after initial ship; idempotent for upgrades).
+    ALTER TABLE cost_budgets ADD COLUMN IF NOT EXISTS limit_usd NUMERIC(12,2);
+    -- At most one server-scoped budget per server.
+    CREATE UNIQUE INDEX IF NOT EXISTS cost_budgets_server_uq
+        ON cost_budgets (server_id) WHERE scope_type = 'server';
   03-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
