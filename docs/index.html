@@ -4,29 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>MCP Orchestrator: Govern MCP Servers in Kubernetes | Magertron</title>
-<meta name="description" content="The Kubernetes-native MCP control plane. Deploy MCP servers as pods in your own cluster. Any language, any image. OSS Free up to 20 servers — no signup, no credit card.">
+<title>Magertron: The Spend Control Plane for Enterprise AI Agents</title>
+<meta name="description" content="See and control what your AI agents cost. Magertron meters every MCP tool call, charges it back per user and team, and enforces hard budget limits at the gateway. OSS Free up to 20 servers — no signup, no credit card.">
 
 <!-- ─── SEO: canonical, Open Graph, Twitter Card, JSON-LD ─────────────────── -->
 <link rel="canonical" href="https://magertron.com/">
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://magertron.com/">
-<meta property="og:title" content="MCP Orchestrator: Govern MCP Servers in Kubernetes | Magertron">
-<meta property="og:description" content="The Kubernetes-native MCP control plane. Deploy MCP servers as pods in your own cluster. OSS Free up to 20 servers — no signup, no credit card.">
-<meta property="og:image" content="https://magertron.com/screenshots/dashboard.png">
+<meta property="og:title" content="Magertron: The Spend Control Plane for Enterprise AI Agents">
+<meta property="og:description" content="See and control what your AI agents cost. Meter every MCP tool call, charge it back per user and team, enforce hard budget limits. OSS Free up to 20 servers — no signup, no credit card.">
+<meta property="og:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Magertron MCP Orchestrator dashboard showing deployed MCP servers in a Kubernetes cluster">
+<meta property="og:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user, committed vs pay-as-you-go, with budget tracking">
 <meta property="og:site_name" content="Magertron">
 <meta property="og:locale" content="en_US">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://magertron.com/">
-<meta name="twitter:title" content="MCP Orchestrator: Govern MCP Servers in Kubernetes | Magertron">
-<meta name="twitter:description" content="The Kubernetes-native MCP control plane. Deploy MCP servers as pods in your own cluster.">
-<meta name="twitter:image" content="https://magertron.com/screenshots/dashboard.png">
-<meta name="twitter:image:alt" content="Magertron MCP Orchestrator dashboard">
+<meta name="twitter:title" content="Magertron: The Spend Control Plane for Enterprise AI Agents">
+<meta name="twitter:description" content="See and control what your AI agents cost. Meter every tool call, charge it back per user, enforce budget limits at the gateway.">
+<meta name="twitter:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
+<meta name="twitter:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user">
 
 <meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
 <meta name="author" content="Magertron">
@@ -41,12 +41,12 @@
   "applicationCategory": "DeveloperApplication",
   "applicationSubCategory": "Kubernetes Platform",
   "operatingSystem": "Linux, Kubernetes",
-  "description": "The Kubernetes-native MCP control plane. Deploy MCP servers as pods in your own cluster. Any language, any image. Full lifecycle from a single Helm chart.",
-  "softwareVersion": "2.6.83",
+  "description": "The spend control plane for enterprise AI agents. Meter every MCP tool call, charge it back per user and team, and enforce hard budget limits at the gateway.",
+  "softwareVersion": "2.6.82",
   "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
   "url": "https://magertron.com",
   "downloadUrl": "https://github.com/magertron/orchestrator",
-  "screenshot": "https://magertron.com/screenshots/dashboard.png",
+  "screenshot": "https://magertron.com/screenshots/ai-cost-dashboard.png",
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
   "offers": [
     {
@@ -84,7 +84,7 @@
   "@type": "Organization",
   "name": "Magertron",
   "url": "https://magertron.com",
-  "description": "The Kubernetes-native MCP control plane for managing Model Context Protocol servers at scale.",
+  "description": "The spend control plane for enterprise AI agents — metering, per-user chargeback, and budget enforcement for Model Context Protocol servers at scale.",
   "foundingLocation": {
     "@type": "Place",
     "address": {
@@ -506,14 +506,15 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="hero-badge">
       <span class="dot"></span>
-      Now available — v2.6.83
+      Now available — v2.6.82
     </div>
     <div class="hero-badge" style="margin-left: 8px; border-color: var(--border-accent); background: var(--accent-glow); color: var(--accent-text);">
       <span style="font-weight: 600; letter-spacing: 0.04em;">NEW</span>
-      External MCP server support — including mTLS
+      One-click OAuth onboarding for vendors
     </div>
-    <h1>The Kubernetes-native<br>MCP <em>control plane</em></h1>
-    <p>Deploy MCP servers as pods in your own cluster. Any language, any image. Full lifecycle from a single Helm chart. OSS Free up to 20 servers — no signup, no credit card.</p>
+    <h1>The spend control plane<br>for enterprise <em>AI agents</em></h1>
+    <p>Your AI agents are spending money on every tool call — across vendors, with no visibility. Magertron meters every call, charges it back per user and per team, and enforces hard budget limits at the gateway. See what your agents cost, and cap it.</p>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-top: -8px;">OSS Free up to 20 servers — no signup, no credit card.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
       <a href="https://github.com/magertron/orchestrator" target="_blank" class="btn-secondary">View on GitHub →</a>
@@ -529,10 +530,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <span style="color: var(--text-secondary);">$</span> ./install.sh --license /path/to/license.json  <span style="color: var(--text-secondary);"># With a license</span></pre>
     </div>
 
-    <!-- Main dashboard screenshot -->
+    <!-- Main screenshot: the AI Cost Dashboard — the spend story made concrete.
+         Leads with dollars (total spend, committed, remaining), per-vendor and
+         per-user breakdown, and the daily trend. This is the CFO-legible view. -->
     <div class="hero-screenshot">
-      <!-- REPLACE: swap this div with <img src="screenshots/dashboard.png" alt="MCP Orchestrator Dashboard"> -->
-      <img src="screenshots/dashboard.png" alt="MCP Orchestrator Dashboard">
+      <img src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
     </div>
   </div>
 </section>
@@ -1083,7 +1085,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="logo"><span>▸</span> magertron</div>
-        <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
       </div>
 
       <div class="footer-col">
