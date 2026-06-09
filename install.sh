@@ -859,25 +859,73 @@ if [ -z "$API_PUBLIC_URL" ]; then
     elif [ "$IS_TTY" = "0" ]; then
         info "API_PUBLIC_URL unset (no TTY) — using chart default (request-relative URLs)."
     else
-        echo "  External URL where users' browsers will reach Magertron."
-        echo "  Used for delegated-OAuth callback redirects."
-        echo "    Example: https://magertron.example.com"
-        echo "    Leave blank to use the chart default (request-relative / dev localhost)."
-        echo ""
+        printf "\n"
+        printf "  ${C_YELLOW}${C_BOLD}┌────────────────────────────────────────────────────────────┐${C_RESET}\n"
+        printf "  ${C_YELLOW}${C_BOLD}│  IMPORTANT: Public URL for OAuth & DCR callbacks           │${C_RESET}\n"
+        printf "  ${C_YELLOW}${C_BOLD}└────────────────────────────────────────────────────────────┘${C_RESET}\n"
+        printf "\n"
+        printf "  Magertron needs the ${C_BOLD}externally-reachable HTTPS URL${C_RESET} that an\n"
+        printf "  end-user's browser uses to reach this orchestrator. It builds the\n"
+        printf "  delegated-OAuth / DCR callback target from it:\n"
+        printf "      ${C_CYAN}<your-url>/api/v1/oauth/callback${C_RESET}\n"
+        printf "\n"
+        printf "  ${C_BOLD}Why this matters:${C_RESET} OAuth providers redirect the user's browser\n"
+        printf "  back to this exact URL after they sign in. If it's wrong or unset,\n"
+        printf "  the browser is sent to a localhost/internal address it cannot reach\n"
+        printf "  — and ${C_BOLD}every delegated-OAuth and DCR login fails${C_RESET} with a dead\n"
+        printf "  redirect. This is the one value the installer cannot infer for you.\n"
+        printf "\n"
+        printf "  ${C_DIM}Examples:${C_RESET}\n"
+        printf "      ${C_DIM}Production:${C_RESET}  https://magertron.example.com\n"
+        printf "      ${C_DIM}Dev/tunnel:${C_RESET}  https://your-name.ngrok-free.dev\n"
+        printf "\n"
+        printf "  ${C_DIM}(No scheme guess, no trailing slash — paste the full https:// URL.)${C_RESET}\n"
+        printf "\n"
         while :; do
-            read -r -p "  Public URL [blank to skip]: " _apu
+            read -r -p "  $(printf "${C_BOLD}Public HTTPS URL${C_RESET}"): " _apu
+            # Guard against a stray RETURN silently skipping this critical value.
+            if [ -z "$_apu" ]; then
+                printf "\n"
+                warn "${C_BOLD}No public URL entered.${C_RESET}"
+                printf "  ${C_YELLOW}Delegated OAuth and DCR onboarding will NOT work${C_RESET} without it\n"
+                printf "  (callbacks will redirect to an unreachable localhost default).\n"
+                printf "  You can re-run the installer later with ${C_BOLD}--api-public-url <url>${C_RESET}.\n"
+                printf "\n"
+                read -r -p "  Skip anyway? Type ${C_BOLD}skip${C_RESET} to confirm, or paste a URL: " _confirm
+                case "$_confirm" in
+                    skip|SKIP|Skip)
+                        API_PUBLIC_URL=""
+                        break
+                        ;;
+                    "")
+                        # Bare RETURN again — loop, don't silently skip.
+                        echo "  (No input — let's try once more.)" >&2
+                        continue
+                        ;;
+                    *)
+                        # They pasted a URL at the confirm prompt — validate it.
+                        if normalized=$(validate_public_url "$_confirm"); then
+                            API_PUBLIC_URL="$normalized"
+                            break
+                        fi
+                        echo "  Invalid URL. Try again, or type 'skip' to proceed without one." >&2
+                        continue
+                        ;;
+                esac
+            fi
             if normalized=$(validate_public_url "$_apu"); then
                 API_PUBLIC_URL="$normalized"
                 break
             fi
-            echo "  Invalid URL. Try again, or leave blank to skip." >&2
+            echo "  Invalid URL — must be a full https:// URL with no trailing slash. Try again." >&2
         done
         if [ -n "$API_PUBLIC_URL" ]; then
-            echo "  Public URL set to: $API_PUBLIC_URL"
+            ok "Public URL set: ${C_BOLD}$API_PUBLIC_URL${C_RESET}"
+            note "OAuth/DCR callback will be: ${C_CYAN}${API_PUBLIC_URL}/api/v1/oauth/callback${C_RESET}"
         else
-            echo "  No public URL set — using chart default (request-relative URLs)."
+            warn "Proceeding with no public URL — delegated OAuth/DCR disabled until set."
         fi
-        echo ""
+        printf "\n"
     fi
 else
     # Value came from --api-public-url or the env var: validate it too, so a
