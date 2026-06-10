@@ -462,6 +462,14 @@ data:
     );
     CREATE INDEX IF NOT EXISTS idx_mcp_tools_server ON mcp_tools (server_id);
 
+    -- Tool-poisoning content scan verdict (flag-only; never blocks serving).
+    -- Set at tool-discovery/persist time by a description content scan that
+    -- detects vendor-supplied agent-directed instruction markers (e.g.
+    -- <agent-mandatory-instructions>). injection_flagged is re-evaluated on
+    -- every upsert, so a vendor that later removes the payload clears the flag.
+    ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS injection_flagged BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS injection_reason  TEXT;
+
     -- Per-server governance knobs.
     CREATE TABLE IF NOT EXISTS mcp_server_tool_governance (
         server_id               UUID PRIMARY KEY REFERENCES deployed_servers(id) ON DELETE CASCADE,
