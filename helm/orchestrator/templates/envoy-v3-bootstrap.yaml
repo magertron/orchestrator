@@ -333,16 +333,47 @@ data:
                             timeout: 2s
                           transport_api_version: V3
                           failure_mode_allow: false
-                          # Session 2.16 (2026-06-05): with_request_body REMOVED.
-                          # The external ext_authz handler (port 9093) does
-                          # not need the request body — it routes on :path
-                          # (namespace + server) and looks up credentials via
-                          # the orchestrator's CredentialCache. Buffering the
-                          # body caused envoy to re-encode it before forwarding
-                          # upstream, which some strict edge WAFs (Cloudflare,
-                          # Vercel) reject as malformed HTTP/1.1 framing.
-                          # Without buffering, the body streams straight
-                          # through, byte-for-byte.
+                          # with_request_body RE-ADDED (per-tool RBAC + rating).
+                          # ── Provenance correction ────────────────────────────
+                          # Session 2.16 (2026-06-05) removed this block, citing
+                          # buffering-induced re-encode rejected by strict edge
+                          # WAFs (Cloudflare/Vercel) as malformed HTTP/1.1. On
+                          # review that rationale appears MISATTRIBUTED: the only
+                          # malformed-framing failure actually captured on the wire
+                          # that day (socat dump, slice-c6b-handoff.md) was Envoy's
+                          # ext_authz RESPONSE→upstream-HEADER translation emitting a
+                          # stray ": \r" empty header — the credential-injection
+                          # path, NOT the request body. That was fixed separately
+                          # via B17 (append_action OVERWRITE_IF_EXISTS_OR_ADD +
+                          # allowed_upstream_headers allow-list, both live in
+                          # external_service.cpp / the route config). The same-day
+                          # SESSION_HANDOFF_2026-06-05.md describes body access only
+                          # as a deferred "nice-to-have," with no mention of a body
+                          # framing failure — consistent with the body buffering
+                          # never having broken vendor traffic.
+                          #
+                          # Why the external plane now NEEDS the body: per-tool RBAC
+                          # (named-tool grants must match, not just server-wide "*")
+                          # AND per-tool cost attribution (meter_events.tool_id keyed
+                          # to the real tool; ALS true-up carries only request_id +
+                          # status and cannot recover the tool). Both data needs
+                          # converge on params.name in the JSON-RPC body — the same
+                          # datum, available only here.
+                          #
+                          # Config mirrors the internal ext_authz filter EXACTLY
+                          # (65536 / allow_partial_message:true / pack_as_bytes:false)
+                          # — the most-tested body-buffer config in the system,
+                          # proven on the internal path at multi-thousand rps. The
+                          # handler reads .body() (string field; pack_as_bytes:false),
+                          # matching service.cpp. allow_partial_message:true means a
+                          # body over the cap is truncated-and-forwarded (not 403'd —
+                          # avoids the >8KB foot-gun the internal filter hit at 8192);
+                          # parse_mcp_rpc_body tolerates truncation (returns
+                          # parse_error → handler denies 400).
+                          with_request_body:
+                            max_request_bytes: 65536
+                            allow_partial_message: true
+                            pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_external_v3
                         # disabled: true at the filter-instance level is what makes
