@@ -841,6 +841,9 @@ data:
         contract_id            UUID        NOT NULL REFERENCES cost_contracts(id),
         rate_id                UUID        NOT NULL REFERENCES rate_schedules(id),
         period                 DATE        NOT NULL,      -- first day of accounting period
+        tool_id                TEXT        NOT NULL DEFAULT '',  -- per-tool attribution
+                                                                -- ('' = contract-level rows:
+                                                                -- bundle_fee, true_up)
         dimension              TEXT        NOT NULL DEFAULT 'calls',  -- Move 1: which dimension priced
         credits                NUMERIC(20,6) NOT NULL,
         usd_per_credit_applied NUMERIC(20,8) NOT NULL,
@@ -850,12 +853,14 @@ data:
                                  CHECK (cost_state IN ('ESTIMATED','FINAL')),
         rated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    -- One ESTIMATED and/or one FINAL per (group, dimension) keeps re-rating
+    -- One ESTIMATED and/or one FINAL per (group, tool, dimension) keeps re-rating
     -- idempotent. Move 1: dimension is in the key because one billing_group
     -- (one call) can produce multiple rated rows — one per priced dimension
-    -- (calls, input_tokens, output_tokens) — which must coexist.
-    CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_state_uq
-        ON rated_costs (billing_group_id, dimension, cost_state);
+    -- (calls, input_tokens, output_tokens) — which must coexist. tool_id is in
+    -- the key so per-tool costs (search vs answer vs research) coexist too rather
+    -- than collapsing into one row when they share a dimension.
+    CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_tool_state_uq
+        ON rated_costs (billing_group_id, tool_id, dimension, cost_state);
     CREATE INDEX IF NOT EXISTS rated_costs_period_idx
         ON rated_costs (contract_id, period, cost_state);
     -- Move 1 migrations (upgrade paths): dimension column + reshaped unique index.
