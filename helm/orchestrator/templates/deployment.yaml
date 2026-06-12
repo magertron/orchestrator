@@ -90,6 +90,15 @@ spec:
             # request-relative URLs.
             - name: MCP_API_PUBLIC_URL
               value: {{ .Values.orchestrator.env.apiPublicUrl | quote }}
+            # ── Rating worker cadence ───────────────────────────────────────
+            # Interval between rating passes and the settle window (min event
+            # age before rating, so ALS true-up has flipped failed calls to
+            # 'error' first). The binary defaults to 600s/60s if unset;
+            # values.yaml restates them so prod boots with a valid integer.
+            - name: MCP_RATING_INTERVAL_SECONDS
+              value: {{ .Values.orchestrator.env.ratingIntervalSeconds | quote }}
+            - name: MCP_RATING_SETTLE_SECONDS
+              value: {{ .Values.orchestrator.env.ratingSettleSeconds | quote }}
             # ── License file path ──────────────────────────────────────────
             # Path to the license JSON inside the pod. Free tier if missing.
             - name: MCP_LICENSE_FILE

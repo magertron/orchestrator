@@ -116,6 +116,19 @@ orchestrator:
     # Empty string = orchestrator uses request-relative URLs.
     apiPublicUrl: "http://localhost:8080"   # dev: browser hits localhost via kubectl port-forward to the leader pod
 
+    # ── Rating worker cadence ────────────────────────────────────────────
+    # How often the leader rates the current period's settled meter_events
+    # into ESTIMATED rated_costs, and the minimum event age before rating
+    # (gives Brick 3's ALS true-up time to flip failed calls to 'error'
+    # before they're rated). These restate the binary's built-in defaults so
+    # prod boots with a valid integer rather than rendering "" (which the
+    # orchestrator tolerates by falling back, but logs a warning).
+    # A short dev interval removes the ~10-minute wait that makes a rating
+    # test impractical:
+    #   --set orchestrator.env.ratingIntervalSeconds=5
+    ratingIntervalSeconds: 600    # rate every 10 min   (must be > 0)
+    ratingSettleSeconds: 60       # only rate events >60s old   (>= 0)
+
     # ── Leader election (v1.7 multi-replica HA) ──────────────────────────
     # Override the auto-derived setting. By default, the chart enables
     # leader election when orchestrator.replicaCount > 1 and disables it
