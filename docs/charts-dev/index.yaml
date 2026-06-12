@@ -102,10 +102,10 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.87-dev.5940910
-    created: "2026-06-12T18:01:13.771392425-04:00"
+    created: "2026-06-12T18:16:23.049290952-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
-    digest: e184bee7ccd354e4965c6e852281ae6842558328c14cea46563679e343b0e306
+    digest: e46e8cc02a0f8c24acbcc89614aae4e22ac8ffcff71cff6f7a1b94934110bdb7
     home: https://magertron.com
     icon: https://magertron.com/logo.svg
     keywords:
@@ -126,4 +126,4 @@ entries:
     urls:
     - https://magertron.com/charts-dev/mcp-orchestrator-2.7.87-dev.5940910.tgz
     version: 2.7.87-dev.5940910
-generated: "2026-06-12T18:01:13.768748231-04:00"
+generated: "2026-06-12T18:16:23.04740755-04:00"
