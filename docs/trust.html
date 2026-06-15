@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Trust &amp; Security — Magertron</title>
+<meta name="description" content="How Magertron handles access, change, and operations controls — mapped to the SOC 2 Common Criteria. Controls designed and documented; SOC 2 readiness in progress.">
+
+<link rel="canonical" href="https://magertron.com/trust.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/trust.html">
+<meta property="og:title" content="Trust &amp; Security — Magertron">
+<meta property="og:description" content="Access, change, and operations controls mapped to the SOC 2 Common Criteria. Designed and documented; readiness in progress.">
+<meta property="og:site_name" content="Magertron">
+<meta property="og:locale" content="en_US">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --success-glow: rgba(34, 197, 94, 0.12);
+  --amber: #f59e0b;
+  --amber-glow: rgba(245, 158, 11, 0.12);
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.narrow { max-width: 920px; }
+
+/* ── Nav ──────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.trust-hero { padding: 128px 0 48px; position: relative; overflow: hidden; }
+.trust-hero::before {
+  content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 520px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--accent-text); margin-bottom: 18px;
+}
+.trust-hero h1 {
+  font-family: var(--serif); font-weight: 700; letter-spacing: -0.035em;
+  font-size: clamp(38px, 5.5vw, 64px); line-height: 1.06; margin-bottom: 20px;
+  max-width: 760px;
+  animation: fadeUp 0.6s ease-out;
+}
+.trust-hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.trust-hero .lede {
+  font-size: 18px; color: var(--text-secondary); max-width: 620px; line-height: 1.7;
+  animation: fadeUp 0.6s ease-out 0.1s both;
+}
+
+/* ── Honest status banner ─────────────────────────────────────────────── */
+.status-banner {
+  margin-top: 36px; display: flex; gap: 16px; align-items: flex-start;
+  padding: 20px 24px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--amber-glow), transparent 80%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  animation: fadeUp 0.6s ease-out 0.2s both;
+}
+.status-banner .ring {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+  border: 2px solid var(--amber); display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 18px; color: var(--amber);
+}
+.status-banner h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.status-banner p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+/* ── Section scaffolding ──────────────────────────────────────────────── */
+.section { padding: 64px 0; }
+.section-label {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(30px, 3.6vw, 44px);
+  font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; margin-bottom: 14px;
+}
+.section-desc { font-size: 16px; color: var(--text-secondary); max-width: 600px; line-height: 1.7; margin-bottom: 44px; }
+
+/* ── Coverage summary chips ───────────────────────────────────────────── */
+.coverage-summary { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 44px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 100px; font-size: 13px;
+  background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+}
+.chip .swatch { width: 9px; height: 9px; border-radius: 50%; }
+.chip .swatch.green { background: var(--success); }
+.chip .swatch.amber { background: var(--amber); }
+.chip strong { color: var(--text); font-weight: 600; }
+
+/* ── CC list (collapsible) ────────────────────────────────────────────── */
+.cc-list {
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  background: var(--bg-card);
+}
+.cc-row { border-top: 1px solid var(--border); }
+.cc-row:first-child { border-top: none; }
+.cc-row > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 22px; transition: background 0.2s;
+}
+.cc-row > summary::-webkit-details-marker { display: none; }
+.cc-row > summary:hover { background: var(--bg-card-hover); }
+.cc-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; }
+.cc-dot.green { background: var(--success); box-shadow: 0 0 0 4px var(--success-glow); }
+.cc-dot.amber { background: var(--amber); box-shadow: 0 0 0 4px var(--amber-glow); }
+.cc-id { font-family: var(--mono); font-size: 12px; color: var(--text-tertiary); letter-spacing: 0.04em; min-width: 36px; }
+.cc-name { font-family: var(--serif); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; flex: 1; }
+.cc-status {
+  font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 100px;
+}
+.cc-status.green { background: var(--success-glow); color: var(--success); border: 1px solid rgba(34,197,94,0.25); }
+.cc-status.amber { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
+.cc-chevron { flex-shrink: 0; color: var(--text-tertiary); font-size: 13px; transition: transform 0.2s; }
+.cc-row[open] > summary .cc-chevron { transform: rotate(90deg); color: var(--accent-text); }
+.cc-detail { padding: 0 22px 20px 64px; }
+.cc-detail p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; }
+@media (max-width: 768px) {
+  .cc-detail { padding: 0 22px 20px 22px; }
+  .cc-name { font-size: 15px; }
+}
+
+/* ── Control highlights (condensed list) ──────────────────────────────── */
+.highlights { background: linear-gradient(180deg, transparent, rgba(37,99,235,0.03)); }
+.hl-icon {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px;
+  background: var(--accent-glow); border: 1px solid rgba(37, 99, 235, 0.2);
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.hl-name { font-family: var(--serif); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; flex: 1; }
+.cc-detail ul { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.cc-detail ul li { font-size: 13px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start; }
+.cc-detail ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+
+/* ── Disclosure / contact ─────────────────────────────────────────────── */
+.disclosure-box {
+  padding: 44px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(99, 102, 241, 0.04));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.disclosure-box::before {
+  content: ''; position: absolute; top: -50%; right: -10%; width: 460px; height: 460px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.disclosure-box h2 { font-family: var(--serif); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; position: relative; }
+.disclosure-box p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; max-width: 620px; position: relative; margin-bottom: 16px; }
+.disclosure-meta { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 24px; position: relative; }
+.disclosure-meta .item .k { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: 4px; }
+.disclosure-meta .item .v { font-size: 14px; color: var(--text); }
+.disclosure-meta .item .v a { color: var(--accent-text); }
+
+.disclaimer { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.7; max-width: 760px; margin-top: 40px; }
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-weight: 700; font-size: 20px; color: var(--text); }
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); font-weight: 500; margin-bottom: 14px; }
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid var(--border); }
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 768px) {
+  .nav-links a:not(.nav-cta) { display: none; }
+  .cc-grid { grid-template-columns: 1fr; }
+  .highlight-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .trust-hero { padding: 112px 0 40px; }
+  .disclosure-meta { gap: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <a href="index.html" class="nav-logo"><span>▸</span> magertron</a>
+    <div class="nav-links">
+      <a href="index.html#features">MCP Orchestrator</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a>
+      <a href="index.html#" class="nav-cta">Schedule a Demo</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="trust-hero">
+  <div class="container narrow">
+    <div class="eyebrow">Trust &amp; Security</div>
+    <h1>Processes you can <em>verify</em></h1>
+    <p class="lede">Magertron's job is to control what AI agents can do and what they spend. The same discipline runs through how the product itself is built: access, change, and operations controls are structural, technical, and live in the code — mapped here against the nine SOC 2 Common Criteria families.</p>
+
+    <div class="status-banner">
+      <div class="ring">◐</div>
+      <div>
+        <h3>SOC 2 readiness in progress — this is a map, not an attestation</h3>
+        <p>All nine Common Criteria families are authored, with five fully covered by strong, written controls. The status below reflects how thoroughly each family is addressed in product and documentation today — not independent auditor verification. We state where we are honestly, including where the work is still maturing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Coverage map -->
+<section class="section">
+  <div class="container narrow">
+    <div class="section-label">SOC 2 Common Criteria</div>
+    <h2 class="section-title">Coverage across CC1–CC9</h2>
+    <p class="section-desc">Each family below names what Magertron does — in product or in a written control narrative — that bears on that criterion. Green means a strong, often end-to-end-verified control exists. Amber means the technical pieces are in place while the organizational or evidence layer matures.</p>
+
+    <div class="coverage-summary">
+      <span class="chip"><span class="swatch green"></span><strong>5</strong>&nbsp;families fully covered</span>
+      <span class="chip"><span class="swatch green"></span><strong>2</strong>&nbsp;substantially covered</span>
+      <span class="chip"><span class="swatch amber"></span><strong>2</strong>&nbsp;maturing</span>
+      <span class="chip"><strong>0</strong>&nbsp;unaddressed</span>
+    </div>
+
+    <div class="cc-list">
+      <details class="cc-row" open>
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC6</span>
+          <span class="cc-name">Logical &amp; Physical Access</span>
+          <span class="cc-status green">Strong</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>The deepest area. BYOK credentials are referenced, never held — proxy-injected, per-namespace tenant isolation, never logged. OIDC id_token verification against a live IdP, SCIM provisioning with deny-by-construction isolation, and per-tool RBAC. Physical access inherited from the cloud provider.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC8</span>
+          <span class="cc-name">Change Management</span>
+          <span class="cc-status green">Strong</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>An eight-stage gated release pipeline with dev/prod channel separation, a mandatory peer-review merge gate, build provenance pinned to the commit SHA, and a per-release receipt. A build can no longer ship itself to customers.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC4</span>
+          <span class="cc-name">Monitoring of Controls</span>
+          <span class="cc-status green">Strong</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>A complete OCSF audit trail (RAII-guaranteed), exactly-once metering, and tool-definition drift detection — readable in Splunk for continuous visibility. A scheduled detector counts failed-auth and denied-tool events and pushes deduplicated alerts over threshold.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC5</span>
+          <span class="cc-name">Control Activities</span>
+          <span class="cc-status green">Strong</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>Built on structural enforcement, deny-by-construction, least authority, and defense-in-depth. A control-activity matrix classifies every control by risk, type, layer, and mode, doubling as the index to the full control set.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC7</span>
+          <span class="cc-name">System Operations</span>
+          <span class="cc-status green">Strong</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>Scoped to build-and-release, since customers run Magertron themselves. Content-hash drift / rug-pull detection, an audit trail integrated to Splunk, a written supply-chain incident-response and disclosure procedure, and offsite backups with verified restore.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC2</span>
+          <span class="cc-name">Communication &amp; Information</span>
+          <span class="cc-status green">Covered</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>A strong information layer (audit trail, metering, drift detection feed governance reviews), a written vulnerability-disclosure procedure, a customer-notification commitment, a dedicated security contact, and published trust documentation.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot green"></span>
+          <span class="cc-id">CC3</span>
+          <span class="cc-name">Risk Assessment</span>
+          <span class="cc-status green">Covered</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>A documented methodology — likelihood × impact scoring with mitigate / accept / monitor treatment — and a living Risk Register of scored, owned, tracked risks reviewed on a quarterly cadence alongside control-monitoring and vendor reviews.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot amber"></span>
+          <span class="cc-id">CC9</span>
+          <span class="cc-name">Risk Mitigation</span>
+          <span class="cc-status amber">Maturing</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>A two-tier vendor register with per-vendor risk and compensating control, on an annual-plus-on-change review cadence. Source and secrets in recoverable custody with verified offsite restore. Maturing: a second review cycle and bound insurance.</p>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="cc-dot amber"></span>
+          <span class="cc-id">CC1</span>
+          <span class="cc-name">Control Environment</span>
+          <span class="cc-status amber">Maturing</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>A code of conduct, documented organizational structure, an accountability model evidenced by the audit trail, and hiring and onboarding policy. The honest gap — independent oversight — is named as a maturity item rather than papered over.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- Control highlights -->
+<section class="section highlights">
+  <div class="container narrow">
+    <div class="section-label">How the controls work</div>
+    <h2 class="section-title">Enforcement that lives in the product</h2>
+    <p class="section-desc">The strongest families are strong because the control is structural — it is enforced by the architecture, not by a policy a person has to remember to follow.</p>
+
+    <div class="cc-list">
+      <details class="cc-row" open>
+        <summary>
+          <span class="hl-icon">🔑</span>
+          <span class="hl-name">Credentials referenced, never held</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>Bring-your-own-key credentials are injected at the proxy and isolated per namespace. Magertron never stores them in plaintext and never writes them to logs.</p>
+          <ul>
+            <li>Per-namespace tenant isolation</li>
+            <li>OIDC id_token verified against a live IdP</li>
+            <li>SCIM provisioning, deny-by-construction</li>
+          </ul>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="hl-icon">🚦</span>
+          <span class="hl-name">A build can't ship itself</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>Every release passes an eight-stage gated pipeline with a mandatory peer-review merge gate and dev/prod channel separation, with provenance pinned to the commit SHA.</p>
+          <ul>
+            <li>Per-release receipt for traceability</li>
+            <li>Fix-through-the-pipeline incident response</li>
+            <li>Source &amp; artifacts backed up offsite, restore verified</li>
+          </ul>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="hl-icon">📡</span>
+          <span class="hl-name">Continuous, queryable monitoring</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>A complete OCSF audit trail is guaranteed by construction and streamed to Splunk. A scheduled detector watches for failed-auth and denied-tool spikes and alerts over threshold.</p>
+          <ul>
+            <li>Exactly-once metering</li>
+            <li>Tool-definition drift / rug-pull detection</li>
+            <li>Alert path exercised by the release regression suite</li>
+          </ul>
+        </div>
+      </details>
+      <details class="cc-row">
+        <summary>
+          <span class="hl-icon">🛡️</span>
+          <span class="hl-name">Per-tool authority, by default</span>
+          <span class="cc-chevron">›</span>
+        </summary>
+        <div class="cc-detail">
+          <p>Access is least-authority and deny-by-construction: a caller gets exactly the tools their role grants, enforced at the gateway before a request ever reaches a server.</p>
+          <ul>
+            <li>Per-tool RBAC at the data plane</li>
+            <li>Inventory token authority-split</li>
+            <li>Structural enforcement over policy reminders</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- Disclosure / contact -->
+<section class="section">
+  <div class="container narrow">
+    <div class="disclosure-box">
+      <h2>Report a vulnerability</h2>
+      <p>We welcome responsible disclosure. If you believe you've found a security issue in Magertron, contact us directly — we commit to acknowledging reports and keeping affected customers informed as we investigate and remediate through the gated pipeline.</p>
+      <div class="disclosure-meta">
+        <div class="item">
+          <div class="k">Security contact</div>
+          <div class="v"><a href="mailto:security@magertron.com">security@magertron.com</a></div>
+        </div>
+        <div class="item">
+          <div class="k">Machine-readable</div>
+          <div class="v"><a href="/.well-known/security.txt">/.well-known/security.txt</a></div>
+        </div>
+        <div class="item">
+          <div class="k">Disclosure policy</div>
+          <div class="v"><a href="security.html">Security overview</a></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="disclaimer">This page is a navigational summary of Magertron's control posture, offered for security and compliance reviewers. It is not a SOC 2 attestation, a readiness assessment, or a statement of compliance — those require a qualified auditor, defined Trust Services Criteria scoping, and evidence collected over a defined period. The status shown reflects documentation and product coverage as of today. Magertron is licensed software that customers deploy on their own infrastructure; the system in scope for these criteria is Magertron's build-and-release operation, not a hosted service.</p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> magertron</div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#features">MCP Orchestrator</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="mailto:security@magertron.com">Security</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="security.html">Security</a>
+        <a href="/.well-known/security.txt">security.txt</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
