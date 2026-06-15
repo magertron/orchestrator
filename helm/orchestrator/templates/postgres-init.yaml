@@ -129,6 +129,32 @@ data:
     CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
     CREATE INDEX IF NOT EXISTS audit_events_plane_ts_idx  ON audit_events (plane, ts DESC);
 
+    -- ── Audit immutability guard (R-06) ─────────────────────────────────────────
+    -- audit_events is append-only. UPDATE is always denied. DELETE is denied
+    -- EXCEPT inside the retention worker's prune transaction, which sets the GUC
+    -- magertron.allow_audit_prune='on' via SET LOCAL (transaction-scoped) right
+    -- before its DELETE. The retention deletion is itself audited
+    -- (RetentionPruneCompleted), so the only sanctioned mutation of the trail is
+    -- recorded in the trail. current_setting(...,true) returns NULL when unset
+    -- (missing_ok), so normal INSERT/SELECT traffic is unaffected.
+    CREATE OR REPLACE FUNCTION audit_events_immutable() RETURNS TRIGGER AS $$
+    BEGIN
+        IF (TG_OP = 'UPDATE') THEN
+            RAISE EXCEPTION 'audit_events is append-only: UPDATE denied';
+        END IF;
+        IF (TG_OP = 'DELETE') THEN
+            IF current_setting('magertron.allow_audit_prune', true) IS DISTINCT FROM 'on' THEN
+                RAISE EXCEPTION 'audit_events is append-only: DELETE denied (retention path only)';
+            END IF;
+        END IF;
+        RETURN COALESCE(NEW, OLD);
+    END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS audit_events_immutable_trg ON audit_events;
+    CREATE TRIGGER audit_events_immutable_trg
+        BEFORE UPDATE OR DELETE ON audit_events
+        FOR EACH ROW EXECUTE FUNCTION audit_events_immutable();
+
     -- ── Deployed Servers ───────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS deployed_servers (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
