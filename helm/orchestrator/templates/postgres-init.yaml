@@ -41,7 +41,12 @@ data:
         -- email (e.g. for expiry reminders, audit attribution). Set via
         -- `mcpctl users update-email` or the admin UI. Lowercased for
         -- case-insensitive lookup via users_email_lower_idx.
-        email           TEXT
+        email           TEXT,
+        -- Two-phase MFA (SOC2 CC6.1): admin/operator accounts must complete the
+        -- password→IdP-MFA chain. A single account flagged break_glass = TRUE may
+        -- bypass phase 2 (password-only) when the IdP is unreachable. Every such
+        -- login is audited (event_kind='BreakGlassLogin'); runbook IdP-outage-only.
+        break_glass     BOOLEAN     NOT NULL DEFAULT FALSE
     );
     -- For existing installs (upgrade path from pre-SSO / pre-SCIM schema):
     ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_email       TEXT;
@@ -49,6 +54,8 @@ data:
     ALTER TABLE users ADD COLUMN IF NOT EXISTS provisioned_via TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();
     ALTER TABLE users ADD COLUMN IF NOT EXISTS email           TEXT;
+    -- Two-phase MFA (SOC2 CC6.1) break-glass flag; see CREATE TABLE comment above.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS break_glass     BOOLEAN NOT NULL DEFAULT FALSE;
     -- Each sso_email / external_id can map to at most one user; NULLs exempt.
     CREATE UNIQUE INDEX IF NOT EXISTS users_sso_email_unique_idx
         ON users (sso_email) WHERE sso_email IS NOT NULL;

@@ -1077,7 +1077,15 @@ if [ "$MODE" = "upgrade" ]; then
         "  JWT keypair        ${C_GREEN}${G_CHECK}${C_RESET} preserved across helm upgrade" \
         "" \
         "  ${C_DIM}Existing user sessions and service-account JWTs${C_RESET}" \
-        "  ${C_DIM}continue to work without re-minting.${C_RESET}"
+        "  ${C_DIM}continue to work without re-minting.${C_RESET}" \
+        "" \
+        "  ${C_YELLOW}${C_BOLD}! Two-phase MFA now enforced (admin/operator)${C_RESET}" \
+        "    ${C_DIM}This release requires admin/operator accounts to complete an${C_RESET}" \
+        "    ${C_DIM}SSO/IdP login (MFA) after their password. Existing admins that${C_RESET}" \
+        "    ${C_DIM}previously logged in with password alone will now be redirected${C_RESET}" \
+        "    ${C_DIM}to SSO. Ensure SSO is configured AND designate one break-glass${C_RESET}" \
+        "    ${C_DIM}account before your next admin login, or you may be locked out.${C_RESET}" \
+        "    ${C_DIM}See the Operators Guide -> Two-Phase MFA & Break-Glass Access.${C_RESET}"
 else
     box \
         "${C_GREEN}${C_BOLD}${G_CHECK} Installation complete${C_RESET}" \
@@ -1092,6 +1100,14 @@ else
         "    ${G_BULLET} Log in and change the admin password" \
         "    ${G_BULLET} Set the admin user's email" \
         "    ${G_BULLET} Configure webhooks for expiry reminders" \
-        "    ${G_BULLET} Deploy MCP servers from the UI"
+        "    ${G_BULLET} Deploy MCP servers from the UI" \
+        "" \
+        "  ${C_YELLOW}${C_BOLD}! Two-phase MFA (admin/operator)${C_RESET}" \
+        "    ${C_DIM}Admin and operator accounts must complete an SSO/IdP login${C_RESET}" \
+        "    ${C_DIM}(which enforces MFA) after their password. If your IdP becomes${C_RESET}" \
+        "    ${C_DIM}unreachable, no admin can log in unless a break-glass account is${C_RESET}" \
+        "    ${C_DIM}designated. No break-glass account is configured by default.${C_RESET}" \
+        "    ${C_DIM}See the Operators Guide -> Two-Phase MFA & Break-Glass Access${C_RESET}" \
+        "    ${C_DIM}to configure SSO and designate one break-glass account.${C_RESET}"
 fi
 echo ""
