@@ -457,6 +457,34 @@ data:
     CREATE INDEX IF NOT EXISTS sso_providers_enabled_idx
         ON sso_providers (enabled) WHERE enabled = TRUE;
 
+    -- ── SSO login state (HA-shared; replaces in-memory per-replica map) ─────────
+    -- Short-lived OIDC round-trip state for the authorization-code flow. Shared
+    -- across orchestrator replicas so login-start and the IdP callback can land
+    -- on different pods. Rows are ephemeral (10-min TTL) and swept on access.
+    -- pending_id links a login to a two-phase MFA ticket (NULL for plain SSO).
+    CREATE TABLE IF NOT EXISTS sso_login_state (
+        state       TEXT PRIMARY KEY,           -- 256-bit CSRF/state token
+        provider_id TEXT        NOT NULL,
+        nonce       TEXT        NOT NULL,        -- OIDC replay-protection nonce
+        pending_id  TEXT,                        -- two-phase MFA linkage (nullable)
+        expires_at  TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS sso_login_state_expiry_idx
+        ON sso_login_state (expires_at);
+
+    -- ── Two-phase MFA pending tickets (HA-shared) ──────────────────────────────
+    -- Phase-1 (password OK for a privileged user) writes an opaque pending
+    -- ticket here; phase-2 (IdP callback) consumes it single-use. Shared across
+    -- replicas. Ephemeral (5-min TTL). Single-use is enforced atomically via
+    -- DELETE ... RETURNING so concurrent callbacks cannot double-consume.
+    CREATE TABLE IF NOT EXISTS mfa_pending (
+        pending_id  TEXT PRIMARY KEY,           -- opaque 256-bit ticket
+        username    TEXT        NOT NULL,
+        expires_at  TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS mfa_pending_expiry_idx
+        ON mfa_pending (expires_at);
+
     -- ── SCIM Bearer Tokens (Enterprise tier) ───────────────────────────────────
     -- Long-lived tokens used by SCIM clients (Okta, Azure AD) to authenticate
     -- against /scim/v2/*. Raw token values are NEVER stored — only SHA-256
