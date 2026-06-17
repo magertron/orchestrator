@@ -67,21 +67,21 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .nav-cta:hover { background: #1d4ed8 !important; }
 
 /* Hero */
-.hero { padding: 140px 0 60px; text-align: center; position: relative; overflow: hidden; }
+.hero { padding: 110px 0 36px; text-align: center; position: relative; overflow: hidden; }
 .hero::before {
   content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 800px; height: 600px;
-  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
-  pointer-events: none;
+  width: 520px; height: 340px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.6; pointer-events: none;
 }
 .hero-eyebrow {
   font-family: var(--mono); font-size: 12px; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 20px;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
 }
 .hero h1 {
   font-family: var(--serif); font-weight: 700;
-  font-size: clamp(40px, 6vw, 64px); line-height: 1.05; letter-spacing: -0.04em;
-  margin-bottom: 24px;
+  font-size: clamp(28px, 3.6vw, 40px); line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 16px;
 }
 .hero h1 em {
   font-style: normal;
@@ -89,8 +89,8 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .hero p {
-  font-size: 18px; color: var(--text-secondary); max-width: 680px;
-  margin: 0 auto 16px; line-height: 1.7;
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto 16px; line-height: 1.65;
 }
 .hero .meta {
   font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
@@ -546,7 +546,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="section-eyebrow">The honest take</div>
     <h2>These are complementary products, not adversaries.</h2>
-    <p>
+    <p style="line-height: 1.6;">
       The mature enterprise MCP posture twelve months from now will not be MCP Orchestrator
       <em>or</em> AgentCore. It will be MCP Orchestrator <em>and</em> AgentCore, plus other
       runtimes, plus discovery sources across endpoint inspection and egress proxies and source
@@ -554,7 +554,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       ones that belong in your cluster. The federation layer above both does inventory, policy,
       and governance across the entire estate.
     </p>
-    <p>
+    <p style="line-height: 1.6;">
       <em>"We use AgentCore"</em> is not an MCP governance strategy. <em>"We govern every MCP
       server in our environment — including the ones on AWS, on-prem, and on employee laptops"</em>
       is the beginning of one.
