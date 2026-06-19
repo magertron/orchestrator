@@ -404,6 +404,15 @@ data:
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Delegated administration: marks roles that confer administrative scope.
+    -- Only a global platform admin may grant or create an is_admin_tier role
+    -- (enforced in rest_server guard_admin_tier_grant + role create/update).
+    -- Additive + idempotent: safe on reinstall and safe to apply by hand to an
+    -- already-initialised cluster (the init entrypoint only runs on an empty
+    -- data dir, so existing volumes need a one-time manual apply of these two).
+    ALTER TABLE roles ADD COLUMN IF NOT EXISTS is_admin_tier BOOLEAN NOT NULL DEFAULT FALSE;
+    UPDATE roles SET is_admin_tier = TRUE WHERE id = 'system:platform-admin';
+
     -- ── Governance Policies ────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS governance_policies (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
