@@ -826,6 +826,18 @@ data:
     -- Move 1: dimension migration for upgrade paths (pre-existing rows = 'calls').
     ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
 
+    -- Agent Spread Graph: roles the principal held at invocation time (roles-as-
+    -- exercised). The graph derives CURRENT roles from users.roles +
+    -- service_accounts.role_ids; this column adds timestamped history that
+    -- survives a principal being deleted. Pre-existing rows = NULL. Populated by
+    -- the MeterOnDestruct emitter (service.cpp) from ev_.roles. Optional —
+    -- omit the emitter write and the column simply stays NULL with no other effect.
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS caller_roles TEXT[];
+    -- Speeds the agent-spread observed-access projection (GROUP BY caller/server/
+    -- tool). Useful even without caller_roles populated.
+    CREATE INDEX IF NOT EXISTS meter_events_caller_idx
+        ON meter_events (caller_user_id, server_id, tool_id, incurred_at);
+
     -- ── CONTRACT (digital twin of the vendor agreement) ─────────────────────────
     CREATE TABLE IF NOT EXISTS cost_contracts (
         id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
