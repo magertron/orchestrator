@@ -105,6 +105,14 @@ nav .container { max-width: 1200px; display: flex; justify-content: space-betwee
 .page-hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(36px,5vw,64px); line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 20px; }
 .page-hero p { font-size: 18px; color: var(--text-secondary); max-width: 620px; margin: 0 auto; line-height: 1.7; }
 
+/* Galaxy showcase */
+.galaxy-showcase { padding: 8px 0 40px; }
+.galaxy-showcase .galaxy-frame { max-width: 1100px; margin: 0 auto; border: 1px solid var(--border-accent, rgba(255,255,255,0.1)); border-radius: 14px; overflow: hidden; background: #0a0e1a; box-shadow: 0 24px 60px rgba(0,0,0,0.45); }
+.galaxy-showcase .galaxy-frame img { display: block; width: 100%; height: auto; }
+.galaxy-showcase .galaxy-cap { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 14px; color: var(--text-secondary); }
+.galaxy-showcase .galaxy-cap .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success, #34d399); box-shadow: 0 0 0 0 rgba(52,211,153,0.6); animation: galaxyPulse 2s ease-in-out infinite; }
+@keyframes galaxyPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); } 50% { box-shadow: 0 0 0 6px rgba(52,211,153,0); } }
+
 /* Article */
 .article { padding: 24px 0 96px; }
 
@@ -284,6 +292,19 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="page-badge">⚠ Enterprise Security</div>
     <h1>Securing MCP Traffic<br>Inside Your Enterprise</h1>
     <p>AI agents talking to MCP servers create distinct threat vectors most enterprises haven't planned for. Here's how to think about them — and how to close the gaps.</p>
+  </div>
+</section>
+
+<!-- Agent Galaxy showcase -->
+<section class="galaxy-showcase">
+  <div class="container">
+    <div class="galaxy-frame">
+      <img src="screenshots/agent-galaxy.png" alt="Agent Galaxy — principal access graph showing entitlements versus observed usage across users, agents, and MCP tools">
+    </div>
+    <div class="galaxy-cap">
+      <span class="live-dot"></span>
+      Agent Galaxy — see every principal's entitled-vs-actual access to MCP tools, live.
+    </div>
   </div>
 </section>
 
