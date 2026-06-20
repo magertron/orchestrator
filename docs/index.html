@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://magertron.com/">
 <meta property="og:title" content="Magertron: The Spend Control Plane for Enterprise AI Agents">
 <meta property="og:description" content="See and control what your AI agents cost. Meter every MCP tool call, charge it back per user and team, enforce hard budget limits. OSS Free up to 20 servers — no signup, no credit card.">
-<meta property="og:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
+<meta property="og:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user, committed vs pay-as-you-go, with budget tracking">
@@ -25,7 +25,7 @@
 <meta name="twitter:url" content="https://magertron.com/">
 <meta name="twitter:title" content="Magertron: The Spend Control Plane for Enterprise AI Agents">
 <meta name="twitter:description" content="See and control what your AI agents cost. Meter every tool call, charge it back per user, enforce budget limits at the gateway.">
-<meta name="twitter:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
+<meta name="twitter:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
 <meta name="twitter:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user">
 
 <meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
@@ -46,7 +46,7 @@
   "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
   "url": "https://magertron.com",
   "downloadUrl": "https://github.com/magertron/orchestrator",
-  "screenshot": "https://magertron.com/screenshots/ai-cost-dashboard.png",
+  "screenshot": "https://magertron.com/screenshots/dashboard-galaxy.png",
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
   "offers": [
     {
@@ -210,6 +210,31 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 }
 .hero-screenshot img {
   width: 100%; height: auto; display: block;
+}
+/* ── Hero crossfade carousel: two stacked shots fade back and forth ── */
+.hero-carousel { position: relative; }
+.hero-carousel img {
+  width: 100%; height: auto; display: block;
+}
+/* First slide is in normal flow (sets the box height); others overlay it. */
+.hero-carousel img.slide-2 {
+  position: absolute; top: 0; left: 0;
+}
+.hero-carousel img.slide-1 { animation: heroFadeA 12s ease-in-out infinite; }
+.hero-carousel img.slide-2 { animation: heroFadeB 12s ease-in-out infinite; }
+@keyframes heroFadeA {
+  0%, 42% { opacity: 1; }
+  50%, 92% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes heroFadeB {
+  0%, 42% { opacity: 0; }
+  50%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel img.slide-1, .hero-carousel img.slide-2 { animation: none; }
+  .hero-carousel img.slide-2 { display: none; }
 }
 .hero-screenshot .placeholder {
   width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
@@ -534,7 +559,10 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
          Leads with dollars (total spend, committed, remaining), per-vendor and
          per-user breakdown, and the daily trend. This is the CFO-legible view. -->
     <div class="hero-screenshot">
-      <img src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
+      <div class="hero-carousel">
+        <img class="slide-1" src="screenshots/dashboard-galaxy.png" alt="Magertron dashboard with Agent Galaxy — live map of which principals and AI agents can reach and are actively calling which MCP tools, with entitlement-vs-usage edges">
+        <img class="slide-2" src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
+      </div>
     </div>
   </div>
 </section>
