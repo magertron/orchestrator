@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Two planes: an API gateway governing transport and an MCP orchestrator governing semantics">
+  <defs>
+    <radialGradient id="glow-blue" cx="28%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.55" />
+      <stop offset="40%" stop-color="#2563eb" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#06080c" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glow-cyan" cx="72%" cy="68%" r="42%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.32" />
+      <stop offset="60%" stop-color="#60a5fa" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#06080c" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glow-purple" cx="88%" cy="80%" r="38%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.24" />
+      <stop offset="100%" stop-color="#06080c" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e14" />
+      <stop offset="100%" stop-color="#06080c" />
+    </linearGradient>
+    <linearGradient id="plane-top" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.0" />
+      <stop offset="50%" stop-color="#60a5fa" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0.0" />
+    </linearGradient>
+    <linearGradient id="plane-bot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.0" />
+      <stop offset="50%" stop-color="#a78bfa" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.0" />
+    </linearGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2030" stroke-width="0.5" opacity="0.5" />
+    </pattern>
+  </defs>
+
+  <!-- base + grid + glows: identical house treatment -->
+  <rect width="1200" height="360" fill="url(#base)" />
+  <rect width="1200" height="360" fill="url(#grid)" />
+  <rect width="1200" height="360" fill="url(#glow-blue)" />
+  <rect width="1200" height="360" fill="url(#glow-cyan)" />
+  <rect width="1200" height="360" fill="url(#glow-purple)" />
+
+  <!-- two planes, drawn as parallel isometric-ish bands: transport above, semantics below -->
+  <g opacity="0.9">
+    <!-- upper plane (transport) -->
+    <path d="M 250 150 L 760 150 L 660 200 L 150 200 Z"
+          fill="#2563eb" fill-opacity="0.10" stroke="url(#plane-top)" stroke-width="1.5" />
+    <!-- lower plane (semantics) -->
+    <path d="M 250 235 L 760 235 L 660 285 L 150 285 Z"
+          fill="#a78bfa" fill-opacity="0.10" stroke="url(#plane-bot)" stroke-width="1.5" />
+    <!-- a single packet descending from the upper to the lower plane (same packet, two planes) -->
+    <line x1="455" y1="178" x2="412" y2="262" stroke="#60a5fa" stroke-width="1.2" stroke-opacity="0.5" stroke-dasharray="3 4" />
+    <circle cx="455" cy="178" r="3.5" fill="#60a5fa" fill-opacity="0.9" />
+    <circle cx="412" cy="262" r="3.5" fill="#a78bfa" fill-opacity="0.9" />
+  </g>
+
+  <!-- nodes on each plane: a few quiet points to suggest tools/principals on the lower plane -->
+  <g fill="#cbd5e1" fill-opacity="0.55">
+    <circle cx="320" cy="175" r="2" />
+    <circle cx="520" cy="175" r="2" />
+    <circle cx="640" cy="175" r="2" />
+    <circle cx="300" cy="260" r="2" />
+    <circle cx="500" cy="260" r="2" />
+    <circle cx="600" cy="260" r="2" />
+  </g>
+</svg>
