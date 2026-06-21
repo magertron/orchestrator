@@ -316,6 +316,13 @@ data:
     -- Default 'centralized' so any pre-existing External rows get a sane value
     -- with no data migration. See the inline column comment above for semantics.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized';
+    -- static_headers: operator-defined HTTP headers injected on every outbound
+    -- call to this server by the ext_authz path (see external_service.cpp).
+    -- Validated as a flat string->string JSON object at registration time
+    -- (rest_server.cpp rejects non-objects and reserved header names).
+    -- Default '{}' so pre-existing rows inject nothing. NOT NULL keeps the
+    -- read path free of null-checks. Idempotent for fresh installs + upgrades.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS static_headers JSONB NOT NULL DEFAULT '{}'::jsonb;
 
     -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
     -- (delegated authorization-code flow). The original inline constraint was
