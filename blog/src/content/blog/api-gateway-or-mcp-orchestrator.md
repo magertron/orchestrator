@@ -1,7 +1,7 @@
 ---
 title: 'API Gateway or MCP Orchestrator? One Box or Two?'
 description: 'Both ride HTTP, so teams assume one box should handle both. Here is the honest case for and against combining an API gateway with an MCP orchestrator — and the one question that actually decides it: what are you really trying to manage?'
-pubDate: 'Jun 21 2026'
+pubDate: 'Jun 22 2026'
 heroImageUrl: '/blog-banner.svg'
 ---
 
