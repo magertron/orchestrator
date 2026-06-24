@@ -5,7 +5,7 @@ pubDate: 'May 15 2026'
 heroImageUrl: '/blog-banner.svg'
 ---
 
-*We are AI-enabled!!*
+*-We are AI-enabled!!-*
 
 I've heard some version of that sentence from more enterprise IT leadership in the past six months than I can count. Because what they actually mean is: *we paid for Claude Desktop licenses, and our employees installed them.* What they think it means is: *we have an AI strategy.*
 
