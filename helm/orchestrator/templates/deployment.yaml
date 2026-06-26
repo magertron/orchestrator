@@ -362,16 +362,19 @@ spec:
                   {{- end }}
                   key: ANTHROPIC_API_KEY
                   optional: true
+          # Probes run the daemon binary's own --health-check, which dials
+          # 127.0.0.1/chat/health from INSIDE the container. The daemon binds
+          # loopback only, so a kubelet httpGet (which targets the pod IP) can't
+          # reach it; and the distroless image has no shell/curl for an exec
+          # shell-out — so the check lives in the binary itself.
           livenessProbe:
-            httpGet:
-              path: /chat/health
-              port: 8088
+            exec:
+              command: ["/usr/local/bin/mcp-chat-daemon", "--health-check"]
             initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
-            httpGet:
-              path: /chat/health
-              port: 8088
+            exec:
+              command: ["/usr/local/bin/mcp-chat-daemon", "--health-check"]
             initialDelaySeconds: 5
             periodSeconds: 15
           resources:
