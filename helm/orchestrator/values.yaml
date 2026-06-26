@@ -188,6 +188,65 @@ mcpSync:
       cpu: 200m
       memory: 128Mi
 
+# ─── Chat Daemon (intelligent Dev Portal agent backend) ──────────────────────
+# An LLM agent backend: Claude decides which MCP tool to call, the daemon
+# executes each call through the governed gateway AS THE LOGGED-IN USER (every
+# tool invocation RBAC-checked, metered, attributed to that human). Ships as a
+# sidecar in the orchestrator pod; the orchestrator reverse-proxies /chat/* to
+# this sidecar on 127.0.0.1:8088.
+#
+# OPT-IN: disabled by default so existing installs are unaffected. Enable with a
+# key for the full agent; enabling WITHOUT a key runs the daemon in
+# "plumbing-only" mode (catalog/entitlement works, no LLM loop).
+chatDaemon:
+  enabled: false
+
+  image:
+    repository: curtismager20/mcp-chat-daemon
+    # Empty string ("") = use .Chart.AppVersion (version-locked to orchestrator).
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # The daemon listens here; the orchestrator proxies /chat/* to it over loopback.
+  listenAddr: "127.0.0.1:8088"
+
+  # The daemon uses TWO endpoints, both set by the deployment template from
+  # in-cluster service addresses (you normally don't override these):
+  #   • control plane (login, catalog) → orchestrator REST over loopback
+  #   • data plane (tool calls) → the v3 Envoy gateway service, so ext_authz
+  #     governs every call. Routing tool calls through Envoy (not orchestrator
+  #     loopback) is deliberate: the agent has no shortcut around enforcement.
+  # These are wired in templates/deployment.yaml (MAG_CONTROL_URL /
+  # MAG_GATEWAY_URL); the model below is the only knob you typically set here.
+  anthropicModel: "claude-sonnet-4-6"
+
+  # Verify TLS toward the gateway. Default false (self-signed dev cert); set true
+  # in prod once a real cert is in place.
+  verifyTls: false
+
+  # Anthropic API key. Three-tier semantics like the DB passwords:
+  #   1. existing secret → reuse
+  #   2. this value      → operator-supplied (stored in the chat-daemon secret)
+  #   3. empty           → daemon boots in plumbing-only mode (no agent loop)
+  # For production, prefer externalSecretName below so the key never lives in
+  # values/Helm history.
+  anthropicApiKey: ""
+
+  # If set, the daemon reads ANTHROPIC_API_KEY from THIS pre-existing secret
+  # (key: ANTHROPIC_API_KEY) instead of the chart-created one. Recommended for
+  # prod — keeps the key out of Helm release history entirely. The chart-created
+  # secret is intentionally SEPARATE from mcp-orchestrator-secrets so the
+  # Anthropic key never co-mingles with the JWT signing key or DB passwords.
+  externalSecretName: ""
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
 # ─── Envoy Gateway ───────────────────────────────────────────────────────────
 envoy:
   enabled: true

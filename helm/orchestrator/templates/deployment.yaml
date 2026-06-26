@@ -313,6 +313,75 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+        {{- if .Values.chatDaemon.enabled }}
+        # ── chat-daemon sidecar (intelligent Dev Portal agent backend) ─────
+        # Claude decides which MCP tool to call; this daemon executes each call
+        # AS THE LOGGED-IN USER. Two planes:
+        #   • control (login, catalog) → orchestrator REST over in-pod loopback
+        #   • data (tool calls /mcp/*) → the v3 Envoy gateway service, so
+        #     ext_authz governs every call (no privileged shortcut).
+        # The orchestrator reverse-proxies /chat/* to this sidecar on
+        # 127.0.0.1:8088. The Anthropic key comes from the daemon's OWN secret,
+        # never mcp-...-secrets (trust-boundary separation).
+        - name: chat-daemon
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.chatDaemon.image.repository }}:{{ .Values.chatDaemon.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.chatDaemon.image.pullPolicy }}
+          ports:
+            - name: chat
+              containerPort: 8088
+          env:
+            - name: CHAT_LISTEN_ADDR
+              value: {{ .Values.chatDaemon.listenAddr | quote }}
+            # CONTROL plane (login, portal catalog) — the orchestrator REST API
+            # over in-pod loopback, exactly the hop mcp-sync uses. NOT governed
+            # by ext_authz; it's the control/admin API.
+            - name: MAG_CONTROL_URL
+              value: "http://127.0.0.1:{{ .Values.api.httpPort }}"
+            # DATA plane (tool calls /mcp/<ns>/<server>/) — MUST go through the
+            # v3 Envoy gateway so the orchestrator's ext_authz fires (RBAC,
+            # metering, vendor-cred injection). Pointed at the in-cluster Envoy
+            # v3 service on its TLS listener port. The agent has NO privileged
+            # shortcut around enforcement — its calls traverse the same path as
+            # any external client.
+            - name: MAG_GATEWAY_URL
+              value: "https://{{ include "mcp.fullname" . }}-envoy-v3.{{ include "mcp.namespace" . }}.svc.cluster.local:{{ .Values.envoy.v3.listenerPort }}"
+            - name: ANTHROPIC_MODEL
+              value: {{ .Values.chatDaemon.anthropicModel | quote }}
+            # Gateway TLS is the self-signed cluster cert; skip-verify unless a
+            # real cert is in place (controls the Envoy hop; control plane is
+            # plain HTTP loopback).
+            - name: MAG_VERIFY_TLS
+              value: {{ ternary "1" "0" .Values.chatDaemon.verifyTls | quote }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.chatDaemon.externalSecretName }}
+                  name: {{ .Values.chatDaemon.externalSecretName }}
+                  {{- else }}
+                  name: {{ include "mcp.fullname" . }}-chat-daemon
+                  {{- end }}
+                  key: ANTHROPIC_API_KEY
+                  optional: true
+          livenessProbe:
+            httpGet:
+              path: /chat/health
+              port: 8088
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /chat/health
+              port: 8088
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.chatDaemon.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+        {{- end }}
       volumes:
         - name: config
           configMap:
