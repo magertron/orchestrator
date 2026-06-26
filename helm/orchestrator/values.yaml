@@ -116,6 +116,19 @@ orchestrator:
     # Empty string = orchestrator uses request-relative URLs.
     apiPublicUrl: "http://localhost:8080"   # dev: browser hits localhost via kubectl port-forward to the leader pod
 
+    # ── CORS allowed origins ─────────────────────────────────────────────
+    # The browser blocks cross-origin requests unless the server echoes the
+    # caller's Origin back in Access-Control-Allow-Origin. The orchestrator
+    # ALWAYS allows the apiPublicUrl origin above (the deployment's own
+    # front door). List any ADDITIONAL origins that should be permitted here
+    # — e.g. the Tauri desktop client's origin, or a customer's internal
+    # tool calling the API cross-origin. Comma-separated, exact origin match
+    # (scheme://host[:port], no trailing slash/path).
+    #   Tauri desktop client origins vary by OS/version — capture the real
+    #   Origin header from a built app before adding (e.g. "tauri://localhost").
+    # Empty = only apiPublicUrl's origin is allowed.
+    corsExtraOrigins: ""
+
     # ── Rating worker cadence ────────────────────────────────────────────
     # How often the leader rates the current period's settled meter_events
     # into ESTIMATED rated_costs, and the minimum event age before rating
