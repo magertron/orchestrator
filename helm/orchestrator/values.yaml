@@ -199,7 +199,7 @@ mcpSync:
 # key for the full agent; enabling WITHOUT a key runs the daemon in
 # "plumbing-only" mode (catalog/entitlement works, no LLM loop).
 chatDaemon:
-  enabled: false
+  enabled: true
 
   image:
     repository: curtismager20/mcp-chat-daemon
