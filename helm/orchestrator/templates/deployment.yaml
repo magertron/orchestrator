@@ -90,6 +90,8 @@ spec:
             # request-relative URLs.
             - name: MCP_API_PUBLIC_URL
               value: {{ .Values.orchestrator.env.apiPublicUrl | quote }}
+            - name: MCP_CORS_EXTRA_ORIGINS
+              value: {{ .Values.orchestrator.env.corsExtraOrigins | quote }}
             # ── Rating worker cadence ───────────────────────────────────────
             # Interval between rating passes and the settle window (min event
             # age before rating, so ALS true-up has flipped failed calls to

@@ -250,7 +250,7 @@ chatDaemon:
   # prod — keeps the key out of Helm release history entirely. The chart-created
   # secret is intentionally SEPARATE from mcp-orchestrator-secrets so the
   # Anthropic key never co-mingles with the JWT signing key or DB passwords.
-  externalSecretName: ""
+  externalSecretName: "chat-daemon-key"
 
   resources:
     requests:
