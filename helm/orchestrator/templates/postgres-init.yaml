@@ -366,6 +366,24 @@ data:
         ON deployed_servers (namespace, endpoint_url)
         WHERE server_type = 'external';
 
+    -- ── Shared-contract clone pointer (#27 billing-family) ───────────────────
+    -- A clone points at its contract-owning origin and carries NO cost_contracts
+    -- row of its own. NULL clone_of = this server owns its contract (origin or
+    -- standalone); non-NULL = clone, billing resolves to clone_of. This is the
+    -- entire schema delta for the shared-contract sidecar: cost_contracts,
+    -- cost_budgets, meter_events, rated_costs are untouched (including
+    -- cost_contracts_active_uq — still one active contract per OWNING server;
+    -- clones simply have none). Rating/throttle resolve the family in
+    -- load_rating_events / load_active_contract / get_budget_for_server; the
+    -- dashboard contract-joins resolve via COALESCE(ds.clone_of, me.server_id).
+    -- Self-referential FK; a clone never deletes while it has its own children
+    -- (it has none), and an ORIGIN delete is BLOCKED by the C++ delete guard
+    -- while clones still point at it (so this FK is never violated by a cascade).
+    ALTER TABLE deployed_servers
+        ADD COLUMN IF NOT EXISTS clone_of UUID REFERENCES deployed_servers(id);
+    CREATE INDEX IF NOT EXISTS deployed_servers_clone_of_idx
+        ON deployed_servers (clone_of) WHERE clone_of IS NOT NULL;
+
     -- ── External MCP server architecture (session 2.13) ──────────────────────
     -- The deployed_servers table holds rows for all three deployment patterns:
     --
