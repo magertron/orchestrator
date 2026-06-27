@@ -101,8 +101,133 @@ entries:
         - title: Governance — namespace-scoped policies for prod vs dev
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
+    appVersion: 2.8.92-dev.c1993f1
+    created: "2026-06-27T11:59:05.465921688-04:00"
+    description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
+      servers
+    digest: f8f8119c010e44e95d9c526f666bd875dcfbbc153e0bae9012b9d61388b8dc7a
+    home: https://magertron.com
+    icon: https://magertron.com/logo.svg
+    keywords:
+    - mcp
+    - model-context-protocol
+    - orchestrator
+    - kubernetes
+    - ai
+    - llm
+    maintainers:
+    - email: sales@magertron.com
+      name: Magertron
+      url: https://magertron.com
+    name: mcp-orchestrator
+    sources:
+    - https://github.com/magertron/orchestrator
+    type: application
+    urls:
+    - https://magertron.com/charts-dev/mcp-orchestrator-2.8.92-dev.c1993f1.tgz
+    version: 2.8.92-dev.c1993f1
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: changed
+          description: "Envoy resource defaults bumped for cross-node HA topology. CPU request 100m → 250m, CPU limit 500m → 1000m, memory request 128Mi → 256Mi, memory limit 512Mi → 1Gi. Pre-2.2.1 defaults were sized for single-node dev; warm Envoy pods sat at ~120Mi steady-state (94% of the 128Mi request) and brief TLS handshake CPU bursts during low-rps load (verified empirically at 100 rps) cascaded HPA 2→4→8→10 replicas in 30s on a system that was nowhere near saturated. New profile reflects observed real-world warm-Envoy resource use and gives genuine headroom before HPA fires."
+        - kind: added
+          description: "HPA scale behavior block on the envoy HorizontalPodAutoscaler (templates/envoy.yaml). 60s scaleUp stabilization window dampens brief CPU spikes that previously triggered runaway scaling — HPA now uses the trailing-60s max desired replica count, smoothing single-burst noise. Per-policy max capped at 2 pods or 50% increase per 60s, whichever is greater, so worst-case 2→10 spike still completes in ~4 minutes for real sustained load. Scale-down stabilization left at the 300s default to avoid oscillation."
+        - kind: added
+          description: "Pod anti-affinity and topology spread constraints across orchestrator, envoy, and envoy-v3 deployments. Soft podAntiAffinity (preferredDuringSchedulingIgnoredDuringExecution, weight 100) ensures the scheduler prefers spreading replicas across nodes; topologySpreadConstraints (maxSkew 1, DoNotSchedule) enforces hard spread for HA. All three rules scoped by per-component label selectors so the data planes don't cross-repel each other. Verified working on the foxygirl + pubs 2-node k3s cluster: orchestrator and envoy replicas distribute 1-per-node automatically, HPA-scaled envoy replicas spread evenly (5+5 at 10 replicas) instead of stacking on the older node."
+        - kind: fixed
+          description: "bootstrap.sh PHASE 1.5 publish flow no longer creates orphaned stashes or mid-rebase conflict states. The previous flow staged publish files, committed them, then ran `git stash push --keep-index --include-untracked` before rebasing — `--keep-index` left the committed-but-still-staged files in the working tree, creating ambiguity that confused subsequent rebases. New flow: stash dirty tree FIRST (no --keep-index), stage/commit publish files atomically on a clean tree, rebase, push, then pop via EXIT trap. Trap fires even on rebase failure, push rejection, or ctrl-C — orphaned-stash failure mode eliminated."
+        - kind: added
+          description: "Raised all the Envoy caps. Its a bottleneck."
+        - kind: added
+          description: "Failed at our dual MCP Server test. Going back to 1.18"
+        - kind: added
+          description: "Hot-path Postgres connection pool. ext_authz Check()'s three SQL queries (list_servers, list_tool_permissions, get_server_governance) now share a 4-connection pool (size tunable via env MCP_DB_POOL_SIZE, range [1,32]) instead of serializing on the single conn_mutex_."
+        - kind: added
+          description: "Orchestrator now applies the mcp-server-isolation NetworkPolicy to tenant namespaces it creates at runtime, closing the security gap left by the chart-side fix in 1.8.6-dev."
+        - kind: fixed
+          description: "Tenant namespaces (mcp-prod, mcp-staging, mcp-dev) are no longer created by the chart at install time. The previous behavior created them as Helm-managed resources, which collided with the orchestrator's runtime namespace creation (orchestrator labels them `app.kubernetes.io/managed-by: mcp-orchestrator` when an MCP server is deployed into a not-yet-existing namespace). The two ownership models conflicted on reinstall: any orchestrator-created namespace from a prior install caused subsequent `helm install` to fail with `cannot be imported into the current release: invalid ownership metadata`. Tenant namespaces are now exclusively orchestrator-owned, created on demand at first-server-deploy, and survive `helm uninstall`. The `.Values.namespaces` list is retained — it now seeds the default mcp-deployer role's allowed_namespaces and SSO providers' allowed_namespaces in the Postgres init data, plus configures the orchestrator's UI default-namespace dropdown. Removes `templates/namespaces.yaml`."
+        - kind: fixed
+          description: "templates/networkpolicy.yaml now uses Helm `lookup` to skip NetworkPolicy generation for tenant namespaces that don't exist at install time. Previously, the same `range .Values.namespaces` fan-out as namespaces.yaml caused install failures (`namespaces \"mcp-prod\" not found`) on fresh clusters where tenant namespaces hadn't been created yet by the orchestrator. With `lookup`, the chart applies the isolation NetworkPolicy to tenant namespaces that exist (e.g. created by a prior orchestrator install or by ops), and quietly skips namespaces that don't yet exist. The runtime gap this leaves is now closed by orchestrator-side policy application (see new `added` entry above)."
+        - kind: changed
+          description: "Phase F.4: /debug/stats observability endpoint."
+        - kind: added
+          description: "Decouple ext_authz Check() hot path from caller-plane audit drain. New dedicated audit Postgres connection (audit_conn_) prevents 250 rps load contention on the shared conn_mutex_. Audit writes now batch via multi-row INSERT with synchronous_commit=off, ~10-20x faster drain. gRPC sync server thread pool capped at 64 (defense in depth against thread explosion)."
+        - kind: deprecated
+          description: "`seed.adminPasswordHash` is deprecated in favor of `seed.adminPassword` (plaintext). The orchestrator now bcrypts plaintext in-process at seed time, eliminating the need for operators to pre-compute hashes. The hash field is retained for backward compatibility — if both are set, hash wins. Empty default for both fields means the chart auto-generates a plaintext password and the orchestrator bcrypts it."
+        - kind: added
+          description: "Post-install NOTES surface the auto-generated admin password with kubectl commands to retrieve and rotate it. Treats the auto-generated password as a one-time bootstrap credential (use once, change via UI, rotate the Secret) rather than a permanent password. The seed code only runs against an empty database, so changing the Secret value after first install does not affect the running admin password — it only invalidates the bootstrap credential."
+        - kind: changed
+          description: "Default `orchestrator.replicaCount` and `envoy.replicaCount` increased from 1 → 2, and Envoy HPA min/max capped at 10. The orchestrator's HealthMonitor and xDS push are not yet leader-elected; running multiple orchestrator replicas produces state-machine flapping, divergent xDS pushes, and ghost-server reconcile loops (verified empirically). Single-replica with Kubernetes pod-restart self-healing is the v1.6 operating mode. Multi-replica HA is v1.13+ work and the defaults will move back to 2+ once leader election ships. The chart's HA bones (headless service for xDS, stateless image, Postgres of record, mcp-sync uses Lease-based leader election) remain in place — only the default replica count changes."
+        - kind: changed
+          description: "TLS+ext_authz unified on a single customer-facing port (`:30443`). The previous architecture had three Envoy listeners (plain HTTP `:30080`, TLS-only HTTPS `:30443`, plain ext_authz `:30093`); these are collapsed into one listener that does both TLS termination AND ext_authz Check on every request. Plain-HTTP and ext_authz-bypass paths are eliminated — every external request now goes through both encryption and authorization. BREAKING: `envoy.service.httpPort`, `envoy.service.httpAuthzPort`, `loadBalancer.nodeport.httpPort`, and `loadBalancer.nodeport.httpAuthzPort` are removed from values.yaml. Customers using `:30093` directly must move to `https://...:30443/`. Self-signed cert in dev — accept with `curl -k` or a proper cert in prod."
+        - kind: added
+          description: "Post-deploy MCP-handshake verification. The orchestrator now performs a real `initialize` + `tools/list` against newly-deployed servers using the configured `upstream_path`, and only marks them `Running` if the handshake succeeds. Failed servers transition to a new `ProbeFailed` state with a structured error reason (HTTP code, timeout, parse failure) surfaced in `/api/v1/servers` responses and the admin UI. Previously, servers were marked `Running` as soon as their pod reached Ready, hiding configuration bugs (wrong port, wrong upstream path) until the first MCP client request 404'd. Adds new `Probing` state for the in-flight handshake and a `probe_result` object to `DeployedServer`."
+        - kind: added
+          description: "Per-server `upstream_path` field on McpServerSpec. Becomes the Envoy `prefix_rewrite` target so requests to `/mcp/<ns>/<name>/...` get forwarded to the upstream MCP server's actual path (e.g. `/http` for IBM fast-time-server, `/mcp` for ContextForge, `/sse` for SSE transport). Defaults to `/` for servers serving at root. Previously hardcoded as `/`, breaking any MCP server that didn't serve at root path."
+        - kind: changed
+          description: "Namespaced URL prefix shape. New routes follow `/mcp/<namespace>/<server-name>/` instead of `/mcp/<server-name>/`. Same-name servers in different namespaces (e.g. `mcp-prod/foo` vs `mcp-staging/foo`) are now addressable without colliding. The ext_authz path parser handles both shapes for backward compatibility — legacy single-segment routes continue to work."
+        - kind: added
+          description: "Operator-friendly `gateway_url` and `prefix` fields in `/api/v1/servers` responses. `gateway_url` is the full copy-paste-ready URL that operators hand to MCP clients (e.g. `https://mcp.acme.com/mcp/mcp-prod/fast-time/`); built from `MCP_API_PUBLIC_URL` plus the namespaced prefix. Eliminates the need for operators to assemble URLs from parts or know the routing convention."
+        - kind: added
+          description: "Configurable HealthMonitor poll interval via `orchestrator.healthMonitor.pollIntervalSeconds` (default 5s, was hardcoded 15s). Drives how quickly the UI sees state transitions like Deploying → Probing → Running. Lower = snappier UI feedback; higher = less Kubernetes API server load. Recommended 5s for clusters under ~100 servers, 15-30s for larger deployments. Can also be set via `MCP_K8S_POLL_INTERVAL` env var."
+        - kind: added
+          description: "Admin UI: server template catalog. Operators select a known MCP server from a dropdown (IBM Fast Time, Anthropic Filesystem, plus Custom...) and image, port, and upstream_path auto-fill. Reduces operator burden for well-known servers — no more docs hunting to find the right port or path. Templates ship in `ui/src/data/serverCatalog.ts`."
+        - kind: added
+          description: "Admin UI: animated `Probing` badge with spinner and red `ProbeFailed` banner showing the structured error reason. Operators see at a glance which servers are mid-verification vs. which have failed configuration, with the exact failure mode (e.g. `initialize: HTTP 404 at http://10.X.X.X:8080/wrong`) inline in the server detail view."
+        - kind: added
+          description: "Route-prefix validation across all three REST handlers (POST /api/v1/routes, PUT /api/v1/routes/{name}, POST /internal/routes). Reserved-prefix list (`/`, `/api/`, `/auth/`, `/healthz`, `/readyz`, `/ui/`, `/assets/`, `/static/`, `/favicon.ico`, `/mcp/_meta/`, `/mcp/_admin/`, `/mcp/_health/`) blocks both registration of conflicting prefixes AND shadowing of orchestrator-internal routes by user prefixes. Bidirectional enforcement: it's mechanically impossible to register a route that conflicts with a reserved path or that would itself be conflicted-with by a future route."
+        - kind: fixed
+          description: "Three latent `cluster_port` /  `upstream_path` data-loss bugs along the deploy chain. (1) `DeployedServer::to_json` did not emit `upstream_path`, so the deployment-event payload arrived at the xDS subscriber missing the field. (2) The xDS subscriber callback in `main.cpp` hand-constructed a fresh `DeployedServer` with only 4 fields, dropping every other spec field including `upstream_path`. (3) The ext_authz path parser hardcoded the legacy `/mcp/<name>/` URL shape and grabbed the namespace as the server name on namespaced URLs, returning `unknown MCP server: mcp-prod`. All three patched; deploys with custom `upstream_path` now work end-to-end."
+        - kind: added
+          description: "Phase F.3: separates audit events by plane (admin vs caller). Adds 'plane' VARCHAR(8) column to audit_events with CHECK constraint enforcing 'admin' (orchestrator REST events: deploys, role changes, governance changes) or 'caller' (ext_authz per-tool-invocation decisions). Composite index (plane, ts DESC) supports fast SIEM queries like 'show me last hour of caller-plane denies'. Existing 1.4.x audit events default to 'admin'. The two planes are written by separate code paths (orchestrator's audit_logger vs ext_authz's auditor) but share storage for unified SIEM ingestion."
+        - kind: added
+          description: "Phase F.1: OCSF-aligned audit_events schema. Adds 14 columns to support enterprise SIEM integration (Splunk, Elastic, Datadog, Sumo, Chronicle): class_uid, activity_id, severity_id, status_id, status_detail, actor_email, actor_session_id, actor_idp, actor_roles, src_ip, src_user_agent, request_id, tenant, cluster_uid, unmapped (OCSF overflow), and event_uid (globally-unique event id). Adds 4 new indexes for SIEM-pattern queries. Existing audit_events queries continue to work unchanged; new fields default to NULL or sensible defaults until upstream emission paths populate them in F.2/F.3."
+        - kind: fixed
+          description: "TLS Secret rendering failed with 'YAML parse error' when tls.cert/tls.key were provided via --set-file. The --set-file code path stored raw PEM content in the Secret's `data` field, which requires base64 encoding. Now matches the generate-self-signed path. Affects all production installs following the documented --set-file workflow — previously required working around by pre-creating the TLS Secret manually."
+        - kind: added
+          description: "Envoy Service now exposes the ext_authz-enforced listener (port 10093) externally as 'http-authz' (default servicePort 93, nodePort 30093). Previously only reachable via direct pod port-forward. Override via envoy.service.httpAuthzPort and loadBalancer.nodeport.httpAuthzPort."
+        - kind: added
+          description: ext_authz enforcement plane. Adds an Envoy listener on :10093 that calls the orchestrator's Policy Decision Point via gRPC before forwarding any MCP request. Every tool invocation is checked against per-server per-role policies; unauthorized calls are denied with HTTP 403. Fail-closed on PDP outage.
+        - kind: added
+          description: orchestrator Service now exposes port 9092 (ext_authz gRPC) and the orchestrator Deployment declares the matching containerPort. Configurable via `.Values.orchestrator.extAuthzPort` (default 9092).
+        - kind: added
+          description: Envoy bootstrap ConfigMap now includes the `mcp_ext_authz` cluster definition (STRICT_DNS, HTTP/2, 1s connect timeout) so the ext_authz filter can reach the PDP.
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/displayName: Magertron MCP Orchestrator
+      artifacthub.io/keywords: mcp, model context protocol, kubernetes, governance,
+        audit, envoy, xds, ai agents, mcp gateway, mcp server, helm chart, ai infrastructure,
+        ai governance, ext_authz, sso, oidc, saml, scim, multi-tenant, rbac, ocsf,
+        siem, splunk, elastic, datadog
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Website
+          url: https://magertron.com
+        - name: Security & Threat Model
+          url: https://magertron.com/security.html
+        - name: SIEM Integration Guide
+          url: https://magertron.com/siem-integration.html
+        - name: About
+          url: https://magertron.com/about.html
+        - name: Source Code
+          url: https://github.com/magertron/orchestrator
+        - name: Documentation
+          url: https://github.com/magertron/orchestrator#readme
+      artifacthub.io/maintainers: |
+        - name: Magertron
+          email: sales@magertron.com
+      artifacthub.io/operator: "false"
+      artifacthub.io/prerelease: "false"
+      artifacthub.io/screenshots: |
+        - title: Dashboard — MCP servers running in your cluster
+          url: https://magertron.com/screenshots/dashboard.png
+        - title: Server detail — live metrics, logs, one-click rollback
+          url: https://magertron.com/screenshots/server-detail.png
+        - title: Governance — namespace-scoped policies for prod vs dev
+          url: https://magertron.com/screenshots/governance.png
+    apiVersion: v2
     appVersion: 2.8.90-dev.c1993f1
-    created: "2026-06-27T10:56:58.094131472-04:00"
+    created: "2026-06-27T11:59:05.463934683-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 43884529360ae32a025eb23cf437f26e96b3ee71d78fd82ae0dc7dc6dc3b4937
@@ -227,7 +352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.89-dev.c1993f1
-    created: "2026-06-27T10:56:58.092120853-04:00"
+    created: "2026-06-27T11:59:05.459388647-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7c3ee381cc8b28f97308306394b565771533eb4c7144c67c3853aced258a90e8
@@ -352,7 +477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.88-dev.c1993f1
-    created: "2026-06-27T10:56:58.088997681-04:00"
+    created: "2026-06-27T11:59:05.457715842-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 39280a3600ccc29873f7dfab2e97639a240759da504f8b503530dd59fbe90426
@@ -477,7 +602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.86-dev.c1993f1
-    created: "2026-06-27T10:56:58.086534651-04:00"
+    created: "2026-06-27T11:59:05.455945324-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3d23a0ad3b4d48af0f953ff2f1cb98aea9d31a384be0aad7a58fd5e51c3bc336
@@ -602,7 +727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.85-dev.c1993f1
-    created: "2026-06-27T10:56:58.083544329-04:00"
+    created: "2026-06-27T11:59:05.454271457-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c97e2c4c177e74e80756873ba57c8e31bcbbfc70cb8e4f374b86a36abe750d17
@@ -727,7 +852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.84-dev.c1993f1
-    created: "2026-06-27T10:56:58.080901211-04:00"
+    created: "2026-06-27T11:59:05.451792747-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 05d0af6b3d2bf129d9a5ecf29a452e67793f758d68ff8cb08ef389f77a8f2572
@@ -852,7 +977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.83-dev.c1993f1
-    created: "2026-06-27T10:56:58.078118169-04:00"
+    created: "2026-06-27T11:59:05.44878337-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 57f468b430a57066d193cf608d15d0e1cba7cc293cf7927f6a0a9d0965c7c500
@@ -977,7 +1102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.82-dev.c1993f1
-    created: "2026-06-27T10:56:58.076379851-04:00"
+    created: "2026-06-27T11:59:05.446349514-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 91529a43e561083cebd226ed8fc996d79a89a1fdddf2786531051cf6945d1f54
@@ -1102,7 +1227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.81-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.074592811-04:00"
+    created: "2026-06-27T11:59:05.443149228-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 1721963fd4642b8c4bcb67460f063e896a7259365ca492b61a3836105d660ab1
@@ -1227,7 +1352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.80-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.072742804-04:00"
+    created: "2026-06-27T11:59:05.438989468-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6e3e95430e9ed91181f18b3dd26f88b0b0f18c6c81b12f6c3c58a069d3972055
@@ -1352,7 +1477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.79-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.069633027-04:00"
+    created: "2026-06-27T11:59:05.436102691-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9298ed046a0d404ef064ba95e792667dc617699fd5bcdeace3c5b6a8a01882d9
@@ -1477,7 +1602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.78-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.06641075-04:00"
+    created: "2026-06-27T11:59:05.433705014-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0424b069bf2c38ee255b25fb601e2a84ad6435fda610f8636a083946a7420216
@@ -1602,7 +1727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.77-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.06397465-04:00"
+    created: "2026-06-27T11:59:05.431248095-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 51db3b1ded79eb3300bfe637ae4e837dd4b9eedffa1afc3caca4b99a13ec6fed
@@ -1727,7 +1852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.76-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.061452319-04:00"
+    created: "2026-06-27T11:59:05.427555664-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9702291451725f9e85e2ce4d5af284b031a4d40b66da7d021f16dfb0dec6f572
@@ -1852,7 +1977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.75-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.0582932-04:00"
+    created: "2026-06-27T11:59:05.424783582-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 99da2d9479cbd96bf0153d685c09e9b033303a52b7a5b521709f05e3ec533315
@@ -1977,7 +2102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.74-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.056572124-04:00"
+    created: "2026-06-27T11:59:05.423147627-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c866158cc17432dbd8b72401b22c8f2e8c9afd1a1fb709a00b8de048657440ca
@@ -2102,7 +2227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.73-dev.a6a0c6b
-    created: "2026-06-27T10:56:58.054796857-04:00"
+    created: "2026-06-27T11:59:05.421435679-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c641cd2c76ae39d92960a9b588b592270235d7a7009a67d6f02745975f1516f7
@@ -2227,7 +2352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.72-dev.45b225a
-    created: "2026-06-27T10:56:58.052757393-04:00"
+    created: "2026-06-27T11:59:05.418529545-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5a7209797176adaa0dabb6551d1a707c6f1af2c90ee20d4b370fbac63cc47ff9
@@ -2352,7 +2477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.71-dev.45b225a
-    created: "2026-06-27T10:56:58.050051927-04:00"
+    created: "2026-06-27T11:59:05.416852162-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cd1198245318ec484503abb9a5e1b1a413f9df34130c0490f9a036d284794672
@@ -2477,7 +2602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.70-dev.45b225a
-    created: "2026-06-27T10:56:58.048380655-04:00"
+    created: "2026-06-27T11:59:05.415131207-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 54957f1bc369cebf3c90b774ae63a95982a4a9daf95b834b46af11db9213dac0
@@ -2602,7 +2727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.69-dev.45b225a
-    created: "2026-06-27T10:56:58.046697771-04:00"
+    created: "2026-06-27T11:59:05.413403779-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 67fc6c05c442f197cd0ee259bf4db09b5600383e9990922b1a202b8672cb7d8f
@@ -2727,7 +2852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.68-dev.45b225a
-    created: "2026-06-27T10:56:58.044920811-04:00"
+    created: "2026-06-27T11:59:05.410755331-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7d89c13d9096989e8f66c6a12d3e689220634b4b90c752bd00ed49f5e3ffe386
@@ -2852,7 +2977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.67-dev.45b225a
-    created: "2026-06-27T10:56:58.041739731-04:00"
+    created: "2026-06-27T11:59:05.409107393-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6b24766d4e031a9a9f48b806c723c180001865b71065d16d4653bf7a48c72075
@@ -2977,7 +3102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.66-dev.45b225a
-    created: "2026-06-27T10:56:58.040006412-04:00"
+    created: "2026-06-27T11:59:05.407428146-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d79612589a71f6a0be81ebf574c7552c1a1b40a3be9f69d266cd128e071514dc
@@ -3102,7 +3227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.65-dev.c7904b5
-    created: "2026-06-27T10:56:58.038224973-04:00"
+    created: "2026-06-27T11:59:05.405756193-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7d5473ba673c98dead34ea00628b3f4476de070bb72bad2eaef3ae6d7859f565
@@ -3227,7 +3352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.64-dev.c7904b5
-    created: "2026-06-27T10:56:58.036004068-04:00"
+    created: "2026-06-27T11:59:05.40279704-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a42caa7a88e0c54e4daa0c23e67426c4fc3b31ee29dc7ec6a185e9f72390fb9b
@@ -3352,7 +3477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.63-dev.1dcaf29
-    created: "2026-06-27T10:56:58.033353475-04:00"
+    created: "2026-06-27T11:59:05.40110554-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 64ee63869193d335144fcb71a5bf4671f477c1cb07a29143699c9adef28ea82f
@@ -3477,7 +3602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.62-dev.1dcaf29
-    created: "2026-06-27T10:56:58.030906906-04:00"
+    created: "2026-06-27T11:59:05.399396948-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 59acbf4599d1ffc2bb75b8dadd8922f74e92c8db0afa377c8d044b7f99584034
@@ -3602,7 +3727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.60-dev.1dcaf29
-    created: "2026-06-27T10:56:58.027975866-04:00"
+    created: "2026-06-27T11:59:05.397643181-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a1d86b2e8125eff241eaa2352d294df0d143e75d2ae7e2fc629fb24b443df260
@@ -3727,7 +3852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.59-dev.1dcaf29
-    created: "2026-06-27T10:56:58.024506504-04:00"
+    created: "2026-06-27T11:59:05.394508488-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: de4faac83ce005e94d09e314a4f22c5fc8acf445edae45f4518ca59eb7edf02b
@@ -3852,7 +3977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.58-dev.1dcaf29
-    created: "2026-06-27T10:56:58.022872552-04:00"
+    created: "2026-06-27T11:59:05.392107314-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6bd34717dfaa60386a547eebfe72b9b279ef1f0d65203e95d607bcb6f511eac5
@@ -3977,7 +4102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.56-dev.3ed162e
-    created: "2026-06-27T10:56:58.021200579-04:00"
+    created: "2026-06-27T11:59:05.389669752-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 75f1f674d1eef1a0cffb6e17b7aff3bfa765f8a916b535f041b39cdef6f8bdd8
@@ -4102,7 +4227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.55-dev.3ed162e
-    created: "2026-06-27T10:56:58.018943316-04:00"
+    created: "2026-06-27T11:59:05.387197364-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6b5d9ab0fd7d8d4215d63bfb778fe6b66c1996ad5719604522f7808a7c28ae0f
@@ -4227,7 +4352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.54-dev.715326a
-    created: "2026-06-27T10:56:58.017271242-04:00"
+    created: "2026-06-27T11:59:05.384010623-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6b61f01c9526309067d33ade569ec88421b9a1c13dc62e736194b2a8e2c1c057
@@ -4352,7 +4477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.53-dev.314630c
-    created: "2026-06-27T10:56:58.015543895-04:00"
+    created: "2026-06-27T11:59:05.382419141-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 21daf880cb647daeb68a734159cf734f741bac0d2ee1c879923db8aa75e55346
@@ -4477,7 +4602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.52-dev.9d2e2f2
-    created: "2026-06-27T10:56:58.013856433-04:00"
+    created: "2026-06-27T11:59:05.380842597-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e2f9b93222ab62cbbca03d2489b58816d616b7de8fd39952830106f1bddc6fa8
@@ -4602,7 +4727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.51-dev.3e662e3
-    created: "2026-06-27T10:56:58.011130729-04:00"
+    created: "2026-06-27T11:59:05.37921072-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: af4c842081ab83a3cb080cbcdf09205e1b4d989101a02950c581dcf0b9564e3a
@@ -4727,7 +4852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.50-dev.561a19b
-    created: "2026-06-27T10:56:58.008871111-04:00"
+    created: "2026-06-27T11:59:05.376610862-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 1ca04d962779cddbe3d00d5e676f5fa6c92bf9c035a89a1a3513d89e10bfa0f8
@@ -4852,7 +4977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.49-dev.a3ca0af
-    created: "2026-06-27T10:56:58.006601654-04:00"
+    created: "2026-06-27T11:59:05.374865431-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a0f2cf658f9c2ccbdf8ec25d63b56d9bbe00baca9efb1cc5ccac0f71373cc8fd
@@ -4977,7 +5102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.48-dev.a4a50f5
-    created: "2026-06-27T10:56:58.004315386-04:00"
+    created: "2026-06-27T11:59:05.372727412-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cd6f9f75a4f87b32a6165a0ed08720a32418c124b0824901dedc7127b725db1b
@@ -5102,7 +5227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.48-dev.76afe00
-    created: "2026-06-27T10:56:58.001430623-04:00"
+    created: "2026-06-27T11:59:05.370982071-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4141add76c32807df414354a27ab8e10a636e004dbb1378aacabe97d16cd71cd
@@ -5227,7 +5352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.48-dev.740a148
-    created: "2026-06-27T10:56:57.999158642-04:00"
+    created: "2026-06-27T11:59:05.368299277-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9256aeb4e4d39841c65957aa645f4fd61c34affe0c20416c3361b606ae11255e
@@ -5352,7 +5477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.47-dev.3e521e5
-    created: "2026-06-27T10:56:57.996857116-04:00"
+    created: "2026-06-27T11:59:05.365967223-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a2d493da83cca1f91d9096e81c54b16411b20fb577f9206f85a3d5204f1cd4ff
@@ -5477,7 +5602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.45-dev.3e521e5
-    created: "2026-06-27T10:56:57.994518339-04:00"
+    created: "2026-06-27T11:59:05.363565478-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0a23b6458b8a5af46002061f591bb799f5554f88f9efeb4f917a6db0ba207ae9
@@ -5602,7 +5727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.44-dev.c43de20
-    created: "2026-06-27T10:56:57.991532255-04:00"
+    created: "2026-06-27T11:59:05.360182218-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cfccb0d4b9141d0b71049a587a1502fd15b34e358be9f4c4192a7aa07c0bd23a
@@ -5727,7 +5852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.43-dev.c43de20
-    created: "2026-06-27T10:56:57.989253792-04:00"
+    created: "2026-06-27T11:59:05.357959319-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 025b60052ea51a971665b0c574636b13468b1b5524013ea2fde751d110d1d579
@@ -5852,7 +5977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.42-dev.c43de20
-    created: "2026-06-27T10:56:57.986902612-04:00"
+    created: "2026-06-27T11:59:05.356323634-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f46f1711103de794203463346d2d8e137b3edf971a8c19ed28e91064b0c23c46
@@ -5977,7 +6102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.41-dev.c43de20
-    created: "2026-06-27T10:56:57.983445523-04:00"
+    created: "2026-06-27T11:59:05.354708568-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: da857e89c858403dd75dd3fd8d2806922ae35e2c9da763b3d177e5a2d8380643
@@ -6102,7 +6227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.40-dev.85bbf14
-    created: "2026-06-27T10:56:57.98116216-04:00"
+    created: "2026-06-27T11:59:05.352006138-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 532eb12b931dbb77879efcbb76c8e181304c3bf21e1b6daacfe593dbf21b53b7
@@ -6227,7 +6352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.39-dev.85bbf14
-    created: "2026-06-27T10:56:57.978862037-04:00"
+    created: "2026-06-27T11:59:05.35041169-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 512e1452a550e2fe993b00bbfa754bb9d5ae5dd0f8416ba077c636459337cee2
@@ -6352,7 +6477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.38-dev.85bbf14
-    created: "2026-06-27T10:56:57.976404797-04:00"
+    created: "2026-06-27T11:59:05.348700153-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c0b72b8821089807095ee7e5339a43d78f3a8c3a4165e3b549a4f0596267ec1f
@@ -6477,7 +6602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.37-dev.09d3cfd
-    created: "2026-06-27T10:56:57.972096698-04:00"
+    created: "2026-06-27T11:59:05.347011228-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 716b94af0eb0a4cf1b7bb83f9701d0b0fd3f459c87338568dfcc7c4035f78e63
@@ -6602,7 +6727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.36-dev.09d3cfd
-    created: "2026-06-27T10:56:57.970493464-04:00"
+    created: "2026-06-27T11:59:05.344848722-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 48b7d54d3146222175219ef9a40128e7d17e74016a55df1ab5eb6df69501510b
@@ -6727,7 +6852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.35-dev.09d3cfd
-    created: "2026-06-27T10:56:57.968873579-04:00"
+    created: "2026-06-27T11:59:05.343121956-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b5b3d1e764b92d85cefff10bf122f813e0b047dfc80b058916dd5fed646e51d4
@@ -6852,7 +6977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.34-dev.09d3cfd
-    created: "2026-06-27T10:56:57.966537177-04:00"
+    created: "2026-06-27T11:59:05.341430777-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6f775929ebea4f006422dab3b8f0ba2ddff09335ca9dffede156eb4d397be90f
@@ -6977,7 +7102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.33-dev.4a132cc
-    created: "2026-06-27T10:56:57.964933793-04:00"
+    created: "2026-06-27T11:59:05.339014404-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4b87e615fff48c9abc1edf92ef97855813c5c7484f3acf0b1305c0ede485928d
@@ -7102,7 +7227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.33-dev.2e2feca
-    created: "2026-06-27T10:56:57.962798078-04:00"
+    created: "2026-06-27T11:59:05.337352911-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 029449082e4fdbb952b017337edfa49b4707301cbdc667e7d39360a14519ced6
@@ -7227,7 +7352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.32-dev.f5d7831
-    created: "2026-06-27T10:56:57.961151212-04:00"
+    created: "2026-06-27T11:59:05.33517152-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cf91ee0b988348533e74cc4e69ca2a0ed3059e6ffe4d7d474af21de066422b7f
@@ -7352,7 +7477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.32-dev.de4688e
-    created: "2026-06-27T10:56:57.958561984-04:00"
+    created: "2026-06-27T11:59:05.332843283-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 28231863ed5ec2b9294faa5d2729f873b7ec85f23a306cde45ee5379d397731f
@@ -7477,7 +7602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.32-dev.09d3cfd
-    created: "2026-06-27T10:56:57.9569796-04:00"
+    created: "2026-06-27T11:59:05.328760007-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 33fa1d04ca445b95b2fcaf7aa1f73f5be9e87b64863f20d7fe0e5c6ceb31df96
@@ -7602,7 +7727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.31-dev.2324f11
-    created: "2026-06-27T10:56:57.95536791-04:00"
+    created: "2026-06-27T11:59:05.32639963-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 36e21f04f6821b48da01af3eb62a99ac0ae0798d1ac4a4772003e5393c3072d0
@@ -7727,7 +7852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.30-dev.2324f11
-    created: "2026-06-27T10:56:57.952180357-04:00"
+    created: "2026-06-27T11:59:05.324090238-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: bdc62c208b4d8113df844c9707f54947804faccd409479e6d1cace0f18ca8dd6
@@ -7852,7 +7977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.29-dev.2324f11
-    created: "2026-06-27T10:56:57.950606138-04:00"
+    created: "2026-06-27T11:59:05.320548841-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 20a2f3fada45296b649d11ed133b178e4d6153ef44ef47894723dd30b0f40cf7
@@ -7977,7 +8102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.28-dev.2324f11
-    created: "2026-06-27T10:56:57.949012993-04:00"
+    created: "2026-06-27T11:59:05.318251512-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 97a1c30534a818e7a5d634165a8cca34bb5b1a16d7176f159a8a165338338bb0
@@ -8102,7 +8227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.27-dev.2324f11
-    created: "2026-06-27T10:56:57.947356309-04:00"
+    created: "2026-06-27T11:59:05.31591-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: fa8294306f0f6bc4c2fdac3fc03bec8efa9dabdf626057f892370a157bf3f93d
@@ -8227,7 +8352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.26-dev.2324f11
-    created: "2026-06-27T10:56:57.945102131-04:00"
+    created: "2026-06-27T11:59:05.312471947-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f2f43573fe6c872ec06ae4d483b0958c6a3b465998396a2c24c8af050a32aac7
@@ -8352,7 +8477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.25-dev.2324f11
-    created: "2026-06-27T10:56:57.943537399-04:00"
+    created: "2026-06-27T11:59:05.309256492-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3214bc35213f800196b3b39258683a25b7e386256bac3f90964e545e958ac583
@@ -8477,7 +8602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.24-dev.2324f11
-    created: "2026-06-27T10:56:57.941901995-04:00"
+    created: "2026-06-27T11:59:05.307702892-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 39e60e5a9bdfa88fa090003a7e3efcfe20401ccd5f3ddce18010d2fe1af53404
@@ -8602,7 +8727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.23-dev.080b7b5
-    created: "2026-06-27T10:56:57.939762122-04:00"
+    created: "2026-06-27T11:59:05.306097173-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 95344157507ac454575e893d2c1be198eb8141f6acd73b1b141b78da981cfe6a
@@ -8727,7 +8852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.22-dev.080b7b5
-    created: "2026-06-27T10:56:57.938172835-04:00"
+    created: "2026-06-27T11:59:05.303741084-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 268809af78efc1ee7a26b8a495e5d705e50166d786e67cb2fa08577f54175426
@@ -8852,7 +8977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.21-dev.080b7b5
-    created: "2026-06-27T10:56:57.936604426-04:00"
+    created: "2026-06-27T11:59:05.302110859-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2ab18e41ed81251d21300c37c4d08354439fcfee6877ded84cc0f616bc374579
@@ -8977,7 +9102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.20-dev.f31a2da
-    created: "2026-06-27T10:56:57.93392005-04:00"
+    created: "2026-06-27T11:59:05.30037194-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0e13ff3c4d2b112b3c808399b73a6cdb9256364268f5112a2eac1c580c21721d
@@ -9102,7 +9227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.20-dev.da9308d
-    created: "2026-06-27T10:56:57.932269337-04:00"
+    created: "2026-06-27T11:59:05.297529797-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2ac2f175879e6271c289a698caccfc5f06e57e86c165f158c93928765df4aa3c
@@ -9227,7 +9352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.20-dev.080b7b5
-    created: "2026-06-27T10:56:57.930678987-04:00"
+    created: "2026-06-27T11:59:05.295237077-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c8f615f2acb84a8b60689e199865a6b55933164917796db15d94254a936a4ebe
@@ -9352,7 +9477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.18-dev.da9308d
-    created: "2026-06-27T10:56:57.929007104-04:00"
+    created: "2026-06-27T11:59:05.292963333-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 286b4cb8e71513758e9c299a13c77fefe825a966bb0f7ba31c06ca5f34d68aee
@@ -9477,7 +9602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.17-dev.da9308d
-    created: "2026-06-27T10:56:57.926688104-04:00"
+    created: "2026-06-27T11:59:05.290614247-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 74a33c0a139aa9507f73f3f25dea98fa20f7af3c0a1630f03af9e31860f7f4df
@@ -9602,7 +9727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.16-dev.da9308d
-    created: "2026-06-27T10:56:57.925098917-04:00"
+    created: "2026-06-27T11:59:05.287869617-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d938629f998c705e07aa7df4b2e5d713810535cdf24bd44d0bc2c5f7f72b3b47
@@ -9727,7 +9852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.14-dev.da9308d
-    created: "2026-06-27T10:56:57.922508146-04:00"
+    created: "2026-06-27T11:59:05.286279448-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a7e0b280b665dbaf77d0509b94663cf45fe95355c6b89093683d22341cc41bfb
@@ -9852,7 +9977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.13-dev.8fbc3c5
-    created: "2026-06-27T10:56:57.919146667-04:00"
+    created: "2026-06-27T11:59:05.284581636-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 99ce2e77d6301993a5c0b182e6a8cd6a80dc67d36d1e06d593003f84e6c46ef7
@@ -9977,7 +10102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.12-dev.8fbc3c5
-    created: "2026-06-27T10:56:57.917542231-04:00"
+    created: "2026-06-27T11:59:05.282502748-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 33cf063a21e443816dc5c27284fbd10c7ac43fc2888d3bd0cd628036ac6f27a4
@@ -10102,7 +10227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.11-dev.8fbc3c5
-    created: "2026-06-27T10:56:57.915929139-04:00"
+    created: "2026-06-27T11:59:05.280777374-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9e2bac734372c6be993ab809c61d5417da39575968a1b847dfdc0cdb12970b67
@@ -10227,7 +10352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.10-dev.6ba15b4
-    created: "2026-06-27T10:56:57.913793634-04:00"
+    created: "2026-06-27T11:59:05.279159212-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d16caad695d9211ed2ac2bf89d9f6a7279a2376c2d3b5b96eeaaafdfc14054df
@@ -10352,7 +10477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.08-dev.6ba15b4
-    created: "2026-06-27T10:56:57.912138212-04:00"
+    created: "2026-06-27T11:59:05.276777755-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 82d58650334388a0f4d0301078de1c2bff1b4f1e2f8a5ec4e43df350f4d3452f
@@ -10477,7 +10602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.07-dev.6ba15b4
-    created: "2026-06-27T10:56:57.910468222-04:00"
+    created: "2026-06-27T11:59:05.275157139-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: ceb2efbd3d6293ddca16cd3e9285aba2bf0781e30f11894036fae581fb44f54f
@@ -10602,7 +10727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.06-dev.da9b77b
-    created: "2026-06-27T10:56:57.907310276-04:00"
+    created: "2026-06-27T11:59:05.273509772-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6c715f2abfcb178c6e144254b1fd01d55008efad520452daf02c3564732c7f95
@@ -10727,7 +10852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.05-dev.da9b77b
-    created: "2026-06-27T10:56:57.905030921-04:00"
+    created: "2026-06-27T11:59:05.270594461-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 97bcc033058eddea2e03129271d83038a1a3d9d8a5a84c6cf87b9af19fa574c9
@@ -10852,7 +10977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.04-dev.feec692
-    created: "2026-06-27T10:56:57.902746396-04:00"
+    created: "2026-06-27T11:59:05.2689238-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 920a5cbe614268013b1c78a15237aa8243982d0263bdd65b31fc58c4474d1825
@@ -10977,7 +11102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.04-dev.da9b77b
-    created: "2026-06-27T10:56:57.899783827-04:00"
+    created: "2026-06-27T11:59:05.266408652-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c5c58be02e5f2e7fd2b49ccba00851ab6939615e9fd846178e217b314e6d3470
@@ -11102,7 +11227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.04-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.897816719-04:00"
+    created: "2026-06-27T11:59:05.26394975-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9d72df38b8a57a31bfb045dac355607c4b298adddffa013444a3f125491d2dcc
@@ -11227,7 +11352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.03-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.896167428-04:00"
+    created: "2026-06-27T11:59:05.261638445-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0d2743a73374221f277ab4d1e5a5416d59cae071baf34b0cbc951d28b4605394
@@ -11352,7 +11477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.02-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.894446072-04:00"
+    created: "2026-06-27T11:59:05.259924022-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b3209a04a8bd62cdb571887a35a66690bf9e59806a659474dce04db70f9623ee
@@ -11477,7 +11602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.01-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.892221701-04:00"
+    created: "2026-06-27T11:59:05.258129859-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 00855e797a1e88026172c4221ede5dd30296de00b4bac65cb3f85f12e67ecd4f
@@ -11602,7 +11727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.8.00-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.890560758-04:00"
+    created: "2026-06-27T11:59:05.25527392-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7ad268d38a3b2cf3105da83591ec7e9fc7f0d1da3c238ec7274ac80bced1fa25
@@ -11727,7 +11852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.99-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.888817782-04:00"
+    created: "2026-06-27T11:59:05.25297078-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0cce4659fa9aef8e6b1d5e6ea3a6fd324c5386bdbffe863d62755e37ad53f2b9
@@ -11852,7 +11977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.98-dev.ad5ad4d
-    created: "2026-06-27T10:56:57.885602527-04:00"
+    created: "2026-06-27T11:59:05.250565879-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d734b1c94175fd583d7b66da18c50ed05afa64d07cae5dd247ac598077f63dc8
@@ -11977,7 +12102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.97-dev.34f3f59
-    created: "2026-06-27T10:56:57.883323272-04:00"
+    created: "2026-06-27T11:59:05.24752334-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: fd3170eced554e1ed1f5ec707d4b075cc1a0c93c6f8e18838333b2b48e9df537
@@ -12102,7 +12227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.96-dev.34f3f59
-    created: "2026-06-27T10:56:57.880973956-04:00"
+    created: "2026-06-27T11:59:05.245888927-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 066f24762d38041f834aea3d5bff3af7dece1db50158980085524db52621be34
@@ -12227,7 +12352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.95-dev.34f3f59
-    created: "2026-06-27T10:56:57.877809838-04:00"
+    created: "2026-06-27T11:59:05.244158163-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c88464441eef2faab3e778c525486a56089198a67e55ec7aafac13564978c2d8
@@ -12352,7 +12477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.94-dev.88f9d88
-    created: "2026-06-27T10:56:57.875536955-04:00"
+    created: "2026-06-27T11:59:05.241855434-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d64d49a62bdeaa29974a443a4f719510e375466a170184f4de6ffea763431a6a
@@ -12477,7 +12602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.93-dev.93d0872
-    created: "2026-06-27T10:56:57.872710041-04:00"
+    created: "2026-06-27T11:59:05.240256639-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4c14885787d5cf09ab43a757790595a2458c67ed74dd638d8a155806925afcee
@@ -12602,7 +12727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.93-dev.88f9d88
-    created: "2026-06-27T10:56:57.870123769-04:00"
+    created: "2026-06-27T11:59:05.238159837-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 68e9f16cf6c97bce8f292026922a0e841f466c9ee96d2e9fe70435ae6abcfa23
@@ -12727,7 +12852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.92-dev.99e0604
-    created: "2026-06-27T10:56:57.867809718-04:00"
+    created: "2026-06-27T11:59:05.236506349-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7cd137a2a3a3c74c58567a8633899e56b6b2e9da7fab1ed7dabf3436b8fa4fed
@@ -12852,7 +12977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.91-dev.2a1620a
-    created: "2026-06-27T10:56:57.864868299-04:00"
+    created: "2026-06-27T11:59:05.234852289-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2e03c40682ad9573b709b3b406c81a24e69d0577f54768188ebcef8a66157a4e
@@ -12977,7 +13102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.90-dev.c82a102
-    created: "2026-06-27T10:56:57.863243494-04:00"
+    created: "2026-06-27T11:59:05.232715863-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2230502c5b1e2a5e61e89dcb9ef4223e4fc34c10c18375b2d1418127b5dea4f9
@@ -13102,7 +13227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.89-dev.5940910
-    created: "2026-06-27T10:56:57.861527819-04:00"
+    created: "2026-06-27T11:59:05.231065871-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8b8dd5a4736054a6ca10247ca57b80db1137cd0ada3423e7abf14fdfc8c0e5ee
@@ -13227,7 +13352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 2.7.87-dev.5940910
-    created: "2026-06-27T10:56:57.859095917-04:00"
+    created: "2026-06-27T11:59:05.229184404-04:00"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e46e8cc02a0f8c24acbcc89614aae4e22ac8ffcff71cff6f7a1b94934110bdb7
@@ -13251,4 +13376,4 @@ entries:
     urls:
     - https://magertron.com/charts-dev/mcp-orchestrator-2.7.87-dev.5940910.tgz
     version: 2.7.87-dev.5940910
-generated: "2026-06-27T10:56:57.857263723-04:00"
+generated: "2026-06-27T11:59:05.226696808-04:00"
