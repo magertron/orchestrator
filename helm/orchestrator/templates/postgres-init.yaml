@@ -769,8 +769,17 @@ data:
         id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
         name         VARCHAR(255) NOT NULL UNIQUE,
         cost_center  TEXT,                              -- finance GL / cost-center code
+        -- Associated tenant namespace (people-axis → workload-axis link).
+        -- NON-UNIQUE on purpose: multiple departments may share one namespace
+        -- (e.g. Engineering + Computer Science → mcp-eng-csis). Nullable so
+        -- legacy departments created before this column remain valid and can be
+        -- backfilled via the editor. Required on new departments at the API.
+        namespace    TEXT,
         created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    -- Idempotent backfill for deployments whose departments table predates the
+    -- namespace column (CREATE TABLE IF NOT EXISTS above won't alter it).
+    ALTER TABLE departments ADD COLUMN IF NOT EXISTS namespace TEXT;
 
     -- Effective-dated user→department membership (SCD type 2). Lets us resolve a
     -- user's department AS OF any incurred_at so org moves never restate history.
