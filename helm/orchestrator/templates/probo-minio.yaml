@@ -1,0 +1,158 @@
+{{- if and .Values.probo.enabled .Values.probo.minio.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "probo.minioName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "probo.minioSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: 9000
+    - name: console
+      port: 9001
+      targetPort: 9001
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "probo.minioName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "probo.minioName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "probo.minioSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "probo.minioSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.probo.minio.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probo.minio.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probo.minio.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: minio
+          image: "{{ .Values.probo.minio.image.repository }}:{{ .Values.probo.minio.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_ACCESS_KEY
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_SECRET_KEY
+          ports:
+            - name: s3
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.probo.minio.resources | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.probo.minio.storage.storageClassName }}
+        storageClassName: {{ .Values.probo.minio.storage.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.probo.minio.storage.size }}
+---
+{{- /*
+  One-shot Job to create the evidence bucket after MinIO is up. probod expects
+  the bucket to exist (objectStore.bucket). Idempotent: `mc mb` on an existing
+  bucket is a no-op-ish (ignore-existing).
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "probo.minioName" . }}-makebucket
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        {{- include "probo.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: makebucket
+          image: "{{ .Values.probo.minio.mcImage.repository }}:{{ .Values.probo.minio.mcImage.tag }}"
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_ACCESS_KEY
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_SECRET_KEY
+            - name: BUCKET
+              value: {{ .Values.probo.objectStore.bucket | quote }}
+            - name: MINIO_SVC
+              value: {{ include "probo.minioEndpoint" . | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for MinIO at $MINIO_SVC ..."
+              until mc alias set m "$MINIO_SVC" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" >/dev/null 2>&1; do
+                echo "  minio not ready, retrying..."; sleep 3;
+              done
+              echo "Creating bucket '$BUCKET' (ignore if exists)..."
+              mc mb --ignore-existing "m/$BUCKET"
+              echo "Bucket ready."
+{{- end }}
