@@ -548,6 +548,138 @@ inventory:
         cpu: "1000m"
         memory: "1Gi"
 
+# ─── Probo GRC (Governance, Risk & Compliance) ───────────────────────────────
+# Probo runs as an INTERNAL Magertron subsystem — deployed alongside the
+# orchestrator and registered as a type:internal MCP server so the 270+ Probo
+# GRC tools flow through ext_authz / RBAC / rating / audit like any server. It is
+# special only in that it CONSUMES Magertron's governance objects (audit trail,
+# RBAC state, registry, contracts) as GRC evidence.
+#
+# Default OFF so existing customer upgrades don't unexpectedly deploy a GRC stack
+# + its Postgres (same convention as inventory). Opt in by flipping to true or
+# via bootstrap.sh --set.
+#
+# Probo = probod (GRC daemon + MCP server) + its own Postgres + headless Chrome
+# (PDF/evidence). Object storage is NOT bundled — evidence files go to a
+# Magertron-designated S3-compatible store (see probo.objectStore). Image source:
+# upstream ghcr.io/getprobo/probo; mirror to curtismager20/* for a shipped product.
+probo:
+  enabled: false
+  replicaCount: 1
+
+  # probod placement. Like the orchestrator + its postgres, probod is part of the
+  # control plane (it co-locates with its own node-local Postgres), so it pins to
+  # the control-plane node. node-role.kubernetes.io/control-plane is auto-applied
+  # by k3s — no manual labeling. Override via --set probo.nodeSelector=null only
+  # with a networked StorageClass (not local-path).
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+  tolerations: []
+  affinity: {}
+
+  image:
+    # Upstream for eval; mirror to your registry for prod (supply-chain control).
+    repository: ghcr.io/getprobo/probo
+    # Probo is third-party, so its tag does NOT track .Chart.AppVersion (that's
+    # Magertron's version). Pin an explicit upstream probod tag here.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # Ports probod serves (from Probo's compose.prod.yaml).
+  ports:
+    api: 8080        # web console + REST + GraphQL + MCP server
+    metrics: 8081    # Prometheus
+    tls: 8443
+
+  # External URL probod uses for email/redirect/API generation. Leave EMPTY to
+  # auto-derive probod's own in-cluster service URL in the release namespace
+  # (probod deploys alongside the orchestrator). Set this to the gateway-facing
+  # URL when probod is fronted by the Magertron gateway.
+  baseUrl: ""
+  corsAllowedOrigins: "*"
+  tracingAddr: ""    # OTel collector addr to enable tracing; empty = off
+
+  # ── Probo's own Postgres (separate from the ops + inventory DBs) ─────────────
+  # Same pinning/placement rationale as the main postgresql block: control-plane
+  # node so the node-local PV stays co-located across reschedules.
+  postgresql:
+    enabled: true
+    image:
+      repository: postgres
+      tag: 17.9            # Probo's compose pins 17.x; matches upstream expectations
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+    tolerations: []
+    affinity: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    storage:
+      size: 10Gi
+      # storageClassName: longhorn    # Set for your environment
+    database: probod
+    username: postgres
+    # Password is read from the secret (key: PROBO_DB_PASSWORD) — see secrets block.
+
+  # ── Headless Chrome (PDF / evidence-pack generation) ─────────────────────────
+  # Heavyweight; disable if this deployment doesn't generate evidence-pack PDFs.
+  chrome:
+    enabled: true
+    image:
+      repository: chromedp/headless-shell
+      tag: "149.0.7779.3"
+    port: 9222
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  # ── Object storage for Probo evidence (REQUIRED — Probo is S3-only) ──────────
+  # NOT bundled. Point at Magertron's object store (or any S3-compatible endpoint).
+  # Probo writes evidence files (PDFs, screenshots) here. Access key + secret come
+  # from the central secrets block (proboS3AccessKey / proboS3SecretKey).
+  objectStore:
+    endpoint: ""           # REQUIRED: s3 endpoint URL (Magertron store / MinIO / S3)
+    region: "us-east-1"
+    bucket: "probod"
+    usePathStyle: "true"   # true for MinIO/SeaweedFS-style endpoints
+
+  # ── SMTP (optional; Probo notifications) ─────────────────────────────────────
+  smtp:
+    addr: ""               # host:587 ; empty = no mail
+    tlsRequired: "false"
+    senderName: "Probo"
+    senderEmail: "no-reply@magertron.local"
+
+  # ── Magertron MCP registration ───────────────────────────────────────────────
+  # Post-install hook registers probod's MCP server as type:internal so Magertron
+  # governs the 270+ tools. Bearer token injected by ext_authz from the secret.
+  mcpRegistration:
+    enabled: true
+    serverName: "probo-grc"
+    # Registration target namespace + probod's MCP endpoint are auto-derived from
+    # the release namespace (probod deploys alongside the orchestrator). Override
+    # mcpEndpoint only if probod is reached via a non-default URL (e.g. gateway).
+    mcpEndpoint: ""
+    # Magertron admin API the registration Job calls. Empty = auto-derive the
+    # orchestrator's own service in the release namespace. Override for a custom URL.
+    magertronApi: ""
+
 # ─── API Configuration ──────────────────────────────────────────────────────
 api:
   httpPort: 8080
@@ -648,6 +780,39 @@ secrets:
   #                    --set-file secrets.jwtPublicKey=jwt.pub
   jwtPrivateKey: ""   # PEM-encoded RSA private key (leave empty for auto-gen)
   jwtPublicKey: ""    # PEM-encoded RSA public key (derived from private if empty)
+
+  # ── Probo GRC secrets (only relevant when probo.enabled=true) ───────────────
+  # Same three-tier semantics as dbPassword / inventoryDbPassword:
+  #   1. existing secret → reuse (upgrade-safe)
+  #   2. this value      → operator-supplied
+  #   3. empty           → chart generates a random value at install
+  #
+  # Probo's Postgres password (Probo's DB, separate from ops + inventory DBs).
+  # Retrieve later via:
+  #   kubectl get secret -n <ns> <release>-secrets \
+  #     -o jsonpath='{.data.PROBO_DB_PASSWORD}' | base64 -d
+  proboDbPassword: ""
+
+  # probod data-at-rest encryption key (PROBOD_ENCRYPTION_KEY). Probo REQUIRES
+  # this for production. Empty = chart generates a random 32-char value.
+  proboEncryptionKey: ""
+
+  # probod auth secrets (cookie signing, password pepper, trust-token signing).
+  # Empty = auto-generated. Pin for reproducible installs / rotation.
+  proboAuthCookieSecret: ""
+  proboAuthPasswordPepper: ""
+  proboTrustAuthTokenSecret: ""
+
+  # S3 credentials for Probo's evidence object store (probo.objectStore).
+  # REQUIRED when probo.enabled=true — these are the STORE's creds (not ours to
+  # mint), so they're operator-supplied; no auto-gen.
+  proboS3AccessKey: ""
+  proboS3SecretKey: ""
+
+  # Bearer token Magertron stores as probod's MCP-server credential (ext_authz
+  # injects it on every proxied call to Probo). Empty = chart generates one and
+  # wires the SAME value into probod's expected MCP auth.
+  proboMcpToken: ""
 
 # ─── License ─────────────────────────────────────────────────────────────────
 # License file for Enterprise tier features (SSO, SCIM, custom RBAC,

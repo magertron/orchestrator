@@ -1,0 +1,175 @@
+{{- if .Values.probo.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "probo.probodName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "probo.probodSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: api
+      port: {{ .Values.probo.ports.api }}
+      targetPort: {{ .Values.probo.ports.api }}
+    - name: metrics
+      port: {{ .Values.probo.ports.metrics }}
+      targetPort: {{ .Values.probo.ports.metrics }}
+    - name: tls
+      port: {{ .Values.probo.ports.tls }}
+      targetPort: {{ .Values.probo.ports.tls }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "probo.probodName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.probo.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "probo.probodSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "probo.probodSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.probo.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probo.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probo.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Gate startup on Probo's own Postgres so probod doesn't crashloop on boot.
+      initContainers:
+        {{- if .Values.probo.postgresql.enabled }}
+        - name: wait-postgres
+          image: busybox:1.36
+          command: ['sh', '-c',
+            'until nc -z {{ include "probo.postgresName" . }} 5432; do echo waiting for probo-postgres; sleep 2; done']
+        {{- end }}
+      containers:
+        - name: probod
+          image: "{{ .Values.probo.image.repository }}:{{ .Values.probo.image.tag }}"
+          imagePullPolicy: {{ .Values.probo.image.pullPolicy }}
+          env:
+            # ── Secrets (from the shared <fullname>-secrets Secret) ──
+            - name: PROBOD_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBOD_ENCRYPTION_KEY
+            - name: AUTH_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_AUTH_COOKIE_SECRET
+            - name: AUTH_PASSWORD_PEPPER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_AUTH_PASSWORD_PEPPER
+            - name: TRUST_AUTH_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_TRUST_AUTH_TOKEN_SECRET
+            # ── App settings ──
+            - name: PROBOD_BASE_URL
+              {{- if .Values.probo.baseUrl }}
+              value: {{ .Values.probo.baseUrl | quote }}
+              {{- else }}
+              # Default: probod's own in-cluster service in the release namespace.
+              # Override probo.baseUrl with the gateway-facing URL behind Magertron.
+              value: "http://{{ include "probo.probodName" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local:{{ .Values.probo.ports.api }}"
+              {{- end }}
+            - name: API_ADDR
+              value: "0.0.0.0:{{ .Values.probo.ports.api }}"
+            - name: API_CORS_ALLOWED_ORIGINS
+              value: {{ .Values.probo.corsAllowedOrigins | quote }}
+            # ── PostgreSQL (Probo's own) ──
+            - name: PG_ADDR
+              value: "{{ include "probo.postgresHost" . }}:5432"
+            - name: PG_USERNAME
+              value: {{ .Values.probo.postgresql.username | quote }}
+            - name: PG_DATABASE
+              value: {{ .Values.probo.postgresql.database | quote }}
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_DB_PASSWORD
+            - name: PG_POOL_SIZE
+              value: "100"
+            # ── S3 (Magertron / external object store) ──
+            - name: AWS_REGION
+              value: {{ .Values.probo.objectStore.region | quote }}
+            - name: AWS_BUCKET
+              value: {{ .Values.probo.objectStore.bucket | quote }}
+            - name: AWS_ENDPOINT
+              value: {{ .Values.probo.objectStore.endpoint | quote }}
+            - name: AWS_USE_PATH_STYLE
+              value: {{ .Values.probo.objectStore.usePathStyle | quote }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_SECRET_KEY
+            # ── Observability ──
+            - name: METRICS_ADDR
+              value: "0.0.0.0:{{ .Values.probo.ports.metrics }}"
+            - name: TRACING_ADDR
+              value: {{ .Values.probo.tracingAddr | quote }}
+            # ── Chrome (PDF) ──
+            {{- if .Values.probo.chrome.enabled }}
+            - name: CHROME_DP_ADDR
+              value: "{{ include "probo.chromeName" . }}:{{ .Values.probo.chrome.port }}"
+            {{- end }}
+            # ── SMTP (optional) ──
+            {{- if .Values.probo.smtp.addr }}
+            - name: SMTP_ADDR
+              value: {{ .Values.probo.smtp.addr | quote }}
+            - name: SMTP_TLS_REQUIRED
+              value: {{ .Values.probo.smtp.tlsRequired | quote }}
+            - name: MAILER_SENDER_NAME
+              value: {{ .Values.probo.smtp.senderName | quote }}
+            - name: MAILER_SENDER_EMAIL
+              value: {{ .Values.probo.smtp.senderEmail | quote }}
+            {{- end }}
+          ports:
+            - name: api
+              containerPort: {{ .Values.probo.ports.api }}
+            - name: metrics
+              containerPort: {{ .Values.probo.ports.metrics }}
+            - name: tls
+              containerPort: {{ .Values.probo.ports.tls }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.probo.ports.api }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.probo.ports.api }}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.probo.resources | nindent 12 }}
+{{- end }}

@@ -1,0 +1,95 @@
+{{- if and .Values.probo.enabled .Values.probo.postgresql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "probo.postgresName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "probo.postgresSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "probo.postgresName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "probo.postgresName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "probo.postgresSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "probo.postgresSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.probo.postgresql.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probo.postgresql.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probo.postgresql.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: postgres
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.probo.postgresql.image.repository }}:{{ .Values.probo.postgresql.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.probo.postgresql.username | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.probo.postgresql.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_DB_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgres
+              containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.probo.postgresql.username }}"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.probo.postgresql.username }}"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.probo.postgresql.resources | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.probo.postgresql.storage.storageClassName }}
+        storageClassName: {{ .Values.probo.postgresql.storage.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.probo.postgresql.storage.size }}
+{{- end }}

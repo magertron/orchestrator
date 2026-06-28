@@ -1,0 +1,65 @@
+{{- if and .Values.probo.enabled .Values.probo.chrome.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "probo.chromeName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "probo.chromeSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: cdp
+      port: {{ .Values.probo.chrome.port }}
+      targetPort: {{ .Values.probo.chrome.port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "probo.chromeName" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "probo.chromeSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "probo.chromeSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.probo.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: chrome
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.probo.chrome.image.repository }}:{{ .Values.probo.chrome.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - --headless
+            - --disable-gpu
+            - --disable-dev-shm-usage
+            - --hide-scrollbars
+            - --mute-audio
+            - --no-default-browser-check
+            - --no-first-run
+            - --disable-background-networking
+            - --disable-background-timer-throttling
+            - --disable-extensions
+            - --remote-debugging-address=0.0.0.0
+            - --remote-debugging-port={{ .Values.probo.chrome.port }}
+          ports:
+            - name: cdp
+              containerPort: {{ .Values.probo.chrome.port }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.probo.chrome.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.probo.chrome.resources | nindent 12 }}
+{{- end }}
