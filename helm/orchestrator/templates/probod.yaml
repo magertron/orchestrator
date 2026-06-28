@@ -106,7 +106,14 @@ spec:
             - name: API_ADDR
               value: "0.0.0.0:{{ .Values.probo.ports.api }}"
             - name: API_CORS_ALLOWED_ORIGINS
+              {{- if .Values.probo.corsAllowedOrigins }}
               value: {{ .Values.probo.corsAllowedOrigins | quote }}
+              {{- else }}
+              # probod requires origins WITH a scheme (rejects bare "*"). Default
+              # to probod's own in-cluster origin; set probo.corsAllowedOrigins to
+              # the browser-facing origin(s) for real UI access.
+              value: "http://{{ include "probo.probodName" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local:{{ .Values.probo.ports.api }}"
+              {{- end }}
             # ── PostgreSQL (Probo's own) ──
             - name: PG_ADDR
               value: "{{ include "probo.postgresHost" . }}:5432"

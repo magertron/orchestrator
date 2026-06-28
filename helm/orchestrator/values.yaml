@@ -604,7 +604,11 @@ probo:
   # (probod deploys alongside the orchestrator). Set this to the gateway-facing
   # URL when probod is fronted by the Magertron gateway.
   baseUrl: ""
-  corsAllowedOrigins: "*"
+  # probod rejects a bare "*" as a trusted origin — it requires a scheme
+  # (e.g. https://probo.example.com). Set this to the browser-facing origin(s)
+  # that will call probod's API. Empty = auto-derive probod's own in-cluster
+  # service origin (works for in-cluster/eval; set the gateway origin for prod).
+  corsAllowedOrigins: ""
   tracingAddr: ""    # OTel collector addr to enable tracing; empty = off
 
   # ── Probo's own Postgres (separate from the ops + inventory DBs) ─────────────
