@@ -362,6 +362,13 @@ NODE_NAME="${NODE_NAME:-}"
 # relative / localhost dev fallback). Prompted interactively if unset and
 # not --non-interactive.
 API_PUBLIC_URL="${API_PUBLIC_URL:-}"
+# Opt-IN to the Probo GRC subsystem (probod + its Postgres + headless Chrome,
+# registered as a type:internal MCP server). Off by default so existing installs
+# are unaffected; pass --enable-probo (or ENABLE_PROBO=1) to deploy it.
+# NOTE: enabling Probo requires an S3-compatible object store endpoint
+# (probo.objectStore.endpoint) and credentials, plus a bootstrap admin token for
+# MCP registration — see --help. Without those, probod will not become ready.
+ENABLE_PROBO="${ENABLE_PROBO:-0}"
 HELM_REPO_NAME="${HELM_REPO_NAME:-magertron}"
 RELEASE_NAME="${RELEASE_NAME:-mcp}"
 
@@ -413,12 +420,20 @@ Common options:
                               chart's request-relative/localhost default).
   --non-interactive           Fail on any prompt instead of asking. Use
                               for CI / automation.
+  --enable-probo              Deploy the Probo GRC subsystem (probod +
+                              its Postgres + headless Chrome), registered
+                              as a type:internal MCP server. Off by
+                              default. Requires an S3-compatible object
+                              store (probo.objectStore.endpoint + creds)
+                              and a bootstrap admin token for MCP
+                              registration; without them probod will not
+                              become ready.
   -h, --help                  Show this message
 
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
   NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
-  API_PUBLIC_URL,
+  API_PUBLIC_URL, ENABLE_PROBO,
   HELM_REPO_NAME, RELEASE_NAME
 
 EOF
@@ -440,6 +455,7 @@ while [ $# -gt 0 ]; do
             # require labels). Accept silently for backward compat.
             SKIP_NODE_LABEL=1; shift ;;
         --label-nodes)     LABEL_NODES=1; shift ;;
+        --enable-probo)    ENABLE_PROBO=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -951,6 +967,14 @@ HELM_VALUES=(
 # (values.yaml) stand, rather than forcing an empty override.
 if [ -n "$API_PUBLIC_URL" ]; then
     HELM_VALUES+=( --set "orchestrator.env.apiPublicUrl=$API_PUBLIC_URL" )
+fi
+
+# Opt-in: deploy the Probo GRC subsystem. Chart default is probo.enabled=false,
+# so this --set is the only thing that turns it on. The S3 endpoint/creds and
+# bootstrap admin token still come from values (or a later --set); without them
+# probod stays NotReady, but the pods will deploy.
+if [ "$ENABLE_PROBO" = "1" ]; then
+    HELM_VALUES+=( --set "probo.enabled=true" )
 fi
 
 # Wrapper function so we can pass it to spinner.
