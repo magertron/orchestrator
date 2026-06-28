@@ -649,12 +649,41 @@ probo:
         cpu: 500m
         memory: 1Gi
 
-  # ── Object storage for Probo evidence (REQUIRED — Probo is S3-only) ──────────
-  # NOT bundled. Point at Magertron's object store (or any S3-compatible endpoint).
-  # Probo writes evidence files (PDFs, screenshots) here. Access key + secret come
-  # from the central secrets block (proboS3AccessKey / proboS3SecretKey).
+  # ── Bundled MinIO (S3-compatible object store for Probo evidence) ────────────
+  # Turnkey default: a MinIO instance runs in-cluster and probod writes evidence
+  # (PDFs, screenshots) to it — on-prem, no external S3, satisfies data residency.
+  # Set minio.enabled=false to use an EXTERNAL store instead (then set
+  # objectStore.endpoint + the proboS3* creds in the secrets block).
+  minio:
+    enabled: true
+    image:
+      repository: minio/minio
+      tag: "latest"
+    mcImage:                 # the mc client, for the bucket-creation Job
+      repository: minio/mc
+      tag: "latest"
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+    tolerations: []
+    affinity: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    storage:
+      size: 20Gi
+      # storageClassName: longhorn    # Set for your environment
+
+  # ── Object storage endpoint for probod evidence ─────────────────────────────
+  # Leave endpoint EMPTY to auto-use the bundled MinIO above (the default). Set it
+  # to point probod at an EXTERNAL S3-compatible store instead (then also disable
+  # minio above and supply proboS3AccessKey/proboS3SecretKey in secrets).
+  # Probo writes evidence files (PDFs, screenshots) here.
   objectStore:
-    endpoint: ""           # REQUIRED: s3 endpoint URL (Magertron store / MinIO / S3)
+    endpoint: ""           # empty = use bundled MinIO; set for external S3
     region: "us-east-1"
     bucket: "probod"
     usePathStyle: "true"   # true for MinIO/SeaweedFS-style endpoints

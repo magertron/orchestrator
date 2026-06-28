@@ -24,6 +24,16 @@ All resources are gated behind .Values.probo.enabled by their templates.
 {{ include "mcp.fullname" . }}-probo-chrome
 {{- end }}
 
+{{/* MinIO (S3-compatible object store) name */}}
+{{- define "probo.minioName" -}}
+{{ include "mcp.fullname" . }}-probo-minio
+{{- end }}
+
+{{/* MinIO in-cluster S3 endpoint */}}
+{{- define "probo.minioEndpoint" -}}
+http://{{ include "probo.minioName" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local:9000
+{{- end }}
+
 {{/* Common Probo labels — extend mcp.labels with a subsystem tag */}}
 {{- define "probo.labels" -}}
 {{ include "mcp.labels" . }}
@@ -52,6 +62,14 @@ app: probo-chrome
 app.kubernetes.io/name: {{ include "mcp.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: probo-chrome
+{{- end }}
+
+{{/* minio selector labels */}}
+{{- define "probo.minioSelectorLabels" -}}
+app: probo-minio
+app.kubernetes.io/name: {{ include "mcp.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: probo-minio
 {{- end }}
 
 {{/* The shared secrets Secret name (matches the main chart's <fullname>-secrets) */}}

@@ -57,6 +57,12 @@ spec:
           command: ['sh', '-c',
             'until nc -z {{ include "probo.postgresName" . }} 5432; do echo waiting for probo-postgres; sleep 2; done']
         {{- end }}
+        {{- if .Values.probo.minio.enabled }}
+        - name: wait-minio
+          image: busybox:1.36
+          command: ['sh', '-c',
+            'until nc -z {{ include "probo.minioName" . }} 9000; do echo waiting for probo-minio; sleep 2; done']
+        {{- end }}
       containers:
         - name: probod
           image: "{{ .Values.probo.image.repository }}:{{ .Values.probo.image.tag }}"
@@ -115,13 +121,20 @@ spec:
                   key: PROBO_DB_PASSWORD
             - name: PG_POOL_SIZE
               value: "100"
-            # ── S3 (Magertron / external object store) ──
+            # ── S3 (bundled MinIO, or external object store) ──
             - name: AWS_REGION
               value: {{ .Values.probo.objectStore.region | quote }}
             - name: AWS_BUCKET
               value: {{ .Values.probo.objectStore.bucket | quote }}
             - name: AWS_ENDPOINT
+              {{- if .Values.probo.objectStore.endpoint }}
               value: {{ .Values.probo.objectStore.endpoint | quote }}
+              {{- else if .Values.probo.minio.enabled }}
+              # Bundled MinIO in the release namespace (default turnkey path).
+              value: {{ include "probo.minioEndpoint" . | quote }}
+              {{- else }}
+              value: ""
+              {{- end }}
             - name: AWS_USE_PATH_STYLE
               value: {{ .Values.probo.objectStore.usePathStyle | quote }}
             - name: AWS_ACCESS_KEY_ID
