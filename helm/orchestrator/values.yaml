@@ -802,6 +802,10 @@ secrets:
   proboAuthCookieSecret: ""
   proboAuthPasswordPepper: ""
   proboTrustAuthTokenSecret: ""
+  # probod's OAuth2 server signing key (OAUTH2_SERVER_SIGNING_KEY). Required by
+  # the probod image even though it's absent from the upstream compose example.
+  # Empty = auto-generated.
+  proboOauth2ServerSigningKey: ""
 
   # S3 credentials for Probo's evidence object store (probo.objectStore).
   # REQUIRED when probo.enabled=true — these are the STORE's creds (not ours to

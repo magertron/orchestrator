@@ -83,6 +83,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "probo.secretsName" . }}
                   key: PROBO_TRUST_AUTH_TOKEN_SECRET
+            - name: OAUTH2_SERVER_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_OAUTH2_SERVER_SIGNING_KEY
             # ── App settings ──
             - name: PROBOD_BASE_URL
               {{- if .Values.probo.baseUrl }}
