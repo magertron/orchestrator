@@ -273,6 +273,39 @@ data:
                     stat_prefix: mcp_ingress_v3
                     codec_type: AUTO
                     use_remote_address: true
+                    # ── Security headers on Envoy local replies (2026-06-29) ──────────
+                    # Decorates Envoy-GENERATED responses (route-miss 404s, ext_authz
+                    # 401/403 denials, 503s) — the responses that never reach a route
+                    # and therefore cannot be hardened via RDS-pushed
+                    # response_headers_to_add. A headers scan crawling an unknown path
+                    # hits exactly this local-reply 404; before this block it carried
+                    # only x-content-type-options (set in the orchestrator). The
+                    # status_code_filter GE 100 matches EVERY status, so denials are
+                    # hardened too. CSP is Report-Only (cannot break anything; the
+                    # enforced app-response CSP is a later, separate change on the
+                    # RDS route config). CORS wildcard is intentionally NOT touched
+                    # here — that is the separate public_base_url + desktop-scheme
+                    # design decision, not a header patch.
+                    local_reply_config:
+                      mappers:
+                        - filter:
+                            status_code_filter:
+                              comparison:
+                                op: GE
+                                value:
+                                  default_value: 100
+                                  runtime_key: local_reply_min_status
+                          headers_to_add:
+                            - header: { key: "X-Frame-Options", value: "DENY" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Cross-Origin-Resource-Policy", value: "same-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Content-Security-Policy-Report-Only", value: "default-src 'self'" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
                     rds:
                       route_config_name: mcp_route
                       config_source:
@@ -452,6 +485,31 @@ data:
                     stat_prefix: mcp_inventory_ingress_v3
                     codec_type: AUTO
                     use_remote_address: true
+                    # ── Security headers on Envoy local replies (2026-06-29) ──────────
+                    # Same block as the main listener (mcp_https_listener_v3). Kept in
+                    # sync so a scan against the inventory plane (10347) does not show
+                    # the header gap the main plane just closed. See main listener for
+                    # full rationale.
+                    local_reply_config:
+                      mappers:
+                        - filter:
+                            status_code_filter:
+                              comparison:
+                                op: GE
+                                value:
+                                  default_value: 100
+                                  runtime_key: local_reply_min_status
+                          headers_to_add:
+                            - header: { key: "X-Frame-Options", value: "DENY" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Cross-Origin-Resource-Policy", value: "same-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Content-Security-Policy-Report-Only", value: "default-src 'self'" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
                     route_config:
                       name: mcp_inventory_route
                       virtual_hosts:
