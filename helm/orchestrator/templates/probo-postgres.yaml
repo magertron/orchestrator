@@ -49,6 +49,11 @@ spec:
         - name: postgres
           image: "{{ .Values.global.imageRegistry }}/{{ .Values.probo.postgresql.image.repository }}:{{ .Values.probo.postgresql.image.tag }}"
           imagePullPolicy: IfNotPresent
+          args:
+            - -c
+            - max_connections={{ .Values.probo.postgresql.maxConnections | default 200 }}
+            - -c
+            - shared_buffers={{ .Values.probo.postgresql.sharedBuffers | default "256MB" }}
           env:
             - name: POSTGRES_USER
               value: {{ .Values.probo.postgresql.username | quote }}
