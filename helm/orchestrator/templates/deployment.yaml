@@ -221,6 +221,22 @@ spec:
                   name: {{ include "mcp.fullname" . }}-inventory-admin-token
                   key:  MCP_INVENTORY_ADMIN_TOKEN
                   optional: true
+            # Server Editor Assistant — advisory bot needs the Anthropic key to
+            # call the Messages API. Same key/secret the chat-daemon uses (see
+            # the chat-daemon container below): honors chatDaemon.externalSecretName
+            # (prod: pre-existing "chat-daemon-key", key out of Helm history),
+            # else the chart-created secret. optional:true so the orchestrator
+            # still starts if unset — the endpoint returns "not configured".
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.chatDaemon.externalSecretName }}
+                  name: {{ .Values.chatDaemon.externalSecretName }}
+                  {{- else }}
+                  name: {{ include "mcp.fullname" . }}-chat-daemon
+                  {{- end }}
+                  key: ANTHROPIC_API_KEY
+                  optional: true
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
