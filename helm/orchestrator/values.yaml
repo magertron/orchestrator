@@ -260,6 +260,89 @@ chatDaemon:
       cpu: 250m
       memory: 256Mi
 
+# ─── Advisory Assistant ──────────────────────────────────────────────────────
+# Provider selection for the in-app advisory assistant. The handler reads these
+# as ASSISTANT_PROVIDER / OLLAMA_BASE_URL / OLLAMA_MODEL (wired in
+# templates/deployment.yaml).
+assistant:
+  # "ollama"    → bundled Ollama model (see ollama: below). No API key, no
+  #               per-token cost, no data leaves the cluster. This is the
+  #               batteries-included, data-residency default (HIPAA/GDPR).
+  # "anthropic" → the Anthropic Messages API (needs chatDaemon's key). Frontier
+  #               quality; governed by the LLM cost engine.
+  # The handler also AUTO-selects when unset: OLLAMA_BASE_URL present → ollama,
+  # else ANTHROPIC_API_KEY present → anthropic, else unconfigured.
+  provider: "ollama"
+
+  # The bundled local model tag Ollama serves (passed to the handler as
+  # OLLAMA_MODEL). Chosen via bake-off: Qwen 2.5 7B (best read-only character
+  # among local models tested, Apache-2.0 licensed for clean commercial
+  # bundling). Must match ollama.model so the served model = the requested model.
+  localModel: "qwen2.5:7b"
+
+  # Only used if ollama.enabled is false but you still want the ollama provider
+  # to reach an Ollama running elsewhere (external/shared). When ollama.enabled
+  # is true, the deployment auto-wires OLLAMA_BASE_URL to the bundled service and
+  # ignores this. Leave empty for the normal bundled path.
+  ollamaUrl: ""
+
+# ─── Ollama (bundled local LLM) ──────────────────────────────────────────────
+# Batteries-included local model for the advisory assistant, Probo-style. Ships
+# so the assistant works with no API key, no per-token cost, and no data leaving
+# the cluster (the data-residency story). GPU-optional — CPU-only by default.
+ollama:
+  enabled: false          # off by default; flip on to bundle the local assistant
+
+  replicaCount: 1         # single pod: RWO model-cache PVC + Recreate strategy
+
+  # Placement. Control-plane pinned (same rationale as the postgres blocks): the
+  # model cache is a node-local RWO PVC, so the pod must stay co-located with it
+  # across reschedules to avoid multi-GB re-pulls. If the customer has a GPU
+  # worker node, override nodeSelector to schedule Ollama there (Ollama
+  # auto-detects + uses the GPU). CPU-only otherwise — no GPU required.
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+  tolerations: []
+  affinity: {}
+
+  image:
+    # DEFAULT: stock upstream Ollama; pulls the model on first boot (needs egress
+    # at deploy time — the pod's start command runs `ollama pull`). AIR-GAP /
+    # REGULATED: mirror or build a custom image with the model baked in and point
+    # this at it, so there's zero egress in a locked-down cluster.
+    repository: ollama/ollama
+    # Third-party image — does NOT track .Chart.AppVersion. Pin explicitly.
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # The model the assistant serves (must match assistant.localModel). The pod's
+  # start command runs `ollama pull <model>`. Chosen via bake-off: Qwen 2.5 7B
+  # (best read-only character among local models tested, Apache-2.0 licensed).
+  model: "qwen2.5:7b"
+
+  # In-cluster Service the orchestrator reaches Ollama through. deployment.yaml
+  # wires OLLAMA_URL to this service; only the local assistant path uses it.
+  service:
+    type: ClusterIP
+    port: 11434
+
+  # Model-cache storage (node-local PVC). A 7B is ~4.7GB; leave headroom for the
+  # KV cache. Kept on a PVC so a restart with a warm cache skips the multi-GB
+  # re-pull.
+  storage:
+    size: "20Gi"
+    storageClassName: ""  # "" = cluster default (e.g. local-path on k3s)
+
+  # RAM is the real requirement (no GPU needed). A 7B needs ~6-8GB resident.
+  # This "few GB of RAM, not a GPU" spec is what makes on-prem procurable.
+  resources:
+    requests:
+      cpu: "1"
+      memory: 8Gi
+    limits:
+      cpu: "4"
+      memory: 10Gi
+
 # ─── Envoy Gateway ───────────────────────────────────────────────────────────
 envoy:
   enabled: true

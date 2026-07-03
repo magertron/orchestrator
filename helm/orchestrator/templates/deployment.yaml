@@ -237,6 +237,24 @@ spec:
                   {{- end }}
                   key: ANTHROPIC_API_KEY
                   optional: true
+            # Advisory assistant provider selection. Default "local" → the
+            # bundled Ollama model (no API key, no per-token cost, no data
+            # leaves the cluster — the data-residency default). Set to
+            # "anthropic" to use the Anthropic API instead (needs the key
+            # above). The handler reads ASSISTANT_PROVIDER / OLLAMA_BASE_URL /
+            # OLLAMA_MODEL; OLLAMA_BASE_URL points at the bundled Ollama service
+            # and is only used on the local path.
+            - name: ASSISTANT_PROVIDER
+              value: {{ .Values.assistant.provider | quote }}
+            {{- if .Values.ollama.enabled }}
+            - name: OLLAMA_BASE_URL
+              value: "http://{{ include "mcp.fullname" . }}-ollama.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.ollama.service.port | default 11434 }}"
+            {{- else if .Values.assistant.ollamaUrl }}
+            - name: OLLAMA_BASE_URL
+              value: {{ .Values.assistant.ollamaUrl | quote }}
+            {{- end }}
+            - name: OLLAMA_MODEL
+              value: {{ .Values.assistant.localModel | quote }}
           envFrom:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
