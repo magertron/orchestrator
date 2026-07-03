@@ -20,6 +20,14 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ $ollamaName }}-models
   namespace: {{ .Release.Namespace }}
+  annotations:
+    # Keep the model-cache PVC across helm upgrade/uninstall churn. Without this,
+    # a redeploy can delete the PVC and leave the Ollama pod hung Pending on a
+    # missing volume (observed twice on 2026-07-03), forcing a re-upgrade and a
+    # multi-GB model re-pull. "keep" makes the PVC survive so the cached model
+    # persists across upgrades — the model is re-pullable but the reschedule
+    # hang is not worth it.
+    helm.sh/resource-policy: keep
   labels:
     {{- include "mcp.labels" . | nindent 4 }}
     app.kubernetes.io/component: ollama
