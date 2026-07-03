@@ -1,0 +1,149 @@
+{{- /*
+  Ollama — bundled local LLM provider for the advisory assistant (Path A).
+
+  OPT-IN, default OFF (same convention as probo / inventory). When enabled, a
+  single Ollama pod serves a small quantized open model on CPU from an
+  OpenAI-compatible /v1 endpoint. The orchestrator's advisory assistant points
+  at it via OLLAMA_BASE_URL (wired in deployment.yaml, NOT here) so the whole
+  advisory path runs on-prem with no API key and no egress.
+
+  Stateful-ish: the pulled model blobs live on a node-local PVC, so the pod is
+  control-plane pinned (same rationale as the postgres blocks) to keep the pod
+  co-located with its cache across reschedules and avoid multi-GB re-pulls.
+*/ -}}
+{{- if .Values.ollama.enabled }}
+{{- $fullname := include "mcp.fullname" . -}}
+{{- $ollamaName := printf "%s-ollama" $fullname -}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $ollamaName }}-models
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.ollama.storage.size | default "20Gi" }}
+  {{- with .Values.ollama.storage.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $ollamaName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  type: {{ .Values.ollama.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+  ports:
+    - name: http
+      port: {{ .Values.ollama.service.port | default 11434 }}
+      targetPort: 11434
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $ollamaName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  # Single replica: the model cache is a RWO node-local PVC and inference is
+  # stateless-per-request but cache-bound. Scale-out is not the HA story here
+  # (the advisory bot degrades to "unconfigured" cleanly if this is down).
+  replicas: {{ .Values.ollama.replicaCount | default 1 }}
+  strategy:
+    # Recreate, not RollingUpdate: a RWO PVC can't be mounted by two pods at
+    # once, so a rolling update would deadlock on the volume.
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ollama
+  template:
+    metadata:
+      labels:
+        {{- include "mcp.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ollama
+    spec:
+      {{- with .Values.ollama.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ollama.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ollama.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: ollama
+          image: "{{ .Values.ollama.image.repository }}:{{ .Values.ollama.image.tag }}"
+          imagePullPolicy: {{ .Values.ollama.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 11434
+          env:
+            # Bind on all interfaces so the Service can reach it in-cluster.
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+            # Keep the model resident so the first request after idle isn't a
+            # cold reload from disk. -1 = never unload.
+            - name: OLLAMA_KEEP_ALIVE
+              value: "-1"
+          # Pull the configured model on start, in the background, so the pod
+          # becomes Ready for readiness probes while the (multi-GB) pull runs.
+          # The model is served from the PVC once present; a restart with a warm
+          # cache skips the pull. `ollama serve` is the foreground process.
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              /bin/ollama serve &
+              SERVE_PID=$!
+              # Wait for the daemon socket before pulling.
+              until /bin/ollama list >/dev/null 2>&1; do sleep 1; done
+              echo "ollama: pulling model {{ .Values.ollama.model }} (may take minutes)"
+              /bin/ollama pull {{ .Values.ollama.model }} || \
+                echo "ollama: pull failed — assistant will 404 until model is present"
+              wait $SERVE_PID
+          readinessProbe:
+            # Ready as soon as the API answers — the model may still be pulling;
+            # the assistant handler surfaces a clean "model not available" 404
+            # in that window rather than the pod flapping.
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.ollama.resources | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: {{ $ollamaName }}-models
+{{- end }}
