@@ -335,12 +335,19 @@ ollama:
 
   # RAM is the real requirement (no GPU needed). A 7B needs ~6-8GB resident.
   # This "few GB of RAM, not a GPU" spec is what makes on-prem procurable.
+  #
+  # CPU: inference throughput on CPU scales with cores. A hard cpu *limit*
+  # throttles token generation (a 4-core cap on a 12-core node cut generation
+  # to ~1/3 speed — a ~100s answer instead of ~35s). On a dedicated appliance
+  # node, keep the *request* as the scheduling guarantee and set NO cpu limit,
+  # so generation bursts to whatever cores are idle. If Ollama shares a node
+  # with other heavy workloads, reinstate a limit (e.g. "10") for predictability.
   resources:
     requests:
-      cpu: "1"
+      cpu: "6"
       memory: 8Gi
     limits:
-      cpu: "4"
+      # no cpu limit — let CPU inference burst to idle cores (see note above)
       memory: 10Gi
 
 # ─── Envoy Gateway ───────────────────────────────────────────────────────────
