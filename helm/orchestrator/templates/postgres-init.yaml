@@ -895,6 +895,28 @@ data:
     CREATE UNIQUE INDEX IF NOT EXISTS cost_contracts_active_uq
         ON cost_contracts (server_id) WHERE status = 'active';
 
+    -- ── Prepaid-vs-Committed model (burn-down) ──────────────────────────────────
+    -- bill_commitment_true_up is the EXPLICIT switch for the commitment true-up
+    -- rail (rating_worker step 5). It replaces the old implicit inference
+    -- "minimum_amount_usd > 0 => charge a true-up". Default FALSE: a contract only
+    -- owes a use-it-or-lose-it commitment true-up when this is deliberately set.
+    -- Prepaid balances (burn-down) live in credit_purchases below and DO NOT set
+    -- this flag — a prepaid pool is drawn down, not owed as a period fee.
+    ALTER TABLE cost_contracts
+        ADD COLUMN IF NOT EXISTS bill_commitment_true_up BOOLEAN NOT NULL DEFAULT FALSE;
+    -- Behavior-preserving backfill: reproduce the OLD "minimum > 0 => true-up"
+    -- behavior via the new flag, so introducing the column changes nothing
+    -- observable. The rating worker keeps using the old path until it is switched
+    -- to read this flag; exa/Anthropic are flipped to burn-down (flag FALSE) as a
+    -- deliberate, separate data step. Guarded so it only backfills once (won't
+    -- clobber an explicitly-set flag on re-run: only touches rows still at the
+    -- default FALSE that have a positive minimum).
+    UPDATE cost_contracts
+        SET bill_commitment_true_up = TRUE
+        WHERE minimum_amount_usd IS NOT NULL
+          AND minimum_amount_usd > 0
+          AND bill_commitment_true_up = FALSE;
+
     -- ── CREDIT BALANCE (prepaid credit packs → burn-down) ───────────────────────
     CREATE TABLE IF NOT EXISTS credit_purchases (
         id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
