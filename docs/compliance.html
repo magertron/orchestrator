@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>Trust &amp; Security — Magertron</title>
+<title>SOC 2 &amp; HIPAA Evidence Services — Magertron</title>
 <meta name="description" content="How Magertron handles access, change, and operations controls — mapped to the SOC 2 Common Criteria. Controls designed and documented; SOC 2 readiness in progress.">
 
 <link rel="canonical" href="https://magertron.com/trust.html">
@@ -95,7 +95,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .trust-hero .lede {
-  font-size: 18px; color: var(--text-secondary); max-width: 620px; line-height: 1.7;
+  font-size: 16px; color: var(--text-secondary); max-width: 680px; line-height: 1.45;
   animation: fadeUp 0.6s ease-out 0.1s both;
 }
 
@@ -125,7 +125,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   font-family: var(--serif); font-size: clamp(30px, 3.6vw, 44px);
   font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; margin-bottom: 14px;
 }
-.section-desc { font-size: 16px; color: var(--text-secondary); max-width: 600px; line-height: 1.7; margin-bottom: 44px; }
+.section-desc { font-size: 16px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 44px; }
 
 /* ── Coverage summary chips ───────────────────────────────────────────── */
 .coverage-summary { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 44px; }
@@ -234,10 +234,44 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   .trust-hero { padding: 112px 0 40px; }
   .disclosure-meta { gap: 18px; }
 }
+
+/* ── Compliance page additions ────────────────────────────────────────── */
+.svc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 8px; }
+.svc-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 26px 24px; }
+.svc-card .n { font-family: var(--mono); font-size: 12px; color: var(--accent-text); letter-spacing: 0.08em; margin-bottom: 12px; }
+.svc-card h3 { font-family: var(--serif); font-size: 19px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
+.svc-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+.phase-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg-card); }
+.phase { display: flex; gap: 20px; padding: 22px 24px; border-top: 1px solid var(--border); }
+.phase:first-child { border-top: none; }
+.phase .pnum { flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px; background: var(--accent-glow); color: var(--accent-text); font-family: var(--mono); font-size: 14px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.phase .pbody h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.phase .pbody p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+.phase .pbody .dur { font-family: var(--mono); font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-left: 8px; }
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
+.diff-card { border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.diff-card.them { background: var(--bg); }
+.diff-card.us { background: linear-gradient(135deg, var(--accent-glow), transparent 85%); border-color: rgba(37,99,235,0.35); }
+.diff-card h4 { font-size: 14px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+.diff-card.them h4 { color: var(--text-tertiary); }
+.diff-card.us h4 { color: var(--accent-text); }
+.diff-card ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.diff-card li { font-size: 14px; color: var(--text-secondary); line-height: 1.55; padding-left: 22px; position: relative; }
+.diff-card.us li::before { content: "\2713"; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+.diff-card.them li::before { content: "\2014"; position: absolute; left: 0; color: var(--text-tertiary); }
+.cta-band { margin: 24px 0 8px; padding: 40px; border-radius: 16px; text-align: center;
+  background: linear-gradient(135deg, var(--bg-card), var(--bg)); border: 1px solid var(--border-accent); }
+.cta-band h2 { font-family: var(--serif); font-size: clamp(26px, 3vw, 36px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
+.cta-band p { font-size: 16px; color: var(--text-secondary); max-width: 560px; margin: 0 auto 24px; line-height: 1.6; }
+.btn-primary { display: inline-block; background: var(--accent); color: #fff; padding: 13px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; }
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; }
+@media (max-width: 860px) { .svc-grid, .diff-grid { grid-template-columns: 1fr; } }
 </style>
 <script src="https://d2mvefebd70kbz.cloudfront.net/scripts/019ef1eb-0d70-79a7-a622-3d23a50dc79c.js" async></script>
 </head>
 <body>
+
+<!-- Nav -->
 
 <!-- Nav -->
 <nav>
@@ -256,247 +290,122 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 <!-- Hero -->
 <section class="trust-hero">
-  <div class="container narrow">
-    <div class="eyebrow">Trust &amp; Security</div>
-    <h1>Processes you can <em>verify</em></h1>
-    <p class="lede">Magertron's job is to control what AI agents can do and what they spend. The same discipline runs through how the product itself is built: access, change, and operations controls are structural, technical, and live in the code — mapped here against the nine SOC 2 Common Criteria families.</p>
+  <div class="container">
+    <div class="eyebrow">Magertron Professional Services</div>
+    <h1>Turn your platform into <em>audit-ready evidence</em></h1>
+    <p class="lede">Most teams buy a compliance tool and then discover the hard part isn't the tool — it's mapping their real controls to defensible, continuously-refreshed evidence. Our Professional Services engagement closes that gap for SOC&nbsp;2 and the HIPAA Security Rule, using the Probo GRC instance embedded in Magertron.</p>
+  </div>
+</section>
 
-    <div class="status-banner">
-      <div class="ring">◐</div>
-      <div>
-        <h3>SOC 2 readiness in progress — this is a map, not an attestation</h3>
-        <p>All nine Common Criteria families are authored, with five fully covered by strong, written controls. The status below reflects how thoroughly each family is addressed in product and documentation today — not independent auditor verification. We state where we are honestly, including where the work is still maturing.</p>
+<!-- The gap we close -->
+<section class="section">
+  <div class="container narrow">
+    <div class="section-label">The problem</div>
+    <h2 class="section-title">The tool is the easy part</h2>
+    <p class="section-desc">A GRC subscription gives you an empty framework. Someone still has to decide which control each piece of evidence satisfies, collect that evidence, and keep it current between audit periods. That mapping — and the continuous collection — is where compliance programs stall.</p>
+    <div class="svc-grid">
+      <div class="svc-card">
+        <div class="n">01</div>
+        <h3>Embedded, not bolted-on</h3>
+        <p>Probo runs inside Magertron — not as a separate GRC subscription you have to feed. A large share of the required evidence is produced by the platform as a byproduct of normal operation: access decisions, change records, monitoring, credential custody.</p>
+      </div>
+      <div class="svc-card">
+        <div class="n">02</div>
+        <h3>Continuous, not point-in-time</h3>
+        <p>Automated probes query the live platform on a schedule and write timestamped, query-backed evidence artifacts against each control. Evidence becomes a dated series that proves a control operated across the audit window — not a screenshot from one afternoon.</p>
+      </div>
+      <div class="svc-card">
+        <div class="n">03</div>
+        <h3>Honest, not overstated</h3>
+        <p>We map each control to its real implementation state and flag what's genuinely absent. A defensible evidence base is one an assessor trusts — which means never claiming coverage the platform can't truly demonstrate.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Coverage map -->
-<section class="section">
+<!-- Frameworks -->
+<section class="section" style="border-top:1px solid var(--border)">
   <div class="container narrow">
-    <div class="section-label">SOC 2 Common Criteria</div>
-    <h2 class="section-title">Coverage across CC1–CC9</h2>
-    <p class="section-desc">Each family below names what Magertron does — in product or in a written control narrative — that bears on that criterion. Green means a strong, often end-to-end-verified control exists. Amber means the technical pieces are in place while the organizational or evidence layer matures.</p>
-
-    <div class="coverage-summary">
-      <span class="chip"><span class="swatch green"></span><strong>5</strong>&nbsp;families fully covered</span>
-      <span class="chip"><span class="swatch green"></span><strong>2</strong>&nbsp;substantially covered</span>
-      <span class="chip"><span class="swatch amber"></span><strong>2</strong>&nbsp;maturing</span>
-      <span class="chip"><strong>0</strong>&nbsp;unaddressed</span>
-    </div>
-
-    <div class="cc-list">
-      <details class="cc-row" open>
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC6</span>
-          <span class="cc-name">Logical &amp; Physical Access</span>
-          <span class="cc-status green">Strong</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>The deepest area. BYOK credentials are referenced, never held — proxy-injected, per-namespace tenant isolation, never logged. OIDC id_token verification against a live IdP, SCIM provisioning with deny-by-construction isolation, and per-tool RBAC. Physical access inherited from the cloud provider.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC8</span>
-          <span class="cc-name">Change Management</span>
-          <span class="cc-status green">Strong</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>An eight-stage gated release pipeline with dev/prod channel separation, a mandatory peer-review merge gate, build provenance pinned to the commit SHA, and a per-release receipt. A build can no longer ship itself to customers.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC4</span>
-          <span class="cc-name">Monitoring of Controls</span>
-          <span class="cc-status green">Strong</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>A complete OCSF audit trail (RAII-guaranteed), exactly-once metering, and tool-definition drift detection — readable in Splunk for continuous visibility. A scheduled detector counts failed-auth and denied-tool events and pushes deduplicated alerts over threshold.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC5</span>
-          <span class="cc-name">Control Activities</span>
-          <span class="cc-status green">Strong</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>Built on structural enforcement, deny-by-construction, least authority, and defense-in-depth. A control-activity matrix classifies every control by risk, type, layer, and mode, doubling as the index to the full control set.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC7</span>
-          <span class="cc-name">System Operations</span>
-          <span class="cc-status green">Strong</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>Scoped to build-and-release, since customers run Magertron themselves. Content-hash drift / rug-pull detection, an audit trail integrated to Splunk, a written supply-chain incident-response and disclosure procedure, and offsite backups with verified restore.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC2</span>
-          <span class="cc-name">Communication &amp; Information</span>
-          <span class="cc-status green">Covered</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>A strong information layer (audit trail, metering, drift detection feed governance reviews), a written vulnerability-disclosure procedure, a customer-notification commitment, a dedicated security contact, and published trust documentation.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot green"></span>
-          <span class="cc-id">CC3</span>
-          <span class="cc-name">Risk Assessment</span>
-          <span class="cc-status green">Covered</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>A documented methodology — likelihood × impact scoring with mitigate / accept / monitor treatment — and a living Risk Register of scored, owned, tracked risks reviewed on a quarterly cadence alongside control-monitoring and vendor reviews.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot amber"></span>
-          <span class="cc-id">CC9</span>
-          <span class="cc-name">Risk Mitigation</span>
-          <span class="cc-status amber">Maturing</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>A two-tier vendor register with per-vendor risk and compensating control, on an annual-plus-on-change review cadence. Source and secrets in recoverable custody with verified offsite restore. Maturing: a second review cycle and bound insurance.</p>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="cc-dot amber"></span>
-          <span class="cc-id">CC1</span>
-          <span class="cc-name">Control Environment</span>
-          <span class="cc-status amber">Maturing</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>A code of conduct, documented organizational structure, an accountability model evidenced by the audit trail, and hiring and onboarding policy. The honest gap — independent oversight — is named as a maturity item rather than papered over.</p>
-        </div>
-      </details>
-    </div>
-  </div>
-</section>
-
-<!-- Control highlights -->
-<section class="section highlights">
-  <div class="container narrow">
-    <div class="section-label">How the controls work</div>
-    <h2 class="section-title">Enforcement that lives in the product</h2>
-    <p class="section-desc">The strongest families are strong because the control is structural — it is enforced by the architecture, not by a policy a person has to remember to follow.</p>
-
-    <div class="cc-list">
-      <details class="cc-row" open>
-        <summary>
-          <span class="hl-icon">🔑</span>
-          <span class="hl-name">Credentials referenced, never held</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>Bring-your-own-key credentials are injected at the proxy and isolated per namespace. Magertron never stores them in plaintext and never writes them to logs.</p>
-          <ul>
-            <li>Per-namespace tenant isolation</li>
-            <li>OIDC id_token verified against a live IdP</li>
-            <li>SCIM provisioning, deny-by-construction</li>
-          </ul>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="hl-icon">🚦</span>
-          <span class="hl-name">A build can't ship itself</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>Every release passes an eight-stage gated pipeline with a mandatory peer-review merge gate and dev/prod channel separation, with provenance pinned to the commit SHA.</p>
-          <ul>
-            <li>Per-release receipt for traceability</li>
-            <li>Fix-through-the-pipeline incident response</li>
-            <li>Source &amp; artifacts backed up offsite, restore verified</li>
-          </ul>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="hl-icon">📡</span>
-          <span class="hl-name">Continuous, queryable monitoring</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>A complete OCSF audit trail is guaranteed by construction and streamed to Splunk. A scheduled detector watches for failed-auth and denied-tool spikes and alerts over threshold.</p>
-          <ul>
-            <li>Exactly-once metering</li>
-            <li>Tool-definition drift / rug-pull detection</li>
-            <li>Alert path exercised by the release regression suite</li>
-          </ul>
-        </div>
-      </details>
-      <details class="cc-row">
-        <summary>
-          <span class="hl-icon">🛡️</span>
-          <span class="hl-name">Per-tool authority, by default</span>
-          <span class="cc-chevron">›</span>
-        </summary>
-        <div class="cc-detail">
-          <p>Access is least-authority and deny-by-construction: a caller gets exactly the tools their role grants, enforced at the gateway before a request ever reaches a server.</p>
-          <ul>
-            <li>Per-tool RBAC at the data plane</li>
-            <li>Inventory token authority-split</li>
-            <li>Structural enforcement over policy reminders</li>
-          </ul>
-        </div>
-      </details>
-    </div>
-  </div>
-</section>
-
-<!-- Disclosure / contact -->
-<section class="section">
-  <div class="container narrow">
-    <div class="disclosure-box">
-      <h2>Report a vulnerability</h2>
-      <p>We welcome responsible disclosure. If you believe you've found a security issue in Magertron, contact us directly — we commit to acknowledging reports and keeping affected customers informed as we investigate and remediate through the gated pipeline.</p>
-      <div class="disclosure-meta">
-        <div class="item">
-          <div class="k">Security contact</div>
-          <div class="v"><a href="mailto:security@magertron.com">security@magertron.com</a></div>
-        </div>
-        <div class="item">
-          <div class="k">Machine-readable</div>
-          <div class="v"><a href="/.well-known/security.txt">/.well-known/security.txt</a></div>
-        </div>
-        <div class="item">
-          <div class="k">Disclosure policy</div>
-          <div class="v"><a href="security.html">Security overview</a></div>
-        </div>
+    <div class="section-label">Frameworks</div>
+    <h2 class="section-title">SOC 2 and the HIPAA Security Rule</h2>
+    <p class="section-desc">The engagement maps your controls to the frameworks your customers ask for. Security (the SOC 2 Common Criteria) is always in scope; the remaining Trust Services Criteria are included where your commitments require them.</p>
+    <div class="diff-grid">
+      <div class="diff-card us">
+        <h4>SOC 2 — five Trust Services Criteria</h4>
+        <ul>
+          <li>Security (Common Criteria, CC1–CC9) — the mandatory backbone, mapped control-by-control to platform evidence</li>
+          <li>Availability — DR posture, backup freshness, monitoring probes</li>
+          <li>Processing Integrity — metered, rated billing with per-call provenance</li>
+          <li>Confidentiality — credential custody, tenant isolation, encryption</li>
+          <li>Privacy — scoped in where personal data is processed</li>
+        </ul>
+      </div>
+      <div class="diff-card us">
+        <h4>HIPAA Security Rule</h4>
+        <ul>
+          <li>Administrative safeguards — access management, workforce authorization, audit controls</li>
+          <li>Technical safeguards — access control, audit logging, integrity, transmission security</li>
+          <li>Controls mapped to the Security Rule's standards and implementation specifications</li>
+          <li>Credential-proxying architecture and the BAA question addressed head-on in scoping</li>
+          <li>Framed precisely: we map to the Rule — we don't claim "HIPAA certified"</li>
+        </ul>
       </div>
     </div>
-
-    <p class="disclaimer">This page is a navigational summary of Magertron's control posture, offered for security and compliance reviewers. It is not a SOC 2 attestation, a readiness assessment, or a statement of compliance — those require a qualified auditor, defined Trust Services Criteria scoping, and evidence collected over a defined period. The status shown reflects documentation and product coverage as of today. Magertron is licensed software that customers deploy on their own infrastructure; the system in scope for these criteria is Magertron's build-and-release operation, not a hosted service.</p>
   </div>
 </section>
 
-<!-- Footer -->
+<!-- Engagement phases -->
+<section class="section" style="border-top:1px solid var(--border)">
+  <div class="container narrow">
+    <div class="section-label">The engagement</div>
+    <h2 class="section-title">Five phases to an audit-ready evidence base</h2>
+    <p class="section-desc">A structured engagement, typically eight to twelve weeks depending on your control maturity and the criteria in scope: <strong style="color:var(--text)">scoping</strong> → <strong style="color:var(--text)">control mapping</strong> → <strong style="color:var(--text)">evidence automation</strong> → <strong style="color:var(--text)">gap remediation</strong> → <strong style="color:var(--text)">audit readiness &amp; handover</strong>. You finish able to operate the evidence base independently — with an auditor-ready binder and a runbook for maintaining continuous evidence between audits.</p>
+  </div>
+</section>
+
+<!-- Why us vs GRC platforms -->
+<section class="section" style="border-top:1px solid var(--border)">
+  <div class="container narrow">
+    <div class="section-label">Why this is different</div>
+    <h2 class="section-title">Not another GRC subscription</h2>
+    <p class="section-desc">Standalone GRC platforms give you a place to store evidence. Magertron is the governed infrastructure that <em>produces</em> it — with a services layer to wire it to your controls.</p>
+    <div class="diff-grid">
+      <div class="diff-card them">
+        <h4>Standalone GRC tool</h4>
+        <ul>
+          <li>A separate subscription to buy, integrate, and feed</li>
+          <li>Evidence collected by hand or via generic integrations</li>
+          <li>You still map controls and chase evidence yourself</li>
+          <li>Point-in-time snapshots between manual refreshes</li>
+        </ul>
+      </div>
+      <div class="diff-card us">
+        <h4>Magertron + Probo Professional Services</h4>
+        <ul>
+          <li>Probo embedded in the platform you already run</li>
+          <li>Evidence produced by the platform as a byproduct of operation</li>
+          <li>We do the control-to-evidence mapping with you</li>
+          <li>Continuous, timestamped, query-backed evidence series</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section" style="border-top:1px solid var(--border)">
+  <div class="container narrow">
+    <div class="cta-band">
+      <h2>Ready to close the evidence gap?</h2>
+      <p>Tell us which frameworks your customers are asking for and where you are today. We'll scope an engagement that gets you audit-ready — and keeps you there.</p>
+      <a href="index.html#" class="btn-primary">Schedule a Demo →</a>
+    </div>
+    <p style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:20px;line-height:1.6;max-width:680px;margin-left:auto;margin-right:auto;">
+      An enablement service, not an audit. Magertron is not a licensed CPA firm and does not perform SOC 2 examinations or issue HIPAA certifications. This engagement prepares your evidence base; your chosen assessor performs the independent examination. We help you map controls to the HIPAA Security Rule and to the SOC 2 Trust Services Criteria — "mapped to the HIPAA Security Rule" and "SOC 2 Type 2 in progress" describe control-mapping work, not a certification or attestation.
+    </p>
+  </div>
+</section>
+
 <footer>
   <div class="container">
     <div class="footer-grid">
