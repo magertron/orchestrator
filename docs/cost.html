@@ -4,20 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>AI Cost Governance &amp; Chargeback for MCP | Magertron</title>
-<meta name="description" content="The first control plane a CFO relies on to govern AI agent spend. Per-server and per-tool budgets, real-time chargeback, and showback by team and agent — self-hosted in your own Kubernetes cluster.">
+<title>AI Cost Governance &amp; Chargeback | Magertron</title>
+<meta name="description" content="The first control plane a CFO relies on to govern AI agent spend. Per-model and per-tool budgets, real-time chargeback, and showback by team and agent — self-hosted in your own Kubernetes cluster.">
 <link rel="canonical" href="https://magertron.com/cost.html">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://magertron.com/cost.html">
-<meta property="og:title" content="AI Cost Governance & Chargeback for MCP | Magertron">
-<meta property="og:description" content="Per-tool budgets, real-time chargeback, showback by team and agent. The CFO's guardrail for the agent economy.">
+<meta property="og:title" content="AI Cost Governance & Chargeback | Magertron">
+<meta property="og:description" content="Per-model and per-tool budgets, real-time chargeback, showback by team and agent. The CFO's guardrail for the agent economy.">
 <meta property="og:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Magertron AI Cost Dashboard">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AI Cost Governance & Chargeback for MCP | Magertron">
-<meta name="twitter:description" content="Per-tool budgets, real-time chargeback, showback by team and agent.">
+<meta name="twitter:title" content="AI Cost Governance & Chargeback | Magertron">
+<meta name="twitter:description" content="Per-model and per-tool budgets, real-time chargeback, showback by team and agent.">
 <meta name="twitter:image" content="https://magertron.com/screenshots/ai-cost-dashboard.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -403,7 +403,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 .cost-hero .hero-badge{margin-bottom:26px}
 .cost-hero h1{font-size:clamp(38px,5.4vw,62px);line-height:1.06;margin:0 auto;max-width:14ch}
 .cost-hero h1 em{color:var(--accent-text);font-style:normal}
-.cost-hero p.lede{max-width:680px;margin:24px auto 0;font-size:clamp(17px,1.9vw,20px);color:var(--text-secondary);line-height:1.55}
+.cost-hero p.lede{max-width:680px;margin:24px auto 0;font-size:17px;color:var(--text-secondary);line-height:1.45}
 .cost-hero .hero-actions{justify-content:center;margin-top:32px}
 .cost-metrics{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:46px}
 .cost-metric{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px 26px;min-width:170px}
@@ -421,12 +421,12 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 .split.rev{direction:rtl}.split.rev>*{direction:ltr}
 .split h3{font-family:var(--sans);font-weight:700;font-size:clamp(22px,2.6vw,30px);margin:0 0 14px;color:var(--text)}
 .split p.k{font-size:16px;color:var(--text-secondary);margin:0 0 18px;line-height:1.55}
-.klist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
-.klist li{display:flex;gap:11px;font-size:14.5px;color:var(--text);line-height:1.5}
-.klist li::before{content:"";flex:0 0 18px;height:18px;margin-top:2px;border-radius:5px;background:var(--accent);
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/12px no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/12px no-repeat}
-.klist li b{font-weight:600}
+.klist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:13px}
+.klist li{display:flex;align-items:flex-start;gap:12px;font-size:15px;color:var(--text-secondary);line-height:1.55}
+.klist li::before{content:"";flex:0 0 16px;height:16px;margin-top:3px;background:var(--accent);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/16px no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/16px no-repeat}
+.klist li b{font-weight:600;color:var(--text)}
 .cost-quote{text-align:center;max-width:860px;margin:0 auto;padding:14px 0}
 .cost-quote .q{font-family:var(--sans);font-weight:700;font-size:clamp(22px,3.1vw,34px);line-height:1.3;letter-spacing:-.01em;color:var(--text)}
 .cost-quote .q em{color:var(--accent-text);font-style:normal}

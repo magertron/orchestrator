@@ -211,7 +211,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .hero p {
-  font-size: 17px; color: var(--text-secondary); max-width: 540px;
+  font-size: 17px; color: var(--text-secondary); max-width: 680px;
   margin: 0 auto 34px; line-height: 1.45; animation: fadeUp 0.6s ease-out 0.2s both;
 }
 .hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeUp 0.6s ease-out 0.3s both; }
@@ -569,10 +569,10 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </div>
     <div class="hero-badge" style="margin-left: 8px; border-color: var(--border-accent); background: var(--accent-glow); color: var(--accent-text);">
       <span style="font-weight: 600; letter-spacing: 0.04em;">NEW</span>
-      A2A, Agent to Server LIVE traffic now added
+      LLM gateway — meter model spend alongside tool spend
     </div>
-    <h1>The spend control plane<br>for enterprise <em>AI agents</em></h1>
-    <p>Your AI agents are spending money on every tool call — across vendors, with no visibility. Magertron meters every call, charges it back per user and per team, and enforces hard budget limits at the gateway. See what your agents cost, and cap it.</p>
+    <h1>The <em>AI spend</em> control plane<br>for enterprise agents</h1>
+    <p>Your AI agents are spending money on every call — LLM inference and tool calls alike, across every vendor, with no unified visibility. Magertron is the gateway for both: it meters every model and tool call, charges it back per user and per team, and enforces hard budget limits before the call goes out. See what your agents cost — models and tools — and cap it.</p>
     <p style="font-size: 13px; color: var(--text-secondary); margin-top: -8px;">OSS Free up to 20 servers — no signup, no credit card.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
@@ -657,8 +657,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section style="padding:80px 0; border-top: 1px solid var(--border);">
   <div class="container" style="max-width:1200px;">
     <div style="text-align:center; max-width:720px; margin:0 auto 48px;">
-      <div class="section-label">Deployment Patterns</div>
-      <h2 class="section-title">Three deployment patterns. One policy plane.</h2>
+      <div class="section-label">Governed Surfaces</div>
+      <h2 class="section-title">Every model and tool call. One policy plane.</h2>
     </div>
     <div class="feature-grid">
       <div class="feature-card">
@@ -666,8 +666,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <p>MCP servers run as pods in your cluster. Traffic stays inside your network.</p>
       </div>
       <div class="feature-card">
-        <h3>Hybrid MCP servers</h3>
-        <p>Internal MCP server pods that reach external APIs for data enrichment.</p>
+        <h3>LLM providers</h3>
+        <p>Anthropic, OpenAI, or your own model pods — registered as governed endpoints. Every inference call is metered, charged back, and budget-capped, with provider keys held by Magertron, never the agent.</p>
       </div>
       <div class="feature-card">
         <h3>External MCP servers</h3>
@@ -682,8 +682,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="showcase-row">
       <div class="showcase-content">
         <div class="section-label">Server Management</div>
-        <h3>Full lifecycle control for every MCP server</h3>
-        <p>Deploy from any container image, monitor real-time CPU and memory metrics, and scale with a slider. Every action is audited.</p>
+        <h3>Full lifecycle control for every server you run</h3>
+        <p>Deploy MCP servers and LLM pods from any container image, monitor real-time CPU and memory metrics, and scale with a slider. Every action is audited.</p>
         <ul>
           <li>Live metrics charts polling every 5 seconds</li>
           <li>Real pod logs from Kubernetes API</li>
@@ -727,19 +727,19 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section class="features" id="features">
   <div class="container">
     <div class="section-label">Capabilities</div>
-    <div class="section-title">The full MCP lifecycle —<br>in your Kubernetes cluster</div>
+    <div class="section-title">The full agent lifecycle —<br>in your Kubernetes cluster</div>
     <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Apache 2.0. Most platforms cover one or two of these. Magertron covers all five.</div>
 
     <div class="feature-grid">
       <a href="#server-management" class="feature-card clickable">
         <div class="feature-icon">⬡</div>
         <h3>Server Lifecycle</h3>
-        <p>Deploy, scale, restart, and roll back MCP servers from a single console.</p>
+        <p>Deploy, scale, restart, and roll back MCP servers and LLM pods from a single console.</p>
       </a>
       <a href="#server-management" class="feature-card clickable">
         <div class="feature-icon">▦</div>
-        <h3>MCP Server Registry</h3>
-        <p>Central catalog of every MCP server in your organization. Most MCP platforms don't have a registry — Magertron does, in your cluster.</p>
+        <h3>Server & Model Registry</h3>
+        <p>Central catalog of every MCP server and LLM provider in your organization. Most platforms don't have a registry — Magertron does, in your cluster.</p>
       </a>
       <a href="#governance" class="feature-card clickable">
         <div class="feature-icon">◈</div>
@@ -1126,7 +1126,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section class="cta" id="contact">
   <div class="container">
     <div class="cta-box">
-      <h2>Ready to manage MCP<br>at enterprise scale?</h2>
+      <h2>Ready to manage AI<br>at enterprise scale?</h2>
       <p>Start free on GitHub, or talk to us about Pro and Enterprise.</p>
       <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
         <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
