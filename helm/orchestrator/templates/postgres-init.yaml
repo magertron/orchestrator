@@ -917,6 +917,29 @@ data:
           AND minimum_amount_usd > 0
           AND bill_commitment_true_up = FALSE;
 
+    -- ── Explicit contract type (payg | committed | prepaid) ─────────────────────
+    -- The STORED commercial model. Prior to this, type was reconstructed from
+    -- (minimum_amount_usd, bill_commitment_true_up, credit_purchases presence),
+    -- which is ambiguous — a prepaid pool that hasn't been funded yet is
+    -- indistinguishable from PAYG. A GRC system should RECORD the model, not infer
+    -- it, and reporting/metering get a single clean discriminator to group on.
+    -- Committed and prepaid are both sunk-cost / burn-down; they differ in WHEN
+    -- money moved (committed = obligation billed over the term; prepaid = cash
+    -- transferred upfront into credit_purchases). The rating worker still anchors
+    -- on minimum_amount_usd + bill_commitment_true_up — this column is the
+    -- reporting/UI source of truth, not a new rating input.
+    -- (The inference backfill lives AFTER credit_purchases is created below, since
+    -- it references that table.)
+    ALTER TABLE cost_contracts
+        ADD COLUMN IF NOT EXISTS contract_type TEXT NOT NULL DEFAULT 'payg';
+    -- CHECK added separately (idempotent) so re-runs don't error on a duplicate
+    -- constraint; matches the ADD COLUMN IF NOT EXISTS upgrade-path convention.
+    ALTER TABLE cost_contracts
+        DROP CONSTRAINT IF EXISTS cost_contracts_contract_type_check;
+    ALTER TABLE cost_contracts
+        ADD CONSTRAINT cost_contracts_contract_type_check
+        CHECK (contract_type IN ('payg','committed','prepaid'));
+
     -- ── CREDIT BALANCE (prepaid credit packs → burn-down) ───────────────────────
     CREATE TABLE IF NOT EXISTS credit_purchases (
         id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -928,6 +951,22 @@ data:
     );
     CREATE INDEX IF NOT EXISTS credit_purchases_contract_idx
         ON credit_purchases (contract_id, purchased_at);
+
+    -- Behavior-preserving backfill for contract_type (column added above, with
+    -- credit_purchases now guaranteed to exist so the EXISTS probe is safe on a
+    -- fresh DB). Infers the OLD implicit model so existing rows carry an accurate
+    -- stated type instead of silently defaulting to 'payg': a credit_purchases
+    -- row => funded upfront (prepaid); else a positive commitment/minimum =>
+    -- committed; else payg. Guarded to only touch rows still at the default
+    -- 'payg' (won't clobber an explicitly-set type on re-run).
+    UPDATE cost_contracts c SET contract_type =
+        CASE
+            WHEN EXISTS (SELECT 1 FROM credit_purchases p WHERE p.contract_id = c.id) THEN 'prepaid'
+            WHEN COALESCE(c.commitment_credits, 0) > 0 THEN 'committed'
+            WHEN COALESCE(c.minimum_amount_usd, 0) > 0 THEN 'committed'
+            ELSE 'payg'
+        END
+        WHERE c.contract_type = 'payg';
 
     -- ── RATE SCHEDULE + TIERS (per-method pricing, versioned, tiered) ───────────
     CREATE TABLE IF NOT EXISTS rate_schedules (
@@ -1019,7 +1058,11 @@ data:
         COALESCE(p.credits_purchased, 0)
           - COALESCE(u.credits_consumed, 0)                    AS credits_remaining,
         CASE WHEN COALESCE(p.usd_paid,0) > 0 AND COALESCE(p.credits_purchased,0) > 0
-             THEN p.usd_paid / p.credits_purchased END         AS implied_usd_per_credit
+             THEN p.usd_paid / p.credits_purchased END         AS implied_usd_per_credit,
+        -- Explicit commercial model, exposed so balance/reporting queries can
+        -- group by type without re-deriving it. Appended LAST: CREATE OR REPLACE
+        -- VIEW can only add columns at the end of the select list, never mid-list.
+        c.contract_type
     FROM cost_contracts c
     LEFT JOIN (
         SELECT contract_id,
