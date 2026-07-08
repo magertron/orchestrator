@@ -93,14 +93,15 @@ nav .container { max-width: 1200px; display: flex; justify-content: space-betwee
 .nav-cta:hover { background: #1d4ed8 !important; }
 
 /* Hero — green tint to differentiate from red security page */
-.page-hero { padding: 100px 0 32px; text-align: center; position: relative; overflow: hidden; }
+.page-hero { padding: 100px 0 16px; text-align: center; position: relative; overflow: hidden; }
 .page-hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(34,197,94,0.08) 0%, transparent 70%); pointer-events: none; }
 .page-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px; border: 1px solid rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); font-size: 13px; color: #86efac; margin-bottom: 24px; }
 .page-hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(36px,5vw,56px); line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 20px; }
 .page-hero p { font-size: 18px; color: var(--text-secondary); max-width: 680px; margin: 0 auto; line-height: 1.7; }
 
 /* Article */
-.article { padding: 32px 0 96px; }
+.article { padding: 12px 0 96px; }
+.article > .container > h2:first-child { margin-top: 8px; }
 .article h2 { font-family: var(--serif); font-weight: 700; font-size: 28px; letter-spacing: -0.03em; margin: 56px 0 16px; }
 .article h3 { font-family: var(--serif); font-weight: 600; font-size: 20px; margin: 32px 0 12px; }
 .article h4 { font-size: 14px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin: 24px 0 12px; }
@@ -258,11 +259,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 <article class="article">
   <div class="container">
-
-    <div class="validated-banner">
-      <span class="icon">✓</span>
-      <p><strong>Validated end-to-end with Splunk Cloud and Datadog.</strong> OCSF fields auto-extract in both. Same schema parses cleanly into any OCSF-compliant SIEM.</p>
-    </div>
 
     <h2>The audit event schema</h2>
 
