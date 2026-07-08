@@ -9,7 +9,7 @@ metadata:
     component: postgresql
 data:
   01-schema.sql: |
-    -- MCP Orchestrator canonical schema (v1.2.0 — adds SSO + SCIM)
+    -- MCP Orchestrator canonical schema (v1.2.1 — adds SSO + SCIM; SCIM token dismiss/archive)
     -- Applied automatically by the postgres container on first start
     -- (anything in /docker-entrypoint-initdb.d/ runs in alphabetical order).
     -- All statements are idempotent so reinstalls / upgrades are safe.
@@ -533,10 +533,20 @@ data:
         created_by     TEXT        NOT NULL,
         created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         last_used_at   TIMESTAMPTZ,
-        revoked_at     TIMESTAMPTZ
+        revoked_at     TIMESTAMPTZ,
+        -- Set when an admin dismisses an already-revoked token from the list.
+        -- Row is retained for audit (which token provisioned which users);
+        -- dismissal only hides it from the default admin view. NULL = visible.
+        dismissed_at   TIMESTAMPTZ
     );
     CREATE INDEX IF NOT EXISTS scim_tokens_hash_idx    ON scim_tokens (token_hash);
     CREATE INDEX IF NOT EXISTS scim_tokens_revoked_idx ON scim_tokens (revoked_at);
+    -- For existing installs (upgrade path — dismiss/archive revoked tokens):
+    ALTER TABLE scim_tokens ADD COLUMN IF NOT EXISTS dismissed_at TIMESTAMPTZ;
+    -- Default list filters `WHERE dismissed_at IS NULL`; partial index keeps
+    -- that path fast as dismissed rows accumulate.
+    CREATE INDEX IF NOT EXISTS scim_tokens_visible_idx
+        ON scim_tokens (created_at DESC) WHERE dismissed_at IS NULL;
 
     -- ═══════════════════════════════════════════════════════════════════════
     -- Phase E: L8 Tool-Level RBAC
