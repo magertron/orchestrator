@@ -270,10 +270,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <p>Events split into two planes — admin (orchestrator REST actions) and caller (per-tool authorization decisions on MCP traffic) — sharing the same OCSF base for unified ingestion. Full schema and integration pack are part of <a href="#" onclick="openDemoModal(event)">design-partner onboarding</a>.</p>
 
-    <h2>Why MCP Orchestrator doesn't push directly to your SIEM</h2>
-
-    <p>Enterprises run a uniform forwarder layer across all applications — Splunk Universal Forwarder, Fluent Bit, OpenTelemetry Collector. Embedding a SIEM client in the orchestrator would bypass that. MCP Orchestrator emits structured audit events; your existing forwarder picks them up like any other application's.</p>
-
     <h2>Integration patterns</h2>
 
     <p>Pick the SIEM you're already running.</p>
@@ -400,14 +396,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <p>Chronicle's recent OCSF-native parsers consume MCP Orchestrator events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log stream or Postgres replica.</p>
       </div>
     </div>
-
-    <h2>Common questions</h2>
-
-    <h4>Does MCP Orchestrator support syslog for older SIEMs?</h4>
-    <p>Not natively. QRadar, ArcSight, or LogRhythm shops use a Fluent Bit or Vector intermediary to emit RFC 5424 syslog from the OCSF JSON.</p>
-
-    <h4>What event volume should I expect?</h4>
-    <p>Admin-plane: 10–50 events per operator per day. Caller-plane scales with MCP traffic — roughly one event per tool invocation. A 10-server cluster handling 1k tool calls/day produces ~1k caller events.</p>
 
     <div class="page-cta">
       <h3>Need help wiring up your SIEM?</h3>

@@ -4,29 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>MCP Security — Magertron</title>
-<meta name="description" content="How to secure MCP server traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
+<title>MCP & LLM Security — Magertron</title>
+<meta name="description" content="How to secure MCP server and LLM provider traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
 
 <!-- ─── SEO: canonical, Open Graph, Twitter Card, JSON-LD ─────────────────── -->
 <link rel="canonical" href="https://magertron.com/security.html">
 
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://magertron.com/security.html">
-<meta property="og:title" content="MCP Security — Threat Model & Defense | Magertron">
-<meta property="og:description" content="How to secure MCP server traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
+<meta property="og:title" content="MCP & LLM Security — Threat Model & Defense | Magertron">
+<meta property="og:description" content="How to secure MCP server and LLM provider traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
 <meta property="og:image" content="https://magertron.com/screenshots/dashboard.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Magertron MCP security architecture: perimeter firewall, network policy, namespace isolation">
+<meta property="og:image:alt" content="Magertron MCP and LLM security architecture: perimeter firewall, network policy, namespace isolation">
 <meta property="og:site_name" content="Magertron">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://magertron.com/security.html">
-<meta name="twitter:title" content="MCP Security — Threat Model & Defense | Magertron">
-<meta name="twitter:description" content="How to secure MCP server traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
+<meta name="twitter:title" content="MCP & LLM Security — Threat Model & Defense | Magertron">
+<meta name="twitter:description" content="How to secure MCP server and LLM provider traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.">
 <meta name="twitter:image" content="https://magertron.com/screenshots/dashboard.png">
 
-<meta name="keywords" content="MCP security, MCP threat model, Model Context Protocol security, MCP network policy, MCP server isolation, AI agent security, ext_authz, Envoy, Kubernetes security">
+<meta name="keywords" content="MCP security, LLM security, MCP threat model, Model Context Protocol security, LLM gateway security, MCP network policy, MCP server isolation, AI agent security, ext_authz, Envoy, Kubernetes security">
 <meta name="author" content="Magertron">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 
@@ -34,8 +34,8 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "MCP Security — Threat Model and Enterprise Defense",
-  "description": "How to secure MCP server traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.",
+  "headline": "MCP & LLM Security — Threat Model and Enterprise Defense",
+  "description": "How to secure MCP server and LLM provider traffic inside your enterprise — north-south and east-west threat vectors, enforcement layers, and best practices.",
   "url": "https://magertron.com/security.html",
   "datePublished": "2026-01-01",
   "dateModified": "2026-05-11",
@@ -291,8 +291,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section class="page-hero">
   <div class="container">
     <div class="page-badge">⚠ Enterprise Security</div>
-    <h1>Securing MCP Traffic<br>Inside Your Enterprise</h1>
-    <p>AI agents talking to MCP servers create distinct threat vectors most enterprises haven't planned for. Here's how to think about them — and how to close the gaps.</p>
+    <h1>Securing MCP &amp; LLM Traffic<br>Inside Your Enterprise</h1>
+    <p>AI agents talking to MCP servers — and to LLM providers like Anthropic and self-hosted Ollama — create distinct threat vectors most enterprises haven't planned for. Here's how to think about them — and how to close the gaps.</p>
   </div>
 </section>
 
@@ -304,7 +304,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </div>
     <div class="galaxy-cap">
       <span class="live-dot"></span>
-      Agent Galaxy — see every principal's entitled-vs-actual access to MCP tools, live.
+      Agent Galaxy — see every principal's entitled-vs-actual access to MCP tools and LLM models, live.
     </div>
   </div>
 </section>
@@ -339,7 +339,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
               <div class="callout-icon">⚠</div>
               <div><p><strong>The blast radius problem:</strong> A rogue SaaS app accesses data. A rogue MCP server lets an AI agent execute actions at scale — file writes, API calls, database mutations — with no audit trail and no governance.</p></div>
             </div>
-            <p>The platform doesn't automatically discover rogue servers outside it. <strong>What it does is give you a governed chokepoint</strong> — a single gateway that all approved MCP traffic flows through, combined with network controls to enforce that nothing bypasses it.</p>
+            <p>The platform doesn't automatically discover rogue servers outside it. <strong>What it does is give you a governed chokepoint</strong> — a single gateway that all approved MCP <em>and</em> LLM provider traffic flows through, combined with network controls to enforce that nothing bypasses it.</p>
           </div>
         </div>
       </div>
@@ -361,7 +361,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         </div>
         <div class="acc-body" id="body-2">
           <div class="acc-body-inner">
-            <p>North-south traffic is what most people think about first — an external AI agent trying to reach an MCP server inside your perimeter, or an internal MCP server calling out to unauthorized external services.</p>
+            <p>North-south traffic is what most people think about first — an external AI agent trying to reach an MCP server inside your perimeter, or an internal MCP server or agent calling out to unauthorized external services, including LLM provider APIs.</p>
             <div class="diagram">
               <div class="dlabel">Uncontrolled</div>
               <span class="d-warn">External AI Agent</span> → Firewall → <span class="d-warn">Any MCP Server (direct)</span><br>
@@ -377,7 +377,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
             <ul>
               <li>All external AI agents point at your gateway hostname (e.g. <code style="font-family:var(--mono);font-size:12px;color:var(--accent-text)">mcp.company.com</code>)</li>
               <li>Firewall blocks all other inbound MCP traffic</li>
-              <li>Egress filtering prevents MCP servers calling unauthorized external APIs</li>
+              <li>Egress filtering prevents MCP servers and agents calling unauthorized external APIs — including LLM providers outside your approved list</li>
               <li>Every request is logged, governed, and auditable</li>
             </ul>
           </div>
@@ -417,7 +417,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
               <span class="d-block">Direct pod-to-pod MCP access</span> → <span class="d-block">Blocked by Kubernetes NetworkPolicy</span>
             </div>
             <h4>Why it's the harder problem</h4>
-            <p>Internal MCP servers often have access to the most sensitive resources — databases, private APIs, file systems, messaging platforms. An AI agent with access to an ungoverned internal server can exfiltrate data and mutate state <strong>entirely within your network perimeter</strong>.</p>
+            <p>Internal MCP servers and LLM gateways often have access to the most sensitive resources — databases, private APIs, file systems, messaging platforms, and the prompts and completions flowing to model providers. An AI agent with access to an ungoverned internal server can exfiltrate data and mutate state <strong>entirely within your network perimeter</strong>.</p>
             <h4>How to enforce it</h4>
             <ul>
               <li>Internal network proxy routes all MCP traffic through the gateway</li>
@@ -441,7 +441,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="sec">
       <div class="sec-label">Enforcement Model</div>
       <h2>Three layers of control</h2>
-      <p>Complete MCP traffic governance requires enforcement at three distinct layers. The platform handles Layer 3 automatically — Layers 1 and 2 are implemented by your network team using standard enterprise tooling.</p>
+      <p>Complete MCP and LLM traffic governance requires enforcement at three distinct layers. The platform handles Layer 3 automatically — Layers 1 and 2 are implemented by your network team using standard enterprise tooling.</p>
     </div>
 
     <div class="layer-tabs">
@@ -465,7 +465,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
       <div class="layer-tab-content active" id="layer1" role="tabpanel">
         <div class="layer-tab-kicker">North-South — block everything except the gateway</div>
-        <p>Allow inbound MCP traffic only to the platform's Envoy gateway IP. Block all other MCP traffic at the perimeter. Configure egress filtering to prevent MCP servers from calling unauthorized external services.</p>
+        <p>Allow inbound MCP traffic only to the platform's Envoy gateway IP. Block all other MCP traffic at the perimeter. Configure egress filtering to prevent MCP servers and agents from calling unauthorized external services, including LLM provider endpoints outside your approved list.</p>
         <ul>
           <li>Add allowlist rule for gateway IP on HTTPS/443</li>
           <li>Drop all other inbound MCP traffic at the firewall</li>
@@ -640,7 +640,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         </div>
         <div class="acc-body" id="body-7">
           <div class="acc-body-inner">
-            <p>Every MCP request through the Envoy gateway is subject to these controls — no configuration required beyond deployment:</p>
+            <p>Every MCP and LLM request through the Envoy gateway is subject to these controls — no configuration required beyond deployment:</p>
             <ul>
               <li><strong>Authentication</strong> — Every request carries a JWT token. Unauthenticated requests are rejected at the gateway.</li>
               <li><strong>RBAC authorization</strong> — Roles define which users can access which servers in which namespaces.</li>
@@ -649,49 +649,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
               <li><strong>Audit trail</strong> — Every deployment, scale, restart, and config change is logged with actor, timestamp, and full state snapshot.</li>
               <li><strong>Webhook notifications</strong> — Real-time alerts to Slack, email, or any HTTP endpoint when servers change state.</li>
             </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Network team guidance — accordion -->
-    <div class="sec" style="margin-bottom:20px;">
-      <div class="sec-label">Network Controls</div>
-      <h2>Best Practices for Network Management</h2>
-    </div>
-    <div class="accordion">
-      <div class="acc-item" id="acc-8">
-        <div class="acc-header" onclick="toggleAcc(8)">
-          <div class="acc-header-left">
-            <span class="acc-num">05</span>
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
-                <span class="acc-title">Network Team Guidance</span>
-                <span class="acc-tag info">Action required</span>
-              </div>
-              <div class="acc-subtitle">Best practices for network management</div>
-            </div>
-          </div>
-          <span class="acc-chevron">⌄</span>
-        </div>
-        <div class="acc-body" id="body-8">
-          <div class="acc-body-inner">
-            <h4>1. Update your firewall rules</h4>
-            <p>Add an allowlist rule permitting MCP traffic (HTTPS/443) only to the platform's Envoy gateway IP. This IP is static — assigned by MetalLB for on-premises deployments, or your cloud provider's LB for cloud.</p>
-            <div class="callout callout-warning">
-              <div class="callout-icon">⚠</div>
-              <div><p><strong>Don't block before you're ready.</strong> Audit existing MCP traffic for 30 days before enforcing. Use your proxy in logging-only mode first to identify all MCP endpoints currently in use.</p></div>
-            </div>
-            <h4>2. Centralize AI agent configuration</h4>
-            <p>Update your AI agent deployment standard to resolve all MCP server addresses through the gateway. The gateway's hostname (e.g. <code style="font-family:var(--mono);font-size:12px;color:var(--accent-text)">mcp.company.com</code>) becomes the single MCP endpoint in all agent configs.</p>
-            <h4>3. Block direct MCP server ports internally</h4>
-            <p>Once agents are pointed at the gateway, block direct access to common MCP server ports (3000, 8080, 8443) from non-gateway sources on the internal network.</p>
-            <div class="callout callout-success">
-              <div class="callout-icon">✓</div>
-              <div><p><strong>We provide a network reference architecture</strong> with firewall rule templates, proxy config examples, and a 30-day rollout plan. Contact us for the enterprise onboarding package.</p></div>
-            </div>
           </div>
         </div>
       </div>
@@ -824,10 +781,12 @@ function toggleAcc(n) {
   const item = document.getElementById('acc-' + n);
   const body = document.getElementById('body-' + n);
   const isOpen = item.classList.contains('open');
-  // Close all
-  [1,2,3,7,8].forEach(i => {
-    document.getElementById('acc-' + i).classList.remove('open');
-    document.getElementById('body-' + i).style.maxHeight = '0';
+  // Close all — guard against ids that may have been removed from the page.
+  [1,2,3,7].forEach(i => {
+    const ai = document.getElementById('acc-' + i);
+    const bi = document.getElementById('body-' + i);
+    if (ai) ai.classList.remove('open');
+    if (bi) bi.style.maxHeight = '0';
   });
   // Open clicked if it was closed
   if (!isOpen) {
