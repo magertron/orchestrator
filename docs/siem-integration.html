@@ -4,25 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>SIEM Integration — MCP Orchestrator | Magertron</title>
-<meta name="description" content="Forwarding MCP Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
+<title>SIEM Integration — AI Orchestrator | Magertron</title>
+<meta name="description" content="Forwarding AI Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
 
 <!-- ─── SEO: canonical, Open Graph, Twitter Card, JSON-LD ─────────────────── -->
 <link rel="canonical" href="https://magertron.com/siem-integration.html">
 
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://magertron.com/siem-integration.html">
-<meta property="og:title" content="SIEM Integration — MCP Orchestrator | Magertron">
-<meta property="og:description" content="Forwarding MCP Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
+<meta property="og:title" content="SIEM Integration — AI Orchestrator | Magertron">
+<meta property="og:description" content="Forwarding AI Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.">
 <meta property="og:image" content="https://magertron.com/screenshots/dashboard.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="MCP Orchestrator SIEM integration with Splunk, Elastic, Datadog, Chronicle">
+<meta property="og:image:alt" content="AI Orchestrator SIEM integration with Splunk, Elastic, Datadog, Chronicle">
 <meta property="og:site_name" content="Magertron">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://magertron.com/siem-integration.html">
-<meta name="twitter:title" content="SIEM Integration — MCP Orchestrator | Magertron">
+<meta name="twitter:title" content="SIEM Integration — AI Orchestrator | Magertron">
 <meta name="twitter:description" content="OCSF-aligned audit events. Forward to Splunk, Elastic, Datadog, Chronicle.">
 <meta name="twitter:image" content="https://magertron.com/screenshots/dashboard.png">
 
@@ -34,8 +34,8 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "SIEM Integration for MCP Orchestrator",
-  "description": "Forwarding MCP Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.",
+  "headline": "SIEM Integration for AI Orchestrator",
+  "description": "Forwarding AI Orchestrator audit events to your SIEM — Splunk, Elastic, Datadog, Chronicle. OCSF-aligned schema, validated end-to-end with Splunk Cloud.",
   "url": "https://magertron.com/siem-integration.html",
   "datePublished": "2026-01-01",
   "dateModified": "2026-05-11",
@@ -240,7 +240,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <a href="index.html" class="nav-logo"><span>▸</span> magertron</a>
     <div class="nav-links">
-      <a href="index.html#features">MCP Orchestrator</a>
+      <a href="index.html#features">AI Orchestrator</a>
       <a href="index.html#pricing">Pricing</a>
       <a href="security.html">Security</a>
       <a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a>
@@ -253,7 +253,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="page-badge">✓ Validated against Splunk Cloud and Datadog</div>
     <h1>SIEM Integration</h1>
-    <p>MCP Orchestrator emits OCSF-aligned audit events designed for SIEM ingestion. Forward them to Splunk, Elastic, Datadog, or Chronicle using the integration pattern that fits your existing observability stack.</p>
+    <p>AI Orchestrator emits OCSF-aligned audit events designed for SIEM ingestion. Forward them to Splunk, Elastic, Datadog, or Chronicle using the integration pattern that fits your existing observability stack.</p>
   </div>
 </section>
 
@@ -262,7 +262,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <h2>The audit event schema</h2>
 
-    <p>MCP Orchestrator emits events conforming to the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> — the cross-vendor standard adopted by AWS, Splunk, Sumo Logic, IBM QRadar, and others. Your SIEM almost certainly already understands it.</p>
+    <p>AI Orchestrator emits events conforming to the <a href="https://schema.ocsf.io/" target="_blank">Open Cybersecurity Schema Framework</a> — the cross-vendor standard adopted by AWS, Splunk, Sumo Logic, IBM QRadar, and others. Your SIEM almost certainly already understands it.</p>
 
     <p>Events split into two planes — admin (orchestrator REST actions) and caller (per-tool authorization decisions on MCP traffic) — sharing the same OCSF base for unified ingestion. Full schema and integration pack are part of <a href="#" onclick="openDemoModal(event)">design-partner onboarding</a>.</p>
 
@@ -291,7 +291,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <div class="pc-chevron">⌄</div>
         </div>
         <div class="pc-body">
-          <p>DB Connect queries MCP Orchestrator's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
+          <p>DB Connect queries AI Orchestrator's audit table directly and ingests rows on a schedule. Highest fidelity — full OCSF column semantics preserved end-to-end. Recommended approach when SIEM teams already operate Splunk DB Connect for other applications.</p>
           <ol>
             <li>Install Splunk DB Connect on a search head (Splunk Cloud or Enterprise)</li>
             <li>Add a Postgres identity using a read-only database user we provision</li>
@@ -342,7 +342,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="pattern-card collapsible" data-open="false" onclick="togglePattern(this)">
         <div class="pc-header">
           <div class="pc-header-text">
-            <h3>Pattern C — Direct HEC push from MCP Orchestrator (planned for v1.7)</h3>
+            <h3>Pattern C — Direct HEC push from AI Orchestrator (planned for v1.7)</h3>
             <div class="pattern-meta">
               <span>Setup: <strong>~5 minutes (when shipped)</strong></span>
               <span>Latency: <strong>real-time</strong></span>
@@ -389,7 +389,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <span>Latency: <strong>real-time</strong></span>
           <span>Best for: <strong>Google Cloud security teams</strong></span>
         </div>
-        <p>Chronicle's recent OCSF-native parsers consume MCP Orchestrator events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log stream or Postgres replica.</p>
+        <p>Chronicle's recent OCSF-native parsers consume AI Orchestrator events directly without custom mapping. Configure the Chronicle Forwarder with the <code>OCSF_API_ACTIVITY</code> log type and point it at the orchestrator's audit log stream or Postgres replica.</p>
       </div>
     </div>
 
@@ -413,7 +413,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="footer-col">
         <h4>Product</h4>
         <ul>
-          <li><a href="index.html#features">MCP Orchestrator</a></li>
+          <li><a href="index.html#features">AI Orchestrator</a></li>
           <li><a href="index.html#pricing">Pricing</a></li>
           <li><a href="index.html#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
@@ -426,8 +426,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <ul>
           <li><a href="security.html">Security</a></li>
           <li><a href="siem-integration.html">SIEM Integration</a></li>
-          <li><a href="agentcore-comparison.html">MCP Orchestrator vs. AWS AgentCore</a></li>
-          <li><a href="cloudflare-comparison.html">MCP Orchestrator vs. Cloudflare</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
         </ul>
       </div>
       <div class="footer-col">

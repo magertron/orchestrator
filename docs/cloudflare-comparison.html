@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>MCP Orchestrator vs Cloudflare MCP Server Portals | Magertron</title>
-<meta name="description" content="A side-by-side comparison of Magertron's MCP Orchestrator and Cloudflare's MCP Server Portals, AI Gateway, and Code Mode. Edge-routed governance and in-cluster governance are different problems — here is what each is built for, and where each one fits.">
+<title>AI Orchestrator vs Cloudflare MCP Server Portals | Magertron</title>
+<meta name="description" content="A side-by-side comparison of Magertron's AI Orchestrator and Cloudflare's MCP Server Portals, AI Gateway, and Code Mode. Edge-routed governance and in-cluster governance are different problems — here is what each is built for, and where each one fits.">
 
 <link rel="canonical" href="https://magertron.com/cloudflare-comparison.html">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://magertron.com/cloudflare-comparison.html">
-<meta property="og:title" content="MCP Orchestrator vs Cloudflare MCP Server Portals">
-<meta property="og:description" content="Governing MCP at the edge and governing MCP in your own cluster are different problems. Side-by-side comparison of Magertron's MCP Orchestrator and Cloudflare's MCP governance stack.">
+<meta property="og:title" content="AI Orchestrator vs Cloudflare MCP Server Portals">
+<meta property="og:description" content="Governing MCP at the edge and governing MCP in your own cluster are different problems. Side-by-side comparison of Magertron's AI Orchestrator and Cloudflare's MCP governance stack.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -304,7 +304,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <a href="/" class="nav-logo"><span>▸</span> magertron</a>
     <div class="nav-links">
-      <a href="/#features">MCP Orchestrator</a>
+      <a href="/#features">AI Orchestrator</a>
       <a href="/#pricing">Pricing</a>
       <a href="/security.html">Security</a>
       <a href="https://blog.magertron.com">Blog</a>
@@ -317,11 +317,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section class="hero">
   <div class="container">
     <div class="hero-eyebrow">Comparison</div>
-    <h1>MCP Orchestrator vs <em>Cloudflare MCP Server Portals</em></h1>
+    <h1>AI Orchestrator vs <em>Cloudflare MCP Server Portals</em></h1>
     <p>
       Both products govern MCP servers. They govern from different places. Cloudflare governs MCP
       by routing your traffic through its edge and metering it at its billing surface. Magertron's
-      MCP Orchestrator governs MCP inside your own Kubernetes cluster, with your own keys, where
+      AI Orchestrator governs MCP inside your own Kubernetes cluster, with your own keys, where
       the traffic and the credentials never leave your network.
     </p>
   </div>
@@ -331,7 +331,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="glance-row">
       <div class="glance-card mcp-orch">
-        <div class="glance-card-label">MCP Orchestrator</div>
+        <div class="glance-card-label">AI Orchestrator</div>
         <h3>The Kubernetes-native MCP control plane</h3>
         <p>
           Self-hosted in your cluster. Deploys MCP servers as pods, routes through Envoy with JWT
@@ -379,7 +379,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       It's a different shape from the enterprise that <em>can't</em> route MCP traffic through a
       third-party edge — regulated data, air-gapped clusters, internal credentials that can't leave
       the network. And it answers a different cost question. Cloudflare meters <em>tokens to the
-      model only</em>; MCP Orchestrator meters and rates <em>calls to the tools — and their
+      model only</em>; AI Orchestrator meters and rates <em>calls to the tools — and their
       tokens</em>, in your cluster, against your own rate cards. Different layers of the same stack.
     </p>
   </div>
@@ -390,7 +390,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="section-eyebrow" style="text-align:center; margin-bottom: 32px;">Side by side</div>
     <div class="cmp-head">
       <span></span>
-      <span class="col-mag">MCP Orchestrator</span>
+      <span class="col-mag">AI Orchestrator</span>
       <span class="col-cf">Cloudflare MCP Governance</span>
     </div>
 
@@ -443,7 +443,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="section-eyebrow">The honest take</div>
     <h2>One control plane for every MCP server — internal and external.</h2>
     <p style="line-height: 1.6;">
-      MCP Orchestrator governs MCP servers on both sides of the perimeter. Internal servers wrapping
+      AI Orchestrator governs MCP servers on both sides of the perimeter. Internal servers wrapping
       systems that can't leave the network, and external servers reaching third-party vendors beyond
       the enterprise edge — both run through the same control plane, with credentials managed
       in-cluster across every auth type and every call metered and rated against your own rate cards.
@@ -461,7 +461,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <section class="cta">
   <div class="container">
     <div class="cta-box">
-      <h2>See where MCP Orchestrator fits in your stack.</h2>
+      <h2>See where AI Orchestrator fits in your stack.</h2>
       <p>
         Talk through your environment, your existing infrastructure, and where MCP governance fits.
         Or grab the Helm chart and try it yourself.
@@ -484,7 +484,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="footer-col">
         <h4>Product</h4>
         <ul>
-          <li><a href="/#features">MCP Orchestrator</a></li>
+          <li><a href="/#features">AI Orchestrator</a></li>
           <li><a href="/#pricing">Pricing</a></li>
           <li><a href="/#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
@@ -497,8 +497,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <ul>
           <li><a href="/security.html">Security</a></li>
           <li><a href="/siem-integration.html">SIEM Integration</a></li>
-          <li><a href="agentcore-comparison.html">MCP Orchestrator vs. AWS AgentCore</a></li>
-          <li><a href="cloudflare-comparison.html">MCP Orchestrator vs. Cloudflare</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
         </ul>
       </div>
       <div class="footer-col">
