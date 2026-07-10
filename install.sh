@@ -369,6 +369,16 @@ API_PUBLIC_URL="${API_PUBLIC_URL:-}"
 # (probo.objectStore.endpoint) and credentials, plus a bootstrap admin token for
 # MCP registration — see --help. Without those, probod will not become ready.
 ENABLE_PROBO="${ENABLE_PROBO:-0}"
+# Opt-IN to the bundled Ollama local LLM — the "brain" of the advisory
+# assistant. Off by default because it is the heaviest optional component:
+# a ~3.3 GB image pull, and 4–5 GB of RAM while a model is loaded for
+# inference (see Operators Guide §16.4). Pass --enable-ollama (or
+# ENABLE_OLLAMA=1) to deploy it. Enabling it also points the assistant
+# provider at the bundled Ollama service (assistant.provider=ollama), so
+# the pod actually gets used rather than deployed and ignored. If you'd
+# rather use the Anthropic-backed assistant, leave this off and configure
+# the Anthropic provider + key instead.
+ENABLE_OLLAMA="${ENABLE_OLLAMA:-0}"
 HELM_REPO_NAME="${HELM_REPO_NAME:-magertron}"
 RELEASE_NAME="${RELEASE_NAME:-mcp}"
 
@@ -428,12 +438,20 @@ Common options:
                               and a bootstrap admin token for MCP
                               registration; without them probod will not
                               become ready.
+  --enable-ollama             Deploy the bundled Ollama local LLM (the
+                              advisory assistant's local "brain") and point
+                              the assistant provider at it. Off by default.
+                              HEAVY: pulls a ~3.3 GB image and needs 4-5 GB
+                              of RAM while a model is loaded for inference
+                              (see Operators Guide 16.4). Size the node
+                              accordingly. Leave off to use the Anthropic-
+                              backed assistant instead.
   -h, --help                  Show this message
 
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
   NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
-  API_PUBLIC_URL, ENABLE_PROBO,
+  API_PUBLIC_URL, ENABLE_PROBO, ENABLE_OLLAMA,
   HELM_REPO_NAME, RELEASE_NAME
 
 EOF
@@ -456,6 +474,7 @@ while [ $# -gt 0 ]; do
             SKIP_NODE_LABEL=1; shift ;;
         --label-nodes)     LABEL_NODES=1; shift ;;
         --enable-probo)    ENABLE_PROBO=1; shift ;;
+        --enable-ollama)   ENABLE_OLLAMA=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -975,6 +994,21 @@ fi
 # probod stays NotReady, but the pods will deploy.
 if [ "$ENABLE_PROBO" = "1" ]; then
     HELM_VALUES+=( --set "probo.enabled=true" )
+fi
+
+# Opt-in: deploy the bundled Ollama local LLM. Chart default is
+# ollama.enabled=false. We set two things together: the pod itself
+# (ollama.enabled=true) AND the assistant provider (assistant.provider=ollama)
+# so the assistant actually talks to the bundled brain. Enabling the pod
+# without repointing the provider would deploy a ~3.3 GB image nobody uses.
+# The deployment auto-wires OLLAMA_BASE_URL to the bundled service, so no
+# URL needs to be supplied here. The model is pulled on first boot (needs
+# egress at deploy time) per the chart default.
+if [ "$ENABLE_OLLAMA" = "1" ]; then
+    HELM_VALUES+=( --set "ollama.enabled=true" )
+    HELM_VALUES+=( --set "assistant.provider=ollama" )
+    warn "Ollama enabled: ~3.3 GB image pull, and 4-5 GB RAM once a model loads."
+    note "Ensure this node has headroom for the model (Operators Guide 16.4)."
 fi
 
 # Wrapper function so we can pass it to spinner.
