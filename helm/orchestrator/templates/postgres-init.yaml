@@ -272,11 +272,14 @@ data:
         -- type-switches on server_type and ignores irrelevant fields for
         -- External rows, so harmless default values riding along do no damage.
         CONSTRAINT deployed_servers_type_invariant CHECK (
+            -- internal / hybrid: a pod Magertron runs (image present, no
+            -- endpoint_url). Credentials are OPTIONAL — pure-internal carries
+            -- none; a hybrid (internal pod calling a credentialed external API)
+            -- carries auth_type + credential_secret_ref. The old strict version
+            -- forced both NULL, which rejected every hybrid deploy.
             (server_type IN ('internal', 'hybrid')
              AND image IS NOT NULL
-             AND endpoint_url IS NULL
-             AND auth_type IS NULL
-             AND credential_secret_ref IS NULL)
+             AND endpoint_url IS NULL)
             OR
             (server_type = 'external'
              AND image IS NULL
@@ -339,14 +342,19 @@ data:
     -- on INSERT (image_tag DEFAULT 'latest', etc), making External INSERTs
     -- impossible. Drop and recreate with the relaxed version that only
     -- enforces the load-bearing invariants (image presence/absence).
+    --
+    -- Hybrid (2026-07): the internal/hybrid branch no longer forces
+    -- auth_type/credential_secret_ref NULL. A hybrid is an internally-deployed
+    -- pod that calls a credentialed external API, so it legitimately carries a
+    -- credential while having an image and no endpoint_url. This is the
+    -- authoritative definition — it runs on every init/restart, so it must be
+    -- the relaxed version or hybrid deploys get rejected after every reboot.
     -- Idempotent: drop only if present, then recreate.
     ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_type_invariant;
     ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_type_invariant CHECK (
         (server_type IN ('internal', 'hybrid')
          AND image IS NOT NULL
-         AND endpoint_url IS NULL
-         AND auth_type IS NULL
-         AND credential_secret_ref IS NULL)
+         AND endpoint_url IS NULL)
         OR
         (server_type = 'external'
          AND image IS NULL
