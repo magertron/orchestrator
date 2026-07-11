@@ -409,6 +409,39 @@ data:
                             pack_as_bytes: false
                           include_peer_certificate: false
                           stat_prefix: mcp_ext_authz_external_v3
+                          # ── allowed_upstream_headers (B17 root-cause fix) ────────────────
+                          # Envoy SILENTLY DROPS all headers returned in ext_authz
+                          # ok_response.headers before forwarding upstream UNLESS they
+                          # match this allow-list. Without it, the vendor credential
+                          # that ExternalAuthzService injects (build_auth_headers →
+                          # fill_ok_with_headers) never reaches the upstream MCP server,
+                          # and the vendor sees no auth → 401 / schema error.
+                          #
+                          # Proto: this is ExtAuthz.authorization_response
+                          # (AuthorizationResponse).allowed_upstream_headers — a
+                          # ListStringMatcher of response-header names propagated
+                          # to the upstream request.
+                          #
+                          # Covers the full BYOK credential-injection matrix:
+                          #   authorization → bearer, oauth2-client-credentials,
+                          #                   oauth2-authorization-code (default header)
+                          #   x-api-key     → api-key auth_type (default header-name)
+                          #   bearer-auth   → Speakeasy-generated MCP servers
+                          #                   (Nitro PDF/Sign) via header-name override
+                          #   x-magertron-* → future attribution headers (forward-compat)
+                          # NOTE: custom header-name overrides beyond these must be added
+                          # here too, or they will be dropped (see slice-c6b B2).
+                          authorization_response:
+                            allowed_upstream_headers:
+                              patterns:
+                                - exact: authorization
+                                  ignore_case: true
+                                - exact: x-api-key
+                                  ignore_case: true
+                                - exact: bearer-auth
+                                  ignore_case: true
+                                - prefix: x-magertron-
+                                  ignore_case: true
                         # disabled: true at the filter-instance level is what makes
                         # this filter SKIP all routes unless they explicitly
                         # re-enable it via typed_per_filter_config. The Envoy
