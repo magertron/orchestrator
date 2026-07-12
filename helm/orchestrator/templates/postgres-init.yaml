@@ -327,6 +327,14 @@ data:
     -- read path free of null-checks. Idempotent for fresh installs + upgrades.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS static_headers JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+    -- rest_metering_config: per-server REST quantity-mapping. Where the
+    -- billable magnitude lives (request path and/or response header), what
+    -- unit/dimension to record, and how to derive the operation (tool_name).
+    -- Consumed by the ext_authz REST classifier + the ALS response-side
+    -- true-up. '{}' = bill calls-only (no mapping). Mirrors static_headers:
+    -- routing/config, not a secret; NOT NULL keeps the read path null-free.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS rest_metering_config JSONB NOT NULL DEFAULT '{}'::jsonb;
+
     -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
     -- (delegated authorization-code flow). The original inline constraint was
     -- anonymous and auto-named deployed_servers_auth_type_check; drop + re-add
@@ -391,6 +399,49 @@ data:
         ADD COLUMN IF NOT EXISTS clone_of UUID REFERENCES deployed_servers(id);
     CREATE INDEX IF NOT EXISTS deployed_servers_clone_of_idx
         ON deployed_servers (clone_of) WHERE clone_of IS NOT NULL;
+
+    -- ── REST API support (server_type='rest') ────────────────────────────────
+    -- 'rest' is a first-class endpoint-backed type: shaped exactly like
+    -- 'external' (no image, has endpoint_url + auth_type) but parsed as a raw
+    -- REST call rather than JSON-RPC/MCP at the ext_authz metering seam. It
+    -- rides the same governed-egress plane (cost_contracts, rate_schedules,
+    -- budgets, chargeback, galaxy) via the shared deployed_servers.id FK.
+    -- Three widenings, all idempotent (run on every init/restart):
+    --   1. server_type domain CHECK  → allow 'rest'
+    --   2. type_invariant shape CHECK → 'rest' shares the endpoint-backed branch
+    --   3. endpoint-uniqueness index  → 'rest' shares the per-namespace guard
+    -- The server_type domain CHECK was created ANONYMOUSLY on the base CREATE
+    -- TABLE (auto-named deployed_servers_server_type_check) and was never
+    -- widened by a later block, so existing DBs still reject 'rest'. Drop the
+    -- auto-named constraint and re-add it named + widened.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_server_type_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_server_type_check
+        CHECK (server_type IN ('internal', 'hybrid', 'external', 'rest'));
+
+    -- Widen the endpoint-backed branch of the shape invariant to cover 'rest'.
+    -- A 'rest' row is shaped identically to 'external': no image, has
+    -- endpoint_url + auth_type. Same load-bearing invariants apply.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_type_invariant;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_type_invariant CHECK (
+        (server_type IN ('internal', 'hybrid')
+         AND image IS NOT NULL
+         AND endpoint_url IS NULL)
+        OR
+        (server_type IN ('external', 'rest')
+         AND image IS NULL
+         AND endpoint_url IS NOT NULL
+         AND auth_type IS NOT NULL)
+    );
+
+    -- Extend the per-namespace endpoint-uniqueness guard to 'rest' too, so two
+    -- REST servers can't claim the same vendor endpoint in one namespace
+    -- (ambiguous routing + billing, same rationale as External). Recreate the
+    -- partial index with a widened predicate; name unchanged to avoid dangling
+    -- references. DROP+CREATE (not IF NOT EXISTS) because the predicate changes.
+    DROP INDEX IF EXISTS deployed_servers_external_endpoint_unique_idx;
+    CREATE UNIQUE INDEX deployed_servers_external_endpoint_unique_idx
+        ON deployed_servers (namespace, endpoint_url)
+        WHERE server_type IN ('external', 'rest');
 
     -- ── External MCP server architecture (session 2.13) ──────────────────────
     -- The deployed_servers table holds rows for all three deployment patterns:
