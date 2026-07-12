@@ -1232,6 +1232,39 @@ data:
      '["*"]', TRUE)
     ON CONFLICT (id) DO NOTHING;
 
+    -- ── Machine / consumer roles ────────────────────────────────────────────────
+    -- Purpose-built LOW-PRIVILEGE roles for service accounts (agent daemons,
+    -- assistants) that consume governed egress — LLM providers and metered REST
+    -- APIs — on behalf of end users. Deliberately minimal: they hold ONLY Read,
+    -- which is the permission the egress proxies' Read guard requires (see
+    -- handle_llm_proxy / handle_rest_token_proxy). They carry NO Deploy/Scale/
+    -- Write/ManageRoles/Billing — a leaked daemon token must not be able to
+    -- administer the platform.
+    --
+    -- These roles are GRANT TARGETS, not capability bundles. The role by itself
+    -- grants access to NOTHING specific — actual access to a given LLM/REST
+    -- provider comes from an explicit per-provider WILDCARD ALLOW row in
+    -- mcp_tool_permissions (seeded at provider onboarding / managed in the Tool
+    -- Explorer's access panel). So: role = "I am a consumer of this class",
+    -- grant = "specifically this provider". A consumer SA with no grant is
+    -- authenticated but authorized for nothing (the LLM lockdown returns
+    -- llm_not_authorized).
+    --
+    -- Separation of concerns: llm-consumer (spend LLM keys) is distinct from
+    -- api-consumer (call metered REST APIs) is distinct from mcp-consumer (invoke
+    -- MCP tools), so an admin can grant exactly one class without the others.
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:llm-consumer', 'LLM Consumer', 'Service-account role for daemons/assistants that invoke governed LLM providers. Access to each LLM is granted explicitly per-provider; the role alone grants nothing.',
+     '["Read"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:api-consumer', 'API Consumer', 'Service-account role for daemons/agents that call governed, metered REST APIs. Access to each API is granted explicitly per-provider; the role alone grants nothing.',
+     '["Read"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
     -- Admin gains the billing actions so the superuser passes billing guards too.
     -- Idempotent: only rewrites if the billing actions are not already present.
     UPDATE roles
