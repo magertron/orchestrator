@@ -255,6 +255,12 @@ data:
             socket_address:
               address: 0.0.0.0
               port_value: {{ .Values.envoy.v3.listenerPort }}
+          # Raised from the Envoy 1MB default to 10MB (2026-07-12) so the
+          # connection-level buffer doesn't cap document-bearing requests BELOW
+          # the ext_authz with_request_body limit (also 10MB). Both must clear
+          # the payload size or the smaller wins — this is the listener-side half
+          # of the base64-document fix (Nitro Sign create-document).
+          per_connection_buffer_limit_bytes: 10485760
           filter_chains:
             - transport_socket:
                 name: envoy.transport_sockets.tls
@@ -333,7 +339,15 @@ data:
                           transport_api_version: V3
                           failure_mode_allow: false
                           with_request_body:
-                            max_request_bytes: 65536
+                            # Raised 65536 → 10485760 (10MB, 2026-07-12) to carry
+                            # base64 document payloads (e.g. Nitro Sign create-document)
+                            # through to the upstream. 10MB aligns with AWS API Gateway /
+                            # Apigee payload ceilings. NOTE: Envoy buffers the whole body
+                            # per request before Check(); ext_authz only needs params.name,
+                            # so this is a hot-path memory cost. Banked optimization: get
+                            # the tool name out of the buffered body (header/ordering) so
+                            # the authorizer can keep a small buffer.
+                            max_request_bytes: 10485760
                             allow_partial_message: true
                             pack_as_bytes: false
                           include_peer_certificate: false
@@ -404,7 +418,13 @@ data:
                           # parse_mcp_rpc_body tolerates truncation (returns
                           # parse_error → handler denies 400).
                           with_request_body:
-                            max_request_bytes: 65536
+                            # Raised 65536 → 10485760 (10MB, 2026-07-12). This is the
+                            # filter External/vendor traffic hits (e.g. nitro-sign-server),
+                            # so document-bearing calls like sign-create-document need the
+                            # base64 payload to survive to the upstream rather than being
+                            # truncated at 64KB (which corrupted the JSON-RPC body and 400'd).
+                            # Mirrors the internal filter. Same hot-path buffering caveat.
+                            max_request_bytes: 10485760
                             allow_partial_message: true
                             pack_as_bytes: false
                           include_peer_certificate: false
