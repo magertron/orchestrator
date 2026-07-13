@@ -511,6 +511,37 @@ data:
     );
     CREATE INDEX IF NOT EXISTS governance_policies_enabled_idx ON governance_policies (enabled);
 
+    -- ── Image scans (deploy-time vulnerability scanning; SOC2 vuln-mgmt evidence) ─
+    -- Records every deploy-time image scan. Evidence-shaped: carries the image
+    -- DIGEST (auditor-grade identity, not just a mutable tag), the scanner used,
+    -- severity counts, the policy decision, and the full normalized result as
+    -- JSONB. Feeds the Evidence Forwarder → Probo as vulnerability-management
+    -- control evidence, and seeds the continuous/inventory-drift re-scan story.
+    -- Like meter_events/cost_contracts, scan rows are AUDIT EVIDENCE and must
+    -- OUTLIVE the server — deliberately NO foreign key / ON DELETE CASCADE from
+    -- deployed_servers (a deleted server's scan history is still evidence).
+    CREATE TABLE IF NOT EXISTS image_scans (
+        id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id       UUID,
+        image_ref       TEXT        NOT NULL,
+        image_digest    TEXT,
+        scanner         TEXT        NOT NULL,
+        critical        INTEGER     NOT NULL DEFAULT 0,
+        high            INTEGER     NOT NULL DEFAULT 0,
+        medium          INTEGER     NOT NULL DEFAULT 0,
+        low             INTEGER     NOT NULL DEFAULT 0,
+        unknown         INTEGER     NOT NULL DEFAULT 0,
+        scan_succeeded  BOOLEAN     NOT NULL DEFAULT FALSE,
+        scan_error      TEXT,
+        policy_decision TEXT,
+        raw_result      JSONB       NOT NULL DEFAULT '{}',
+        scanned_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        scanned_by      TEXT
+    );
+    CREATE INDEX IF NOT EXISTS image_scans_server_idx ON image_scans (server_id, scanned_at DESC);
+    CREATE INDEX IF NOT EXISTS image_scans_image_idx  ON image_scans (image_ref, scanned_at DESC);
+    CREATE INDEX IF NOT EXISTS image_scans_digest_idx ON image_scans (image_digest);
+
     -- ── Webhooks ───────────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS webhooks (
         id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
