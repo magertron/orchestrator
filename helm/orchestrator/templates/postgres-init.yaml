@@ -1332,4 +1332,26 @@ data:
           {"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens, 3-63 chars"}
         ]'::jsonb
     ) ON CONFLICT (name) DO NOTHING;
+
+    -- ── Default vulnerability policy (secure-by-default, non-blocking) ──────────
+    -- Ships ENABLED across ALL namespaces so every governed internal server is
+    -- evaluated against a critical-vulnerability rule on day one — the premise
+    -- "every governed server is scanned and evaluated" holds without an operator
+    -- authoring anything. Deliberately severity=WARNING, not error: it FLAGS a
+    -- critical CVE (visible in the deploy wizard + the server Scan tab) but does
+    -- NOT block the deploy, so a first-run / demo image that carries a critical
+    -- still deploys. An org ESCALATES to enforcement by editing this policy's
+    -- severity from "warning" to "error" (the message says so). Unlike the two
+    -- policies above this is is_template=FALSE and "*"-scoped — it's an ACTIVE
+    -- default, not a starting-point template. ON CONFLICT DO NOTHING = seed-once:
+    -- if an operator deletes or edits it, it is never resurrected.
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
+    VALUES (
+        'Flag critical vulnerabilities',
+        'Warns when a deployed image has critical CVEs (from the deploy-time scan). Change this policy''s severity from warning to error to BLOCK such deploys.',
+        FALSE, TRUE, '["*"]',
+        '[
+          {"category":"vulnerability","field":"scan.critical","operator":"lte","value":0,"severity":"warning","message":"Image has critical vulnerabilities — review before production. Set this policy severity to error to block."}
+        ]'::jsonb
+    ) ON CONFLICT (name) DO NOTHING;
 {{- end }}
