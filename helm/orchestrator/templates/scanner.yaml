@@ -1,0 +1,162 @@
+{{- if .Values.scanning.enabled }}
+# ─── Image-scanning stack (Trivy client/server + adapter) ──────────────────────
+# Bundled deploy-time image vulnerability scanning. Two components:
+#   • trivy-server    — holds the warm vuln DB (aquasec/trivy server mode)
+#   • scanner-adapter — the {image}->JSON shim the orchestrator's TrivyScanner
+#                       calls; runs the trivy client against trivy-server.
+# The orchestrator reaches the adapter via MCP_SCANNER_URL (see deployment.yaml),
+# which defaults to this bundled adapter's in-cluster service.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-trivy-server
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: {{ include "mcp.fullname" . }}-trivy-server
+    component: scanning
+spec:
+  selector:
+    app: {{ include "mcp.fullname" . }}-trivy-server
+  ports:
+    - name: trivy
+      port: {{ .Values.scanning.trivy.port }}
+      targetPort: {{ .Values.scanning.trivy.port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-trivy-server
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: {{ include "mcp.fullname" . }}-trivy-server
+    component: scanning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "mcp.fullname" . }}-trivy-server
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp.fullname" . }}-trivy-server
+        component: scanning
+    spec:
+      {{- with .Values.scanning.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: trivy-server
+          image: "{{ .Values.scanning.trivy.image.repository }}:{{ .Values.scanning.trivy.image.tag }}"
+          imagePullPolicy: {{ .Values.scanning.trivy.image.pullPolicy | default "IfNotPresent" }}
+          args: ["server", "--listen", "0.0.0.0:{{ .Values.scanning.trivy.port }}"]
+          ports:
+            - containerPort: {{ .Values.scanning.trivy.port }}
+              name: trivy
+          env:
+            - name: TRIVY_CACHE_DIR
+              value: /root/.cache/trivy
+            - name: TRIVY_NO_PROGRESS
+              value: "true"
+          volumeMounts:
+            - name: trivy-cache
+              mountPath: /root/.cache/trivy
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.scanning.trivy.port }}
+            initialDelaySeconds: 15   # first boot downloads the DB (~1 min)
+            periodSeconds: 10
+            failureThreshold: 30
+          resources:
+            {{- toYaml .Values.scanning.trivy.resources | nindent 12 }}
+      volumes:
+        - name: trivy-cache
+          {{- if .Values.scanning.trivy.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "mcp.fullname" . }}-trivy-cache
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- if .Values.scanning.trivy.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mcp.fullname" . }}-trivy-cache
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    component: scanning
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.scanning.trivy.persistence.size }}
+  {{- with .Values.scanning.trivy.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-scanner-adapter
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: {{ include "mcp.fullname" . }}-scanner-adapter
+    component: scanning
+spec:
+  selector:
+    app: {{ include "mcp.fullname" . }}-scanner-adapter
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.scanning.adapter.port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-scanner-adapter
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: {{ include "mcp.fullname" . }}-scanner-adapter
+    component: scanning
+spec:
+  replicas: {{ .Values.scanning.adapter.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "mcp.fullname" . }}-scanner-adapter
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp.fullname" . }}-scanner-adapter
+        component: scanning
+    spec:
+      {{- with .Values.scanning.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: scanner-adapter
+          image: "{{ .Values.scanning.adapter.image.repository }}:{{ .Values.scanning.adapter.image.tag }}"
+          imagePullPolicy: {{ .Values.scanning.adapter.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: {{ .Values.scanning.adapter.port }}
+              name: http
+          env:
+            - name: TRIVY_SERVER_URL
+              value: "http://{{ include "mcp.fullname" . }}-trivy-server:{{ .Values.scanning.trivy.port }}"
+            - name: ADAPTER_PORT
+              value: {{ .Values.scanning.adapter.port | quote }}
+            - name: SCAN_TIMEOUT_S
+              value: {{ .Values.scanning.adapter.scanTimeoutSeconds | default 120 | quote }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.scanning.adapter.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.scanning.adapter.resources | nindent 12 }}
+{{- end }}
