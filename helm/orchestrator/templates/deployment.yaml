@@ -101,6 +101,19 @@ spec:
               value: {{ .Values.orchestrator.env.ratingIntervalSeconds | quote }}
             - name: MCP_RATING_SETTLE_SECONDS
               value: {{ .Values.orchestrator.env.ratingSettleSeconds | quote }}
+            # ── Deploy-time image scanner endpoint ─────────────────────────
+            # Resolves to: (1) scanning.scannerUrlOverride (bring-your-own
+            # scanner), else (2) the bundled scanner-adapter service (if
+            # scanning.enabled), else (3) "" — scanning off; TrivyScanner
+            # fail-opens (no scan, deploy proceeds).
+            - name: MCP_SCANNER_URL
+            {{- if .Values.scanning.scannerUrlOverride }}
+              value: {{ .Values.scanning.scannerUrlOverride | quote }}
+            {{- else if .Values.scanning.enabled }}
+              value: "http://{{ include "mcp.fullname" . }}-scanner-adapter.{{ include "mcp.namespace" . }}.svc.cluster.local/"
+            {{- else }}
+              value: ""
+            {{- end }}
             # ── License file path ──────────────────────────────────────────
             # Path to the license JSON inside the pod. Free tier if missing.
             - name: MCP_LICENSE_FILE

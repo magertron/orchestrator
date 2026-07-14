@@ -803,6 +803,58 @@ probo:
     # orchestrator's own service in the release namespace. Override for a custom URL.
     magertronApi: ""
 
+# ─── Image scanning (deploy-time vulnerability scanning) ───────────────────────
+# Bundled Trivy client/server + adapter. When enabled, every internal (image)
+# deploy is scanned and recorded in image_scans (SOC2 vuln-mgmt evidence). The
+# orchestrator's MCP_SCANNER_URL points at the bundled adapter by default; set
+# scannerUrlOverride to point at your OWN scanner (Prisma/Snyk/etc.) instead —
+# the scan contract is scanner-agnostic.
+scanning:
+  enabled: true
+
+  # Override to point the orchestrator at an EXTERNAL scanner instead of the
+  # bundled adapter. Empty = use the bundled scanner-adapter service.
+  scannerUrlOverride: ""
+
+  # nodeSelector applied to both trivy-server and scanner-adapter pods.
+  nodeSelector: {}
+
+  trivy:
+    image:
+      repository: aquasec/trivy
+      tag: "latest"
+      pullPolicy: IfNotPresent
+    port: 4954
+    # The vuln DB is ~900MB. emptyDir re-downloads on pod restart; enable
+    # persistence to keep the DB cache across restarts.
+    persistence:
+      enabled: false
+      size: 2Gi
+      storageClass: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+
+  adapter:
+    image:
+      repository: curtismager20/scanner-adapter
+      tag: "0.1.0"
+      pullPolicy: IfNotPresent
+    port: 8080
+    replicaCount: 1
+    scanTimeoutSeconds: 120
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+
 # ─── API Configuration ──────────────────────────────────────────────────────
 api:
   httpPort: 8080
