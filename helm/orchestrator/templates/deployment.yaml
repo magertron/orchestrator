@@ -191,6 +191,15 @@ spec:
             # for tuning guidance. Default 300s (5 min). 0 = disabled.
             - name: MCP_DEPLOY_TIMEOUT_SECONDS
               value: {{ .Values.orchestrator.env.deployTimeoutSeconds | default "300" | quote }}
+            # ── 3.1.01: DB hot-path tuning ────────────────────────────────
+            # Both of these existed as C++ env reads but were NOT in the
+            # chart, so every helm upgrade silently reverted them to their
+            # compiled defaults (pool=4, TTL=5) and load-test tuning
+            # evaporated on deploy. See orchestrator.env in values.yaml.
+            - name: MCP_DB_POOL_SIZE
+              value: {{ .Values.orchestrator.env.dbPoolSize | default "8" | quote }}
+            - name: MCP_HOT_PATH_CACHE_TTL_SEC
+              value: {{ .Values.orchestrator.env.hotPathCacheTtlSeconds | default "5" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-

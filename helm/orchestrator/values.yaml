@@ -78,13 +78,47 @@ orchestrator:
   # at this port (over the headless service, like extAuthzPort). Must agree
   # between this value and the bootstrap ConfigMap's als_sink cluster.
   alsPort: 9094
+  # ── Resources ──────────────────────────────────────────────────────────────
+  # ── 3.1.01: limits.cpu raised 1 → 8 ────────────────────────────────────────
+  # This single line was the product's throughput ceiling. At limits.cpu: 1 the
+  # orchestrator is throttled to ONE core regardless of node size (foxygirl has
+  # 12). ext_authz Check() runs on gRPC worker threads (MCP_GRPC_MAX_THREADS,
+  # default 256) — hundreds of threads sharing one core's CFS quota. Once the
+  # quota is exhausted each 100ms period, EVERY thread freezes until the next.
+  #
+  # Symptoms this produced (2026-07-14/15 load testing), all of which read as
+  # application bugs and are not:
+  #   - `kubectl top` showing ~27m CPU — "nothing is busy". Throttled, not idle.
+  #     top cannot distinguish the two; /sys/fs/cgroup/cpu.stat (nr_throttled,
+  #     throttled_usec) can.
+  #   - Every Check() phase "slow but trivial" — e.g. reglist=58ms to copy 14
+  #     structs. Threads descheduled mid-function, not doing slow work.
+  #   - A hard CLIFF at 1750 rps rather than a slope — quota exhaustion is binary.
+  #   - Everything piling on exactly 2.000s = Envoy's ext_authz timeout, reached
+  #     by accumulated throttle stalls.
+  #   - Raising MCP_GRPC_MAX_THREADS 256→1024 barely helped (45%→61%): more
+  #     threads on one core is worse thrashing, not more capacity.
+  #
+  # Little's Law: 1750 rps x ~1ms real CPU per Check = 1.75 cores MINIMUM. The
+  # budget was 1. No amount of code optimization could have fixed it.
+  #
+  # Measured after raising to 8, single pod: 1500 rps -> 3500 rps at 100%
+  # (p99 524ms), drawing ~6.4 cores at the ceiling. 4000 rps is congestion
+  # collapse. A second replica adds HA, not throughput — the node runs out
+  # first (2 pods drew 8509m of 12 cores at 4000 rps, with postgres at 77m).
+  #
+  # SIZING: limits is a CEILING, not a reservation — 8 costs nothing when idle.
+  # Size the control-plane NODE for the target rate, not this number. Do not
+  # raise requests to match: requests are what the scheduler reserves, and
+  # requests.cpu=2 x 2 replicas leaves pods Pending on a 12-core node that also
+  # hosts postgres.
   resources:
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 500m
+      memory: 512Mi
     limits:
-      cpu: "1"
-      memory: 1Gi
+      cpu: "8"
+      memory: 2Gi
 
   # ── Health monitoring ─────────────────────────────────────────────────────
   # How often the orchestrator polls Kubernetes for pod state changes and
@@ -185,6 +219,40 @@ orchestrator:
     #
     # The orchestrator reads this as MCP_DEPLOY_TIMEOUT_SECONDS at startup.
     deployTimeoutSeconds: "60"
+
+    # ── 3.1.01: DB connection pool size (MCP_DB_POOL_SIZE) ────────────────
+    # Size of DbClient's hot-path connection pool — the pool ext_authz
+    # Check() and the registry sync use, isolated from cold-path admin CRUD
+    # (conn_mutex_) and the audit drain (audit_conn_mutex_).
+    #
+    # Was NOT chart-configurable before 3.1.01; the C++ default is 4, so
+    # every deploy silently reverted hand-tuned values. Raising 4 → 8 halved
+    # p99 at 1500 rps (677ms → 351ms) in 2026-07-14 testing.
+    #
+    # CEILING: postgres max_connections is 100 with ~63 consumed at idle.
+    # 16 detonated the DB (2 replicas x 16 + 63 ≈ 99). Do not exceed 8 per
+    # replica without first raising max_connections AND trimming the Splunk
+    # DB Connect JDBC pool (16 connections for a probe cadence that needs ~4).
+    dbPoolSize: "8"
+
+    # ── 3.1.01: hot-path read cache TTL (MCP_HOT_PATH_CACHE_TTL_SEC) ──────
+    # TTL for DbClient's per-namespace server/permission/governance read
+    # caches. On expiry one thread loads while others wait on the
+    # thundering-herd guard (servers_cache_cv_).
+    #
+    # Was NOT chart-configurable before 3.1.01; the C++ default is 5.
+    #
+    # NOTE: 60 was set during load testing on the hypothesis that the 5s
+    # sawtooth was the throughput wall. It was NOT — raising it 5 → 60 made
+    # no difference (2000 rps: 59% → 51%, i.e. noise). The real cause was the
+    # per-request DB call in Check() (fixed in 3.1.01 by carrying the UUID on
+    # the registry entry) and the orchestrator's 1-core CPU limit.
+    #
+    # 60 is kept because cross-replica staleness of the server registry is
+    # bounded by sync_registry_from_db() anyway, and fewer cache loads is
+    # strictly less DB work. Lower it if you need faster cross-replica
+    # visibility of server CRUD.
+    hotPathCacheTtlSeconds: "60"
 
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
@@ -435,7 +503,39 @@ envoy:
     image:
       repository: ""
       tag: ""
-    resources: {}
+    # ── 3.1.01: v3 Envoy gets its OWN resources (was {} = inherited legacy's
+    # 500m/512Mi) ──────────────────────────────────────────────────────────
+    # At 512Mi the v3 Envoy was OOMKilled (exit 137) under 1500 rps load, with
+    # the liveness probe then failing on :9902/ready. Observed wire signature
+    # while dying: authz_flags "UO" (upstream overflow) 503s and 12.7s 200s.
+    #
+    # WHY 512Mi is not enough: Envoy buffers each in-flight request body up to
+    # ext_authz's max_request_bytes (10485760 = 10MB, raised 2026-07-12 for
+    # Nitro base64 document payloads) BEFORE calling Check(). At ~1500
+    # concurrent requests a 10MB per-request ceiling does not fit in 512Mi,
+    # even though real MCP tool-call bodies are ~98 bytes.
+    #
+    # IMPORTANT — the autoscaling block below and this limit are coupled:
+    # targetMemory: 80 with a 512Mi limit means the HPA pins to maxReplicas
+    # and stays there (observed: memory 92%/80%, cpu 13%/70% → 10 replicas).
+    # That memory HPA is a BAND-AID for this undersized limit, not a scaling
+    # policy — memory doesn't track demand and doesn't fall when traffic stops.
+    # With RING_HASH session affinity every scale event rehashes the ring and
+    # mass-403s live sessions. DO NOT remove the memory metric without raising
+    # this limit first, or you trade rehash storms for OOM kills.
+    #
+    # At 2Gi with 64KB buffers, v3 Envoy sits at 121-128Mi (6%), CPU 7-15m.
+    # The real fix is per-route buffers (64KB global, 10MB only on
+    # nitro-sign/nitro-pdf via typed_per_filter_config / ExtAuthzPerRoute
+    # check_settings — the machinery AdsSubscriber already uses to enable the
+    # external filter per-route). Until that lands, 2Gi absorbs it.
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 2Gi
     # ── V3 production HA defaults (shipped in v2.2.1) ──────────────────────
     # Mirrors legacy envoy autoscaling shape. min=3 floor based on 5/17/26
     # load testing: single-replica v3 envoy saturates at ~500 rps and the
@@ -528,13 +628,42 @@ postgresql:
     node-role.kubernetes.io/control-plane: "true"
   tolerations: []
   affinity: {}
+  # ── 3.1.01: limits raised 500m/512Mi → 2000m/2Gi ───────────────────────────
+  # Headroom for the audit + meter write path, which at 3500 rps is taking
+  # ~7000 inserts/sec across both pipelines.
+  #
+  # MEASURED, so nobody "fixes" this by going bigger: postgres uses 77Mi of
+  # memory and 77m of CPU at 3500 rps. It is NOT the bottleneck and it is NOT
+  # memory-bound — at 4000 rps (where the platform congestion-collapses) the
+  # two orchestrator pods drew 8509m between them while postgres sat at 77m.
+  # Do NOT raise memory to 4Gi; it will not help and it costs scheduler
+  # headroom on a control-plane node already at 95% memory requests.
+  #
+  # NOT configurable here (chart gap): max_connections, postgres's default 100.
+  # 63 are consumed at idle — ~41 orchestrator (pool + meter_conn + audit_conn
+  # + inventory + leader), 16 Splunk DB Connect JDBC (over-pooled for its probe
+  # cadence; ~4 would do), 5 unlabeled, 1 psql. This is why MCP_DB_POOL_SIZE=16
+  # detonated: 2 pods x 16 + 63 ≈ 99 of 100.
   resources:
     requests:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: "2"
+      memory: 2Gi
+  # ── /dev/shm sizing ────────────────────────────────────────────────────────
+  # k8s gives a container a 64MB /dev/shm by default. Postgres allocates
+  # parallel-worker shared memory there (dynamic_shared_memory_type=posix), so
+  # anything parallel — VACUUM, hash aggregate, parallel seq scan — dies with:
+  #   ERROR: could not resize shared memory segment "/PostgreSQL.NNNNNNNN"
+  #          to NNNNNNNN bytes: No space left on device
+  # Hit live on audit_events at 1.7M rows: parallel VACUUM wanted 67MB.
+  #
+  # This is emptyDir{medium: Memory}, which is tmpfs and counts against the
+  # pod's memory LIMIT (2Gi above). 1Gi is headroom, not a reservation — pages
+  # are only charged when actually touched. If you raise this past ~half of
+  # limits.memory you are risking an OOMKill instead of a query error.
+  shmSize: 1Gi
   storage:
     size: 5Gi
     # storageClassName: longhorn    # Set for your environment
@@ -628,6 +757,11 @@ inventory:
       # For k3s with local-path-provisioner (foxygirl reference setup),
       # set to "local-path".
       storageClassName: ""
+    # See the shmSize note on the top-level postgresql block. Same 64MB
+    # default-/dev/shm gap; inventory is lower-volume so 256Mi is enough,
+    # and it must stay well under limits.memory (1Gi) since tmpfs pages are
+    # charged to the pod.
+    shmSize: 256Mi
     database: mcp_inventory
     username: mcp
     resources:
@@ -720,6 +854,9 @@ probo:
       limits:
         cpu: "1"
         memory: 1Gi
+    # See the shmSize note on the top-level postgresql block. Must stay well
+    # under limits.memory (1Gi) — tmpfs pages count against the pod limit.
+    shmSize: 256Mi
     storage:
       size: 10Gi
       # storageClassName: longhorn    # Set for your environment

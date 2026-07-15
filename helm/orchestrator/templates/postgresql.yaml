@@ -91,6 +91,14 @@ spec:
             - name: postgres-init
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
+            # k8s defaults /dev/shm to 64MB. Postgres puts parallel-worker
+            # shared memory segments there (dynamic_shared_memory_type=posix),
+            # so parallel VACUUM / hash aggregates / parallel seq scans fail with
+            #   "could not resize shared memory segment ... No space left on device"
+            # once a segment exceeds 64MB. Hit live on audit_events (1.7M rows,
+            # parallel VACUUM wanted 67MB).
+            - name: dshm
+              mountPath: /dev/shm
           resources:
             {{- toYaml .Values.postgresql.resources | nindent 12 }}
           livenessProbe:
@@ -110,6 +118,12 @@ spec:
         - name: postgres-init
           configMap:
             name: {{ include "mcp.fullname" . }}-postgres-init
+        # sizeLimit counts against the pod's memory limit, so keep shmSize
+        # comfortably under postgresql.resources.limits.memory.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.postgresql.shmSize | default "1Gi" }}
 
 ---
 apiVersion: v1

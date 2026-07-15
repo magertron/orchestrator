@@ -72,6 +72,11 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            # k8s defaults /dev/shm to 64MB; Postgres parallel workers allocate
+            # shared memory segments there and fail past that ceiling with
+            # "could not resize shared memory segment ... No space left on device".
+            - name: dshm
+              mountPath: /dev/shm
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "{{ .Values.probo.postgresql.username }}"]
@@ -86,6 +91,13 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.probo.postgresql.resources | nindent 12 }}
+      volumes:
+        # sizeLimit counts against the pod's memory limit — keep shmSize under
+        # probo.postgresql.resources.limits.memory.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.probo.postgresql.shmSize | default "256Mi" }}
   volumeClaimTemplates:
     - metadata:
         name: data

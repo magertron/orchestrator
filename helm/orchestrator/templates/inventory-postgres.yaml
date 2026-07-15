@@ -114,6 +114,12 @@ spec:
             - name: inventory-postgres-init
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
+            # k8s defaults /dev/shm to 64MB. Postgres allocates parallel-worker
+            # shared memory there (dynamic_shared_memory_type=posix), so parallel
+            # VACUUM / hash aggregates / parallel seq scans fail past that with
+            #   "could not resize shared memory segment ... No space left on device"
+            - name: dshm
+              mountPath: /dev/shm
           resources:
             {{- toYaml .Values.inventory.postgresql.resources | nindent 12 }}
           livenessProbe:
@@ -133,6 +139,12 @@ spec:
         - name: inventory-postgres-init
           configMap:
             name: {{ include "mcp.fullname" . }}-inventory-postgres-init
+        # tmpfs — sizeLimit counts against the pod's memory limit, so keep
+        # shmSize well under inventory.postgresql.resources.limits.memory (1Gi).
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.inventory.postgresql.shmSize | default "256Mi" }}
 
 ---
 apiVersion: v1
