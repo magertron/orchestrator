@@ -229,8 +229,12 @@ spec:
             # worse than shipping nothing, because the right value is a
             # property of the operator's hardware and a wrong one rejects good
             # traffic. See values.yaml for how to measure yours.
-            - name: MCP_MAX_IN_FLIGHT
-              value: {{ .Values.orchestrator.env.maxInFlight | default "0" | quote }}
+            - name: MCP_ADMISSION_LATENCY_MS
+              value: {{ .Values.orchestrator.env.admissionLatencyMs | default "0" | quote }}
+            - name: MCP_ADMISSION_SAMPLE_EVERY
+              value: {{ .Values.orchestrator.env.admissionSampleEvery | default "64" | quote }}
+            - name: MCP_ADMISSION_ALPHA_PCT
+              value: {{ .Values.orchestrator.env.admissionAlphaPct | default "10" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-

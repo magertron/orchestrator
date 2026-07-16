@@ -350,11 +350,11 @@ orchestrator:
     # changed. ~100 bytes/entry, so 20000 ≈ 4MB worst case.
     alsQueueCapacity: "20000"
 
-    # ── Admission control (MCP_MAX_IN_FLIGHT) ────────────────────────────
-    # Maximum Check() calls in flight process-wide before the PDP starts
-    # refusing with 429. 0 = OFF, and off is the default.
+    # ── Admission control (MCP_ADMISSION_LATENCY_MS) ─────────────────────
+    # Shed load when authorization latency says the PDP is at capacity.
+    # 0 = OFF, and off is the default.
     #
-    # WHY YOU MIGHT WANT THIS. Past its capacity the PDP does not degrade, it
+    # WHY YOU MIGHT WANT THIS. Past its ceiling the PDP does not degrade, it
     # collapses. Measured on a 20-core box, 2 pods @ 8 cores, 2026-07-16:
     #
     #     7000 rps -> 100%  p99   3.05ms
@@ -362,28 +362,48 @@ orchestrator:
     #     9000 rps ->  57%  p99   6.60s
     #
     # At 9000 the box did the FULL evaluation for 115,199 requests whose
-    # answers Envoy had already discarded at its 2s ext_authz deadline — and
-    # that wasted work is precisely what stopped it serving the ~8000 it could
-    # handle. Shedding at the door turns a 2-second death into a microsecond
-    # refusal and gives the admitted traffic room to finish.
+    # answers Envoy had already discarded at its 2s deadline — and that wasted
+    # work is what stopped it serving the ~8000 it could handle. Shedding turns
+    # a 2-second death into a microsecond refusal (429) and frees capacity for
+    # the traffic it admits.
     #
-    # WHY IT IS OFF BY DEFAULT. The right number is a property of YOUR
-    # hardware, and nobody can guess it for you — 8000 above is one box's
-    # measurement, not a constant. Worse, a wrong number is actively harmful:
-    # set it below your real ceiling and you reject traffic that would have
-    # succeeded, turning a healthy platform into a broken one. An upgrade must
-    # never start refusing requests the operator did not ask it to refuse.
+    # WHY LATENCY AND NOT A CONCURRENCY LIMIT. The first implementation counted
+    # in-flight Checks with an atomic counter. It was measured and it was worse
+    # than useless: at 7000 rps with a limit of 200 it dropped success to 42%
+    # and p99 to 4.77s — while shedding only 73 requests. The shedding was
+    # fine; the COUNTER was the problem. Two atomic read-modify-writes per
+    # request on one cache line, contended by 1024 gRPC threads, is a
+    # hardware-level serialization point. The gate meant to prevent
+    # serialization was itself the serialization. Latency sampling reads a flag
+    # on the hot path and writes only on 1-in-64 requests, on a separate cache
+    # line. If you ever consider "just count the requests", that is the story.
     #
-    # HOW TO PICK IT. Load-test until success drops off, then set this near the
-    # in-flight count at the last CLEAN rate. Little's Law gives a starting
-    # estimate: in-flight ≈ rps x p99 seconds. At 8000 rps and p99 6.75ms that
-    # is ~54 — but the number to use is the one at the CLIFF, not the plateau,
-    # since concurrency climbs as latency does. Start generous; a limit that
-    # never fires costs one atomic load per request.
+    # HOW TO PICK IT. Load-test until success drops, and note Check latency at
+    # the last CLEAN rate — 6.75ms at 8000 above. Set this well ABOVE that so
+    # normal operation never trips it, but far BELOW Envoy's 2s ext_authz
+    # deadline so it fires before requests start dying. Somewhere in 50-200ms
+    # is the plausible band for hardware like the above. Too low and you refuse
+    # traffic that would have succeeded; too high and it never fires.
     #
-    # Accepted: 0, or 100-100000. Anything else logs a warning and disables.
-    # Watch it work: the shed counter in the ext_authz stats, and Envoy's 429s.
-    maxInFlight: "0"
+    # Hysteresis is automatic: shedding starts above this value and stops below
+    # HALF of it, so the gate cannot oscillate.
+    #
+    # Accepted: 0, or 5-60000. Watch: the gate CLOSED/OPEN log lines and the
+    # 429 count in Envoy.
+    admissionLatencyMs: "0"
+
+    # Sample 1-in-N Checks for the latency EWMA. Higher = less write traffic,
+    # staler signal. 64 at 8000 rps is ~125 samples/sec, which catches a
+    # collapse developing over hundreds of ms while keeping sampler writes to
+    # ~1.5% of requests. Only touch this if profiling says the sampler itself
+    # costs — which is the mistake the counter version made, so measure first.
+    admissionSampleEvery: "64"
+
+    # EWMA smoothing, as a percentage. 10 = each sample moves the average 10%
+    # (roughly a 10-sample memory). Higher reacts faster but one slow Check can
+    # trip the gate; lower is steadier but may react after the deadline has
+    # already passed.
+    admissionAlphaPct: "10"
 
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
