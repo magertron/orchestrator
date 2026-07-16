@@ -78,6 +78,25 @@ orchestrator:
   # at this port (over the headless service, like extAuthzPort). Must agree
   # between this value and the bootstrap ConfigMap's als_sink cluster.
   alsPort: 9094
+  # ── Diagnostics (DIAGNOSTIC ONLY — leave off in production) ─────────────────
+  debug:
+    # Add CAP_SYS_PTRACE to the orchestrator container so gdb can attach to
+    # PID 1 from inside the pod. Off by default and it belongs off: a process
+    # with SYS_PTRACE can read and write the memory of anything in the same PID
+    # namespace, which is precisely the isolation the container is supposed to
+    # provide.
+    #
+    # Only useful alongside an image built with MCP_DEBUG_BUILD=1
+    # (MCP_DEBUG_BUILD=1 ./bootstrap.sh ...), which adds gdb and debug symbols.
+    # The capability without the image gets you nothing; the image without the
+    # capability gets you "Operation not permitted".
+    #
+    # Why it exists: the shipping image has no profiler, so every performance
+    # question gets answered by turning a knob and watching a number — which
+    # finds correlations, not causes. When threads are waiting while CPU sits
+    # idle, the only thing that answers "waiting on WHAT" is a stack dump.
+    ptrace: false
+
   # ── Resources ──────────────────────────────────────────────────────────────
   # ── 3.1.01: limits.cpu raised 1 → 8 ────────────────────────────────────────
   # This single line was the product's throughput ceiling. At limits.cpu: 1 the

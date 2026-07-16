@@ -369,6 +369,30 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+              {{- if .Values.orchestrator.debug.ptrace }}
+              # ⚠️ DIAGNOSTIC ONLY — orchestrator.debug.ptrace=true
+              #
+              # SYS_PTRACE lets gdb attach to PID 1 from inside the container:
+              #   kubectl exec ... -c orchestrator -- \
+              #     gdb -p 1 -batch -ex "thread apply all bt 12"
+              #
+              # The container runs as non-root (runAsUser 1000), and a non-root
+              # process cannot ptrace another process — not even its own PID 1 —
+              # without this. Absent it gdb reports "Operation not permitted",
+              # which reads like a broken gdb rather than a missing capability.
+              #
+              # This weakens the container's isolation: a process with SYS_PTRACE
+              # can read and write the memory of any process in the same PID
+              # namespace. It is off by default and belongs off in production.
+              # Pair it with an image built via MCP_DEBUG_BUILD=1 (gdb + symbols);
+              # the capability alone gets you nothing, and the image alone gets
+              # you "Operation not permitted".
+              #
+              # Some hosts also enforce kernel.yama.ptrace_scope=1, which blocks
+              # ptrace of non-descendants regardless of capabilities. Check on the
+              # NODE: sysctl kernel.yama.ptrace_scope (0 = permissive).
+              add: ["SYS_PTRACE"]
+              {{- end }}
 
         # ── mcp-sync sidecar ──────────────────────────────────────────────
         - name: mcp-sync
