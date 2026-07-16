@@ -229,6 +229,12 @@ spec:
             # worse than shipping nothing, because the right value is a
             # property of the operator's hardware and a wrong one rejects good
             # traffic. See values.yaml for how to measure yours.
+            # Shards per ext_authz event queue. See values.yaml — this is the
+            # knob for the single-mutex contention found by stack dump on
+            # 2026-07-16 (359 of 567 threads blocked on one lock). 1 = the old
+            # single-lock behaviour.
+            - name: MCP_QUEUE_SHARDS
+              value: {{ .Values.orchestrator.env.queueShards | default "16" | quote }}
             - name: MCP_ADMISSION_LATENCY_MS
               value: {{ .Values.orchestrator.env.admissionLatencyMs | default "0" | quote }}
             - name: MCP_ADMISSION_SAMPLE_EVERY

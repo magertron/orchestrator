@@ -382,6 +382,53 @@ orchestrator:
     # changed. ~100 bytes/entry, so 20000 ≈ 4MB worst case.
     alsQueueCapacity: "20000"
 
+    # ── Queue sharding (MCP_QUEUE_SHARDS) ────────────────────────────────
+    # Number of independent {mutex, deque} shards inside each of the four
+    # ext_authz event queues (Auditor + MeterEmitter, on both the internal 9092
+    # and external 9093 planes).
+    #
+    # WHY THIS EXISTS. A gdb stack dump taken during a collapse (peppy, 8000
+    # rps, 2 pods @ 8 cores, 2026-07-16) found:
+    #
+    #     567 threads in the process
+    #     359 blocked in std::mutex::lock  ← 63% of the process
+    #     292   of those inside MeterEmitter::emit
+    #      67   of those inside Auditor::emit
+    #
+    # All on ONE mutex address per object. Every Check() ends in a destructor
+    # that enqueues an audit event and (for allowed tools/call) a meter event,
+    # and each enqueue took the same single lock. The critical section is a
+    # push_back — tens of nanoseconds. It was never slow. It was the only door,
+    # and ~16000 enqueues/sec were trying to walk through it.
+    #
+    # With 1024 gRPC threads on 8 cores, a thread preempted WHILE holding that
+    # lock stalls every other thread for a scheduling quantum — so a 50ns
+    # critical section produces a multi-millisecond stall. And gRPC's sync
+    # server answers a blocked handler by spawning another handler, so
+    # contention manufactures threads, which manufactures contention. The pool
+    # inflated 130 → 567 and success fell to 57%.
+    #
+    # This is why NO chart knob fixed it: DB pool, cache TTL, thread cap, Envoy
+    # replicas and table size are all upstream or downstream of a lock none of
+    # them touch. (Raising the DB pool 8→32 and lowering threads 1024→512 both
+    # made it measurably WORSE.)
+    #
+    # 16 is above the 8 cores a pod gets, so two shards rarely collide, while
+    # keeping per-shard capacity sane: 10000/2 = 5000 emit-side budget split 16
+    # ways is ~312 per shard, ~40ms of buffering at 8000 rps. Raise it and each
+    # shard's drop-oldest threshold falls; the floor is 16 events per shard.
+    #
+    # Set to 1 to restore the exact pre-2026-07-16 single-lock behaviour — the
+    # escape hatch if sharding turns out to be wrong.
+    #
+    # ⚠️ The drop-oldest bound is now PER SHARD, not global. A hot shard can
+    # drop while the emitter as a whole has room. If dropped_total climbs while
+    # queue_depth stays low, the thread→shard distribution is uneven and this
+    # number is wrong — that is the signature to watch for.
+    #
+    # Accepted: 1-256.
+    queueShards: "16"
+
     # ── Admission control (MCP_ADMISSION_LATENCY_MS) ─────────────────────
     # Shed load when authorization latency says the PDP is at capacity.
     # 0 = OFF, and off is the default.
