@@ -148,13 +148,47 @@ data:
               # http2 paths; we only do http2 here, but setting these
               # at the common layer is the right place per Envoy docs.
               common_http_protocol_options:
-                # idle_timeout: 0s = never close idle connections.
-                # The orchestrator side is permanent; we want Envoy to
-                # hold its gRPC connections open for the lifetime of
-                # the proxy, not churn them.
-                idle_timeout: 0s
+                # ── ext_authz reconnect fix (2026-07-16) ──────────────────
+                # WAS: idle_timeout: 0s ("never close idle connections"),
+                # justified by "the orchestrator side is permanent".
+                #
+                # It isn't. The orchestrator is a Deployment: it rolls on
+                # every helm upgrade, every image bump, every OOMKill, every
+                # eviction and node drain. When those pods go away, Envoy is
+                # left holding connection state for peers that no longer
+                # exist, with no idle deadline that would ever retire it.
+                #
+                # Observed 2026-07-15 on peppy, three times: after an
+                # orchestrator restart, /clusters showed
+                #   upstream_cx_active: 0
+                #   upstream_cx_destroy_remote: 40 of 40   (peer closed them)
+                #   upstream_rq_total: frozen
+                # while the endpoints themselves resolved fine and reported
+                # health_flags::healthy. Envoy had simply stopped talking to
+                # the PDP and never resumed. Every request then failed the
+                # ext_authz Check, and because the filter is
+                # failure_mode_allow: false, Envoy manufactured a
+                # 403 Forbidden for each one — a denial that RBAC never
+                # issued and that appears in NO audit record. The orchestrator
+                # sat at 31m CPU logging /readyz, entirely unaware. Nothing
+                # self-healed; only `kubectl rollout restart` on Envoy cleared
+                # it. In production that is an outage on every deploy, with no
+                # failing health check and no alert.
+                #
+                # 300s gives Envoy a natural recycle without touching the hot
+                # path: a connection carrying traffic never goes idle, so at
+                # any real request rate this is a no-op. It only fires on
+                # connections that have gone quiet — which, after a peer
+                # restart, is exactly the dead ones we want retired.
+                idle_timeout: 300s
                 # max_requests_per_connection: 0 = unlimited.
                 # Envoy default is 0 already but explicit is better.
+                #
+                # Deliberately left unlimited: capping this would force
+                # periodic reconnects on the authz hot path (a new TCP +
+                # TLS + HTTP/2 handshake mid-load), which is a throughput
+                # cost paid on every request budget. idle_timeout above
+                # solves the staleness problem without that penalty.
                 max_requests_per_connection: 0
               explicit_http_config:
                 http2_protocol_options:

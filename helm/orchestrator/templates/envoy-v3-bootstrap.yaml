@@ -100,7 +100,31 @@ data:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
               common_http_protocol_options:
-                idle_timeout: 0s
+                # ── ext_authz reconnect fix (2026-07-16) ──────────────────
+                # WAS idle_timeout: 0s — never retire an idle connection.
+                # The premise was that the orchestrator side is permanent.
+                # It isn't: it's a Deployment that rolls on every upgrade,
+                # image bump, OOMKill, eviction and node drain. Envoy was
+                # left holding connection state for dead peers with no
+                # deadline that would ever clear it.
+                #
+                # Observed three times on peppy 2026-07-15: after an
+                # orchestrator restart, cx_active: 0, cx_destroy_remote:
+                # 40/40, rq_total frozen — while the endpoints resolved
+                # fine and reported healthy. Every Check then failed, and
+                # failure_mode_allow: false turned each into a 403 that
+                # RBAC never issued and no audit record contains. Only a
+                # rollout restart of Envoy cleared it. See the legacy
+                # bootstrap for the full write-up.
+                #
+                # 300s never fires on a connection carrying traffic, so
+                # this is a no-op at any real request rate. It only
+                # retires connections that have gone quiet — after a peer
+                # restart, exactly the dead ones.
+                idle_timeout: 300s
+                # Unlimited, deliberately: capping this forces reconnects
+                # on the authz hot path. idle_timeout handles staleness
+                # without paying a handshake per request budget.
                 max_requests_per_connection: 0
               explicit_http_config:
                 http2_protocol_options:
@@ -153,7 +177,31 @@ data:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
               common_http_protocol_options:
-                idle_timeout: 0s
+                # ── ext_authz reconnect fix (2026-07-16) ──────────────────
+                # WAS idle_timeout: 0s — never retire an idle connection.
+                # The premise was that the orchestrator side is permanent.
+                # It isn't: it's a Deployment that rolls on every upgrade,
+                # image bump, OOMKill, eviction and node drain. Envoy was
+                # left holding connection state for dead peers with no
+                # deadline that would ever clear it.
+                #
+                # Observed three times on peppy 2026-07-15: after an
+                # orchestrator restart, cx_active: 0, cx_destroy_remote:
+                # 40/40, rq_total frozen — while the endpoints resolved
+                # fine and reported healthy. Every Check then failed, and
+                # failure_mode_allow: false turned each into a 403 that
+                # RBAC never issued and no audit record contains. Only a
+                # rollout restart of Envoy cleared it. See the legacy
+                # bootstrap for the full write-up.
+                #
+                # 300s never fires on a connection carrying traffic, so
+                # this is a no-op at any real request rate. It only
+                # retires connections that have gone quiet — after a peer
+                # restart, exactly the dead ones.
+                idle_timeout: 300s
+                # Unlimited, deliberately: capping this forces reconnects
+                # on the authz hot path. idle_timeout handles staleness
+                # without paying a handshake per request budget.
                 max_requests_per_connection: 0
               explicit_http_config:
                 http2_protocol_options:
