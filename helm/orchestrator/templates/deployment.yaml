@@ -211,7 +211,7 @@ spec:
             - name: MCP_METER_QUEUE_CAPACITY
               value: {{ .Values.orchestrator.env.meterQueueCapacity | default "10000" | quote }}
             - name: MCP_DRAIN_BATCH_MAX
-              value: {{ .Values.orchestrator.env.drainBatchMax | default "1000" | quote }}
+              value: {{ .Values.orchestrator.env.drainBatchMax | default "5000" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-

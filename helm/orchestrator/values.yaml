@@ -285,7 +285,17 @@ orchestrator:
     # not the row count, so raise THIS before raising the queues above — a
     # bigger queue just delays the drop, a faster drain prevents it. Was
     # hardcoded at 100, which capped the drain near ~200 events/sec.
-    drainBatchMax: "1000"
+    #
+    # MEASURED (2026-07-15, 9000 rps sustained):
+    #   1000 -> 46.9% success, 3960 rps delivered, 92,301 meter events dropped
+    #   5000 -> 56.6% success, 4785 rps delivered, ZERO drops
+    # 5000 eliminates billing-data loss entirely at 9000 rps. The residual 403s
+    # at that rate are the ext_authz 2s deadline firing from elsewhere in the
+    # Check path — NOT the queue pipeline, which now keeps up.
+    #
+    # Below 8000 rps this makes no observable difference; 8000 is 100% clean at
+    # p99 ~8ms either way. Raise only if dropped_total is non-zero.
+    drainBatchMax: "5000"
 
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
