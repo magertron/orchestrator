@@ -254,6 +254,39 @@ orchestrator:
     # visibility of server CRUD.
     hotPathCacheTtlSeconds: "60"
 
+    # ── 3.1.03: ext_authz pipeline sizing ────────────────────────────────
+    # (MCP_AUDIT_QUEUE_CAPACITY / MCP_METER_QUEUE_CAPACITY / MCP_DRAIN_BATCH_MAX)
+    #
+    # TOTAL events buffered per emitter, split evenly between the emit-side
+    # queue and the drain-side overflow stash (capacity/2 each). Set 10000 and
+    # you get 10000 in flight — not 20000.
+    #
+    # WHY THIS IS NOW CONFIGURABLE (2026-07-15): the drain-side stash was
+    # UNBOUNDED and the emit-side capacity guard was unreachable (the drain
+    # swaps the queue empty every cycle, so `size() >= capacity` never fired).
+    # The orchestrator leaked 720Mi -> 1523Mi under load with zero drop
+    # warnings, degrading a fixed 5000 rps from 100% -> 93% -> 83% across
+    # successive runs. Both containers are bounded now; these knobs let you
+    # size the result without a rebuild.
+    #
+    # SIZING: the old code comment claimed "10000 ≈ 30s of buffering at 300
+    # rps". The measured clean ceiling is 8000 rps, where 10000 is ~1.2s.
+    # There are FOUR emitters (Auditor + MeterEmitter on the internal 9092
+    # server, and again on the external 9093 server), so the process-wide
+    # budget is ~4x these values. Size against limits.memory (2Gi above), not
+    # against one instance.
+    #
+    # At 9000 rps the METER queue saturates first and drops billing rows
+    # ("BILLING DATA LOST" in the log). Watch ext_authz.meter.dropped_total.
+    auditQueueCapacity: "10000"
+    meterQueueCapacity: "10000"
+
+    # Rows per multi-row INSERT per drain cycle. The cost is the round trip,
+    # not the row count, so raise THIS before raising the queues above — a
+    # bigger queue just delays the drop, a faster drain prevents it. Was
+    # hardcoded at 100, which capped the drain near ~200 events/sec.
+    drainBatchMax: "1000"
+
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
   image:

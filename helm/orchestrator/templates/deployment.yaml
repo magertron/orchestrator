@@ -200,6 +200,18 @@ spec:
               value: {{ .Values.orchestrator.env.dbPoolSize | default "8" | quote }}
             - name: MCP_HOT_PATH_CACHE_TTL_SEC
               value: {{ .Values.orchestrator.env.hotPathCacheTtlSeconds | default "5" | quote }}
+            # ── 3.1.03: ext_authz queue sizing ───────────────────────────
+            # Defaults here MUST match the compiled defaults in
+            # ext_authz/auditor.cpp (env_size fallbacks) so an unset value
+            # behaves identically whether it comes from the chart or the
+            # binary. Out-of-range values warn and fall back; they don't
+            # fail startup. See orchestrator.env in values.yaml for sizing.
+            - name: MCP_AUDIT_QUEUE_CAPACITY
+              value: {{ .Values.orchestrator.env.auditQueueCapacity | default "10000" | quote }}
+            - name: MCP_METER_QUEUE_CAPACITY
+              value: {{ .Values.orchestrator.env.meterQueueCapacity | default "10000" | quote }}
+            - name: MCP_DRAIN_BATCH_MAX
+              value: {{ .Values.orchestrator.env.drainBatchMax | default "1000" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-
