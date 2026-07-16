@@ -386,6 +386,12 @@ data:
                             timeout: 2s
                           transport_api_version: V3
                           failure_mode_allow: false
+                          # Honest failure status — see the legacy bootstrap for the
+                          # full rationale. Check-call failures (timeout, dead PDP)
+                          # return 503, not a 403 that is indistinguishable from a
+                          # real RBAC denial. fail-closed is unchanged.
+                          status_on_error:
+                            code: ServiceUnavailable
                           with_request_body:
                             # Raised 65536 → 10485760 (10MB, 2026-07-12) to carry
                             # base64 document payloads (e.g. Nitro Sign create-document)
@@ -428,6 +434,12 @@ data:
                             timeout: 2s
                           transport_api_version: V3
                           failure_mode_allow: false
+                          # Honest failure status — see the legacy bootstrap for the
+                          # full rationale. Check-call failures (timeout, dead PDP)
+                          # return 503, not a 403 that is indistinguishable from a
+                          # real RBAC denial. fail-closed is unchanged.
+                          status_on_error:
+                            code: ServiceUnavailable
                           # with_request_body RE-ADDED (per-tool RBAC + rating).
                           # ── Provenance correction ────────────────────────────
                           # Session 2.16 (2026-06-05) removed this block, citing

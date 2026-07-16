@@ -329,6 +329,40 @@ data:
                             timeout: 2s
                           transport_api_version: V3
                           failure_mode_allow: false
+                          # ── Honest failure status (2026-07-16) ──────────────
+                          # WAS: unset, which defaults to 403 Forbidden.
+                          #
+                          # status_on_error is what Envoy synthesizes when the
+                          # Check CALL fails — timeout, no healthy upstream, dead
+                          # connection. It is NOT what a real policy denial
+                          # returns; fill_denied on the orchestrator side still
+                          # sends its own 403 with an authz_reason. So the default
+                          # made those two byte-identical on the wire:
+                          #
+                          #   RBAC said no          -> 403, reason in the audit log
+                          #   PDP unreachable       -> 403, no audit record at all
+                          #
+                          # Measured 2026-07-15 at 9000 rps: ext_authz.denied = 0,
+                          # ext_authz.error = 17,391. Every one of those 17k was a
+                          # 403 that RBAC never issued and no audit event contains.
+                          # A caller cannot tell "you lack permission" from "the
+                          # authorizer is overloaded", and no SDK retries a 403 —
+                          # so an overload looked like a permissions bug to the
+                          # customer and like nothing at all to us.
+                          #
+                          # 503 is the honest answer: Magertron could not REACH a
+                          # decision, so it does not know whether you are allowed.
+                          # Every client, LB and mesh already treats it as
+                          # retryable. 429 would be a lie here — it claims we chose
+                          # to shed you, when in fact we could not ask. Deliberate
+                          # load-shedding (admission control) is a separate,
+                          # future path and 429 belongs there.
+                          #
+                          # This does NOT weaken fail-closed: failure_mode_allow
+                          # stays false, the request is still rejected, nothing is
+                          # let through. Only the status code changes.
+                          status_on_error:
+                            code: ServiceUnavailable
                           with_request_body:
                             max_request_bytes: 65536
                             allow_partial_message: true
