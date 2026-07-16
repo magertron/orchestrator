@@ -324,9 +324,22 @@ orchestrator:
     # so no handler ever runs to log it. CPU sat at 5473m of an 8000m cap with
     # ~5 idle cores per pod. Every signal said "not busy, not slow, failing".
     #
-    # 1024 is the compiled MAX. If a future ceiling lands here, the clamp in
-    # src/ext_authz/server.cpp must move too — the chart cannot exceed it, and
-    # an out-of-range value silently falls back to 256.
+    # Range is [16, 8192] (raised from a compiled ceiling of 1024 on
+    # 2026-07-16 — an arbitrary limit on an operator knob is just a wall that
+    # needs a rebuild to move). An out-of-range value silently falls back to
+    # the compiled default of 256, which is a documented throughput wall — so
+    # a typo here is worse than no value at all.
+    #
+    # ⚠️ MORE THREADS IS PROBABLY NOT YOUR FIX. Measured 2026-07-16 where
+    # success collapses: CPU ~5473m of an 8000m cap (≈5 IDLE cores per pod),
+    # the pool oscillating 538 → 1152 → 860 → 1098 (hundreds of threads
+    # created and reaped every second), and lowering the cap to 512 made it
+    # WORSE, not better. Idle CPU + a growing pool + queued work means threads
+    # are WAITING, not working — they pile up because Check blocks on
+    # something, and gRPC answers a slow handler by spawning another one.
+    # Raising this gives you more threads blocked on the same lock, plus ~8MB
+    # of stack reserved each. Get a stack dump first (build with
+    # --build-arg MCP_DEBUG_BUILD=1 for gdb + symbols).
     #
     # Measured, 9000 rps sustained, 2 pods @ 8 cores each:
     #   256  → 77.4% success, p99 888ms, 61,074 x 503
