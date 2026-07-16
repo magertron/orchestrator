@@ -98,6 +98,13 @@ orchestrator:
   #     by accumulated throttle stalls.
   #   - Raising MCP_GRPC_MAX_THREADS 256→1024 barely helped (45%→61%): more
   #     threads on one core is worse thrashing, not more capacity.
+  #     ⚠️ THAT CONCLUSION DID NOT SURVIVE THE FIX. It was measured UNDER the
+  #     1-core cap, where it is trivially true — no thread count helps when
+  #     there is no CPU to run on. Re-tested 2026-07-16 at 8 cores: the same
+  #     256→1024 change took 9000 rps from 77.4% to 100% and p99 from 888ms
+  #     to 83ms. See orchestrator.env.grpcMaxThreads below. A finding from a
+  #     broken environment is a finding ABOUT the broken environment; re-test
+  #     every conclusion drawn before the constraint was removed.
   #
   # Little's Law: 1750 rps x ~1ms real CPU per Check = 1.75 cores MINIMUM. The
   # budget was 1. No amount of code optimization could have fixed it.
@@ -296,6 +303,35 @@ orchestrator:
     # Below 8000 rps this makes no observable difference; 8000 is 100% clean at
     # p99 ~8ms either way. Raise only if dropped_total is non-zero.
     drainBatchMax: "5000"
+
+    # ── 3.1.x: gRPC worker thread cap (MCP_GRPC_MAX_THREADS) ─────────────
+    # The ext_authz gRPC server runs Check() on a sync thread pool bounded by
+    # a grpc::ResourceQuota. Compiled default 256, clamped to [16, 1024].
+    #
+    # WHY THIS IS THE CEILING: concurrency = rps x Check latency (Little's
+    # Law). At 9000 rps with Check at ~5ms that is ~45 threads — fine. But the
+    # relationship is circular: when the pool saturates, calls QUEUE, latency
+    # climbs, and the required concurrency climbs with it. Measured at 256 on
+    # 2026-07-16: p99 888ms → ~8000 concurrent needed → the quota rejected
+    # 6,557 of 25,080 Checks.
+    #
+    # HOW IT FAILS — this is the part worth knowing. A ResourceQuota rejection
+    # is NOT a timeout and NOT an error the orchestrator logs. Envoy sees:
+    #   upstream_rq_200: 25080     (transport fine, every call answered)
+    #   upstream_rq_timeout: 0     (nothing was slow enough to time out)
+    #   ext_authz.error: 6557      (...yet a quarter of Checks "errored")
+    # while the orchestrator logs NOTHING — the rejection happens below Check,
+    # so no handler ever runs to log it. CPU sat at 5473m of an 8000m cap with
+    # ~5 idle cores per pod. Every signal said "not busy, not slow, failing".
+    #
+    # 1024 is the compiled MAX. If a future ceiling lands here, the clamp in
+    # src/ext_authz/server.cpp must move too — the chart cannot exceed it, and
+    # an out-of-range value silently falls back to 256.
+    #
+    # Measured, 9000 rps sustained, 2 pods @ 8 cores each:
+    #   256  → 77.4% success, p99 888ms, 61,074 x 503
+    #   1024 → 100%  success, p99  83ms, zero failures
+    grpcMaxThreads: "1024"
 
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:

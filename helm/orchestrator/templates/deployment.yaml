@@ -212,6 +212,13 @@ spec:
               value: {{ .Values.orchestrator.env.meterQueueCapacity | default "10000" | quote }}
             - name: MCP_DRAIN_BATCH_MAX
               value: {{ .Values.orchestrator.env.drainBatchMax | default "5000" | quote }}
+            # gRPC worker thread cap for the ext_authz Check() pool. Default
+            # here is 1024 (the compiled clamp ceiling), NOT the compiled
+            # default of 256 — 256 is a documented throughput wall at 9000 rps
+            # and there is no reason to ship it. Out-of-range values fall back
+            # to 256 with a warning; they do not fail startup.
+            - name: MCP_GRPC_MAX_THREADS
+              value: {{ .Values.orchestrator.env.grpcMaxThreads | default "1024" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-
