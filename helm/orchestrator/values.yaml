@@ -333,6 +333,58 @@ orchestrator:
     #   1024 → 100%  success, p99  83ms, zero failures
     grpcMaxThreads: "1024"
 
+    # ── ALS true-up queue capacity (MCP_ALS_QUEUE_CAPACITY) ──────────────
+    # The v3 ALS sink's MeterUpdater queue. Separate from meterQueueCapacity
+    # on purpose: MeterEmitter takes one entry per BILLABLE call, MeterUpdater
+    # takes one per REQUEST (every access-log entry Envoy streams). At 9000 rps
+    # this is the highest-volume queue in the process, so it sizes differently.
+    #
+    # What overflow costs here: a dropped outcome means a failed upstream call
+    # keeps the provisional 'success' its meter row was written with — the bill
+    # overstates what worked. Billing integrity, not a metrics gap.
+    #
+    # ⚠️ Units differ from auditQueueCapacity/meterQueueCapacity. Those are a
+    # TOTAL split capacity/2 across two deques. This one bounds each deque at
+    # the full value, so the real ceiling is 2x — 20000 here means up to 40000
+    # entries held. Pre-existing asymmetry, documented rather than silently
+    # changed. ~100 bytes/entry, so 20000 ≈ 4MB worst case.
+    alsQueueCapacity: "20000"
+
+    # ── Admission control (MCP_MAX_IN_FLIGHT) ────────────────────────────
+    # Maximum Check() calls in flight process-wide before the PDP starts
+    # refusing with 429. 0 = OFF, and off is the default.
+    #
+    # WHY YOU MIGHT WANT THIS. Past its capacity the PDP does not degrade, it
+    # collapses. Measured on a 20-core box, 2 pods @ 8 cores, 2026-07-16:
+    #
+    #     7000 rps -> 100%  p99   3.05ms
+    #     8000 rps -> 100%  p99   6.75ms
+    #     9000 rps ->  57%  p99   6.60s
+    #
+    # At 9000 the box did the FULL evaluation for 115,199 requests whose
+    # answers Envoy had already discarded at its 2s ext_authz deadline — and
+    # that wasted work is precisely what stopped it serving the ~8000 it could
+    # handle. Shedding at the door turns a 2-second death into a microsecond
+    # refusal and gives the admitted traffic room to finish.
+    #
+    # WHY IT IS OFF BY DEFAULT. The right number is a property of YOUR
+    # hardware, and nobody can guess it for you — 8000 above is one box's
+    # measurement, not a constant. Worse, a wrong number is actively harmful:
+    # set it below your real ceiling and you reject traffic that would have
+    # succeeded, turning a healthy platform into a broken one. An upgrade must
+    # never start refusing requests the operator did not ask it to refuse.
+    #
+    # HOW TO PICK IT. Load-test until success drops off, then set this near the
+    # in-flight count at the last CLEAN rate. Little's Law gives a starting
+    # estimate: in-flight ≈ rps x p99 seconds. At 8000 rps and p99 6.75ms that
+    # is ~54 — but the number to use is the one at the CLIFF, not the plateau,
+    # since concurrency climbs as latency does. Start generous; a limit that
+    # never fires costs one atomic load per request.
+    #
+    # Accepted: 0, or 100-100000. Anything else logs a warning and disables.
+    # Watch it work: the shed counter in the ext_authz stats, and Envoy's 429s.
+    maxInFlight: "0"
+
 # ─── MCP Sync Sidecar ────────────────────────────────────────────────────────
 mcpSync:
   image:

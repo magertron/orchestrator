@@ -219,6 +219,18 @@ spec:
             # to 256 with a warning; they do not fail startup.
             - name: MCP_GRPC_MAX_THREADS
               value: {{ .Values.orchestrator.env.grpcMaxThreads | default "1024" | quote }}
+            # ALS true-up queue. Its own knob rather than sharing
+            # meterQueueCapacity — MeterUpdater sees one entry per request,
+            # MeterEmitter one per billable call. Drops here corrupt the bill.
+            - name: MCP_ALS_QUEUE_CAPACITY
+              value: {{ .Values.orchestrator.env.alsQueueCapacity | default "20000" | quote }}
+            # Admission control. Default "0" = OFF, matching the compiled
+            # default — this is the one knob where shipping a number would be
+            # worse than shipping nothing, because the right value is a
+            # property of the operator's hardware and a wrong one rejects good
+            # traffic. See values.yaml for how to measure yours.
+            - name: MCP_MAX_IN_FLIGHT
+              value: {{ .Values.orchestrator.env.maxInFlight | default "0" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-
