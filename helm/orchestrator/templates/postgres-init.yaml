@@ -369,6 +369,55 @@ data:
          AND endpoint_url IS NOT NULL
          AND auth_type IS NOT NULL)
     );
+    -- ── Fleet reconstruction columns (2026-07-16) ───────────────────────────
+    -- These eight fields exist in McpServerSpec (deployment_manager.hpp) and
+    -- are used to build the Kubernetes Deployment, but were NEVER persisted.
+    -- The row recorded WHAT was deployed, not HOW — routing and RBAC only ever
+    -- needed name/namespace/image/port, so nothing surfaced the gap.
+    --
+    -- It surfaces on restore. A dump restored onto a fresh cluster has rows but
+    -- no workloads; anything rebuilding those pods from the DB gets struct
+    -- defaults for every field below. A server deployed with memory_limit_mb
+    -- 2048 silently comes back at 512 and OOMKills under the same load it
+    -- handled before. Nothing in the failure points at the restore.
+    --
+    -- Defaults below MUST match the McpServerSpec initializers exactly, so
+    -- existing rows describe what those servers are actually running today.
+    -- If you change a default here, change it there in the same commit.
+    --   chart_name/chart_version : "" (empty = raw k8s POST, not helm)
+    --   min_replicas{1}  max_replicas{10}
+    --   cpu_request{0.1} cpu_limit{1.0}
+    --   memory_request_mb{128} memory_limit_mb{512}
+    --
+    -- NOTE: for rows that pre-date this migration the defaults are a GUESS —
+    -- they are what the spec would have used IF the deployer passed nothing.
+    -- An operator who overrode a limit before this migration has already lost
+    -- that value; it lives only in the live Deployment's manifest. Backfill
+    -- from the cluster before trusting these for a rebuild:
+    --   kubectl get deploy -n <ns> <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS chart_name        VARCHAR(255) NOT NULL DEFAULT '';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS chart_version     VARCHAR(64)  NOT NULL DEFAULT '';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS min_replicas      INTEGER      NOT NULL DEFAULT 1;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS max_replicas      INTEGER      NOT NULL DEFAULT 10;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS cpu_request       DOUBLE PRECISION NOT NULL DEFAULT 0.1;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS cpu_limit         DOUBLE PRECISION NOT NULL DEFAULT 1.0;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS memory_request_mb BIGINT       NOT NULL DEFAULT 128;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS memory_limit_mb   BIGINT       NOT NULL DEFAULT 512;
+
+    -- Sanity bounds. These are not security controls — the API validates on the
+    -- way in — they exist so a bad UPDATE can't put the fleet in a state that
+    -- silently produces unschedulable pods on the next rebuild.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_scaling_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_scaling_check CHECK (
+        min_replicas >= 0
+        AND max_replicas >= min_replicas
+        AND replicas    >= 0
+        AND cpu_request  > 0
+        AND cpu_limit   >= cpu_request
+        AND memory_request_mb  > 0
+        AND memory_limit_mb   >= memory_request_mb
+    );
+
     -- Fast filtering by type when listing servers per tenant or rendering
     -- type-specific UI sections. Most queries scope by namespace + server_type.
     CREATE INDEX IF NOT EXISTS deployed_servers_type_idx
