@@ -20,6 +20,32 @@ orchestrator:
   #
   # Set to 1 only for resource-constrained dev clusters or if you want
   # to verify single-replica behavior. Production should run 2 or more.
+  # ── replicaCount: 2 — MEASURED, do not raise it "for headroom" ────────────
+  # 2 is not a starting point, it is the optimum on a 20-core node, and 3 is
+  # measurably WORSE at every rate tested (2026-07-17, 3 orchestrator pods vs 2,
+  # identical everything else):
+  #
+  #            2 pods              3 pods
+  #   8000     100%, p50 1.46ms    100%, p50 2.50ms, p90 5.58ms
+  #   9000     100%, p50 1.78ms    100%, p50 5.49ms, p99 1.62s
+  #   10000    82.26%, p50 700ms   79.93%, p50 2.93s, max 33s, +4681 cx failures
+  #
+  # Adding a pod cost throughput AND latency at the one rate where capacity was
+  # actually short. The reason: ext_authz Check() is NOT the constraint at these
+  # rates — the fast path is ~1ms and both pods have headroom — so a third pod
+  # adds nothing but contention for the same 20 cores. An earlier 2→4 test found
+  # the same thing from the other direction: it traded 503s for latency (96.85%
+  # at p50 4.9ms → 99.9% at p50 11.3ms) and gained no throughput at all.
+  #
+  # Check is horizontally scalable in principle — it is NOT leader-gated, every
+  # pod serves it, and Envoy load-balances across all of them. So on a BIGGER
+  # cluster more pods should help. On this one they do not, because the node is
+  # the constraint, not the replica count. Raise this only with a measurement
+  # from the target hardware, never on the assumption that more is better.
+  #
+  # ⚠️ 4 replicas is also where registry divergence appeared: one of four pods
+  # answered `x-mcp-authz-denied: unknown MCP server` for a server the other
+  # three served fine. That bug is unfixed and only manifests above 1 replica.
   replicaCount: 2
 
   # Control-plane placement. The orchestrator is part of the CONTROL PLANE and
@@ -762,13 +788,37 @@ envoy:
     # time on cold-start.
     # max=10 covers ~15000 rps headroom at observed per-pod throughput
     # of ~1500 rps. Tune up for higher-traffic environments.
-    # CPU/memory targets unchanged — Envoy is CPU-light at ext_authz
-    # scale (TLS termination is the dominant cost) so 70%/80% triggers
-    # scale-up well before saturation.
+    # ⚠️ "Envoy is CPU-light at ext_authz scale" — that claim was here, and it
+    # is FALSE. (2026-07-17) At 8000 rps three v3 Envoys each drew ~1900m and
+    # CFS-throttled against a 2-core limit; the fleet's p90 went to 4.7s while
+    # every in-process counter read healthy. Envoy is CPU-light at IDLE. Under
+    # ext_authz load it is the single hungriest thing in the namespace after
+    # the orchestrator. See envoy.resources above — the limit is 4 now.
+    #
+    # ── targetMemory REMOVED — LOCKSTEP with envoy.v3.autoscaling ────────────
+    # Legacy's memory reads ~13%/80%, so unlike v3 this metric is not CURRENTLY
+    # firing. Removed anyway, for the same reason both cpu limits moved
+    # together: a metric that is harmless today by accident of memory usage is
+    # a bug waiting for a workload change to find it.
+    #
+    # The v3 failure is worth understanding before anyone re-adds this. HPA
+    # memory utilisation is measured against `requests`, not `limits`. v3
+    # requests 512Mi and legitimately uses ~1050Mi (10MB ext_authz body
+    # buffer), so it read 207%/80% AT IDLE, drove 3 → 10 replicas in under two
+    # minutes with zero traffic, and then served 52.95% at a rate three pinned
+    # replicas served at 100.00% (9000 rps; the entire latency distribution
+    # collapsed onto the 2s ext_authz deadline). The autoscaler caused the
+    # collapse it existed to prevent.
+    #
+    # Legacy requests 128Mi. It is one buffer-size change away from the same
+    # arithmetic — and routing_mode still defaults to "legacy", so this block
+    # is the data plane most installs actually run.
+    #
+    # Scale on CPU. CPU tracks demand, falls when traffic stops, and at 9000
+    # rps left the v3 fleet at 60% of its limit — correctly declining to scale.
     minReplicas: 2
     maxReplicas: 10
     targetCPU: 70
-    targetMemory: 80
   xds:
     listenAddress: "0.0.0.0"
     port: 18000
@@ -896,12 +946,73 @@ envoy:
     # crash-restart cycle takes 5+ minutes to recover. 3 replicas at idle
     # gives reliable headroom for transient bursts; HPA scales up beyond
     # that on observed CPU/memory pressure. max=10 matches legacy ceiling.
+    # ── ⚠️ THIS HPA MAKES THE PLATFORM UNBENCHMARKABLE OUT OF THE BOX ────────
+    # (2026-07-17) enabled: true with min 3 / max 10 means the Envoy fleet
+    # RESIZES ITSELF MID-TEST. Observed on a fresh install, at idle: cpu 1%/70%
+    # but memory 207%/80% → the HPA immediately drove v3 to 6 replicas and kept
+    # climbing, before a single request was sent.
+    #
+    # That memory metric is a BAND-AID, and it is measured against `requests`
+    # (512Mi), not `limits` (2Gi). v3 Envoy sits at ~1050Mi at idle because of
+    # the 10MB ext_authz body buffer — so targetMemory: 80 is violated FOREVER,
+    # at any load, and the HPA is permanently pinned to maxReplicas. It does not
+    # track demand and it does not fall when traffic stops.
+    #
+    # Why this cost days: every load test was measuring a moving fleet. Three
+    # days of "unrepeatable" numbers at identical rates (62%, 95%, 96%, 99% at
+    # 8000 rps) are substantially this. And with RING_HASH session affinity,
+    # every scale event rehashes the ring and mass-403s live sessions — so the
+    # HPA is not merely noisy, it is actively harmful under the exact conditions
+    # that trigger it.
+    #
+    # DO NOT simply delete the memory metric: at a 512Mi limit it was the only
+    # thing preventing OOM kills. The order of operations is (1) raise the
+    # limit — done, 2Gi, (2) fix the request/limit gap or move to per-route
+    # buffers, (3) THEN drop the memory metric and let CPU drive scaling.
+    #
+    # ── targetMemory REMOVED 2026-07-17 — it was scaling on arithmetic ───────
+    # It read 207%/80% AT IDLE and drove the fleet 3 → 10 in under two minutes
+    # with zero traffic. Not a load signal: HPA memory utilisation is measured
+    # against `requests` (512Mi), and v3 Envoy legitimately sits at ~1050Mi
+    # because of the 10MB ext_authz body buffer. 1050/512 = 205%. The target
+    # could never be met at any load, so the HPA pinned to maxReplicas
+    # permanently, on every install, forever.
+    #
+    # MEASURED, 9000 rps, identical everything else:
+    #   3 replicas (pinned):  100.00%, p50 1.78ms, p99 903ms
+    #   10 replicas (HPA):     52.95%, p50 1.978s — the ENTIRE distribution
+    #                          collapsed onto Envoy's 2s ext_authz deadline.
+    #                          508,107 x 503.
+    #
+    # The autoscaler was causing the collapse it exists to prevent. 10 pods x
+    # limits.cpu 4 = 40 cores of ceiling on a 20-core node: everything CFS-
+    # throttles at once. Same failure as the cpu: 2 bug above, reintroduced by
+    # scaling. And with RING_HASH session affinity every scale event rehashes
+    # the ring and mass-403s live sessions, so the scale-up is doubly harmful
+    # under exactly the conditions that trigger it.
+    #
+    # It was also, quietly, why three days of load tests were unrepeatable: the
+    # fleet resized underneath every run. 62%, 95%, 96%, 99% at one rate.
+    #
+    # Why it is safe to remove NOW and was not before: the memory metric was a
+    # band-aid for a 512Mi limit that OOM-killed under load (exit 137 at 1500
+    # rps). limits.memory is 2Gi now and the pods idle at ~1050Mi — half. The
+    # OOM it guarded against cannot happen at the current limit.
+    #
+    # ⚠️ If you ever lower limits.memory back toward 512Mi, this metric must
+    # come back, or the OOM returns. The two are coupled. The real fix that
+    # retires the coupling entirely is per-route ext_authz buffers (64KB global,
+    # 10MB only on nitro-sign/nitro-pdf) — see the resources note above.
+    #
+    # CPU is now the only metric, which is what an autoscaler should scale on:
+    # at 9000 rps with 3 pods, CPU peaked at 2422m of 4000m (60%) — under the
+    # 70% target, so the HPA correctly sits still. It scales when there is
+    # actually more work than the fleet can do, and not before.
     autoscaling:
       enabled: true
       minReplicas: 3
       maxReplicas: 10
       targetCPU: 70
-      targetMemory: 80
 
 # ─── Load Balancer ────────────────────────────────────────────────────────────
 # Controls how the Envoy gateway is exposed outside the cluster.
