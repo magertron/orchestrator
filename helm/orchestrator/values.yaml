@@ -138,13 +138,44 @@ orchestrator:
   # raise requests to match: requests are what the scheduler reserves, and
   # requests.cpu=2 x 2 replicas leaves pods Pending on a 12-core node that also
   # hosts postgres.
+  # ⚠️ MEMORY IS COUPLED TO orchestrator.env.grpcMaxThreads. RAISE BOTH OR
+  #    NEITHER. (2026-07-17 — found the hard way.)
+  #
+  # Each gRPC worker thread reserves ~8MB of stack. Reservation is lazy, so a
+  # high thread cap looks free at idle and in `kubectl top` — 170Mi with 2048
+  # threads configured. Under sustained load the threads touch their stacks,
+  # the reservation becomes resident, and the pod is OOMKilled (exit 137).
+  #
+  # The failure does NOT look like an OOM. It looks like a latency tail:
+  #   - pod dies, taking every Envoy→PDP connection with it
+  #   - Envoy reconnects; reconnects cost up to 1.8s (measured
+  #     upstream_cx_connect_ms P99 = 1864ms against a 2s ext_authz deadline)
+  #   - every request in that window blows the deadline and 503s
+  #   - the pod comes back in seconds and the next 10k requests are fine
+  # Measured at 2Gi/2048: upstream_cx_total 9,208 and connect_fail 9,136 for a
+  # cluster that should hold ~6 connections. At 8Gi/2048: 40 and 0.
+  #
+  # Worse, it corrupts the thread-cap tuning itself. A ladder of 1024 → 2048 →
+  # 4096 read as 94.4% → 98.1% → 98.8% success, which looks like "more threads
+  # help." It was really measuring how quickly each config reached the memory
+  # cliff. Every number in that ladder is void.
+  #
+  # Rule of thumb: memory limit >= grpcMaxThreads x 8MB x 2 (two gRPC servers,
+  # internal 9092 + external 9093), plus ~1Gi for the process. 2048 threads →
+  # 8Gi. If you lower grpcMaxThreads you may lower this; if you raise it you
+  # MUST raise this first.
+  #
+  # SIZING: limits is a CEILING, not a reservation — 8Gi costs nothing when the
+  # threads are idle. Size the control-plane NODE for the target rate. Do not
+  # raise requests to match: requests are what the scheduler reserves, and
+  # requests.memory=8Gi x 2 replicas leaves pods Pending on a modest node.
   resources:
     requests:
       cpu: 500m
       memory: 512Mi
     limits:
       cpu: "8"
-      memory: 2Gi
+      memory: 8Gi
 
   # ── Health monitoring ─────────────────────────────────────────────────────
   # How often the orchestrator polls Kubernetes for pod state changes and
@@ -360,10 +391,31 @@ orchestrator:
     # of stack reserved each. Get a stack dump first (build with
     # --build-arg MCP_DEBUG_BUILD=1 for gdb + symbols).
     #
-    # Measured, 9000 rps sustained, 2 pods @ 8 cores each:
+    # ⚠️ RAISING THIS REQUIRES RAISING orchestrator.resources.limits.memory.
+    # Each thread reserves ~8MB of stack, lazily — so a high cap looks free
+    # until sustained load makes it resident and the pod is OOMKilled. See the
+    # long note above the resources block. 2048 threads needs 8Gi.
+    #
+    # ⚠️ THE NUMBERS BELOW WERE MEASURED ON A POD THAT WAS OOMING. Do not trust
+    # them. A ladder of 1024 → 2048 → 4096 read as 94.4% → 98.1% → 98.8%
+    # success at 7000 rps, which looks like a clean case for more threads. It
+    # was measuring how fast each config hit the 2Gi memory cliff and dropped
+    # its connections. After raising memory to 8Gi, 2048 measured 98.48% —
+    # statistically identical to what it scored at 2Gi. The thread ladder moved
+    # nothing that survived the fix.
+    #
+    # What DID matter, found the same day and only by reading Envoy's stats:
+    # the CDS clusters Magertron generates carried Envoy's DEFAULT circuit
+    # breakers (1024 max_requests / 1024 max_pending_requests) because
+    # cluster_builder.cpp never set them. Every request past that was shed with
+    # a 503 by the DATA PLANE, while the PDP answered in 1ms. Two days of
+    # tuning this process could not have touched it.
+    #
+    # Historical, 9000 rps, 2 pods @ 8 cores (pre-sharding, pre-OOM-fix — kept
+    # because 256 really is too low, not because 1024 is proven right):
     #   256  → 77.4% success, p99 888ms, 61,074 x 503
     #   1024 → 100%  success, p99  83ms, zero failures
-    grpcMaxThreads: "1024"
+    grpcMaxThreads: "2048"
 
     # ── ALS true-up queue capacity (MCP_ALS_QUEUE_CAPACITY) ──────────────
     # The v3 ALS sink's MeterUpdater queue. Separate from meterQueueCapacity
@@ -665,12 +717,32 @@ envoy:
   image:
     repository: envoyproxy/envoy
     tag: v1.33-latest
+  # ⚠️ limits.cpu: 4 — kept in LOCKSTEP with envoyV3.resources.limits.cpu.
+  # (2026-07-17)
+  #
+  # This was 500m. The v3 Envoy's identical limit of 2 cores was the platform's
+  # throughput ceiling at 8000 rps — three replicas all hit ~1900m of a 2000m
+  # cap, two got CFS-throttled 15s into every run and stayed there, and the
+  # fleet's p90 went to 4.7s while every in-process counter read healthy. Full
+  # measurement in the envoyV3 resources block below; read it before touching
+  # this.
+  #
+  # Legacy carries the SAME ext_authz Check() traffic on the same hot path, so
+  # it hits the same wall — 500m would hit it four times sooner. routing_mode
+  # still defaults to "legacy", which means an install that has never flipped
+  # to v3 is running the data plane through THIS block. The parking-lot item
+  # "retire legacy xDS" flips that default; until it does, this limit is not
+  # dead config, it is the one most installs actually use.
+  #
+  # If you tune one of these two, tune both. A number that differs between the
+  # legacy and v3 data planes is a bug waiting for a routing_mode flip to find
+  # it — which is exactly how max_connections: 256 survived in cluster_builder.
   resources:
     requests:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: 500m
+      cpu: "4"
       memory: 512Mi
   # Service ports — these are the PORT numbers exposed on the Envoy
   # Service resource. The Service TYPE is determined by loadBalancer.provider
@@ -759,12 +831,64 @@ envoy:
     # nitro-sign/nitro-pdf via typed_per_filter_config / ExtAuthzPerRoute
     # check_settings — the machinery AdsSubscriber already uses to enable the
     # external filter per-route). Until that lands, 2Gi absorbs it.
+    #
+    # ─────────────────────────────────────────────────────────────────────────
+    # ⚠️ limits.cpu: 4 — DO NOT LOWER IT TO 2. (2026-07-17)
+    # ─────────────────────────────────────────────────────────────────────────
+    # Everything above this line is about MEMORY. The cpu limit sat at "2"
+    # underneath it, unexamined, and it was the platform's throughput ceiling
+    # for three days of load testing — outlasting six other fixes, a gdb
+    # session, and every hypothesis we had.
+    #
+    # MEASURED at 8000 rps, three replicas, limits.cpu: 2, sampled every 2s
+    # with a wall clock alongside the attack:
+    #
+    #   54:55   1950m  1775m  1711m   ← all three even, ~95% of a 2-core cap
+    #   55:10    376m  1775m   485m   ← two collapse. vegeta still has 90s left
+    #   55:25    539m  1674m   467m
+    #   55:39    539m  1543m   496m
+    #
+    # That is CFS throttling. A pod that burns its quota inside the 100ms
+    # period is stopped until the next one; two of the three spent the rest of
+    # the run in that state while the third kept serving. Requests on the
+    # throttled pods wait whole CFS periods, which is exactly how a p50 of
+    # 1.5ms coexists with a p90 of 4.7s. The distribution went bimodal because
+    # the FLEET went bimodal.
+    #
+    # The one-line change, nothing else touched:
+    #   limits.cpu 2 → 4, same replicas, same rate, same everything
+    #   BEFORE: 96.85%, p50 4.9ms, p90 4.7s, max 15.1s
+    #   AFTER: 100.00%, p50 1.46ms, p90 2.66ms, p99 704ms, max 1.89s
+    #   960,000 / 960,000 requests.
+    #
+    # Why it hid so well: CPU throttling doesn't look like CPU exhaustion.
+    # `kubectl top` showed the pods at ~1900m, which reads as "busy, not
+    # pinned" unless you know the limit is 2000m. Envoy's own stats were clean
+    # — pending_overflow 0, rq_active peaking at 3690 of 8192 available, no
+    # circuit breaker anywhere near firing. Every counter said "not
+    # constrained" while the latency said otherwise, because the constraint
+    # was the kernel refusing to schedule a process that was, by every
+    # in-process measure, idle and waiting for work.
+    #
+    # This is the seventh instance of the same species in three days: a chart
+    # default that was correct when it was written and became the constraint
+    # once everything upstream got fast. The others: orchestrator memory 2Gi
+    # (OOM at 2048 threads), absent circuit breakers in CDS (Envoy's 1024
+    # default), the ClusterIP VIP (ROUND_ROBIN across one endpoint),
+    # max_connections 256 on HTTP/1.1 upstreams, MCP_GRPC_MAX_THREADS 1024,
+    # and postgres cpu: 2. A default is not a decision — it is a decision
+    # deferred, and it comes due the moment the thing in front of it gets fast.
+    #
+    # If you are tempted to lower this: reproduce the 2-core run first, sample
+    # `kubectl top pod ... | grep envoy-v3` every 2s WITH a timestamp, and
+    # watch for two of three pods falling to a quarter of the others mid-run.
+    # That signature is the whole bug.
     resources:
       requests:
         cpu: 500m
         memory: 512Mi
       limits:
-        cpu: "2"
+        cpu: "4"
         memory: 2Gi
     # ── V3 production HA defaults (shipped in v2.2.1) ──────────────────────
     # Mirrors legacy envoy autoscaling shape. min=3 floor based on 5/17/26
@@ -874,6 +998,28 @@ postgresql:
   # + inventory + leader), 16 Splunk DB Connect JDBC (over-pooled for its probe
   # cadence; ~4 would do), 5 unlabeled, 1 psql. This is why MCP_DB_POOL_SIZE=16
   # detonated: 2 pods x 16 + 63 ≈ 99 of 100.
+  #
+  # ── cpu: 2 RE-CONFIRMED at 8000 rps, 2026-07-17 ────────────────────────────
+  # Left at 2 deliberately. During a clean 8000 rps run (100% success, p90
+  # 2.66ms) this pod sat at 4m of CPU and 19Mi of memory. It is not the
+  # bottleneck at 8000 any more than it was at 3500.
+  #
+  # ⚠️ But that number is from an EMPTY database, and it is the optimistic
+  # case. An earlier 8000 run against a database holding several days of
+  # accumulated meter_events/audit_events showed postgres pinned at 1995m of
+  # this 2000m cap — the same workload, 500x the CPU, purely because every
+  # drain INSERT was maintaining indexes on fat tables. We raised the limit to
+  # 4 mid-session and it did NOT help, which was the first clue that the real
+  # ceiling was elsewhere (it was Envoy's cpu limit — see envoy resources).
+  #
+  # The honest reading: postgres CPU here is a function of TABLE SIZE, not
+  # request rate, so a fresh-install benchmark can never see it. The fix is not
+  # a bigger limit, it is the audit_events/meter_events retention work already
+  # on the roadmap (PARTITION BY RANGE (ts) + DROP PARTITION — old partitions
+  # drop instantly instead of DELETE churning indexes, and inserts only touch
+  # the current partition's smaller index). Until that lands, expect this pod
+  # to climb toward its cap as the tables grow, and do not mistake that for a
+  # tuning problem.
   resources:
     requests:
       cpu: 100m
