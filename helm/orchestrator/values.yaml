@@ -816,8 +816,11 @@ envoy:
     #
     # Scale on CPU. CPU tracks demand, falls when traffic stops, and at 9000
     # rps left the v3 fleet at 60% of its limit — correctly declining to scale.
+    # maxReplicas: 2 — lockstep with envoy.v3.autoscaling.maxReplicas. Same
+    # rule: maxReplicas x limits.cpu (4) must fit on the cluster alongside
+    # everything else. Raise both together, and only with cores to spare.
     minReplicas: 2
-    maxReplicas: 10
+    maxReplicas: 2
     targetCPU: 70
   xds:
     listenAddress: "0.0.0.0"
@@ -1008,10 +1011,61 @@ envoy:
     # at 9000 rps with 3 pods, CPU peaked at 2422m of 4000m (60%) — under the
     # 70% target, so the HPA correctly sits still. It scales when there is
     # actually more work than the fleet can do, and not before.
+    # ── maxReplicas: 3 — RAISE ONLY WITH ROOM TO LAND ON (2026-07-17) ────────
+    # This was 10. On a 20-core node, 10 replicas x limits.cpu 4 = 40 cores of
+    # ceiling, so the HPA scaling up IS the outage:
+    #
+    #   9000 rps, 3 replicas pinned:      100.00%, p50 1.78ms
+    #   9000 rps, HPA free to 10:          71.53%, p50 420ms, p90 2.002s
+    #                                      (it scaled 3 → 10 mid-run)
+    #   9000 rps, HPA at 10 + targetMemory: 52.95%
+    #
+    # Three separate failure modes stack once it scales past ~5 pods:
+    #   1. CFS throttling — the cpu: 2 bug from earlier today, re-created by
+    #      the autoscaler. Every pod hits its quota and stops for the rest of
+    #      the period; the whole latency distribution collapses onto Envoy's 2s
+    #      ext_authz deadline.
+    #   2. RING_HASH rehash — every scale event rehashes the ring and
+    #      mass-403s live sessions. A 120s run saw seven scale events.
+    #   3. CPU falls AFTER scale-up (12%/70% at rest afterward), because the
+    #      extra pods dilute the metric. So it never scales back down during
+    #      the run that needs it.
+    #
+    # THE RULE: maxReplicas x resources.limits.cpu must fit on the cluster,
+    # with room left for the orchestrators (2 x 8), postgres, and the governed
+    # servers themselves. On a single 20-core node that is 3. On a real
+    # multi-node cluster it can be much higher — this is the one number to
+    # raise, and it is safe to raise exactly as far as you have cores.
+    #
+    # ⚠️ Be honest about the arithmetic when you do. The shipped defaults
+    # already OVERCOMMIT a 20-core node at their ceilings:
+    #
+    #   envoy v3      3 x 4 = 12
+    #   envoy legacy  2 x 4 =  8
+    #   orchestrator  2 x 8 = 16
+    #   postgres            =  2
+    #                        ---
+    #                          38 cores of limit on 20 cores of node
+    #
+    # ...plus the governed server pods, inventory, ollama, probo and trivy.
+    # This is fine ONLY because limits are ceilings, not reservations, and
+    # because the two data planes are never both hot (routing_mode picks one).
+    # It is not fine as a design: it means the node has no headroom left, and
+    # the FIRST component to hit its ceiling under contention gets CFS-
+    # throttled, which is invisible in `kubectl top` and looks exactly like the
+    # component being slow. That is how limits.cpu: 2 hid for three days.
+    #
+    # So: raising maxReplicas is safe only if maxReplicas x limits.cpu fits in
+    # the cores you have LEFT, not in the cores you own.
+    #
+    # Left enabled: true deliberately. An autoscaler that correctly declines to
+    # scale is the goal; at 9000 rps three pods peaked at 2422m of 4000m (60%),
+    # under the 70% target, and sat still. The bug was never that it scaled —
+    # it was that it could scale further than the hardware could carry.
     autoscaling:
       enabled: true
       minReplicas: 3
-      maxReplicas: 10
+      maxReplicas: 3
       targetCPU: 70
 
 # ─── Load Balancer ────────────────────────────────────────────────────────────

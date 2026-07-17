@@ -74,11 +74,23 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.envoy.autoscaling.targetCPU }}
+    {{- if .Values.envoy.autoscaling.targetMemory }}
+    # ⚠️ OPTIONAL, AND UNSET BY DEFAULT SINCE 2026-07-17 — lockstep with
+    # envoy-v3-hpa.yaml. Read the note there before enabling this.
+    #
+    # Legacy's memory sits at ~13%, so this metric is not currently firing the
+    # way v3's was. It is unset anyway, for the same reason both cpu limits
+    # moved together: HPA memory utilisation is measured against `requests`
+    # (128Mi here), so one buffer-size change puts legacy on the same
+    # arithmetic that pinned v3 to maxReplicas at idle on every install.
+    # routing_mode still defaults to "legacy", so this is the data plane most
+    # installs actually run.
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
           averageUtilization: {{ .Values.envoy.autoscaling.targetMemory }}
+    {{- end }}
 {{- end }}
 {{- end }}

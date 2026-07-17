@@ -18,10 +18,31 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.envoy.v3.autoscaling.targetCPU }}
+    {{- if .Values.envoy.v3.autoscaling.targetMemory }}
+    # ⚠️ OPTIONAL, AND UNSET BY DEFAULT SINCE 2026-07-17. Set
+    # envoy.v3.autoscaling.targetMemory only if you have ALSO lowered
+    # envoy.v3.resources.limits.memory back toward 512Mi, where an OOM guard is
+    # genuinely needed (it OOM-killed at 1500 rps, exit 137).
+    #
+    # At the shipped 2Gi limit this metric is actively harmful. HPA memory
+    # utilisation is measured against `requests`, NOT `limits`. v3 Envoy
+    # requests 512Mi and legitimately uses ~1050Mi (the 10MB ext_authz body
+    # buffer), so targetMemory: 80 read 207/80 AT IDLE — unsatisfiable at any
+    # load, on every install, forever. Measured 2026-07-17: it drove 3 -> 10
+    # replicas in under two minutes with ZERO traffic, and the resulting fleet
+    # served 52.95% at 9000 rps, a rate three pinned replicas served at
+    # 100.00%. The whole latency distribution collapsed onto Envoy's 2s
+    # ext_authz deadline. The autoscaler caused the collapse it existed to
+    # prevent, and it also silently resized the fleet underneath three days of
+    # load tests, which is much of why they were unrepeatable.
+    #
+    # Scale on CPU: it tracks demand, falls when traffic stops, and at 9000 rps
+    # left the fleet at 60% of its limit — correctly declining to scale.
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
           averageUtilization: {{ .Values.envoy.v3.autoscaling.targetMemory }}
+    {{- end }}
 {{- end }}
