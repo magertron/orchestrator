@@ -648,7 +648,28 @@ assistant:
   #               quality; governed by the LLM cost engine.
   # The handler also AUTO-selects when unset: OLLAMA_BASE_URL present → ollama,
   # else ANTHROPIC_API_KEY present → anthropic, else unconfigured.
-  provider: "ollama"
+  #
+  # ── DEFAULT CHANGED "ollama" → "" 2026-07-18 ────────────────────────────────
+  # This was hard-pinned to "ollama" while ollama.enabled defaulted to FALSE —
+  # two defaults that CONTRADICT each other. A plain `helm install` (no
+  # --enable-ollama) then shipped an assistant whose provider pointed at a
+  # bundled Ollama service that was never deployed: OLLAMA_BASE_URL unset,
+  # ASSISTANT_PROVIDER=ollama, handler dials a non-existent host.
+  #
+  # Empty string hands control to the handler's own auto-select (documented just
+  # above), which is the correct behaviour and makes the two defaults agree:
+  #   • plain install            → no OLLAMA_BASE_URL, no key → cleanly
+  #                                "unconfigured" (assistant simply off), NO
+  #                                orphan ollama pod to scale to zero.
+  #   • install --enable-ollama  → install.sh sets BOTH ollama.enabled=true AND
+  #                                assistant.provider=ollama, so the bundled
+  #                                path lights up exactly as before.
+  #   • provider explicitly set  → honoured verbatim (ollama | anthropic).
+  #
+  # To bundle the local assistant, pass --enable-ollama at install (or set
+  # ollama.enabled=true here). Do NOT re-pin provider to "ollama" on its own —
+  # that recreates the contradiction and the phantom pod.
+  provider: ""
 
   # The bundled local model tag Ollama serves (passed to the handler as
   # OLLAMA_MODEL). Chosen via bake-off: Qwen 2.5 7B (best read-only character
