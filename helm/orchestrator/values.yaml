@@ -1773,3 +1773,27 @@ seed:
   #   --set seed.adminEmail=<address>
   # or set it in your overrides values file.
   adminEmail: ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# External Secrets Operator integration (OPT-IN, disabled by default).
+# When enabled, the chart renders one ExternalSecret per item below, materializing
+# contract-shaped Kubernetes Secrets from a customer-owned SecretStore/ClusterSecretStore.
+# The chart does NOT install ESO and does NOT create the store — those are customer-owned.
+# Secret name == item.secretName == the server's credential_secret_ref (the Secret Contract).
+externalSecrets:
+  enabled: false
+  # kind + name of the customer's existing store (required when enabled):
+  storeRef:
+    kind: ClusterSecretStore      # or SecretStore
+    name: ""                       # e.g. "company-vault" — MUST be set when enabled
+  # how often ESO reconciles each ExternalSecret from the backend:
+  refreshInterval: "1h"
+  # optional path prefix prepended to each item's remoteKey (e.g. "magertron"):
+  remoteKeyPrefix: ""
+  # one entry per credentialed server. Generate with gen-external-secrets-items.sh.
+  # items:
+  #   - secretName: apikey-alpha-vantage-creds   # == credential_secret_ref
+  #     namespace: mcp-prod
+  #     properties: [key, header_name]           # keys per the Secret Contract
+  #     # remoteKey: optional; defaults to "<namespace>/<secretName>"
+  items: []
