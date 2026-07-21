@@ -599,7 +599,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <div class="mag-ask-body">
       <div class="mag-ask-row mag-ask-row-user">
-        <div class="mag-ask-bubble mag-ask-bubble-user" id="magAskQ">&nbsp;</div>
+        <div class="mag-ask-bubble mag-ask-bubble-user"><span id="magAskQ"></span><span class="mag-ask-caret mag-ask-caret-q mag-hide" id="magAskQCaret">▋</span></div>
       </div>
       <div class="mag-ask-row mag-ask-row-bot">
         <div class="mag-ask-bubble mag-ask-bubble-bot">
@@ -664,6 +664,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 }
 @keyframes magBlink{50%{opacity:0;}}
 .mag-ask-caret.mag-hide{display:none;}
+.mag-ask-caret-q{color:var(--text-primary);}
 .mag-ask-dots{display:flex;gap:7px;justify-content:center;padding:4px 0 18px;}
 .mag-ask-dot{
   width:7px;height:7px;border-radius:100px;background:var(--text-tertiary);
@@ -724,6 +725,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   var qEl    = document.getElementById('magAskQ');
   var aEl     = document.getElementById('magAskA');
   var caret  = document.getElementById('magAskCaret');
+  var qCaret = document.getElementById('magAskQCaret');
   var dotsEl = document.getElementById('magAskDots');
   if(!qEl||!aEl){return;}
 
@@ -770,22 +772,43 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     step();
   }
 
+  // Type plain text char-by-char into an element (for the question bubble).
+  function typeText(text, el, done){
+    var i=0;
+    function step(){
+      if(i>=text.length){ done&&done(); return; }
+      el.textContent = text.slice(0, i+1);
+      var ch=text[i]; i++;
+      var d = reduced?0:(ch===' '?26: ch==='?'||ch==='.'||ch===','?90: 34+Math.random()*30);
+      timers.push(setTimeout(step, d));
+    }
+    step();
+  }
+
   function go(i){
     clearTimers();
     idx=i; setActive(i);
     var ex=EX[i];
-    caret.classList.add('mag-hide');
-    qEl.textContent=ex.q;                 // question appears instantly
+    // reset both bubbles
+    qEl.textContent='';
     aEl.innerHTML='';
-    // small beat, then type the answer
+    caret.classList.add('mag-hide');          // answer caret hidden for now
+    qCaret.classList.remove('mag-hide');       // question caret blinking
+    // 1) type the question
     timers.push(setTimeout(function(){
-      caret.classList.remove('mag-hide');
-      typeHTML(ex.a, aEl, function(){
-        // hold, then advance
-        var hold = reduced?2600:4200;
-        timers.push(setTimeout(function(){ go((idx+1)%EX.length); }, hold));
+      typeText(ex.q, qEl, function(){
+        // 2) question done → hide its caret, small beat, then type the answer
+        qCaret.classList.add('mag-hide');
+        timers.push(setTimeout(function(){
+          caret.classList.remove('mag-hide');
+          typeHTML(ex.a, aEl, function(){
+            caret.classList.add('mag-hide');    // answer done → hide caret while holding
+            var hold = reduced?2400:3800;
+            timers.push(setTimeout(function(){ go((idx+1)%EX.length); }, hold));
+          });
+        }, 520));
       });
-    }, 420));
+    }, 300));
   }
 
   // Kick off when scrolled into view (don't burn the animation above the fold
