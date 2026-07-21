@@ -146,6 +146,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
 .nav-logo:hover { text-decoration: none; color: var(--text); }
 .nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
 .nav-links { display: flex; gap: 32px; align-items: center; }
 .nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
 .nav-links a:hover { color: var(--text); text-decoration: none; }
@@ -546,7 +547,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <!-- Nav -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron</a>
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
     <div class="nav-links">
       <a href="#features">AI Orchestrator</a>
       <a href="#pricing">Pricing</a>
@@ -576,7 +577,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <p style="font-size: 13px; color: var(--text-secondary); margin-top: -8px;">OSS Free up to 20 servers — no signup, no credit card.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Schedule a Demo →</a>
-      <a href="https://github.com/magertron/orchestrator" target="_blank" class="btn-secondary">View on GitHub →</a>
     </div>
 
 <!-- ══ Ask-your-platform typewriter showcase ═══════════════════════════════════
@@ -585,9 +585,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
      framing, feature-card surface treatment, site CSS vars. Scoped .mag-ask-*.
 ================================================================================ -->
 <div class="mag-ask" aria-label="The assistant answering live platform questions">
-  <div class="mag-ask-label">Conversational Operations</div>
-  <h2 class="mag-ask-heading">Questions your AI platform<br>could never answer before</h2>
-
   <div class="mag-ask-frame">
     <div class="mag-ask-head">
       <span class="mag-ask-spark">✦</span>
@@ -654,7 +651,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   color:var(--accent-text);font-family:var(--mono);font-size:13px;
   padding:1px 5px;border-radius:6px;background:var(--accent-glow);
 }
-.mag-ask-bubble-bot .mag-flag{color:#22d3ee;font-weight:600;}
+.mag-ask-bubble-bot .mag-flag{color:#ef4444;font-weight:600;}
 .mag-ask-bubble-bot strong{color:var(--text-primary);font-weight:600;}
 .mag-ask-caret{
   color:var(--accent-text);font-weight:400;animation:magBlink 1s steps(1) infinite;
@@ -686,7 +683,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       q: "What's my busiest server?",
       a: 'Based on the live platform snapshot, your busiest server is '
         +'<span class="mag-tok">claude-prod</span> in the '
-        +'<span class="mag-tok">ml-platform</span> namespace — '
+        +'<span class="mag-tok">ml-platform</span> tenant — '
         +'<strong>1.24M calls</strong> over the last 24 hours, well ahead of anything else.'
     },
     {
@@ -712,7 +709,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     },
     {
       q: "What's my busiest tenant?",
-      a: 'Your busiest namespace is <span class="mag-tok">ml-platform</span> — '
+      a: 'Your busiest tenant is <span class="mag-tok">ml-platform</span> — '
         +'<strong>2.1M operations</strong> in 24h, driven mostly by '
         +'<span class="mag-tok">claude-prod</span> and <span class="mag-tok">openai-gpt4o</span>. '
         +'<span class="mag-tok">payments-prod</span> is a distant second.'
@@ -800,6 +797,15 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 </script>
 <!-- ══ end ask-your-platform showcase ═════════════════════════════════════════ -->
 
+    <!-- Main screenshot: the AI Cost Dashboard — the spend story made concrete.
+         Leads with dollars (total spend, committed, remaining), per-vendor and
+         per-user breakdown, and the daily trend. This is the CFO-legible view. -->
+    <div class="hero-screenshot">
+      <div class="hero-carousel">
+        <img class="slide-1" src="screenshots/dashboard-galaxy.png" alt="Magertron dashboard with Agent Galaxy — live map of which principals and AI agents can reach and are actively calling which MCP tools, with entitlement-vs-usage edges">
+        <img class="slide-2" src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
+      </div>
+    </div>
 
     <!-- Install snippet — visible above the fold for HN/listicle visitors
          who want to see "can I try this in 5 minutes?" answered immediately. -->
@@ -811,15 +817,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <span style="color: var(--text-secondary);">$</span> ./install.sh --license /path/to/license.json  <span style="color: var(--text-secondary);"># With a license</span></pre>
     </div>
 
-    <!-- Main screenshot: the AI Cost Dashboard — the spend story made concrete.
-         Leads with dollars (total spend, committed, remaining), per-vendor and
-         per-user breakdown, and the daily trend. This is the CFO-legible view. -->
-    <div class="hero-screenshot">
-      <div class="hero-carousel">
-        <img class="slide-1" src="screenshots/dashboard-galaxy.png" alt="Magertron dashboard with Agent Galaxy — live map of which principals and AI agents can reach and are actively calling which MCP tools, with entitlement-vs-usage edges">
-        <img class="slide-2" src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
-      </div>
-    </div>
   </div>
 </section>
 
