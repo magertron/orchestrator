@@ -170,8 +170,16 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   opacity: 0.8;
   /* fade the image out toward the right and bottom so it dissolves into the bg
      and never sits behind the headline as a hard rectangle */
-  -webkit-mask-image: radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%);
-          mask-image: radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%);
+  -webkit-mask-image:
+    radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%),
+    linear-gradient(to right, transparent 0%, #000 12%),
+    linear-gradient(to bottom, transparent 0%, #000 12%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%),
+    linear-gradient(to right, transparent 0%, #000 12%),
+    linear-gradient(to bottom, transparent 0%, #000 12%);
+          mask-composite: intersect;
   pointer-events: none; z-index: 0;
   animation: galaxyDrift 26s ease-in-out infinite alternate;
 }
