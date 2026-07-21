@@ -299,8 +299,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 }
 </style>
 <script src="https://d2mvefebd70kbz.cloudfront.net/scripts/019ef1eb-0d70-79a7-a622-3d23a50dc79c.js" async></script>
-    <!-- Visitor analytics (leadsy.ai vtag) — disclosed marketing tracker -->
-    <script id="vtag-ai-js" async src="https://r2.leadsy.ai/tag.js" data-pid="az6D5saf0GDIfc01" data-version="062024"></script>
 </head>
 <body>
 
@@ -511,6 +509,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <li><a href="/trust.html">Trust</a></li>
           <li><a href="/about.html">About</a></li>
           <li><a href="/compliance.html">Compliance</a></li>
+          <li><a href="/privacy.html">Privacy</a></li>
           <li><a href="/#schedule-demo">Contact</a></li>
         </ul>
       </div>
@@ -530,6 +529,110 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </div>
   </div>
 </footer>
+
+<!-- ══ Cookie consent + gated analytics loader ════════════════════════════════
+     The leadsy.ai visitor-analytics tag is NO LONGER hardcoded in <head>. It
+     loads ONLY after the visitor accepts, and the choice is remembered. On
+     return visits with prior consent it loads automatically; on decline it
+     never loads. This is the consent-gated (GDPR-appropriate) pattern.
+     Self-contained: scoped .mag-consent-* classes, no external deps.
+============================================================================= -->
+<div id="magConsent" class="mag-consent" role="dialog" aria-live="polite"
+     aria-label="Cookie consent" hidden>
+  <div class="mag-consent-inner">
+    <div class="mag-consent-text">
+      We use a first-party and third-party analytics tag to understand site
+      traffic and improve Magertron. It loads only if you accept. See our
+      <a href="privacy.html">Privacy Policy</a> for details.
+    </div>
+    <div class="mag-consent-actions">
+      <button type="button" class="mag-consent-btn mag-consent-decline" id="magConsentDecline">Decline</button>
+      <button type="button" class="mag-consent-btn mag-consent-accept" id="magConsentAccept">Accept</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.mag-consent{
+  position:fixed;left:0;right:0;bottom:0;z-index:9999;
+  background:var(--bg-card);border-top:1px solid var(--border);
+  box-shadow:0 -8px 40px -12px rgba(0,0,0,.6);
+  animation:magConsentUp .35s ease-out;
+}
+@keyframes magConsentUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.mag-consent-inner{
+  max-width:1100px;margin:0 auto;padding:16px 24px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+}
+.mag-consent-text{
+  flex:1 1 340px;font-size:13.5px;line-height:1.55;color:var(--text-secondary);
+}
+.mag-consent-text a{color:var(--accent-text);text-decoration:none;}
+.mag-consent-text a:hover{text-decoration:underline;}
+.mag-consent-actions{display:flex;gap:10px;flex-shrink:0;}
+.mag-consent-btn{
+  font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  padding:9px 20px;border-radius:8px;border:1px solid var(--border);
+  transition:all .18s;white-space:nowrap;
+}
+.mag-consent-decline{
+  background:transparent;color:var(--text-secondary);
+}
+.mag-consent-decline:hover{color:var(--text);border-color:var(--text-tertiary);}
+.mag-consent-accept{
+  background:var(--accent);color:#fff;border-color:var(--border-accent);
+}
+.mag-consent-accept:hover{filter:brightness(1.1);}
+@media (max-width:560px){
+  .mag-consent-inner{flex-direction:column;align-items:stretch;gap:12px;}
+  .mag-consent-actions{justify-content:flex-end;}
+}
+</style>
+
+<script>
+(function(){
+  var KEY = 'mag-analytics-consent';   // 'granted' | 'denied'
+  var banner = document.getElementById('magConsent');
+
+  // Loads the leadsy.ai tag exactly once.
+  function loadAnalytics(){
+    if(document.getElementById('vtag-ai-js')) return;
+    var s = document.createElement('script');
+    s.id = 'vtag-ai-js';
+    s.async = true;
+    s.src = 'https://r2.leadsy.ai/tag.js';
+    s.setAttribute('data-pid','az6D5saf0GDIfc01');
+    s.setAttribute('data-version','062024');
+    document.head.appendChild(s);
+  }
+
+  function store(v){
+    try{ localStorage.setItem(KEY, v); }catch(e){}
+  }
+  function read(){
+    try{ return localStorage.getItem(KEY); }catch(e){ return null; }
+  }
+
+  var prior = read();
+  if(prior === 'granted'){
+    loadAnalytics();              // returning visitor who accepted → load, no banner
+  } else if(prior === 'denied'){
+    /* respected: do nothing, no banner */
+  } else {
+    if(banner){ banner.hidden = false; }   // first visit → ask
+  }
+
+  var accept  = document.getElementById('magConsentAccept');
+  var decline = document.getElementById('magConsentDecline');
+  if(accept) accept.addEventListener('click', function(){
+    store('granted'); if(banner) banner.hidden = true; loadAnalytics();
+  });
+  if(decline) decline.addEventListener('click', function(){
+    store('denied'); if(banner) banner.hidden = true;
+  });
+})();
+</script>
+<!-- ══ end cookie consent ═════════════════════════════════════════════════════ -->
 
 </body>
 </html>
