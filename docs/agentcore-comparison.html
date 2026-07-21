@@ -57,6 +57,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
 .nav-logo:hover { text-decoration: none; color: var(--text); }
 .nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
 .nav-links { display: flex; gap: 32px; align-items: center; }
 .nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
 .nav-links a:hover { color: var(--text); text-decoration: none; }
@@ -583,7 +584,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
-        <div class="logo"><span>▸</span> magertron</div>
+        <div class="logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></div>
         <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
       </div>
       <div class="footer-col">
