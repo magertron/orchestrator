@@ -1403,7 +1403,18 @@ drift:
     # "no service account with subject X" for an account that plainly exists.
     #
     # Leave empty only if the probe SA really does live in the default org.
-    saOrgId: "27026302-ecc6-43fb-bbe3-6c1911ef331c"
+    #
+    # NOTE: currently set to the DEFAULT organization. The probe SA was moved
+    # there deliberately — it is platform infrastructure, not a tenant's agent,
+    # and it probes every server across every namespace. Scoping a fleet-wide
+    # daemon to one tenant is a category error, and it also kept the SA out of
+    # the delegated-authorize picker (which lists accounts for the current org).
+    #
+    # Namespaces are Magertron's real multi-tenancy axis; organizations carry
+    # no authorization weight. If organizations collapse to a single "default"
+    # per install as planned, this value becomes the only one that exists and
+    # the setting stops being a decision anyone has to make.
+    saOrgId: "549bf42a-060b-4eb4-adf3-6d72d43464f9"
 
 # Probo runs as an INTERNAL Magertron subsystem — deployed alongside the
 # orchestrator and registered as a type:internal MCP server so the 270+ Probo
