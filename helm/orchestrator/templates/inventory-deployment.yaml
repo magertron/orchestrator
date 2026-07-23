@@ -107,6 +107,38 @@ spec:
             - name: MCP_INVENTORY_LOG_LEVEL
               value: {{ .Values.inventory.config.logLevel | quote }}
 
+            # ── Scheduled drift introspection (rug-pull protection) ─────
+            # This service EXECUTES the probes: the orchestrator decides which
+            # servers are due and pushes a batch to /_admin/probe, and we do
+            # the tools/list through the gateway, then record the result via
+            # the same hash + upsert path the sidecar push uses.
+            #
+            # MCP_INVENTORY_PROBE_GATEWAY_BASE — where to send those calls.
+            # Defaults to the in-cluster Envoy v3 service. Prefer that over the
+            # public URL: the public URL works (the cluster hairpins) but
+            # egresses through the CDN, adding cost, latency and a third-party
+            # dependency to a governance control that should stay
+            # self-contained. Port 10444 matches the envoy-v3 service's
+            # container port — if that ever changes, update both together.
+            - name: MCP_INVENTORY_PROBE_GATEWAY_BASE
+              value: {{ .Values.inventory.config.probeGatewayBase | default (printf "https://%s-envoy-v3.%s.svc.cluster.local:10444" (include "mcp.fullname" .) (include "mcp.namespace" .)) | quote }}
+            # MCP_INVENTORY_PROBE_TLS_VERIFY — false because the in-cluster
+            # gateway presents a SELF-SIGNED certificate (CN=mcp-orchestrator)
+            # with no subjectAltName covering its service DNS name, so
+            # verification fails outright and a CA bundle does not help (the
+            # cert is its own issuer AND the name still would not match).
+            #
+            # What that gives up is narrow: TLS here provides transport
+            # encryption, not identity. The prober does not rely on the
+            # certificate to know it reached the right gateway — it
+            # authenticates TO the gateway with a signed service-account JWT
+            # over a hop that never leaves the cluster network.
+            #
+            # Set true once the gateway cert carries proper SANs. That is the
+            # real fix; this flag exists so it becomes a config change.
+            - name: MCP_INVENTORY_PROBE_TLS_VERIFY
+              value: {{ .Values.inventory.config.probeTlsVerify | quote }}
+
           resources:
             {{- toYaml .Values.inventory.resources | nindent 12 }}
 

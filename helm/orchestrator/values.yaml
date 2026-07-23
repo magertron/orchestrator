@@ -1403,7 +1403,7 @@ drift:
     # "no service account with subject X" for an account that plainly exists.
     #
     # Leave empty only if the probe SA really does live in the default org.
-    saOrgId: ""
+    saOrgId: "27026302-ecc6-43fb-bbe3-6c1911ef331c"
 
 # Probo runs as an INTERNAL Magertron subsystem — deployed alongside the
 # orchestrator and registered as a type:internal MCP server so the 270+ Probo

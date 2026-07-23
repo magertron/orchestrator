@@ -284,6 +284,31 @@ spec:
                   name: {{ include "mcp.fullname" . }}-inventory-admin-token
                   key:  MCP_INVENTORY_ADMIN_TOKEN
                   optional: true
+            # ── Scheduled drift introspection (rug-pull protection) ──────
+            # The DriftPollWorker asks each governed server what tools it is
+            # currently serving, so drift from the approved baseline is
+            # DISCOVERED rather than waiting for someone to notice. Probes are
+            # issued as ordinary tools/list calls through the gateway — vendor
+            # credentials get injected by ext_authz, and every introspection
+            # lands in the audit trail under a dedicated principal.
+            #
+            # MCP_DRIFT_PROBE_SA_SUBJECT — the service account probes
+            # authenticate as. A dedicated principal is what makes "the drift
+            # control ran on schedule" provable by filtering audit_events;
+            # reusing a human or admin identity would bury probe traffic among
+            # real calls.
+            - name: MCP_DRIFT_PROBE_SA_SUBJECT
+              value: {{ .Values.drift.probe.saSubject | quote }}
+            # MCP_DRIFT_PROBE_SA_ORG_ID — organization that service account
+            # belongs to. REQUIRED whenever it is not the default org, despite
+            # looking optional: mcp-inventory's service-account list endpoint
+            # DEFAULTS TO THE 'default' ORGANIZATION when organization_id is
+            # omitted, so an unfiltered lookup silently excludes accounts in
+            # every other org — and then reports "no service account with
+            # subject X" for an account that plainly exists. Empty is correct
+            # only when the probe SA really does live in the default org.
+            - name: MCP_DRIFT_PROBE_SA_ORG_ID
+              value: {{ .Values.drift.probe.saOrgId | quote }}
             # Server Editor Assistant — advisory bot needs the Anthropic key to
             # call the Messages API. Same key/secret the chat-daemon uses (see
             # the chat-daemon container below): honors chatDaemon.externalSecretName
