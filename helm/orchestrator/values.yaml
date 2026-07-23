@@ -1283,6 +1283,40 @@ inventory:
     maxObservationsPerBatch: 1000  # per-request observation cap
     logLevel: "info"               # "info" or "debug"
 
+    # ── Scheduled drift introspection (rug-pull protection) ──────────────
+    # Where the drift prober sends its tools/list calls. The orchestrator
+    # decides WHICH servers are due and pushes a batch here; inventory does
+    # the actual introspection through the gateway and records the result.
+    #
+    # Probes deliberately traverse the gateway rather than dialing upstreams
+    # directly: vendor credentials get injected by ext_authz (the prober never
+    # handles a secret), every introspection lands in the audit trail, and we
+    # observe exactly what a real caller would be served.
+    #
+    # Empty ("") derives the in-cluster Envoy v3 address from the release —
+    # which is what you want. The PUBLIC url also works (the cluster hairpins)
+    # but egresses through the CDN, adding cost, latency and a third-party
+    # dependency to a governance control that should stay self-contained.
+    # Override only for a non-standard topology, or if you deliberately want
+    # the probe to validate the full public delivery path.
+    probeGatewayBase: ""
+
+    # TLS verification for the probe hop. Left false because the in-cluster
+    # gateway presents a SELF-SIGNED certificate (CN=mcp-orchestrator) with no
+    # subjectAltName covering its service DNS name — verification fails
+    # outright, and a CA bundle does not help because the cert is its own
+    # issuer AND the name still would not match.
+    #
+    # What that gives up is narrow: TLS here provides transport encryption, not
+    # identity. The prober does not use the certificate to know it reached the
+    # right gateway — it authenticates TO the gateway with a signed
+    # service-account JWT, over a hop that never leaves the cluster network.
+    #
+    # Set true once the gateway cert carries proper SANs for its service DNS
+    # names. That is the real fix; this flag exists so it becomes a config
+    # change rather than a code change.
+    probeTlsVerify: false
+
   # ── Inventory Postgres ───────────────────────────────────────────────────
   # Physically isolated from the operations DB, but — like the ops postgres —
   # it is stateful on a node-local (k3s local-path) PV, so it MUST stay
@@ -1334,7 +1368,43 @@ inventory:
         cpu: "1000m"
         memory: "1Gi"
 
-# ─── Probo GRC (Governance, Risk & Compliance) ───────────────────────────────
+# ─── Scheduled drift introspection (rug-pull protection) ─────────────────────
+# The detection half of rug-pull protection. Enforcement — the ext_authz gate
+# that refuses a tool whose definition no longer matches what an administrator
+# approved — is always on. This section controls the WORKER that periodically
+# asks each governed server what it is currently serving, so drift is
+# discovered rather than waiting for someone to notice.
+#
+# Split across two services by design: the orchestrator owns the poll cadence
+# and the server registry and can mint the probe token, so it decides WHICH
+# servers are due; mcp-inventory owns the hash function, the upsert state
+# machine and the audit emitter, so it EXECUTES the introspection. One request
+# per tick, outcomes returned inline — no distributed scheduling state.
+drift:
+  probe:
+    # Service account the probes authenticate as.
+    #
+    # A DEDICATED principal matters more than it looks: it is what makes
+    # scheduled drift detection legible in audit_events. Filtering on this
+    # subject proves "the control ran on schedule" — which you cannot do if
+    # probe traffic is indistinguishable from ordinary user calls.
+    #
+    # The account must exist before probing works. The worker looks it up by
+    # subject at startup (rather than pinning a uuid) so rotating the SA does
+    # not silently break detection.
+    saSubject: "mcp-inventory-probe"
+
+    # Organization the probe service account belongs to.
+    #
+    # REQUIRED whenever that is not the default org, even though it looks
+    # optional: mcp-inventory's service-account list endpoint DEFAULTS TO THE
+    # 'default' ORGANIZATION when organization_id is omitted, so an unfiltered
+    # lookup silently excludes accounts in every other org — and then reports
+    # "no service account with subject X" for an account that plainly exists.
+    #
+    # Leave empty only if the probe SA really does live in the default org.
+    saOrgId: ""
+
 # Probo runs as an INTERNAL Magertron subsystem — deployed alongside the
 # orchestrator and registered as a type:internal MCP server so the 270+ Probo
 # GRC tools flow through ext_authz / RBAC / rating / audit like any server. It is
