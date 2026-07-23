@@ -335,6 +335,33 @@ data:
     -- routing/config, not a secret; NOT NULL keeps the read path null-free.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS rest_metering_config JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+    -- is_llm: does this server serve a MODEL rather than an MCP tool surface?
+    --
+    -- Deliberately a flag rather than a fifth server_type value, because the
+    -- two axes are orthogonal. server_type says how a server is DEPLOYED
+    -- (internal pod / hybrid / external endpoint / rest proxy); is_llm says
+    -- what it SERVES. A self-hosted model is internal + is_llm; Anthropic's
+    -- API is external + is_llm. Folding "is a model" into server_type would
+    -- force one of those to lie about its deployment topology.
+    --
+    -- Why it matters operationally: an LLM endpoint has no tools/list. The
+    -- drift prober asks every governed server what tools it currently offers
+    -- and hashes the answer; pointing that at a model endpoint gets a 404 and
+    -- the server sits in the coverage report as a permanent failure for a
+    -- capability it never claimed. With this flag the prober can skip them by
+    -- DECLARATION instead of discovering it by probing — and, later, probe
+    -- them correctly (model list / contract) rather than not at all.
+    --
+    -- DEFAULT FALSE so every existing row stays correct with no backfill, and
+    -- anything that ignores the column keeps working unchanged.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS is_llm BOOLEAN NOT NULL DEFAULT FALSE;
+
+    -- Partial index: the drift prober and the (future) model-contract probe
+    -- both need "which servers are model endpoints", and that set is small
+    -- relative to the fleet. Partial keeps it tiny.
+    CREATE INDEX IF NOT EXISTS deployed_servers_is_llm_idx
+        ON deployed_servers (namespace, name) WHERE is_llm;
+
     -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
     -- (delegated authorization-code flow). The original inline constraint was
     -- anonymous and auto-named deployed_servers_auth_type_check; drop + re-add
