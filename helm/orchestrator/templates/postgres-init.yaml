@@ -337,30 +337,26 @@ data:
 
     -- is_llm: does this server serve a MODEL rather than an MCP tool surface?
     --
-    -- Deliberately a flag rather than a fifth server_type value, because the
-    -- two axes are orthogonal. server_type says how a server is DEPLOYED
-    -- (internal pod / hybrid / external endpoint / rest proxy); is_llm says
-    -- what it SERVES. A self-hosted model is internal + is_llm; Anthropic's
-    -- API is external + is_llm. Folding "is a model" into server_type would
-    -- force one of those to lie about its deployment topology.
+    -- ⚠ NOT THE SOURCE OF TRUTH. The canonical signal is labels->>'kind'='llm',
+    -- which predates this column and is what everything actually reads:
+    -- inventory_census() buckets internal_llm/external_llm off it, the
+    -- deployment manager labels pods from it, and the drift prober excludes
+    -- model endpoints from tools/list probing on it. Those labels also carry
+    -- 'model' and 'provider', which a boolean cannot express and which a
+    -- model-contract drift probe will need.
     --
-    -- Why it matters operationally: an LLM endpoint has no tools/list. The
-    -- drift prober asks every governed server what tools it currently offers
-    -- and hashes the answer; pointing that at a model endpoint gets a 404 and
-    -- the server sits in the coverage report as a permanent failure for a
-    -- capability it never claimed. With this flag the prober can skip them by
-    -- DECLARATION instead of discovering it by probing — and, later, probe
-    -- them correctly (model list / contract) rather than not at all.
-    --
-    -- DEFAULT FALSE so every existing row stays correct with no backfill, and
-    -- anything that ignores the column keeps working unchanged.
+    -- This column exists because it was added before that convention was
+    -- found. It is kept for compatibility, defaults FALSE, and is not consulted
+    -- by any code path. If you are writing a query that needs to know whether a
+    -- server is a model endpoint, use labels->>'kind' — a row can have the
+    -- label without the flag, and trusting the flag alone will miss it.
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS is_llm BOOLEAN NOT NULL DEFAULT FALSE;
 
-    -- Partial index: the drift prober and the (future) model-contract probe
-    -- both need "which servers are model endpoints", and that set is small
-    -- relative to the fleet. Partial keeps it tiny.
-    CREATE INDEX IF NOT EXISTS deployed_servers_is_llm_idx
-        ON deployed_servers (namespace, name) WHERE is_llm;
+    -- Partial index on the CANONICAL signal, not the flag above. Both the drift
+    -- prober and the future model-contract probe need "which servers are model
+    -- endpoints", and that set is small relative to the fleet.
+    CREATE INDEX IF NOT EXISTS deployed_servers_llm_kind_idx
+        ON deployed_servers (namespace, name) WHERE labels->>'kind' = 'llm';
 
     -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
     -- (delegated authorization-code flow). The original inline constraint was
