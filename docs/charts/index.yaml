@@ -102,10 +102,10 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.58
-    created: "2026-09-07T10:54:46.918838878-04:00"
+    created: "2026-09-07T14:55:19.279189296Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
-    digest: 1a5f7d441ff7936e83bb6e77c9c4c175bba8548903f3e9a1195a10fef3483f5f
+    digest: 8a4c1e6a966845d50ec8006c72e2af7116993ba4abddcdc8f39ccfc2df0ce2aa
     home: https://magertron.com
     icon: https://magertron.com/logo-mark.png
     keywords:
@@ -227,7 +227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.57
-    created: "2026-09-07T10:54:46.91494247-04:00"
+    created: "2026-09-07T14:55:19.273413413Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 249db443f1bedf8e1f158183a8650c982a7034ee1d973944ffb3b8e18e3f2478
@@ -352,7 +352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.56
-    created: "2026-09-07T10:54:46.910772528-04:00"
+    created: "2026-09-07T14:55:19.266874431Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 63184a85bbe4f1451fb86bc31931268e82b596e42217376352834085ee56dbcc
@@ -477,7 +477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.55
-    created: "2026-09-07T10:54:46.90751463-04:00"
+    created: "2026-09-07T14:55:19.261125729Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8417f677a3f920bec0f3e361fb41f15d2cb907566918c2615263cb4a47e6f4ac
@@ -602,7 +602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.54
-    created: "2026-09-07T10:54:46.902062156-04:00"
+    created: "2026-09-07T14:55:19.254423056Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 18210df83aeb37688ce95966b79883fd108b6f1507affcbb174ef26add8e2185
@@ -727,7 +727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.53
-    created: "2026-09-07T10:54:46.897317543-04:00"
+    created: "2026-09-07T14:55:19.247765165Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b4b5d537e6c81701b882e7b5d0ce9f70bfd9378da1e2b206d9ccb2ddeea7f54f
@@ -852,7 +852,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.52
-    created: "2026-09-07T10:54:46.892719656-04:00"
+    created: "2026-09-07T14:55:19.241922608Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f946771e70d6817d2a9d016fdcf45ffa2fdf8877293ff9200e4ff43b86dca27e
@@ -977,7 +977,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.29
-    created: "2026-09-07T10:54:46.887427633-04:00"
+    created: "2026-09-07T14:55:19.235190682Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 833741170cae4d35da9e528474c3a859b6c39f6a8b564ef2800ae918d4a9bbdb
@@ -1102,7 +1102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.13
-    created: "2026-09-07T10:54:46.882266647-04:00"
+    created: "2026-09-07T14:55:19.228526263Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 320c3f963c410f11c0484dda55b7e9bc77d6f9656de49c98e1c82dfe1acc36b4
@@ -1227,7 +1227,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.09
-    created: "2026-09-07T10:54:46.877690641-04:00"
+    created: "2026-09-07T14:55:19.22271818Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 44fbcba3f57a0815b2f3e1159648709b7cb787d48d6a4de0fffd1bfee5db314f
@@ -1352,7 +1352,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.09
-    created: "2026-09-07T10:54:46.872949384-04:00"
+    created: "2026-09-07T14:55:19.216217995Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2bc710d0584c5231394e53bb59e793864b3c8dc22b20b2771739c076f8dba534
@@ -1477,7 +1477,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.08
-    created: "2026-09-07T10:54:46.868477815-04:00"
+    created: "2026-09-07T14:55:19.209742111Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2168872ad346e6e2977128a5290c6d51438fc90900dd075ac92a8aaf654b565d
@@ -1602,7 +1602,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.03
-    created: "2026-09-07T10:54:46.863354068-04:00"
+    created: "2026-09-07T14:55:19.203434865Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2058e440e6edb6b907452577b8a147ab58a43c47e877bf7a948ba16e2888a019
@@ -1727,7 +1727,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.01
-    created: "2026-09-07T10:54:46.858668326-04:00"
+    created: "2026-09-07T14:55:19.19772235Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2271ba502716f83e6ae972ea8f2f3b22c7f08705db12c7d581e5b83546a2330b
@@ -1751,4 +1751,4 @@ entries:
     urls:
     - https://magertron.com/charts/mcp-orchestrator-3.7.01.tgz
     version: 3.7.01
-generated: "2026-09-07T10:54:46.853501489-04:00"
+generated: "2026-09-07T14:55:19.190825083Z"
