@@ -108,6 +108,12 @@ spec:
               value: {{ .Values.orchestrator.env.apiPublicUrl | quote }}
             - name: MCP_CORS_EXTRA_ORIGINS
               value: {{ .Values.orchestrator.env.corsExtraOrigins | quote }}
+            # ── Inventory reconcile cadence ────────────────────────────────
+            # Ticks (60 s each) between platform-presence reconciles. 5 in
+            # production; 1 on dev/test clusters so reconcile-gated regression
+            # tests finish in about a minute. The binary defaults to 5 if unset.
+            - name: MCP_RECONCILE_EVERY_TICKS
+              value: {{ .Values.orchestrator.env.reconcileEveryTicks | default "5" | quote }}
             # ── Rating worker cadence ───────────────────────────────────────
             # Interval between rating passes and the settle window (min event
             # age before rating, so ALS true-up has flipped failed calls to

@@ -1038,6 +1038,12 @@ HELM_VALUES=(
 if [ -n "$API_PUBLIC_URL" ]; then
     HELM_VALUES+=( --set "orchestrator.env.apiPublicUrl=$API_PUBLIC_URL" )
 fi
+# Inventory reconcile cadence (ticks of 60 s). Dev/test clusters export
+# MCP_RECONCILE_EVERY_TICKS=1 so reconcile-gated regression tests run in a
+# minute; customers leave it unset and get the chart default (5).
+if [ -n "${MCP_RECONCILE_EVERY_TICKS:-}" ]; then
+    HELM_VALUES+=( --set "orchestrator.env.reconcileEveryTicks=$MCP_RECONCILE_EVERY_TICKS" )
+fi
 
 # Unity Catalog enforcement. Passed EXPLICITLY in both directions rather than
 # relying on the chart default, so the rendered deployment always states which

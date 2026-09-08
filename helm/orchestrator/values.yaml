@@ -245,6 +245,9 @@ orchestrator:
     #   Origin header from a built app before adding (e.g. "tauri://localhost").
     # Empty = only apiPublicUrl's origin is allowed.
     corsExtraOrigins: ""
+    # Inventory reconcile cadence in ticks (60 s each). 5 = production.
+    # Set "1" on dev/test clusters (peppy) so reconcile-gated tests run fast.
+    reconcileEveryTicks: "5"
 
     # ── Rating worker cadence ────────────────────────────────────────────
     # How often the leader rates the current period's settled meter_events
