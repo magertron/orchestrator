@@ -458,10 +458,10 @@ func cmdLogin(gf globalFlags, args []string) {
 	}
 
 	if len(args) < 3 {
-		fmt.Println("Usage: mcpctl login <server-url> <username> <password>")
-		fmt.Println("       mcpctl login <server-url> --token <service-account-token>")
-		fmt.Println("Example: mcpctl login https://localhost:30444 admin admin --insecure")
-		fmt.Println("         mcpctl login https://localhost:30444 --token eyJhbGc... --insecure")
+		fmt.Println("Usage: mcpctl login <server-url> --token <service-account-token>")
+		fmt.Println("        Mint the token in the console: Users -> Service Accounts -> Create.")
+		fmt.Println("Example: mcpctl login https://localhost:30444 --token eyJhbGc... --insecure")
+		fmt.Println(" ")
 		fmt.Println()
 		fmt.Println("Notes:")
 		fmt.Println("  Default Magertron gateway is HTTPS on port 30444.")
@@ -1561,7 +1561,7 @@ GLOBAL FLAGS:
   --json                Emit JSON instead of tables (where applicable)
 
 CONNECTION:
-  login <url> <user> <pass>    Login to orchestrator (e.g. https://localhost:30444)
+  login <url> --token <jwt>    Log in with a service-account token
   logout                       Clear saved credentials
   status                       Show connection status
 
@@ -1625,10 +1625,10 @@ OBSERVABILITY:
   audit [limit]                        View audit log
 
 EXAMPLES:
-  mcpctl login https://localhost:30444 admin admin --insecure
+  mcpctl login https://localhost:30444 --token eyJhbGc... --insecure
   mcpctl deploy fast-time mcp-prod ghcr.io/ibm/fast-time-server \
     --upstream-path /http --port 8080 --wait
-  mcpctl servers --json | jq '.[] | select(.state=="Running")'
+  mcpctl servers | grep Running
 
   mcpctl orgs list
   mcpctl sa list --org 11111111-1111-1111-1111-111111111111
@@ -1648,7 +1648,17 @@ EXAMPLES:
   mcpctl users update-email alice alice@yourco.com
 
 NOTES:
-  Default Magertron gateway is HTTPS on port 30444 (TLS+ext_authz unified
+  The CLI authenticates as a SERVICE ACCOUNT, not as a person. A human login
+ hits multi-factor authentication, which completes in a browser and cannot
+ finish at a command line — and a service account is the right identity for
+ automation anyway: attributable, scoped, and revocable without touching
+ anyone's account. Create one in the console (Users -> Service Accounts); the
+ JWT is shown once, at creation.
+
+ After a successful login the token is saved to ~/.config/mcpctl/config.json,
+ so later commands need no flag.
+
+ Default Magertron gateway is HTTPS on port 30444 (TLS+ext_authz unified
   in v1.6.0). Plain HTTP listeners on 8080/30080 were removed in that
   release. Use --insecure for self-signed certs typical of fresh helm
   installs, or --ca-cert to pin the CA bundle.
