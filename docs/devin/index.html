@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Governance RFP Template — Magertron</title>
+<meta name="description" content="Vendor-neutral criteria for evaluating a control plane for AI agents, tools, models and the data they reach. Identity, authorization, supply-chain integrity, cost, audit — with model routing where it belongs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06080c; --bg-card: #0c1018; --border: #1a2030;
+  --text: #e8ecf4; --text-secondary: #8694a8; --text-tertiary: #4a5568;
+  --accent: #2563eb; --accent-text: #60a5fa; --success: #22c55e;
+  --warn: #f59e0b; --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text);
+       line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(6,8,12,.85); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); }
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text);
+            letter-spacing: -.02em; }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: .55em; vertical-align: super; margin-left: 1px;
+               color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); }
+.nav-cta { border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; }
+
+/* ── Masthead ── */
+.masthead { padding: 132px 0 44px; border-bottom: 1px solid var(--border); }
+.masthead h1 { font-size: 40px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; }
+.masthead .kicker { color: var(--accent-text); font-family: var(--mono); font-size: 13px;
+                    letter-spacing: .04em; text-transform: uppercase; margin-bottom: 14px; }
+.masthead p.lede { color: var(--text-secondary); font-size: 18px; margin-top: 14px; max-width: 62ch; }
+.dl { display: inline-flex; align-items: center; gap: 8px; margin-top: 26px;
+      background: var(--accent); color: #fff; border-radius: 8px; padding: 11px 20px;
+      font-size: 14px; font-weight: 500; }
+.dl:hover { text-decoration: none; opacity: .92; }
+
+main { padding: 40px 0 80px; }
+h2 { font-size: 26px; letter-spacing: -.02em; margin: 54px 0 6px; scroll-margin-top: 88px; }
+h2 .n { color: var(--accent-text); font-family: var(--mono); font-size: 20px; margin-right: 10px; }
+h3 { font-size: 22px; margin: 46px 0 8px; letter-spacing: -.02em; }
+p.desc { color: var(--text-secondary); margin: 10px 0; max-width: 72ch; }
+p.italic { color: var(--text-tertiary); font-style: italic; margin: 4px 0 16px; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+code { font-family: var(--mono); font-size: .9em; color: var(--accent-text); }
+
+/* ── Criteria rows ── */
+.crit { border-top: 1px solid var(--border); margin: 14px 0 0; }
+.hrow { display: none; }                       /* labels live in the cells on screen */
+.crow { display: grid; grid-template-columns: 1.5fr 3fr 1fr 2.2fr; gap: 20px;
+        padding: 18px 0; border-bottom: 1px solid var(--border); align-items: start; }
+.crow:hover { background: rgba(255,255,255,.015); }
+.cell { font-size: 14.5px; }
+.c1 { font-weight: 600; }
+.c2, .c4 { color: var(--text-secondary); }
+.c4 { color: var(--text-secondary); }
+
+.pri { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+       white-space: nowrap; display: inline-block; }
+.pri.must   { color: #fbbf24; background: rgba(245,158,11,.13); }
+.pri.should { color: var(--accent-text); background: rgba(37,99,235,.15); }
+.pri.nice, .pri.dep { color: var(--text-tertiary); background: rgba(255,255,255,.05); }
+.st { font-weight: 700; }
+.st.ok { color: var(--success); } .st.part { color: var(--warn); }
+.st.road, .st.no { color: var(--text-tertiary); }
+
+/* ── Callouts ── */
+.legend, .ask { background: var(--bg-card); border: 1px solid var(--border);
+                border-radius: 12px; padding: 24px 28px; margin: 22px 0; }
+.legend table { width: 100%; border-collapse: collapse; }
+.legend td { padding: 6px 14px 6px 0; vertical-align: top; color: var(--text-secondary);
+             font-size: 14.5px; }
+.legend td.k { width: 170px; white-space: nowrap; }
+.warn { margin-top: 16px; font-size: 14.5px; color: var(--text); }
+.ask ol { margin: 0; padding-left: 22px; }
+.ask li { margin: 0 0 12px; color: var(--text-secondary); font-size: 15px; }
+.ask li b { color: var(--text); }
+
+footer { border-top: 1px solid var(--border); padding: 34px 0 60px;
+         color: var(--text-tertiary); font-size: 14px; }
+
+/* ── Phone: the four columns stack, and each cell says what it is ── */
+@media (max-width: 860px) {
+  .container { padding: 0 20px; }
+  .masthead { padding: 104px 0 34px; }
+  .masthead h1 { font-size: 30px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .crow { grid-template-columns: 1fr; gap: 8px; padding: 20px 0; }
+  .c2::before { content: "Evaluate: "; color: var(--text-tertiary); }
+  .c4::before { content: "Magertron: "; color: var(--text-tertiary); }
+}
+@media print { nav, .dl { display: none; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links">
+      <a href="/#features">AI Orchestrator</a>
+      <a href="/data-reach.html">AI Data Reach</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/security.html">Security</a>
+      <a href="/" class="nav-cta">Back to site</a>
+    </div>
+  </div>
+</nav>
+
+<header class="masthead">
+  <div class="container">
+    <div class="kicker">Evaluation template</div>
+    <h1>AI Governance Platform &mdash;<br>Request for Proposal</h1>
+    <p class="lede">Vendor-neutral criteria for governing AI agents, tools, models and the data
+    they reach. Take it, strike what does not apply, and send it to every vendor on your list &mdash;
+    including us.</p>
+    <a class="dl" href="magertron-rfp.pdf" download>Download the PDF &darr;</a>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+
+  <h3>Purpose</h3>
+  <p class="desc">Use this template to evaluate a control plane for agentic AI traffic &mdash; not a proxy
+  in front of model providers.</p>
+  
+  <p class="desc">The questions that decide whether you can put agents into production are
+  <b>who authorized this call, what data did it reach, what did it cost, and can you prove it a year from
+  now.</b> This template puts those first and model routing where it belongs.</p>
+  <p class="desc"><b>How to score.</b> Ask for a live demonstration of policy <i>enforcement</i>, not a
+  dashboard. A refusal you can watch &mdash; with the reason it names &mdash; is worth more than any
+  feature matrix, including this one.</p>
+
+  <div class="legend">
+    <table>
+      <tr><td class="k"><span class="st ok">&#10003; Supported</span></td><td>Shipped, in the product today</td></tr>
+      <tr><td class="k"><span class="st part">&#9687; Partial</span></td><td>Some of this; the row says what is missing</td></tr>
+      <tr><td class="k"><span class="st ok">&#128279; Integrates</span></td><td>Delivered through a named third party</td></tr>
+      <tr><td class="k"><span class="st road">&#9675; Roadmap</span></td><td>Committed, not shipped</td></tr>
+      <tr><td class="k"><span class="st no">&mdash; Not offered</span></td><td>Deliberate; the row says why</td></tr>
+    </table>
+  </div>
+
+  <div class="legend" style="margin-top:36px;">
+  <h3 style="margin:0 0 10px;">The ten categories</h3>
+  <p class="desc" style="margin-bottom:14px;">Fifty-five criteria across ten categories, each with a
+  priority and an honest answer for Magertron. The full matrix is in the PDF.</p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px 28px;color:var(--text-secondary);font-size:15px;">
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">1</span>&nbsp; Identity and delegation</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">6</span>&nbsp; Endpoint reality</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">2</span>&nbsp; Authorization and data reach</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">7</span>&nbsp; Model access and routing</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">3</span>&nbsp; Supply-chain integrity</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">8</span>&nbsp; Guardrails</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">4</span>&nbsp; Cost governance</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">9</span>&nbsp; Deployment and ownership</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">5</span>&nbsp; Audit and evidence</div>
+    <div><span style="color:var(--accent-text);font-family:var(--mono);">10</span>&nbsp; MCP and agent operations</div>
+  </div>
+  <p style="margin-top:20px;">
+    <a class="dl" href="magertron-rfp.pdf" download style="margin-top:0;">Download the full template (PDF) &darr;</a>
+  </p>
+</div>
+
+<hr>
+
+  <h3>Questions to ask every vendor, including us</h3>
+  <p class="desc">Independent of the matrix. The answers are more revealing than the checkmarks.</p>
+  <div class="ask">
+    <ol>
+      <li><b>Show me a refused call.</b> Not a dashboard &mdash; a refusal, and the reason it gives. Does it name which check failed, which principal and which rule?</li>
+      <li><b>Show me an allow record.</b> Then ask it to reconstruct the permissions that were in force when that call happened.</li>
+      <li><b>An agent acts for a person. Show me both identities on the record</b> &mdash; and what happens when the person&rsquo;s permissions are narrower than the agent&rsquo;s.</li>
+      <li><b>A tool&rsquo;s vendor changes its schema overnight.</b> What happens to the next call?</li>
+      <li><b>Where does the component that authorizes calls run,</b> and what data leaves my perimeter?</li>
+      <li><b>What on this sheet would you mark partial?</b> A vendor who cannot name one is either not listening or not telling you.</li>
+    </ol>
+  </div>
+
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p><strong>magertron.com</strong> &nbsp;&middot;&nbsp; Who authorized this. What it cost. Prove it.</p>
+  </div>
+</footer>
+
+</body>
+</html>
