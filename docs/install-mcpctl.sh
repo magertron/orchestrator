@@ -146,11 +146,28 @@ if ! command -v "$BINARY" >/dev/null 2>&1; then
     exit 0
 fi
 
-INSTALLED_VERSION=$("$BINARY" version 2>/dev/null || echo "unknown")
+# ⚠ "$DEST", not "$BINARY". Resolving the NAME goes through PATH, and an older
+# copy earlier in PATH (Homebrew, /usr/local vs /usr/bin) answers instead — so a
+# successful install reported the version it had just replaced.
+INSTALLED_VERSION=$("$DEST" version 2>/dev/null || echo "unknown")
 echo ""
 echo "Installed: $INSTALLED_VERSION"
 echo "Location:  $DEST"
+
+# If another copy shadows this one, say so — otherwise the next command the
+# reader runs is answered by a binary they did not just install.
+ON_PATH=$(command -v "$BINARY" 2>/dev/null || true)
+if [ -n "$ON_PATH" ] && [ "$ON_PATH" != "$DEST" ]; then
+  echo ""
+  echo "  ⚠ '$BINARY' on your PATH resolves to $ON_PATH, not $DEST."
+  echo "    Remove that copy, or run $DEST directly."
+fi
 echo ""
 echo "Next steps:"
-echo "  $BINARY login https://<your-magertron-host>:30443 <user> <password>"
+echo "  $BINARY login https://<your-magertron-host>:30444 --token <service-account-token>"
+echo ""
+echo "  The CLI authenticates as a service account, not as a person: a human"
+echo "  login requires multi-factor authentication, which completes in a browser."
+echo "  Create one in the console under Users -> Service Accounts; the token is"
+echo "  shown once, at creation."
 echo "  $BINARY --help"

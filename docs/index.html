@@ -1225,9 +1225,16 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <span class="caret">▸</span>
         </summary>
         <div class="body">
-          <div class="tagline">Cleanest install if you have brew:</div>
+          <div class="tagline">Cleanest install if you have brew &mdash; and the only one that upgrades itself:</div>
           <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">brew trust magertron/tap</span><br>
             <span class="dim">$</span> <span class="cmd">brew install magertron/tap/mcpctl</span>
+          </div>
+          <div class="tagline" style="margin-top: 12px; font-size: 13px;">
+            Homebrew&nbsp;6 asks you to trust any tap outside its core before it will
+            load a formula, because a formula is code that runs on your machine.
+            One command, once. Afterwards <code>brew upgrade</code> keeps
+            <code>mcpctl</code> current.
           </div>
         </div>
       </details>
