@@ -260,12 +260,6 @@
       though the extension is not installed.
     </div>
 
-    <p style="margin-top:14px">
-      Anything credential-shaped is removed before the manifest leaves your
-      machine. Environment variable <em>names</em> are sent; values are not,
-      including defaults written into the file. Your platform team can see that
-      a server needs a secret without ever seeing the secret.
-    </p>
   </section>
 
   <section>
@@ -278,14 +272,10 @@
       at a route that no longer exists. Nothing resident is installed; it rides
       the endpoint management your IT team already runs.
     </p>
-    <p style="color:var(--muted);font-size:14px;margin:0">
-      Configuring through the portal is the quiet path: those servers are the
-      approved ones by definition.
-    </p>
   </section>
 
   <section>
-    <h2>No platform yet?</h2>
+    <h2>No Magertron installed yet?</h2>
     <p class="sub">Run the orchestrator in your own sandbox and point Devin at it.</p>
 <pre><code><span class="cmt"># add the chart repository</span>
 helm repo add magertron https://magertron.com/charts
