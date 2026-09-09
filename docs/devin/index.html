@@ -231,24 +231,6 @@
   </section>
 
   <section>
-    <h2>Installing Devin on Linux</h2>
-    <p class="sub">One thing the tarball does not do for you.</p>
-
-<pre><code><span class="cmt"># unpack wherever you keep applications</span>
-sudo mv Devin /opt/devin
-sudo ln -sf /opt/devin/bin/devin-desktop /usr/local/bin/devin-desktop
-
-<span class="cmt"># without this it exits immediately, printing nothing through the wrapper</span>
-sudo chown root:root /opt/devin/chrome-sandbox
-sudo chmod 4755 /opt/devin/chrome-sandbox</code></pre>
-    <p>
-      Run <code>/opt/devin/devin-desktop</code> directly if it still fails
-      &mdash; the wrapper swallows the error, the binary prints it.
-    </p>
-
-  </section>
-
-  <section>
     <h2>Submit a server you built</h2>
     <p class="sub">The other direction, and it uses the extension rather than a config file.</p>
 
