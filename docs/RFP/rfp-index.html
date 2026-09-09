@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Governance RFP Template — Magertron</title>
+<meta name="description" content="Vendor-neutral criteria for evaluating a control plane for AI agents, tools, models and the data they reach. Identity, authorization, supply-chain integrity, cost, audit — with model routing where it belongs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06080c; --bg-card: #0c1018; --border: #1a2030;
+  --text: #e8ecf4; --text-secondary: #8694a8; --text-tertiary: #4a5568;
+  --accent: #2563eb; --accent-text: #60a5fa; --success: #22c55e;
+  --warn: #f59e0b; --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text);
+       line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(6,8,12,.85); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); }
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text);
+            letter-spacing: -.02em; }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: .55em; vertical-align: super; margin-left: 1px;
+               color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); }
+.nav-cta { border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; }
+
+/* ── Masthead ── */
+.masthead { padding: 132px 0 44px; border-bottom: 1px solid var(--border); }
+.masthead h1 { font-size: 40px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; }
+.masthead .kicker { color: var(--accent-text); font-family: var(--mono); font-size: 13px;
+                    letter-spacing: .04em; text-transform: uppercase; margin-bottom: 14px; }
+.masthead p.lede { color: var(--text-secondary); font-size: 18px; margin-top: 14px; max-width: 62ch; }
+.dl { display: inline-flex; align-items: center; gap: 8px; margin-top: 26px;
+      background: var(--accent); color: #fff; border-radius: 8px; padding: 11px 20px;
+      font-size: 14px; font-weight: 500; }
+.dl:hover { text-decoration: none; opacity: .92; }
+
+main { padding: 40px 0 80px; }
+h2 { font-size: 26px; letter-spacing: -.02em; margin: 54px 0 6px; scroll-margin-top: 88px; }
+h2 .n { color: var(--accent-text); font-family: var(--mono); font-size: 20px; margin-right: 10px; }
+h3 { font-size: 22px; margin: 46px 0 8px; letter-spacing: -.02em; }
+p.desc { color: var(--text-secondary); margin: 10px 0; max-width: 72ch; }
+p.italic { color: var(--text-tertiary); font-style: italic; margin: 4px 0 16px; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+code { font-family: var(--mono); font-size: .9em; color: var(--accent-text); }
+
+/* ── Criteria rows ── */
+.crit { border-top: 1px solid var(--border); margin: 14px 0 0; }
+.hrow { display: none; }                       /* labels live in the cells on screen */
+.crow { display: grid; grid-template-columns: 1.5fr 3fr 1fr 2.2fr; gap: 20px;
+        padding: 18px 0; border-bottom: 1px solid var(--border); align-items: start; }
+.crow:hover { background: rgba(255,255,255,.015); }
+.cell { font-size: 14.5px; }
+.c1 { font-weight: 600; }
+.c2, .c4 { color: var(--text-secondary); }
+.c4 { color: var(--text-secondary); }
+
+.pri { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+       white-space: nowrap; display: inline-block; }
+.pri.must   { color: #fbbf24; background: rgba(245,158,11,.13); }
+.pri.should { color: var(--accent-text); background: rgba(37,99,235,.15); }
+.pri.nice, .pri.dep { color: var(--text-tertiary); background: rgba(255,255,255,.05); }
+.st { font-weight: 700; }
+.st.ok { color: var(--success); } .st.part { color: var(--warn); }
+.st.road, .st.no { color: var(--text-tertiary); }
+
+/* ── Callouts ── */
+.legend, .ask { background: var(--bg-card); border: 1px solid var(--border);
+                border-radius: 12px; padding: 24px 28px; margin: 22px 0; }
+.legend table { width: 100%; border-collapse: collapse; }
+.legend td { padding: 6px 14px 6px 0; vertical-align: top; color: var(--text-secondary);
+             font-size: 14.5px; }
+.legend td.k { width: 170px; white-space: nowrap; }
+.warn { margin-top: 16px; font-size: 14.5px; color: var(--text); }
+.ask ol { margin: 0; padding-left: 22px; }
+.ask li { margin: 0 0 12px; color: var(--text-secondary); font-size: 15px; }
+.ask li b { color: var(--text); }
+
+footer { border-top: 1px solid var(--border); padding: 34px 0 60px;
+         color: var(--text-tertiary); font-size: 14px; }
+
+/* ── Phone: the four columns stack, and each cell says what it is ── */
+@media (max-width: 860px) {
+  .container { padding: 0 20px; }
+  .masthead { padding: 104px 0 34px; }
+  .masthead h1 { font-size: 30px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .crow { grid-template-columns: 1fr; gap: 8px; padding: 20px 0; }
+  .c2::before { content: "Evaluate: "; color: var(--text-tertiary); }
+  .c4::before { content: "Magertron: "; color: var(--text-tertiary); }
+}
+@media print { nav, .dl { display: none; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links">
+      <a href="/#features">AI Orchestrator</a>
+      <a href="/data-reach.html">AI Data Reach</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/security.html">Security</a>
+      <a href="/" class="nav-cta">Back to site</a>
+    </div>
+  </div>
+</nav>
+
+<header class="masthead">
+  <div class="container">
+    <div class="kicker">Evaluation template</div>
+    <h1>AI Governance Platform &mdash;<br>Request for Proposal</h1>
+    <p class="lede">Vendor-neutral criteria for governing AI agents, tools, models and the data
+    they reach. Take it, strike what does not apply, and send it to every vendor on your list &mdash;
+    including us.</p>
+    <a class="dl" href="magertron-rfp.pdf" download>Download the PDF &darr;</a>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+
+  <h3>Purpose</h3>
+  <p class="desc">Use this template to evaluate a control plane for agentic AI traffic &mdash; not a proxy
+  in front of model providers.</p>
+  <p class="desc">Most AI gateway evaluations start with model routing: which providers, how many models,
+  what the latency overhead is. Those questions matter, and they are the easy half. They are also the half
+  a competent team can build in a quarter.</p>
+  <p class="desc">The questions that decide whether you can put agents into production are different:
+  <b>who authorized this call, what data did it reach, what did it cost, and can you prove it a year from
+  now.</b> This template puts those first and model routing where it belongs.</p>
+  <p class="desc"><b>How to score.</b> Ask for a live demonstration of policy <i>enforcement</i>, not a
+  dashboard. A refusal you can watch &mdash; with the reason it names &mdash; is worth more than any
+  feature matrix, including this one.</p>
+
+  <div class="legend">
+    <table>
+      <tr><td class="k"><span class="st ok">&#10003; Supported</span></td><td>Shipped, in the product today</td></tr>
+      <tr><td class="k"><span class="st part">&#9687; Partial</span></td><td>Some of this; the row says what is missing</td></tr>
+      <tr><td class="k"><span class="st ok">&#128279; Integrates</span></td><td>Delivered through a named third party</td></tr>
+      <tr><td class="k"><span class="st road">&#9675; Roadmap</span></td><td>Committed, not shipped</td></tr>
+      <tr><td class="k"><span class="st no">&mdash; Not offered</span></td><td>Deliberate; the row says why</td></tr>
+    </table>
+    <p class="warn">&#9888; A vendor whose column is &#10003; on every row has told you something about
+    their marketing, not their product. <b>Ask which rows are partial and what is missing</b> &mdash; the
+    answer, and whether it comes readily, is itself a data point.</p>
+  </div>
+
+  <h2><span class="n">1</span>Identity and delegation</h2>
+  <p class="italic">The question nobody asks until an auditor does: when an agent acted, who was it acting for?</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Agent identity</div><div class="cell c2">Does every agent have its own attributable, scoped, revocable identity &mdash; never a shared API key?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> service accounts with per-tool RBAC, revocable without touching a person&rsquo;s account</div></div>
+  <div class="crow"><div class="cell c1">Delegated calls</div><div class="cell c2">Can an agent act <i>for</i> a named person, with both identities carried on the call?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> RFC 8693 token exchange, plus an on-behalf-of header path for in-cluster callers</div></div>
+  <div class="crow"><div class="cell c1">Intersection enforcement</div><div class="cell c2">On a delegated call, are BOTH principals evaluated with the narrower winning &mdash; or does the agent inherit the person&rsquo;s authority?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> intersection, never union; delegation can only narrow</div></div>
+  <div class="crow"><div class="cell c1">Standards compliance</div><div class="cell c2">Is delegation done to a standard your architects can review, or a bespoke header?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> RFC 8693 against your IdP</div></div>
+  <div class="crow"><div class="cell c1">Non-delegable roles</div><div class="cell c2">Can an agent be prevented from acting for an administrator?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> refused outright with the role named; configurable set</div></div>
+  <div class="crow"><div class="cell c1">Works without an IdP</div><div class="cell c2">Can delegation work for a deployment that has not finished its SSO rollout, or has none?</div><div class="cell c3"><span class="pri dep">Depends</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> platform-issued identities are first-class subjects and actors</div></div>
+  <div class="crow"><div class="cell c1">Mixed-issuer delegation</div><div class="cell c2">Can an IdP-issued agent act for a locally-authenticated person, each verified against its own issuer?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+</div>
+
+  <h2><span class="n">2</span>Authorization and data reach</h2>
+  <p class="italic">Tool permissions are the floor. What the tool can touch is the ceiling.</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Per-tool authorization</div><div class="cell c2">Is authorization per TOOL, or only per server or endpoint?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> per tool, per principal</div></div>
+  <div class="crow"><div class="cell c1">Data-object governance</div><div class="cell c2">Can you govern which tables, schemas and catalogs an agent may reach through a tool &mdash; not just which tool it may call?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> catalog grants over Databricks Unity Catalog, Snowflake, BigQuery</div></div>
+  <div class="crow"><div class="cell c1">Blast-radius analysis</div><div class="cell c2">Before granting, can you see what a grant would expose? After, what it actually reached?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> grant simulation and an entitlement-versus-usage graph</div></div>
+  <div class="crow"><div class="cell c1">Dark entitlements</div><div class="cell c2">Can you see what was granted and never used, and what was used without a grant?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> both surfaced as distinct states</div></div>
+  <div class="crow"><div class="cell c1">Tenant isolation</div><div class="cell c2">Are environments isolated such that a scoped administrator cannot read across them?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> namespace isolation with delegated administration</div></div>
+  <div class="crow"><div class="cell c1">Revocation latency</div><div class="cell c2">When a grant is revoked, how long until the next call is refused?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st part">&#9687; Partial:</span> catalog grants refresh within a configurable window; a ROLE change does not reach an already-issued token</div></div>
+</div>
+
+  <h2><span class="n">3</span>Supply-chain integrity</h2>
+  <p class="italic">The tool you approved in March is not necessarily the tool you are calling in September.</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Definition baselining</div><div class="cell c2">Is each tool&rsquo;s schema recorded at approval and compared on every discovery?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Drift enforcement</div><div class="cell c2">When a vendor changes a tool&rsquo;s schema, do calls STOP until a human reviews the diff &mdash; or is it logged and allowed?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> refused regardless of permissions until reviewed</div></div>
+  <div class="crow"><div class="cell c1">Active detection</div><div class="cell c2">Are servers probed for change, or is drift only noticed on the next call?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> scheduled probing with on-demand re-probe</div></div>
+  <div class="crow"><div class="cell c1">Prompt-injection scanning</div><div class="cell c2">Are tool descriptions scanned for instructions aimed at the model rather than the user?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> verdict recorded per tool at persist time</div></div>
+  <div class="crow"><div class="cell c1">Quarantine</div><div class="cell c2">Can a server and all its tools be disabled atomically?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+</div>
+
+  <h2><span class="n">4</span>Cost governance</h2>
+  <p class="italic">&ldquo;Cost dashboards&rdquo; show you what you spent. Governance stops you spending it.</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Attribution</div><div class="cell c2">Is spend attributed to the principal that caused it &mdash; including the person an agent acted for &mdash; or to the application?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> both identities on the meter record; delegated calls bill the person</div></div>
+  <div class="crow"><div class="cell c1">Budgets that refuse</div><div class="cell c2">At the limit, is the call REFUSED &mdash; or alerted after the money is spent?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> refused at the gateway</div></div>
+  <div class="crow"><div class="cell c1">Contract awareness</div><div class="cell c2">Can prepaid commitments and pay-as-you-go be tracked separately, with a position that does not reset monthly?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> per-vendor contracts, burn-down reconciled to the vendor console</div></div>
+  <div class="crow"><div class="cell c1">Multi-dimensional metering</div><div class="cell c2">Beyond tokens &mdash; can calls be rated on per-tool rate cards and magnitude dimensions?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Chargeback</div><div class="cell c2">Can finance receive a per-department, per-vendor, per-tool statement from the same records security uses?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> one record answers the auditor and the CFO</div></div>
+  <div class="crow"><div class="cell c1">Rate limiting</div><div class="cell c2">Can throttles be applied per identity, tool and server?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+</div>
+
+  <h2><span class="n">5</span>Audit and evidence</h2>
+  <p class="italic">Every vendor logs denials. Ask what happens on an allow.</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Allows recorded</div><div class="cell c2">Are ALLOWS recorded with the rule that permitted them &mdash; or only denials?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> an allow record answers &ldquo;who read this last quarter, and under what grant&rdquo;</div></div>
+  <div class="crow"><div class="cell c1">Authority record</div><div class="cell c2">Can you reconstruct the roles and permissions <b>in force at the moment of the call</b>, years later?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> full authority snapshot per turn, exportable as JSON</div></div>
+  <div class="crow"><div class="cell c1">Refusal detail</div><div class="cell c2">Does a denial name WHICH check failed, which principal and which rule &mdash; or just &ldquo;denied&rdquo;?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">SIEM export</div><div class="cell c2">Do events reach your SIEM in a normalized schema?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> OCSF-aligned, into Splunk, Elastic or Datadog</div></div>
+  <div class="crow"><div class="cell c1">OTEL export</div><div class="cell c2">Can traces and metrics export to OTEL-compatible systems?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st road">&#9675; Roadmap:</span> audit and metering are structured today; an OTEL exporter is committed</div></div>
+  <div class="crow"><div class="cell c1">Continuous control evidence</div><div class="cell c2">Is compliance evidence generated continuously, or assembled the week before the audit?</div><div class="cell c3"><span class="pri dep">Depends</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> continuous SOC&nbsp;2 control evidence with signed per-turn receipts</div></div>
+  <div class="crow"><div class="cell c1">Vendor attestations</div><div class="cell c2">Does the VENDOR hold SOC&nbsp;2 / HIPAA / GDPR attestations?</div><div class="cell c3"><span class="pri dep">Depends</span></div><div class="cell c4"><span class="st part">&#9687; Partial:</span> the platform generates control evidence for YOUR audit; the vendor&rsquo;s own attestation is in progress. Ask every vendor which they mean</div></div>
+</div>
+
+  <h2><span class="n">6</span>Endpoint reality</h2>
+  <p class="italic">Governance covers what routes through the gateway. This is how you find what does not.</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Shadow MCP discovery</div><div class="cell c2">Can you see every MCP server configured on managed endpoints &mdash; approved or not?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> reads MCP client configs across Claude Desktop, Claude Code, Cursor, VS Code, Windsurf</div></div>
+  <div class="crow"><div class="cell c1">Classification</div><div class="cell c2">Are declared servers classified as routed through the gateway, pointed straight at a vendor, or pointed at a route that no longer exists?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Remediation</div><div class="cell c2">Can endpoints be re-pointed at the gateway by policy, without touching the laptop?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> observe / advise / enforce, per namespace</div></div>
+  <div class="crow"><div class="cell c1">Delivery</div><div class="cell c2">Does it use the endpoint management you already run?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> Jamf, Intune, Ansible, or a script and a scheduler. No resident agent</div></div>
+</div>
+
+  <h2><span class="n">7</span>Model access and routing</h2>
+  <p class="italic">Table stakes. Necessary, not sufficient.</p>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Governed model access</div><div class="cell c2">Are model calls subject to the same identity, budget and audit controls as tool calls &mdash; or routed around them?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> the model leg runs through the same gateway, metered and attributed</div></div>
+  <div class="crow"><div class="cell c1">Provider key isolation</div><div class="cell c2">Can applications call models without ever receiving a raw provider key?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> credentials injected at the gateway, rotated centrally</div></div>
+  <div class="crow"><div class="cell c1">OpenAI-compatible endpoint</div><div class="cell c2">Is there an OpenAI-shaped endpoint so existing clients need no change?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st road">&#9675; Roadmap:</span> committed as a translation layer over the existing governed route</div></div>
+  <div class="crow"><div class="cell c1">Provider coverage</div><div class="cell c2">Which providers are supported, and how quickly is a new one added?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st part">&#9687; Partial:</span> major hosted and self-hosted providers, config-driven onboarding. Not a 1000-model catalog</div></div>
+  <div class="crow"><div class="cell c1">Routing and fallback</div><div class="cell c2">Can requests be routed and failed over by model, provider, latency or weight?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st part">&#9687; Partial:</span> routing policy and model comparison; latency- and weight-based balancing is roadmap</div></div>
+  <div class="crow"><div class="cell c1">Model comparison</div><div class="cell c2">Can one prompt be run across models with cost side by side?</div><div class="cell c3"><span class="pri nice">Nice to have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Caching</div><div class="cell c2">Is there prefix or semantic caching to reduce latency and cost?</div><div class="cell c3"><span class="pri nice">Nice to have</span></div><div class="cell c4"><span class="st part">&#9687; Partial:</span> prefix caching; semantic caching is roadmap</div></div>
+  <div class="crow"><div class="cell c1">Batch API</div><div class="cell c2">Is there an asynchronous batch path at batch pricing?</div><div class="cell c3"><span class="pri nice">Nice to have</span></div><div class="cell c4"><span class="st no">&mdash; Not offered</span></div></div>
+</div>
+
+  <h2><span class="n">8</span>Guardrails</h2>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Tool-layer guardrails</div><div class="cell c2">Are tool definitions and tool traffic inspected for injection and poisoning?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Content guardrails</div><div class="cell c2">Can PII detection and moderation run inline before or after a model call?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st road">&#9675; Roadmap:</span> the policy hook exists; content inspection is committed as an integration</div></div>
+  <div class="crow"><div class="cell c1">Third-party guardrails</div><div class="cell c2">Can external providers (Bedrock Guardrails, Azure Content Safety) run in the decision path?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st road">&#9675; Roadmap</span></div></div>
+  <div class="crow"><div class="cell c1">Deterministic enforcement</div><div class="cell c2">When a guardrail fires, is the call refused &mdash; or annotated and forwarded?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> the gateway refuses. Nothing is annotated and let through</div></div>
+</div>
+
+  <h2><span class="n">9</span>Deployment and ownership</h2>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Where the control plane runs</div><div class="cell c2">Does the component making authorization decisions run in YOUR cluster, or the vendor&rsquo;s?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> entirely in your cluster. Nothing calls home</div></div>
+  <div class="crow"><div class="cell c1">Data residency</div><div class="cell c2">Do prompts, audit records and cost data ever leave your infrastructure?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> they do not</div></div>
+  <div class="crow"><div class="cell c1">SaaS option</div><div class="cell c2">Is a hosted option available?</div><div class="cell c3"><span class="pri dep">Depends</span></div><div class="cell c4"><span class="st no">&mdash; Not offered, deliberately:</span> the decision path sits between your agents and your tools; putting it across the internet adds a round trip and a dependency to every call</div></div>
+  <div class="crow"><div class="cell c1">Air-gapped operation</div><div class="cell c2">Can it run with no outbound connectivity at all?</div><div class="cell c3"><span class="pri dep">Depends</span></div><div class="cell c4"><span class="st ok">&#10003; Supported,</span> including delegated identity without an external IdP</div></div>
+  <div class="crow"><div class="cell c1">Install</div><div class="cell c2">How long from bare cluster to governed first call?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> one command; Helm chart for an existing cluster</div></div>
+  <div class="crow"><div class="cell c1">Infrastructure as code</div><div class="cell c2">Terraform, Helm, GitOps?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st part">&#9687; Partial:</span> Helm and GitOps today; a Terraform provider is roadmap</div></div>
+  <div class="crow"><div class="cell c1">Multi-cluster</div><div class="cell c2">Can several clusters be governed and reported on together?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st road">&#9675; Roadmap:</span> federation</div></div>
+  <div class="crow"><div class="cell c1">Scale</div><div class="cell c2">Demonstrated throughput, and behavior under load?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> 2,500 rps sustained on real tool calls; Kubernetes-native autoscaling</div></div>
+</div>
+
+  <h2><span class="n">10</span>MCP and agent operations</h2>
+  <div class="crit">
+  <div class="hrow"><div class="cell c1">Criteria</div><div class="cell c2">What should you evaluate?</div><div class="cell c3">Priority</div><div class="cell c4">Magertron</div></div>
+  <div class="crow"><div class="cell c1">Server registry</div><div class="cell c2">Can MCP servers be registered, discovered and governed centrally?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Tool discovery</div><div class="cell c2">Are tools auto-discovered and callable from a console or portal?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported:</span> developer portal with a working request against the gateway per tool</div></div>
+  <div class="crow"><div class="cell c1">Developer self-service</div><div class="cell c2">Can a developer see exactly what THEY may call, and get a working example?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+  <div class="crow"><div class="cell c1">Virtual MCP servers</div><div class="cell c2">Can tools from several servers be presented as one?</div><div class="cell c3"><span class="pri nice">Nice to have</span></div><div class="cell c4"><span class="st no">&mdash; Not offered, deliberately:</span> composition the caller cannot influence is a naming convenience. Curation is done with per-tool permissions &mdash; grant a role one tool from a forty-tool server and that is what the portal, the catalog and the model each see</div></div>
+  <div class="crow"><div class="cell c1">Agent and skills registry</div><div class="cell c2">Can agents and reusable skills be published, discovered and governed?</div><div class="cell c3"><span class="pri should">Should have</span></div><div class="cell c4"><span class="st road">&#9675; Roadmap</span></div></div>
+  <div class="crow"><div class="cell c1">CLI and API</div><div class="cell c2">Is everything the console does available on an API and a CLI?</div><div class="cell c3"><span class="pri must">Must have</span></div><div class="cell c4"><span class="st ok">&#10003; Supported</span></div></div>
+</div>
+
+  <hr>
+
+  <h3>Questions to ask every vendor, including us</h3>
+  <p class="desc">Independent of the matrix. The answers are more revealing than the checkmarks.</p>
+  <div class="ask">
+    <ol>
+      <li><b>Show me a refused call.</b> Not a dashboard &mdash; a refusal, and the reason it gives. Does it name which check failed, which principal and which rule?</li>
+      <li><b>Show me an allow record.</b> Then ask it to reconstruct the permissions that were in force when that call happened.</li>
+      <li><b>An agent acts for a person. Show me both identities on the record</b> &mdash; and what happens when the person&rsquo;s permissions are narrower than the agent&rsquo;s.</li>
+      <li><b>A tool&rsquo;s vendor changes its schema overnight.</b> What happens to the next call?</li>
+      <li><b>Where does the component that authorizes calls run,</b> and what data leaves my perimeter?</li>
+      <li><b>What on this sheet would you mark partial?</b> A vendor who cannot name one is either not listening or not telling you.</li>
+    </ol>
+  </div>
+
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p><strong>magertron.com</strong> &nbsp;&middot;&nbsp; Who authorized this. What it cost. Prove it.</p>
+  </div>
+</footer>
+
+</body>
+</html>
