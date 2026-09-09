@@ -238,9 +238,8 @@
 
   <section>
     <h2>Installing Devin on Linux</h2>
-    <p class="sub">Two things the tarball does not do for you.</p>
+    <p class="sub">One thing the tarball does not do for you.</p>
 
-    <h3>The sandbox helper needs root</h3>
 <pre><code><span class="cmt"># unpack wherever you keep applications</span>
 sudo mv Devin /opt/devin
 sudo ln -sf /opt/devin/bin/devin-desktop /usr/local/bin/devin-desktop
@@ -253,22 +252,6 @@ sudo chmod 4755 /opt/devin/chrome-sandbox</code></pre>
       &mdash; the wrapper swallows the error, the binary prints it.
     </p>
 
-    <h3>Sign-in hands back through a <code>devin://</code> link</h3>
-    <p>
-      A tarball install registers no handler for that scheme, so the browser
-      asks which application to open. Either use <b>try manual auth</b> on that
-      page, or register the handler once:
-    </p>
-<pre><code>cat &gt; ~/.local/share/applications/devin-desktop.desktop &lt;&lt;'EOF'
-[Desktop Entry]
-Name=Devin
-Exec=/opt/devin/devin-desktop %U
-Type=Application
-Terminal=false
-MimeType=x-scheme-handler/devin;
-EOF
-update-desktop-database ~/.local/share/applications
-xdg-mime default devin-desktop.desktop x-scheme-handler/devin</code></pre>
   </section>
 
   <section>
