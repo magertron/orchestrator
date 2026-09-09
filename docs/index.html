@@ -42,7 +42,7 @@
   "applicationSubCategory": "Kubernetes Platform",
   "operatingSystem": "Linux, Kubernetes",
   "description": "The spend control plane for enterprise AI agents. Meter every MCP tool call, charge it back per user and team, and enforce hard budget limits at the gateway.",
-  "softwareVersion": "3.7.74",
+  "softwareVersion": "3.7.68",
   "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
   "url": "https://magertron.com",
   "downloadUrl": "https://github.com/magertron/orchestrator",
@@ -390,7 +390,8 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 
 /* ── Pricing ──────────────────────────────────────────────────────────── */
 .pricing { padding: 80px 0; }
-.pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1000px; margin: 48px auto 0; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; max-width: 1240px; margin: 48px auto 0; }
+@media (max-width: 1100px) { .pricing-grid { grid-template-columns: 1fr 1fr; } }
 .pricing-card {
   padding: 40px; border-radius: 16px; background: var(--bg-card);
   border: 1px solid var(--border); position: relative; transition: all 0.3s;
@@ -579,7 +580,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="hero-badge">
       <span class="dot"></span>
-      Now available — v3.7.74
+      Now available — v3.7.68
     </div>
     <div class="hero-badge" style="margin-left: 8px; border-color: var(--border-accent); background: var(--accent-glow); color: var(--accent-text);">
       <span style="font-weight: 600; letter-spacing: 0.04em;">NEW:</span>
@@ -868,7 +869,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <div class="section-label">Enterprise Security</div>
         <h2 class="section-title">Rogue MCP servers are already inside your network</h2>
         <p class="section-desc">Developers are spinning up ungoverned MCP servers on laptops, in personal cloud accounts, and inside your perimeter — with no audit trail and no controls. AI agents talking to these servers can execute actions at scale.</p>
-        <p class="section-desc"><strong>Now you can find them.</strong> Magertron reads MCP client configs on every endpoint you manage, shows you every server in use — approved or not — and points them at the gateway with a single policy change. Nothing to install on the laptop; it rides the MDM you already run.</p>
+        <p class="section-desc"><strong>Now you can find them.</strong> Magertron reads MCP client configs on every endpoint you manage, shows you every server in use — approved or not — and points them at the gateway with a single policy change. No resident agent on the laptop &mdash; a script and a timer, delivered by the MDM you already run.</p>
         <a href="security.html" style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--accent-text);">
           Read the security guide →
         </a>
@@ -1313,14 +1314,14 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   <div class="container">
     <div class="section-label" style="text-align: center;">Pricing</div>
     <div class="section-title" style="text-align: center;">Choose your plan</div>
-    <div class="section-desc" style="text-align: center; margin-left: auto; margin-right: auto;">Start free with core server management. Scale to Pro for a single team running their own MCP servers — or Enterprise for identity, compliance, and platform-team needs.</div>
+    <div class="section-desc" style="text-align: center; margin-left: auto; margin-right: auto;">Start free with core server management. Pro for a single team. Business for an organization running agents in production. Enterprise for the whole estate. Servers are never metered on any tier.</div>
 
     <div class="pricing-grid">
       <!-- Free -->
       <div class="pricing-card">
         <div class="pricing-tier">Open Source</div>
         <div class="pricing-name">Free</div>
-        <div class="pricing-price">Free forever · Apache 2.0</div>
+        <div class="pricing-price">Free forever · Apache 2.0 licensed runtime</div>
         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 20 MCP servers · No signup · No credit card</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
@@ -1374,23 +1375,44 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <a href="#" class="pricing-btn primary" onclick="openDemoModal(event)">Try it now → </a>
       </div>
 
+      <!-- Business -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Commercial</div>
+        <div class="pricing-name">Business</div>
+        <div class="pricing-price">$30,000/yr</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For an organization running agents in production</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Pro, plus:</strong></li>
+          <li><strong>Model comparison</strong> &mdash; one prompt across models, cost side by side</li>
+          <li>Delegated administration</li>
+          <li>Governance policy export</li>
+          <li>Endpoint fleet inventory via your MDM (Jamf, Intune, Ansible)</li>
+          <li>Unlimited servers</li>
+          <li>Priority support</li>
+          <li class="disabled">AI Data Reach &amp; Catalog Universe</li>
+          <li class="disabled">Continuous SOC 2 control evidence</li>
+        </ul>
+        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Talk to us &rarr;</a>
+      </div>
+
       <!-- Enterprise -->
       <div class="pricing-card">
         <div class="pricing-tier">Commercial</div>
         <div class="pricing-name">Enterprise</div>
         <div class="pricing-price">Contact us for pricing</div>
-        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For identity, compliance &amp; platform teams</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For the enterprise agent estate</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li><strong>Everything in Pro, plus:</strong></li>
-          <li><strong>AI Data Reach</strong> — govern the data agents can touch, not just what tools they reach</li>
-          <li><strong>Catalog Universe</strong> — across the sources you configure (Databricks Unity Catalog, Snowflake, BigQuery)</li>
+          <li><strong>Everything in Business, plus:</strong></li>
+          <li><strong>AI Data Reach</strong> &mdash; govern the data agents can touch, not just the tools they reach</li>
+          <li><strong>Catalog Universe</strong> &mdash; across every source you configure (Databricks Unity Catalog, Snowflake, BigQuery)</li>
           <li>Blast-radius analysis and grant simulation</li>
-          <li><strong>Model comparison</strong> — one prompt across models, cost side by side</li>
-          <li>Delegated administration</li>
-          <li>Governance policy export</li>
-          <li>Unlimited servers</li>
-          <li>Priority support with SLA</li>
+          <li><strong>Continuous SOC&nbsp;2 control evidence</strong></li>
+          <li>Agent capacity sized to your estate, expandable under contract</li>
+          <li>Contractual SLA and named support</li>
+          <li>Security and procurement review support</li>
+          <li>Custom license and payment terms</li>
         </ul>
         <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-subtle,#333);">
           <div style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;">On the roadmap</div>
@@ -1401,7 +1423,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
             <li>Just-in-time provisioning</li>
           </ul>
         </div>
-        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales →</a>
+        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales &rarr;</a>
       </div>
     </div>
   </div>
@@ -1441,8 +1463,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
-          <li><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a></li>
-          <li><a href="/cursor/">Cursor</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a></li>
         </ul>
       </div>
 
