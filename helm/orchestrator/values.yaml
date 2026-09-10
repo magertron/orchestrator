@@ -324,11 +324,25 @@ orchestrator:
     # every deploy silently reverted hand-tuned values. Raising 4 → 8 halved
     # p99 at 1500 rps (677ms → 351ms) in 2026-07-14 testing.
     #
-    # CEILING: postgres max_connections is 100 with ~63 consumed at idle.
-    # 16 detonated the DB (2 replicas x 16 + 63 ≈ 99). Do not exceed 8 per
-    # replica without first raising max_connections AND trimming the Splunk
-    # DB Connect JDBC pool (16 connections for a probe cadence that needs ~4).
-    dbPoolSize: "8"
+    # ⚠ HISTORY, kept because it explains the ceiling: postgres
+    # max_connections was 100 with ~63 consumed at idle, so 16 detonated the DB
+    # (2 replicas x 16 + 63 ≈ 99) and 8 was the most that fitted. The pool was
+    # never the constraint — max_connections was, and it was not chart-
+    # configurable until 3.7.x.
+    #
+    # 2026-09-10, two nodes, one internal server, RBAC on every call:
+    #     pool 8,  max_connections 100   12,000 rps   p99 at 16k = 518 ms
+    #     pool 48, max_connections 300   16,000 rps   p99 at 16k =  15 ms
+    # A third of the platform's throughput sat behind a value nobody could set.
+    #
+    # ⚠ CEILING NOW: 2 replicas x 48 + 63 idle ≈ 159, against maxConnections
+    # 300. Raising this further means raising postgresql.maxConnections in the
+    # SAME change — and it is still worth trimming Splunk DB Connect's JDBC
+    # pool from 16 to ~4, which was never done.
+    #
+    # ⚠ 48 to 96 was tested and did NOT reliably improve on 48. The knee moves
+    # to something else at that point; do not raise it expecting more.
+    dbPoolSize: "48"
 
     # ── 3.1.01: hot-path read cache TTL (MCP_HOT_PATH_CACHE_TTL_SEC) ──────
     # TTL for DbClient's per-namespace server/permission/governance read
@@ -1000,6 +1014,13 @@ envoy:
   # disabled; enable for slice 6e validation. Production-default stays off
   # until v3 proves out under load.
   v3:
+    # ── Overload protection (3.7.x) ──────────────────────────────────────
+    # ⚠ MUST TRACK resources.limits.memory. This is the budget Envoy measures
+    # ITSELF against; Kubernetes enforces the container limit separately, and
+    # if this is higher than that limit the OOM killer wins before Envoy ever
+    # sheds. 75% of a 2 Gi limit = 1610612736.
+    overload:
+      maxHeapBytes: 1610612736
     enabled: true
     replicaCount: 3
     listenerPort: 10444
@@ -1282,6 +1303,18 @@ postgresql:
   image:
     repository: postgres
     tag: 17-alpine
+  # ── Server settings (3.7.x) ──────────────────────────────────────────────
+  # ⚠ maxConnections was the REAL ceiling on orchestrator.dbPoolSize, not the
+  # pool. Stock Postgres allows 100 and roughly 63 are consumed at idle
+  # (Splunk DB Connect's JDBC pool is 16 of those for a probe cadence needing
+  # ~4). 2 replicas x 8 + 63 was the most that fitted. Raising this to 300 is
+  # what let the pool go to 48 and moved the tested ceiling from 12,000 to
+  # 16,000 rps.
+  maxConnections: 300
+  sharedBuffers: "512MB"
+  # ⚠ SAFETY BOUND — see the comment in templates/postgresql.yaml. An inactive
+  # replication slot took a cluster down on 2026-09-10 by retaining 42 GB.
+  maxSlotWalKeepSize: "8GB"
   # Postgres pod placement. Pinned to the control-plane node so the local-path
   # PV stays physically co-located with the pod across reschedules (k3s
   # local-path is node-local; an unpinned postgres that reschedules to another

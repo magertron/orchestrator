@@ -70,6 +70,28 @@ spec:
         - name: postgres
           image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
           imagePullPolicy: IfNotPresent
+          # ⚠ Server settings, same shape as probo-postgres.yaml. The main
+          # instance ran on stock defaults until 3.7.x, which capped
+          # max_connections at 100 — and THAT, not the pool itself, was what
+          # limited orchestrator.dbPoolSize to 8. See the comment on
+          # dbPoolSize in values.yaml.
+          args:
+            - -c
+            - max_connections={{ .Values.postgresql.maxConnections | default 300 }}
+            - -c
+            - shared_buffers={{ .Values.postgresql.sharedBuffers | default "512MB" }}
+            # ⚠ A SAFETY BOUND, NOT A TUNING KNOB. Postgres retains WAL for an
+            # inactive replication slot indefinitely. On 2026-09-10 a standby
+            # that stopped consuming held 42 GB on a 98 GB disk; the kubelet hit
+            # DiskPressure, evicted pods, and the cluster went down — postgres
+            # itself Pending, so the slot could not even be dropped until space
+            # was freed elsewhere.
+            #
+            # Past this bound Postgres invalidates the slot and reclaims the
+            # space. The standby then needs a rebuild. That is the right trade:
+            # losing a standby is recoverable, losing the primary is an outage.
+            - -c
+            - max_slot_wal_keep_size={{ .Values.postgresql.maxSlotWalKeepSize | default "8GB" }}
           ports:
             - name: postgres
               containerPort: 5432
