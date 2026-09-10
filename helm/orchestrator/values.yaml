@@ -1020,7 +1020,7 @@ envoy:
     # if this is higher than that limit the OOM killer wins before Envoy ever
     # sheds. 75% of a 2 Gi limit = 1610612736.
     overload:
-      maxHeapBytes: 1610612736
+      maxHeapBytes: "1610612736"
     enabled: true
     replicaCount: 3
     listenerPort: 10444
