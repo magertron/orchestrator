@@ -39,6 +39,46 @@ data:
         resource_api_version: V3
         ads: {}
 
+    # ── Overload manager (3.7.x) ───────────────────────────────────────────
+    # ⚠ WITHOUT THIS, ENVOY BUFFERS UNTIL THE KERNEL KILLS IT. Under overload
+    # it queues what it cannot deliver — legitimately, that is what a proxy
+    # does — but the memory is never released afterwards. A replica that went
+    # from 47 MB to 1.5 GB during a load test stayed there until restarted,
+    # and the container limit is 2 Gi.
+    #
+    # ⚠ Losing a replica DURING an overload is the worst possible moment: the
+    # survivors inherit its share, buffer harder, and the failure walks across
+    # the fleet. These actions fire first, in order of increasing severity.
+    #
+    # ⚠ max_heap_size_bytes must stay BELOW the container memory limit — it is
+    # the budget Envoy measures its own usage against, not a limit Kubernetes
+    # enforces. Set to 75% of resources.limits.memory. Change one, change both.
+    overload_manager:
+      refresh_interval: 0.25s
+      resource_monitors:
+        - name: "envoy.resource_monitors.fixed_heap"
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.resource_monitors.fixed_heap.v3.FixedHeapConfig
+            max_heap_size_bytes: {{ .Values.envoy.v3.overload.maxHeapBytes | default 1610612736 }}
+      actions:
+        # 85% — stop taking NEW connections. Work in flight completes.
+        - name: "envoy.overload_actions.stop_accepting_connections"
+          triggers:
+            - name: "envoy.resource_monitors.fixed_heap"
+              threshold:
+                value: 0.85
+        # 92% — reclaim what is already held before refusing anything.
+        - name: "envoy.overload_actions.shrink_heap"
+          triggers:
+            - name: "envoy.resource_monitors.fixed_heap"
+              threshold:
+                value: 0.92
+        # 95% — refuse. A 503 the caller can retry beats an OOM kill it cannot.
+        - name: "envoy.overload_actions.stop_accepting_requests"
+          triggers:
+            - name: "envoy.resource_monitors.fixed_heap"
+              threshold:
+                value: 0.95
     static_resources:
       clusters:
         # ── v3 ADS cluster — connects to orchestrator's V3AdsServer ──────────
