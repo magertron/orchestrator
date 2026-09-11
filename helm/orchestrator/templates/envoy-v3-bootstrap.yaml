@@ -367,6 +367,8 @@ data:
                     "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                     stat_prefix: mcp_ingress_v3
                     codec_type: AUTO
+                    http2_protocol_options:
+                      max_concurrent_streams: {{ .Values.envoy.v3.http2.maxConcurrentStreams | default 16 }}
                     use_remote_address: true
                     # ── Security headers on Envoy local replies (2026-06-29) ──────────
                     # Decorates Envoy-GENERATED responses (route-miss 404s, ext_authz
@@ -606,6 +608,8 @@ data:
                     "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                     stat_prefix: mcp_inventory_ingress_v3
                     codec_type: AUTO
+                    http2_protocol_options:
+                      max_concurrent_streams: {{ .Values.envoy.v3.http2.maxConcurrentStreams | default 16 }}
                     use_remote_address: true
                     # ── Security headers on Envoy local replies (2026-06-29) ──────────
                     # Same block as the main listener (mcp_https_listener_v3). Kept in

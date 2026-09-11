@@ -1115,6 +1115,26 @@ envoy:
       limits:
         cpu: "4"
         memory: 2Gi
+    # ── Downstream HTTP/2 stream bound (3.7.x) ────────────────────────────
+    # Measured 2026-09-11, 16,000 rps, 1,500 connections, same client — only
+    # this value changed:
+    #     HTTP/1.1          p99 22.9 ms   100%
+    #     h2, unbounded     p99  ~30 s    47-63%   server saturates
+    #     h2, bound 2       p99 21.5 s    63%      CLIENT starves
+    #     h2, bound 16      p99 8.99 ms   100%
+    #
+    # ⚠ BOTH ENDS FAIL. Too high and one client puts more concurrent ext_authz
+    # calls in flight than the platform serves. Too LOW and the client cannot
+    # sustain its rate — it queues internally and times out, presenting as
+    # client-side failures with almost no 503s. That reads as a server fault
+    # and is not one. 16 is the measured middle, not a round number.
+    #
+    # ⚠ PAIRS WITH alpn_protocols in templates/envoy-v3-bootstrap.yaml. Those
+    # went in first, alone, and that is the 47-63% row above. Ship them
+    # together or neither.
+    http2:
+      maxConcurrentStreams: 16
+
     # ── V3 production HA defaults (shipped in v2.2.1) ──────────────────────
     # Mirrors legacy envoy autoscaling shape. min=3 floor based on 5/17/26
     # load testing: single-replica v3 envoy saturates at ~500 rps and the
