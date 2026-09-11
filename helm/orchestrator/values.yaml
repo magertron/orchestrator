@@ -1866,10 +1866,10 @@ probo:
   minio:
     enabled: true
     image:
-      repository: minio/minio
+      repository: quay.io/minio/minio
       tag: "latest"
     mcImage:                 # the mc client, for the bucket-creation Job
-      repository: minio/mc
+      repository: quay.io/minio/mc
       tag: "latest"
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
