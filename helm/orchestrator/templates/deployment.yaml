@@ -614,6 +614,23 @@ spec:
           env:
             - name: CHAT_LISTEN_ADDR
               value: {{ .Values.chatDaemon.listenAddr | quote }}
+            # ⚠ THE AGENT LOOP DOES NOT RUN WITHOUT THIS. The same secret is
+            # injected into the orchestrator container above; the chat-daemon
+            # needs its own reference because env blocks are per-container.
+            # Missing it, the daemon starts, reports 3/3 ready, logs
+            # "plumbing only — no MAG_SA_JWT" and answers requests with an
+            # upstream 401 — which reads as a vendor credential problem and is
+            # not one.
+            #
+            # optional: true is deliberate: an install with no assistant
+            # configured should degrade to plumbing-only, not fail to schedule
+            # the orchestrator pod.
+            - name: MAG_SA_JWT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.assistant.externalSecretName | default (printf "%s-assistant" (include "mcp.fullname" .)) }}
+                  key: MAG_SA_JWT
+                  optional: true
             # CONTROL plane (login, portal catalog) — the orchestrator REST API
             # over in-pod loopback, exactly the hop mcp-sync uses. NOT governed
             # by ext_authz; it's the control/admin API.
