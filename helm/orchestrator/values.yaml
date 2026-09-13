@@ -1132,6 +1132,19 @@ envoy:
     # ⚠ PAIRS WITH alpn_protocols in templates/envoy-v3-bootstrap.yaml. Those
     # went in first, alone, and that is the 47-63% row above. Ship them
     # together or neither.
+    # ── Browser client access (CORS) ──────────────────────────────────────
+    # Origins allowed to call the gateway from a browser. A browser-based MCP
+    # client cannot connect at all unless its origin is listed here, because
+    # its preflight is refused and it never sends the real request.
+    #
+    # ⚠ NOT a wildcard, deliberately. CORS is not the security boundary —
+    # ext_authz is, and it is unchanged — but an explicit list means an
+    # operator can see which browser products may reach their gateway, and
+    # "*" would tell them nothing.
+    cors:
+      allowedOrigins:
+        - "https://claude.ai"
+    
     http2:
       maxConcurrentStreams: 16
 

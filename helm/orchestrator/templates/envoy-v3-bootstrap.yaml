@@ -409,6 +409,20 @@ data:
                         resource_api_version: V3
                         ads: {}
                     http_filters:
+                      # ⚠ CORS FIRST, AND IT MUST BE FIRST. A browser sends a
+                      # preflight OPTIONS before any cross-origin POST, and a
+                      # preflight carries no credentials by specification. If
+                      # ext_authz runs first it returns 401 with no CORS
+                      # headers, the browser gives up, and the client reports
+                      # the server as unreachable — which is what every
+                      # browser-based MCP client saw until 2026-09-13.
+                      #
+                      # The filter only ANSWERS preflights. Real requests fall
+                      # through to ext_authz exactly as before; nothing about
+                      # authorisation changes.
+                      - name: envoy.filters.http.cors
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
                       # ext_authz timeout 2s matches legacy (1.11.x tuning).
                       # failure_mode_allow: false → fail-closed on PDP outage.
                       #
