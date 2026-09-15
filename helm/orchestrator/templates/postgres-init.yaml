@@ -1902,6 +1902,133 @@ data:
     CREATE INDEX IF NOT EXISTS uc_grant_principal_idx
         ON uc_grant (principal_id);
 
+    -- ── Tool utilization: daily snapshot + waste buckets ──────────────────────
+    -- Answers the CFO question "what did we buy that nobody uses". Three
+    -- buckets per server, union = the whole catalog:
+    --   unprovisioned  in mcp_tools, no principal entitled
+    --   dark           entitled, zero calls in window
+    --   underused      entitled, calls > 0 but below calls_threshold
+    --   (active is the remainder)
+    --
+    -- ⚠ Entitlement and use are NOT computed here. The daily row is written by
+    -- the orchestrator from the agent-spread graph (tool_rbac::Evaluator for
+    -- CAN, meter_events for DOES) — the same projection the galaxy draws and
+    -- the assistant digest already reads. A second SQL definition of "dark"
+    -- would drift from the first; this schema only stores and rolls up.
+    --
+    -- Buckets are derived at read time from the N-day rollup, never stored,
+    -- so a threshold change is a config edit and not a backfill.
+
+    CREATE TABLE IF NOT EXISTS utilization_thresholds (
+        id                   SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+        window_days          INT  NOT NULL DEFAULT 30 CHECK (window_days > 0),
+        -- absolute calls per window; below this an entitled tool is 'underused'
+        calls_threshold      INT  NOT NULL DEFAULT 10 CHECK (calls_threshold >= 0),
+        -- servers whose exercised/catalog ratio falls under this are listed
+        -- in the assistant digest, same mechanism as budget alerts
+        coverage_threshold   NUMERIC(5,4) NOT NULL DEFAULT 0.20
+                             CHECK (coverage_threshold BETWEEN 0 AND 1),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    INSERT INTO utilization_thresholds (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+    -- One row per tool per day. Derived data, so cascade is correct here —
+    -- nothing financial lives in this table. Keyed by (server_id, tool_name)
+    -- because that is how meter_events and the spread graph identify a tool.
+    CREATE TABLE IF NOT EXISTS tool_usage_daily (
+        server_id            UUID NOT NULL
+                             REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        tool_name            VARCHAR(255) NOT NULL,
+        snapshot_date        DATE NOT NULL,
+        -- distinct principals with an entitled edge at capture time
+        entitled_principals  INT    NOT NULL DEFAULT 0,
+        -- sum of edge invocations for that day
+        calls                BIGINT NOT NULL DEFAULT 0,
+        PRIMARY KEY (server_id, tool_name, snapshot_date)
+    );
+    CREATE INDEX IF NOT EXISTS tool_usage_daily_date_idx
+        ON tool_usage_daily (snapshot_date);
+
+    -- Window rollup per tool; what the digest and Reporting read.
+    CREATE OR REPLACE VIEW v_tool_utilization AS
+    WITH cfg AS (SELECT * FROM utilization_thresholds WHERE id = 1),
+    win AS (
+        SELECT d.server_id, d.tool_name,
+               SUM(d.calls)               AS calls,
+               MAX(d.entitled_principals) AS entitled_principals
+        FROM tool_usage_daily d, cfg
+        WHERE d.snapshot_date > CURRENT_DATE - cfg.window_days
+        GROUP BY d.server_id, d.tool_name
+    )
+    SELECT t.server_id, t.tool_name,
+           COALESCE(w.calls, 0)               AS calls,
+           COALESCE(w.entitled_principals, 0) AS entitled_principals,
+           CASE
+             WHEN COALESCE(w.entitled_principals,0) = 0      THEN 'unprovisioned'
+             WHEN COALESCE(w.calls,0) = 0                    THEN 'dark'
+             WHEN COALESCE(w.calls,0) < cfg.calls_threshold  THEN 'underused'
+             ELSE 'active'
+           END AS bucket
+    FROM mcp_tools t
+    CROSS JOIN cfg
+    LEFT JOIN win w ON w.server_id = t.server_id AND w.tool_name = t.tool_name;
+
+    -- Per-server coverage with the contract's monthly figure. Monthly is
+    -- derived from the term dates so it reconciles with the billing
+    -- dashboard. PAYG with no minimum yields NULL, not zero: the assistant
+    -- says "usage-billed", never "$0/mo".
+    --
+    -- ⚠ No snapshot rows in the window means NO OPINION: coverage is NULL and
+    -- flagged is false. Before this guard an empty table flagged every server
+    -- at 0%, which the assistant read as "nothing is used".
+    --
+    -- snapshot_days is PLATFORM-wide, not per server. A server with no rows
+    -- while others have them is not unknown: the graph emitted no edge for it
+    -- because nobody is entitled and nobody called — that is 0% with 0 dark,
+    -- the pure-unprovisioned case, and it should be reported as such.
+    CREATE OR REPLACE VIEW v_server_utilization AS
+    WITH cfg AS (SELECT * FROM utilization_thresholds WHERE id = 1),
+    days AS (
+        SELECT COUNT(DISTINCT d.snapshot_date) AS snapshot_days
+        FROM tool_usage_daily d, cfg
+        WHERE d.snapshot_date > CURRENT_DATE - cfg.window_days
+    ),
+    agg AS (
+        SELECT server_id,
+               COUNT(*)                                          AS catalog_tools,
+               COUNT(*) FILTER (WHERE bucket <> 'unprovisioned') AS entitled_tools,
+               COUNT(*) FILTER (WHERE bucket = 'dark')           AS dark_tools,
+               COUNT(*) FILTER (WHERE bucket = 'underused')      AS underused_tools,
+               COUNT(*) FILTER (WHERE calls > 0)                 AS exercised_tools,
+               SUM(calls)                                        AS calls
+        FROM v_tool_utilization GROUP BY server_id
+    )
+    SELECT s.id AS server_id, s.namespace, s.name, s.server_type,
+           COALESCE(a.catalog_tools,0)   AS catalog_tools,
+           COALESCE(a.entitled_tools,0)  AS entitled_tools,
+           COALESCE(a.dark_tools,0)      AS dark_tools,
+           COALESCE(a.underused_tools,0) AS underused_tools,
+           COALESCE(a.exercised_tools,0) AS exercised_tools,
+           COALESCE(a.calls,0)           AS calls,
+           COALESCE(dy.snapshot_days,0)  AS snapshot_days,
+           CASE WHEN COALESCE(dy.snapshot_days,0) = 0
+                  OR COALESCE(a.catalog_tools,0) = 0 THEN NULL
+                ELSE a.exercised_tools::numeric / a.catalog_tools END AS coverage,
+           (COALESCE(dy.snapshot_days,0) > 0
+             AND COALESCE(a.catalog_tools,0) > 0
+             AND a.exercised_tools::numeric / a.catalog_tools < cfg.coverage_threshold)
+                                          AS flagged,
+           c.id AS contract_id, c.vendor_name, c.contract_type,
+           CASE WHEN COALESCE(c.minimum_amount_usd,0) > 0
+                THEN round(c.minimum_amount_usd
+                           / GREATEST(1, (c.term_end - c.term_start) / 30.4375), 2)
+           END                            AS committed_usd_per_month
+    FROM deployed_servers s
+    CROSS JOIN cfg
+    LEFT JOIN agg a ON a.server_id = s.id
+    CROSS JOIN days dy
+    LEFT JOIN cost_contracts c ON c.server_id = s.id;
+
     -- ── Multi-tenancy: namespace confinement ────────────────────────────────────
     -- Magertron is namespace-multi-tenanted; UC securables must be too. This
     -- column does exactly ONE job: which tenant owns this node. It is NOT a
