@@ -1973,6 +1973,7 @@ data:
     CROSS JOIN cfg
     LEFT JOIN win w ON w.server_id = t.server_id AND w.tool_name = t.tool_name;
 
+    DROP VIEW IF EXISTS v_server_utilization;
     -- Per-server coverage with the contract's monthly figure. Monthly is
     -- derived from the term dates so it reconciles with the billing
     -- dashboard. PAYG with no minimum yields NULL, not zero: the assistant
@@ -1981,6 +1982,12 @@ data:
     -- ⚠ No snapshot rows in the window means NO OPINION: coverage is NULL and
     -- flagged is false. Before this guard an empty table flagged every server
     -- at 0%, which the assistant read as "nothing is used".
+    --
+    -- ⚠ No contract means NOT METERED, not unused. meter_events only exist for
+    -- servers under a cost_contract, so an uncontracted server always reads
+    -- 0 calls and would be a false positive. Coverage and the flag are scoped
+    -- to contracted servers; the rest carry NULL coverage and metered=false.
+    -- This is also the CFO's scope: the question is about contracts.
     --
     -- snapshot_days is PLATFORM-wide, not per server. A server with no rows
     -- while others have them is not unknown: the graph emitted no edge for it
@@ -2011,10 +2018,13 @@ data:
            COALESCE(a.exercised_tools,0) AS exercised_tools,
            COALESCE(a.calls,0)           AS calls,
            COALESCE(dy.snapshot_days,0)  AS snapshot_days,
-           CASE WHEN COALESCE(dy.snapshot_days,0) = 0
+           (c.id IS NOT NULL)            AS metered,
+           CASE WHEN c.id IS NULL
+                  OR COALESCE(dy.snapshot_days,0) = 0
                   OR COALESCE(a.catalog_tools,0) = 0 THEN NULL
                 ELSE a.exercised_tools::numeric / a.catalog_tools END AS coverage,
-           (COALESCE(dy.snapshot_days,0) > 0
+           (c.id IS NOT NULL
+             AND COALESCE(dy.snapshot_days,0) > 0
              AND COALESCE(a.catalog_tools,0) > 0
              AND a.exercised_tools::numeric / a.catalog_tools < cfg.coverage_threshold)
                                           AS flagged,
