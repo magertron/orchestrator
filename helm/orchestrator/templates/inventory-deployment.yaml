@@ -42,6 +42,20 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      # ⚠ Without this, inventory exits 1 when its database is not up yet
+      # (`ping db: connection refused`) and restarts — and the orchestrator,
+      # starting in parallel, runs seeding against an inventory that is not
+      # serving. Seeding gets a 404, gives up, and leaves MAG_SA_JWT empty;
+      # every assistant call afterwards returns HTTP 401 naming a credential
+      # rather than the database that was late.
+      #
+      # Same shape as probod's wait-postgres (probod.yaml) — deliberately
+      # identical, so there is one way to express this and not two.
+      initContainers:
+        - name: wait-inventory-postgres
+          image: busybox:1.36
+          command: ['sh', '-c',
+            'until nc -z {{ include "mcp.fullname" . }}-inventory-postgres 5432; do echo waiting for inventory-postgres; sleep 2; done']
       containers:
         - name: mcp-inventory
           image: "{{ .Values.inventory.image.repository }}:{{ .Values.inventory.image.tag | default .Chart.AppVersion }}"
