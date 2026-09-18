@@ -656,6 +656,73 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       </div>
     </div>
 
+
+    <div class="divider"></div>
+
+    <!-- Dual-principal authorization -->
+    <style>
+      .dual-fig { max-width: 600px; margin: 28px auto 8px; }
+      .dual-fig svg { display: block; width: 100%; height: auto; }
+      .dp-ring  { fill: none; stroke: var(--text-tertiary); stroke-width: 1.5; }
+      .dp-hero  { fill: var(--accent-glow); stroke: var(--accent); stroke-width: 1.5; }
+      .dp-t     { fill: var(--text);           font-family: var(--sans); font-size: 14px; }
+      .dp-t-sm  { fill: var(--text-secondary); font-family: var(--sans); font-size: 12px; }
+      .dp-mono  { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 10.5px; }
+      .dp-label { font-family: var(--mono); font-size: 11px;
+                  letter-spacing: 0.1em; text-transform: uppercase; }
+      .dp-acc   { fill: var(--accent-text); }
+      .dp-deny  { fill: var(--danger); }
+    </style>
+
+    <div class="sec">
+      <div class="sec-label">Authorization Model</div>
+      <h2>Both principals, or neither</h2>
+      <p>The three layers above decide <strong>whether a request reaches a server at all</strong>. This decides what it is permitted to do once it arrives.</p>
+      <p>Most gateways authorize the agent. It presents a service-account token, the token carries scopes, the call goes through. That model holds until one agent starts serving many people &mdash; at which point <strong>the service account becomes every user&rsquo;s ceiling</strong>. Widen it for the one team that needs warehouse access and you have quietly widened it for everybody the agent answers to.</p>
+
+      <div class="callout callout-danger">
+        <div class="callout-icon">&#9888;</div>
+        <div><p><strong>This is a confused-deputy problem.</strong> The agent is trusted, so the agent&rsquo;s permissions get used &mdash; and the human who actually asked for the action is never checked against them.</p></div>
+      </div>
+
+      <p>Magertron evaluates <strong>both principals on every call.</strong> The agent must hold the permission, and so must the human it is acting for. The effective grant is the intersection of the two, never the union.</p>
+
+      <div class="dual-fig">
+        <svg viewBox="0 0 640 330" role="img"
+             aria-label="Two overlapping circles, agent grants and human grants. Only the intersection is allowed; each crescent outside the overlap is denied.">
+          <circle cx="260" cy="162" r="112" class="dp-ring"/>
+          <circle cx="380" cy="162" r="112" class="dp-ring"/>
+          <path d="M 320 67.43 A 112 112 0 0 1 320 256.57 A 112 112 0 0 1 320 67.43 Z" class="dp-hero"/>
+
+          <text x="202" y="152" class="dp-t" text-anchor="middle">Agent grants</text>
+          <text x="202" y="172" class="dp-mono" text-anchor="middle">service account</text>
+          <text x="202" y="200" class="dp-label dp-deny" text-anchor="middle">Denied</text>
+
+          <text x="438" y="152" class="dp-t" text-anchor="middle">Human grants</text>
+          <text x="438" y="172" class="dp-mono" text-anchor="middle">invoking user</text>
+          <text x="438" y="200" class="dp-label dp-deny" text-anchor="middle">Denied</text>
+
+          <text x="320" y="156" class="dp-t dp-acc" text-anchor="middle" style="font-weight:600">Allowed</text>
+          <text x="320" y="178" class="dp-t-sm dp-acc" text-anchor="middle">&#8745;</text>
+
+          <text x="320" y="308" class="dp-t-sm" text-anchor="middle">Union here would be the vulnerability.</text>
+        </svg>
+      </div>
+
+      <h3>What this changes in practice</h3>
+      <ul>
+        <li>An agent cleared to read a revenue table for Finance is <strong>denied that same table</strong> when a contractor invokes it &mdash; same agent, same tool, different human</li>
+        <li>Broadening a service account grants nobody anything new; every user is still capped by their own entitlements</li>
+        <li>A stolen agent token is not a skeleton key &mdash; it still resolves to whatever the human on the request is allowed to do</li>
+        <li>The tool definition is checked for drift on the same pass, so a tool that changed shape since it was approved is rejected rather than silently trusted</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-icon">&#8505;</div>
+        <div><p><strong>Enforced at the gateway, not in a client library.</strong> Both checks run in the Envoy <code style="font-family:var(--mono);font-size:12px;color:var(--accent-text)">ext_authz</code> path, so an agent cannot reach the intersection by skipping an SDK.</p></div>
+      </div>
+    </div>
+
     <!-- CTA — closes high-intent security readers with the positioning that
          matches the rest of the site. -->
     <div class="page-cta">
