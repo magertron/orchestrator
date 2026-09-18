@@ -363,6 +363,30 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
 .feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
 
+/* ── Architecture diagram (Governed Surfaces) ─────────────────────────── */
+.mag-arch-scroll { overflow-x: auto; margin: 0 0 40px; }
+.mag-arch-scroll svg { display: block; width: 100%; height: auto; min-width: 780px; }
+.mag-arch-caption {
+  max-width: 660px; margin: 0 auto 48px; text-align: center;
+  font-size: 15px; line-height: 1.7; color: var(--text-secondary);
+}
+.mag-arch-caption strong { color: var(--text); font-weight: 500; }
+.mag-arch-caption code { font-family: var(--mono); font-size: 13px; color: var(--accent-text); }
+
+.ma-frame  { fill: none;               stroke: var(--border); stroke-width: 1; }
+.ma-panel  { fill: var(--bg-card);     stroke: var(--border); stroke-width: 1; }
+.ma-hero   { fill: var(--accent-glow); stroke: var(--accent); stroke-width: 1.5; }
+.ma-rule   { stroke: var(--border); stroke-width: 1; }
+.ma-flow   { stroke: var(--text-tertiary); stroke-width: 1.5; fill: none; }
+.ma-head   { fill: var(--text-tertiary); }
+.ma-t      { fill: var(--text);           font-family: var(--sans); font-size: 14px; }
+.ma-t-sm   { fill: var(--text-secondary); font-family: var(--sans); font-size: 12px; }
+.ma-mono   { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 10.5px; }
+.ma-mono-c { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 11px; }
+.ma-label  { fill: var(--accent-text);    font-family: var(--mono); font-size: 11px;
+             letter-spacing: 0.1em; text-transform: uppercase; }
+.ma-acc    { fill: var(--accent-text); }
+
 /* ── CLI Section ──────────────────────────────────────────────────────── */
 .cli-section { padding: 80px 0; }
 .cli-section .container { max-width: 900px; }
@@ -921,11 +945,114 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 <!-- Three deployment patterns -->
 <section style="padding:80px 0; border-top: 1px solid var(--border);">
-  <div class="container" style="max-width:1200px;">
+  <div class="container">
+
     <div style="text-align:center; max-width:720px; margin:0 auto 48px;">
       <div class="section-label">Governed Surfaces</div>
-      <h2 class="section-title">Every model and tool call. One policy plane.</h2>
+      <h2 class="section-title">Every model, API and tool call. One policy plane.</h2>
     </div>
+
+    <div class="mag-arch-scroll">
+      <svg viewBox="0 0 1160 500" role="img"
+           aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, LLM providers, tools and catalog securables.">
+        <defs>
+          <marker id="maArrow" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="ma-head"/>
+          </marker>
+        </defs>
+
+        <text x="40" y="44" class="ma-label">Your stack</text>
+        <rect x="24" y="56" width="248" height="268" rx="10" class="ma-frame"/>
+
+        <rect x="40" y="76" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="103" class="ma-t">MCP clients</text>
+        <text x="56" y="124" class="ma-mono">Claude · Cursor · custom</text>
+
+        <rect x="40" y="154" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="181" class="ma-t">Models — BYOK</text>
+        <text x="56" y="202" class="ma-mono">Anthropic · OpenAI · Ollama</text>
+
+        <rect x="40" y="232" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="259" class="ma-t">Frameworks — BYOAF</text>
+        <text x="56" y="280" class="ma-mono">LangChain · CrewAI · yours</text>
+
+        <text x="306" y="178" class="ma-mono" text-anchor="middle">every call</text>
+        <line x1="280" y1="190" x2="332" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
+
+        <rect x="340" y="40" width="488" height="300" rx="12" class="ma-frame"/>
+        <text x="356" y="68" class="ma-label">Magertron control plane</text>
+
+        <rect x="356" y="82" width="456" height="36" rx="8" class="ma-panel"/>
+        <text x="372" y="105" class="ma-t-sm">Envoy v3 data plane</text>
+        <text x="796" y="105" class="ma-mono-c" text-anchor="end">ext_authz</text>
+
+        <rect x="356" y="130" width="456" height="44" rx="8" class="ma-panel"/>
+        <text x="372" y="149" class="ma-t">Identity resolution</text>
+        <text x="372" y="166" class="ma-mono-c">human subject + agent service account</text>
+
+        <rect x="356" y="184" width="456" height="44" rx="8" class="ma-hero"/>
+        <text x="372" y="203" class="ma-t ma-acc" style="font-weight:600">Dual-principal authorization</text>
+        <text x="372" y="220" class="ma-mono-c">agent grants ∩ human grants — never the union</text>
+
+        <rect x="356" y="238" width="456" height="44" rx="8" class="ma-panel"/>
+        <text x="372" y="257" class="ma-t">Securable resolution</text>
+        <text x="372" y="274" class="ma-mono-c">catalog → schema → table · explicit deny wins</text>
+
+        <rect x="356" y="292" width="456" height="36" rx="8" class="ma-panel"/>
+        <text x="372" y="315" class="ma-t-sm">Meter, rate &amp; budget-cap</text>
+        <text x="796" y="315" class="ma-mono-c" text-anchor="end">per call</text>
+
+        <text x="862" y="178" class="ma-mono" text-anchor="middle">allowed</text>
+        <line x1="836" y1="190" x2="888" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
+
+        <text x="912" y="44" class="ma-label">Governed surfaces</text>
+        <rect x="896" y="56" width="240" height="268" rx="10" class="ma-frame"/>
+
+        <rect x="912" y="76" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="100" class="ma-t">MCP servers</text>
+
+        <rect x="912" y="122" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="146" class="ma-t">REST APIs</text>
+
+        <rect x="912" y="168" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="192" class="ma-t">LLM providers</text>
+
+        <rect x="912" y="214" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="238" class="ma-t">Tools</text>
+
+        <rect x="912" y="260" width="208" height="52" rx="8" class="ma-panel"/>
+        <text x="928" y="283" class="ma-t">Catalog securables</text>
+        <text x="928" y="301" class="ma-mono">catalog / schema / table</text>
+
+        <line x1="584" y1="340" x2="584" y2="372" class="ma-rule"/>
+        <rect x="340" y="372" width="488" height="92" rx="12" class="ma-frame"/>
+        <text x="356" y="398" class="ma-label">On every decision</text>
+
+        <rect x="356" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="410" y="428" class="ma-t-sm" text-anchor="middle">Audit trail</text>
+        <text x="410" y="442" class="ma-mono" text-anchor="middle">immutable</text>
+
+        <rect x="472" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="526" y="428" class="ma-t-sm" text-anchor="middle">Chargeback</text>
+        <text x="526" y="442" class="ma-mono" text-anchor="middle">per dept / user</text>
+
+        <rect x="588" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="642" y="428" class="ma-t-sm" text-anchor="middle">Drift checks</text>
+        <text x="642" y="442" class="ma-mono" text-anchor="middle">tool definitions</text>
+
+        <rect x="704" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="758" y="428" class="ma-t-sm" text-anchor="middle">Policy as code</text>
+        <text x="758" y="442" class="ma-mono" text-anchor="middle">Terraform</text>
+      </svg>
+    </div>
+
+    <p class="mag-arch-caption">
+      Enforcement lives in the Envoy <code>ext_authz</code> path, not in an SDK an agent can
+      route around. <strong>Every call crosses the same boundary</strong> — whether it lands on
+      an MCP tool, a REST endpoint or an inference provider.
+    </p>
+
     <div class="feature-grid">
       <div class="feature-card">
         <h3>Internal MCP servers</h3>
@@ -940,6 +1067,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <p>SaaS or cloud-hosted MCP servers, registered in Magertron and governed by the same policies as your internal servers.</p>
       </div>
     </div>
+
   </div>
 </section>
 
