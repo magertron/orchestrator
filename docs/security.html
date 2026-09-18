@@ -677,7 +677,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="sec">
       <div class="sec-label">Authorization Model</div>
       <h2>Both principals, or neither</h2>
-      <p>Most gateways authorize the agent. It presents a service-account token, the token carries scopes, the call goes through. That model holds until one agent starts serving many people &mdash; at which point <strong>the service account becomes every user&rsquo;s ceiling</strong>. Widen it for the one team that needs warehouse access and you have quietly widened it for everybody the agent answers to.</p>
+      <p>Most gateways authorize the agent. It presents a service-account token, the token carries scopes, the call goes through. That model holds until one agent starts serving many people &mdash; at which point <strong>the service account becomes every user&rsquo;s ceiling</strong>.</p>
 
       <p>Magertron evaluates <strong>both principals on every call.</strong> The agent must hold the permission, and so must the human it is acting for. The effective grant is the intersection of the two, never the union.</p>
 
@@ -703,18 +703,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         </svg>
       </div>
 
-      <h3>What this changes in practice</h3>
-      <ul>
-        <li>An agent cleared to read a revenue table for Finance is <strong>denied that same table</strong> when a contractor invokes it &mdash; same agent, same tool, different human</li>
-        <li>Broadening a service account grants nobody anything new; every user is still capped by their own entitlements</li>
-        <li>A stolen agent token is not a skeleton key &mdash; it still resolves to whatever the human on the request is allowed to do</li>
-        <li>The tool definition is checked for drift on the same pass, so a tool that changed shape since it was approved is rejected rather than silently trusted</li>
-      </ul>
-
-      <div class="callout callout-info">
-        <div class="callout-icon">&#8505;</div>
-        <div><p><strong>Enforced at the gateway, not in a client library.</strong> Both checks run in the Envoy <code style="font-family:var(--mono);font-size:12px;color:var(--accent-text)">ext_authz</code> path, so an agent cannot reach the intersection by skipping an SDK.</p></div>
-      </div>
     </div>
 
     <!-- CTA — closes high-intent security readers with the positioning that
