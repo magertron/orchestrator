@@ -366,6 +366,13 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 /* ── Architecture diagram (Governed Surfaces) ─────────────────────────── */
 .mag-arch-scroll { overflow-x: auto; margin: 0 0 40px; }
 .mag-arch-scroll svg { display: block; width: 100%; height: auto; min-width: 780px; }
+.mag-arch-card {
+  background: #080b10; border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; margin: 0 0 40px;
+}
+.mag-arch-card .mag-arch-scroll { margin: 0; }
+@media (max-width: 768px) { .mag-arch-card { padding: 16px; } }
+
 .mag-arch-caption {
   max-width: 660px; margin: 0 auto 48px; text-align: center;
   font-size: 15px; line-height: 1.7; color: var(--text-secondary);
@@ -952,7 +959,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <h2 class="section-title">Every model, API and tool call. One policy plane.</h2>
     </div>
 
-    <div class="mag-arch-scroll">
+    <div class="mag-arch-card">
+      <div class="mag-arch-scroll">
       <svg viewBox="0 0 1160 500" role="img"
            aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, LLM providers, tools and catalog securables.">
         <defs>
@@ -1046,10 +1054,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <text x="758" y="442" class="ma-mono" text-anchor="middle">Terraform</text>
       </svg>
     </div>
+    </div>
 
     <p class="mag-arch-caption">
-      Enforcement lives in the Envoy <code>ext_authz</code> path, not in an SDK an agent can
-      route around. <strong>Every call crosses the same boundary</strong> — whether it lands on
+      Enforcement lives in the Envoy <code>ext_authz</code> path.
+      <strong>Every call crosses the same boundary</strong> — whether it lands on
       an MCP tool, a REST endpoint or an inference provider.
     </p>
 
