@@ -1,0 +1,2724 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-postgres-init
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: postgresql
+data:
+  01-schema.sql: |
+    -- MCP Orchestrator canonical schema (v1.2.1 — adds SSO + SCIM; SCIM token dismiss/archive)
+    -- Applied automatically by the postgres container on first start
+    -- (anything in /docker-entrypoint-initdb.d/ runs in alphabetical order).
+    -- All statements are idempotent so reinstalls / upgrades are safe.
+
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+    -- ── Users ──────────────────────────────────────────────────────────────────
+    -- password_hash = "SSO_ONLY" sentinel for SSO/SCIM-provisioned users
+    -- (defeats any accidental password-login path since no bcrypt produces that).
+    CREATE TABLE IF NOT EXISTS users (
+        id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        username        VARCHAR(255) UNIQUE NOT NULL,
+        password_hash   VARCHAR(255) NOT NULL,
+        roles           TEXT[]      NOT NULL DEFAULT '{}',
+        enabled         BOOLEAN     NOT NULL DEFAULT TRUE,
+        sso_email       TEXT,                     -- binds user to IdP-provided email for SSO
+        -- SCIM: external_id is the IdP's stable identifier (SCIM externalId).
+        -- Nullable; only populated for SCIM-provisioned users.
+        external_id     TEXT,
+        -- How this user came into the system. Used by the admin UI to show a
+        -- provenance badge and to enforce read-only on SCIM-managed fields.
+        -- Values: 'password' | 'sso_jit' | 'scim' | NULL
+        provisioned_via TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_login      TIMESTAMPTZ,
+        -- Primary contact email. Separate from sso_email so a user can have
+        -- a stable contact address that's distinct from their IdP-resolved
+        -- email (e.g. for expiry reminders, audit attribution). Set via
+        -- `mcpctl users update-email` or the admin UI. Lowercased for
+        -- case-insensitive lookup via users_email_lower_idx.
+        email           TEXT,
+        -- Two-phase MFA (SOC2 CC6.1): admin/operator accounts must complete the
+        -- password→IdP-MFA chain. A single account flagged break_glass = TRUE may
+        -- bypass phase 2 (password-only) when the IdP is unreachable. Every such
+        -- login is audited (event_kind='BreakGlassLogin'); runbook IdP-outage-only.
+        break_glass     BOOLEAN     NOT NULL DEFAULT FALSE
+    );
+    -- For existing installs (upgrade path from pre-SSO / pre-SCIM schema):
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_email       TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS external_id     TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS provisioned_via TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email           TEXT;
+    -- Two-phase MFA (SOC2 CC6.1) break-glass flag; see CREATE TABLE comment above.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS break_glass     BOOLEAN NOT NULL DEFAULT FALSE;
+    -- Each sso_email / external_id can map to at most one user; NULLs exempt.
+    CREATE UNIQUE INDEX IF NOT EXISTS users_sso_email_unique_idx
+        ON users (sso_email) WHERE sso_email IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS users_external_id_unique_idx
+        ON users (external_id) WHERE external_id IS NOT NULL;
+    -- Case-insensitive lookup on the primary contact email.
+    -- Non-unique on purpose: a user's contact email and sso_email could be
+    -- the same string; uniqueness across users is enforced on sso_email above.
+    CREATE INDEX IF NOT EXISTS users_email_lower_idx
+        ON users (lower(email)) WHERE email IS NOT NULL;
+
+    -- ── Audit Events ───────────────────────────────────────────────────────────
+    -- OCSF-aligned shape (Phase F.1, 2026-04-25). 22 columns supporting:
+    --  classification (class_uid, activity_id, severity_id, status_id),
+    --  actor metadata (email, session, idp, roles snapshot),
+    --  network context (src_ip, user_agent),
+    --  correlation (request_id, tenant, cluster_uid),
+    --  state diffs (old_state, new_state) and OCSF overflow (unmapped).
+    -- ── turn_cache ──────────────────────────────────────────────────────────────
+    --
+    -- ⚠ SHARED, because the in-process map was not. The LLM proxy mints a turn
+    -- on whichever replica served the model call; ext_authz resolves it on
+    -- whichever replica served the tool call. With two replicas those differ
+    -- about half the time, and the exchange split across two turn ids.
+    --
+    -- ⚠ NOT EVIDENCE — a correlation hint. Losing a row costs one prompt its
+    -- grouping and nothing else, which is why set() does not block on it and
+    -- why this is safe to prune aggressively.
+    CREATE TABLE IF NOT EXISTS turn_cache (
+        session_id  TEXT PRIMARY KEY,
+        turn_id     TEXT        NOT NULL,
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS turn_cache_updated_idx ON turn_cache (updated_at);
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+        -- ── Core identity ───────────────────────────────────────────────────
+        id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_uid         UUID         NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+        -- event_uid is the OCSF-equivalent globally-unique id, exported as
+        -- metadata.uid in OCSF payloads. Distinct from `id` so we can later
+        -- migrate to externally-issued ids without breaking primary key refs.
+
+        -- ── Plane (Phase F.3) ───────────────────────────────────────────────
+        -- Separates events emitted by the orchestrator (admin plane: REST,
+        -- deployments, role changes) from events emitted by ext_authz (caller
+        -- plane: per-tool-invocation decisions). Two pipelines write to this
+        -- one table; SIEM filtering happens by 'plane'.
+        plane             VARCHAR(8)   NOT NULL DEFAULT 'admin'
+                                       CHECK (plane IN ('admin', 'caller')),
+
+        -- ── Classification (OCSF-aligned) ───────────────────────────────────
+        kind              VARCHAR(64)  NOT NULL,                  -- domain string, e.g. "Deployed"
+        class_uid         INT          NOT NULL DEFAULT 6003,     -- OCSF class (6003=API Activity)
+        activity_id       INT          NOT NULL DEFAULT 0,        -- 0=Unknown,1=Create,2=Read,3=Update,4=Delete
+        severity_id       INT          NOT NULL DEFAULT 1,        -- 1=Info,2=Low,3=Medium,4=High,5=Critical,6=Fatal
+        status_id         INT          NOT NULL DEFAULT 1,        -- 1=Success,2=Failure
+        status_detail     TEXT,                                   -- failure reason if any
+
+        -- ── Actor (the user/agent/system that did the thing) ────────────────
+        actor             VARCHAR(255) NOT NULL,                  -- subject / username
+        actor_email       VARCHAR(255),                           -- from JWT 'email' claim
+        actor_session_id  VARCHAR(128),                           -- from JWT 'sid' / 'jti'
+        actor_idp         VARCHAR(128),                           -- from JWT 'iss'
+        actor_roles       JSONB        NOT NULL DEFAULT '[]',     -- snapshot of role IDs at event time
+
+        -- ── Source endpoint (network context) ───────────────────────────────
+        src_ip            INET,                                   -- client IP from XFF or socket
+        src_user_agent    TEXT,                                   -- HTTP UA string
+
+        -- ── Target ──────────────────────────────────────────────────────────
+        server_name       VARCHAR(255),
+        namespace         VARCHAR(255),
+
+        -- ── Correlation & multi-tenancy ─────────────────────────────────────
+        request_id        VARCHAR(128),                           -- correlate with Envoy access logs
+        tenant            VARCHAR(64),                            -- multi-tenant hook (NULL=default)
+        cluster_uid       VARCHAR(64),                            -- which Magertron instance
+
+        -- ── Detail & state ──────────────────────────────────────────────────
+        detail            TEXT,                                   -- human-readable description
+        old_state         JSONB,                                  -- pre-change snapshot
+        new_state         JSONB,                                  -- post-change snapshot
+        unmapped          JSONB        NOT NULL DEFAULT '{}',     -- OCSF overflow
+
+        -- ── Timestamps ──────────────────────────────────────────────────────
+        ts                TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+
+    -- WHICH catalog object a UC verdict concerned, unambiguously.
+    --
+    -- securable_name alongside it is for reading; this is for resolving. Names
+    -- are unique within a schema, not within a namespace, so an authority
+    -- record joining on the name could match a different table of the same
+    -- name under a different parent.
+    --
+    -- Empty on every other event kind — a tool call has a server, not a
+    -- securable.
+    ALTER TABLE audit_events
+        ADD COLUMN IF NOT EXISTS securable_id UUID;
+
+
+    -- ⚠ WHEN THE CALLER'S AUTHORITY RAN OUT. The token's own exp, captured at
+    -- decision time because nothing stores it otherwise — it is validated and
+    -- discarded.
+    --
+    -- ⚠ This bounds a DELEGATION too. `on_behalf_of` is a claim on the agent's
+    -- own token, not a second credential, so the agent's expiry is the whole
+    -- limit — there is no intersection to compute.
+    --
+    -- Nullable: a call authenticated some other way has no token exp, and
+    -- inventing one would assert a boundary that did not exist.
+    ALTER TABLE audit_events
+        ADD COLUMN IF NOT EXISTS actor_token_exp TIMESTAMPTZ;
+
+    -- ── Prompt correlation (2026-08-04) ───────────────────────────────────
+    --
+    -- turn_id groups every call ONE user message caused: the model turns, the
+    -- tool calls they decided on, and both principals' catalog checks.
+    ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS turn_id  TEXT;
+    ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS is_model BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS turn_id  TEXT;
+    
+    -- The question a turn started, captured at the LLM proxy. OFF by default.
+    --
+    -- ⚠ A SEPARATE TABLE, not a column on audit_events: audit rows are
+    -- append-only and kept for years, reading them is a different capability
+    -- from reading what people typed, and the SIEM forwarder ships
+    -- audit_events — a column would arrive in Splunk the moment recording
+    -- was enabled.
+    CREATE TABLE IF NOT EXISTS prompt_texts (
+        turn_id      TEXT PRIMARY KEY,
+        session_id   TEXT        NOT NULL,
+        principal    TEXT        NOT NULL,
+        on_behalf_of TEXT,
+        prompt       TEXT        NOT NULL,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS prompt_texts_session_idx ON prompt_texts (session_id);
+    CREATE INDEX IF NOT EXISTS prompt_texts_created_idx ON prompt_texts (created_at DESC);
+    
+    -- The authority record looks up every event for one turn, and the evidence
+    -- search groups by turn. Neither had an index until 2026-08-23 — twelve
+    -- indexes on this table and none on turn_id, so every record opened was a
+    -- sequential scan over (by then) two million rows.
+    --
+    -- (turn_id, ts) not (turn_id): the record wants the events IN ORDER, and
+    -- the composite serves that and the group-by for very little more.
+    --
+    -- PARTIAL: events not caused by a prompt carry no turn, and indexing rows
+    -- the query can never match is pure cost.
+    CREATE INDEX IF NOT EXISTS audit_events_turn_idx
+        ON audit_events (turn_id, ts)
+     WHERE turn_id IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS audit_events_ts_idx        ON audit_events (ts DESC);
+    CREATE INDEX IF NOT EXISTS audit_events_actor_idx     ON audit_events (actor);
+    CREATE INDEX IF NOT EXISTS audit_events_server_idx    ON audit_events (server_name, namespace);
+    CREATE INDEX IF NOT EXISTS audit_events_event_uid_idx ON audit_events (event_uid);
+    CREATE INDEX IF NOT EXISTS audit_events_class_idx     ON audit_events (class_uid, activity_id);
+    CREATE INDEX IF NOT EXISTS audit_events_request_idx   ON audit_events (request_id) WHERE request_id IS NOT NULL;
+
+    -- Dual principal: the human a service account was acting for.
+    --
+    -- NULL = a direct call, no agent involved. `actor` names whoever
+    -- authenticated — the agent when this is set, the person when it is not.
+    --
+    -- Left NULL rather than mirrored into actor: an auditor must be able to
+    -- tell a delegated call from a direct one, and defaulting it would erase
+    -- exactly that distinction.
+    ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS on_behalf_of_subject TEXT;
+    CREATE INDEX IF NOT EXISTS audit_events_obo_idx ON audit_events (on_behalf_of_subject, ts) WHERE on_behalf_of_subject IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS audit_events_plane_ts_idx  ON audit_events (plane, ts DESC);
+
+    -- ── Audit immutability guard (R-06) ─────────────────────────────────────────
+    -- audit_events is append-only. UPDATE is always denied. DELETE is denied
+    -- EXCEPT inside the retention worker's prune transaction, which sets the GUC
+    -- magertron.allow_audit_prune='on' via SET LOCAL (transaction-scoped) right
+    -- before its DELETE. The retention deletion is itself audited
+    -- (RetentionPruneCompleted), so the only sanctioned mutation of the trail is
+    -- recorded in the trail. current_setting(...,true) returns NULL when unset
+    -- ⚠ COLUMNS THE C++ WRITES THAT THIS FILE NEVER CREATED. Without them every
+    -- audit write fails — the INSERT names them, Postgres rejects the whole
+    -- statement, DbClient logs an error and resets its audit connection, and
+    -- audit_events stays empty forever while the platform otherwise runs
+    -- perfectly.
+    --
+    -- Found 2026-08-27: a months-old cluster had 34 columns, a fresh install 31.
+    -- securable_id was added here when it landed; securable_name,
+    -- securable_type and tool_name were not.
+    --
+    -- ⚠ ALTER, not just a CREATE TABLE change: an install made before this fix
+    -- has been recording nothing, and needs the columns added on upgrade. What
+    -- it missed is unrecoverable, but it starts recording again from here.
+    -- The catalog-source connectivity test stages a test_only row and returns
+    -- 202, leaving the connector to attempt it on its next poll. It needs a
+    -- status meaning "staged, not yet attempted" — and there was not one, so
+    -- the placeholder insert failed the check constraint every time and the
+    -- test could never report anything. Every install, since it shipped.
+    --
+    -- Drop and re-add rather than skip: 'pending' is additional, so no existing
+    -- row can violate the new form.
+    ALTER TABLE uc_catalog_source
+        DROP CONSTRAINT IF EXISTS uc_catalog_source_last_sync_status_check;
+    ALTER TABLE uc_catalog_source
+        ADD CONSTRAINT uc_catalog_source_last_sync_status_check
+        CHECK (last_sync_status IN ('ok', 'partial', 'failed', 'pending'));
+
+    -- ── Pinned prompt entitlements ────────────────────────────────────────
+    --
+    -- One row per TURN per SERVER, written the first time a turn touches a
+    -- server. Holds the policies that were in force at that moment, so every
+    -- later call in the same turn is judged against the same set.
+    --
+    -- ⚠ LAZY, not eager. With the optimizer on, most servers a principal could
+    -- reach are never touched — writing rows for all of them would be work done
+    -- for nothing on every turn.
+    --
+    -- ⚠ WRITTEN BUT NOT READ, as of this migration. Enforcement still resolves
+    -- policies live. The read is a later change, behind the same setting.
+    CREATE TABLE IF NOT EXISTS turn_entitlements (
+        turn_id      text        NOT NULL,
+        server_id    uuid        NOT NULL,
+
+        -- Both principals on a delegated turn. The intersection is computed
+        -- from the agent AND the human, so a pin that recorded only one would
+        -- not survive a change to the other.
+        subject      text        NOT NULL,
+        on_behalf_of text,
+
+        -- The policies in force at first touch, as the evaluator sees them.
+        --
+        -- ⚠ EVALUATED, not copied verbatim. mcp_tool_permissions rows carry
+        -- valid_from/valid_until; storing those unresolved would let a
+        -- permission expire mid-turn and the pin would not hold, which is the
+        -- one thing it exists to do.
+        policies     jsonb       NOT NULL,
+
+        -- Magertron's own object bindings (uc_tool_securable, uc_grant) — not
+        -- the warehouse's catalog, which is a synced cache and stays live.
+        uc_grants    jsonb       NOT NULL DEFAULT '[]'::jsonb,
+
+        created_at   timestamptz NOT NULL DEFAULT now(),
+
+        -- ⚠ THE BACKSTOP, NOT THE MECHANISM. Rows are deleted when a turn ends.
+        -- This catches turns that never announce an end: a dead agent, an
+        -- abandoned session, a pod restarting mid-turn.
+        --
+        -- ⚠ It is also the longest a revocation can be delayed once the read
+        -- lands. Five minutes matches the exchanged credential's TTL and is
+        -- defensible; an hour would not be.
+        expires_at   timestamptz NOT NULL,
+
+        PRIMARY KEY (turn_id, server_id)
+    );
+
+    -- Reads are by primary key. This is for the sweep, and for answering
+    -- "what is still open" without a sequential scan.
+    CREATE INDEX IF NOT EXISTS turn_entitlements_expiry_idx
+        ON turn_entitlements (expires_at);
+
+    -- ── Prepaid opening balance ───────────────────────────────────────────
+    --
+    -- A prepaid pool is anchored to a dated snapshot of what the VENDOR says is
+    -- left, and computed forward from there. Without an anchor the pool is the
+    -- sum of every top-up ever recorded, which is only correct if every one was
+    -- real money — and in practice some are reconciliations made to close a
+    -- drift, which double-counts.
+    --
+    -- kind:
+    --   'opening_balance'  the vendor's own figure at a known instant. The most
+    --                      recent one wins and everything before it is ignored.
+    --   'purchase'         real money added to the vendor account after it.
+    --   'adjustment'       a correction. RECORDED FOR AUDIT, EXCLUDED FROM THE
+    --                      POOL — including them is what makes a reconciled
+    --                      balance drift again the moment the window moves.
+    ALTER TABLE credit_purchases
+        ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'purchase';
+    ALTER TABLE credit_purchases
+        ADD CONSTRAINT credit_purchases_kind_check
+        CHECK (kind IN ('opening_balance','purchase','adjustment'))
+        NOT VALID;
+
+    -- ⚠ Separate from purchased_at, which is when the ROW was written. The
+    -- anchor is when the vendor's figure was TRUE — usually midnight, or
+    -- whenever the console was read. Spend is counted strictly after it.
+    ALTER TABLE credit_purchases
+        ADD COLUMN IF NOT EXISTS effective_from timestamptz;
+
+    CREATE INDEX IF NOT EXISTS credit_purchases_opening_idx
+        ON credit_purchases (contract_id, effective_from DESC)
+        WHERE kind = 'opening_balance';
+
+    ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS securable_name text;
+    ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS securable_type text;
+    ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS tool_name      text;
+    ALTER TABLE sso_login_state ADD COLUMN IF NOT EXISTS return_to text;
+
+
+    -- (missing_ok), so normal INSERT/SELECT traffic is unaffected.
+    CREATE OR REPLACE FUNCTION audit_events_immutable() RETURNS TRIGGER AS $$
+    BEGIN
+        IF (TG_OP = 'UPDATE') THEN
+            RAISE EXCEPTION 'audit_events is append-only: UPDATE denied';
+        END IF;
+        IF (TG_OP = 'DELETE') THEN
+            IF current_setting('magertron.allow_audit_prune', true) IS DISTINCT FROM 'on' THEN
+                RAISE EXCEPTION 'audit_events is append-only: DELETE denied (retention path only)';
+            END IF;
+        END IF;
+        RETURN COALESCE(NEW, OLD);
+    END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS audit_events_immutable_trg ON audit_events;
+    CREATE TRIGGER audit_events_immutable_trg
+        BEFORE UPDATE OR DELETE ON audit_events
+        FOR EACH ROW EXECUTE FUNCTION audit_events_immutable();
+
+    -- ── Deployed Servers ───────────────────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS deployed_servers (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name          VARCHAR(255) NOT NULL,
+        namespace     VARCHAR(255) NOT NULL,
+        -- ── Server type discriminator ────────────────────────────────────────
+        -- 'internal' = MCP server runs as a pod in this cluster (default).
+        -- 'hybrid'   = same as internal at the registration layer; outbound
+        --              egress policies applied separately at runtime.
+        -- 'external' = MCP server runs at a vendor SaaS endpoint; this row
+        --              represents a proxy registration, not a deployable pod.
+        --              endpoint_url, auth_type, credential_secret_ref required;
+        --              image / image_tag / mcp_port columns are NULL for these.
+        server_type   VARCHAR(32) NOT NULL DEFAULT 'internal'
+                      CHECK (server_type IN ('internal', 'hybrid', 'external')),
+        -- ── Internal/Hybrid columns (NULL for external) ──────────────────────
+        -- image-related fields are NULL when server_type='external' because no
+        -- pod is deployed. The composite CHECK constraint below enforces this.
+        image         VARCHAR(512),
+        image_tag     VARCHAR(128) DEFAULT 'latest',
+        replicas      INT         NOT NULL DEFAULT 1,
+        mcp_port      INT,
+        transport     VARCHAR(32) NOT NULL DEFAULT 'http',
+        cluster_ip    VARCHAR(64),
+        cluster_port  INT,
+        -- ── External-only columns (NULL for internal/hybrid) ─────────────────
+        -- Where the vendor MCP server lives (HTTPS URL).
+        endpoint_url  TEXT,
+        -- How magertron authenticates to the vendor endpoint.
+        -- 'none' is a valid choice (public endpoint, no auth).
+        auth_type     VARCHAR(32)
+                      CONSTRAINT deployed_servers_auth_type_check
+                      CHECK (auth_type IS NULL OR auth_type IN
+                            ('none', 'bearer', 'api-key',
+                             'oauth2-client-credentials',
+                             'oauth2-authorization-code', 'mtls')),
+        -- Name of the K8s Secret holding credentials. NULL allowed even when
+        -- auth_type IS NOT NULL if auth_type='none' (no secret needed).
+        credential_secret_ref VARCHAR(255),
+        -- credential_mode: WHO authenticates to the External endpoint.
+        --   'centralized' = Magertron holds one credential and presents it for
+        --                   all agent traffic (SEP-1046 client-credentials / M2M).
+        --                   The External provider sees a single tenant (Magertron);
+        --                   per-agent cost attribution is tracked internally via
+        --                   the email anchor on each account.
+        --   'delegated'   = per-user token exchange; each agent authenticates as
+        --                   themselves (SEP-990 cross-app-access). The operator is
+        --                   simply the first such user at probe time.
+        -- Only meaningful for External rows. Internal/Hybrid rows carry the
+        -- harmless default. Cross-field rule (delegated REQUIRES an OAuth-family
+        -- auth_type) is enforced in handle_register_external_server, not here,
+        -- so the API can return a clean 400 instead of an opaque CHECK error.
+        credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized'
+                        CHECK (credential_mode IN ('centralized', 'delegated')),
+        -- ── Common columns ───────────────────────────────────────────────────
+        state         VARCHAR(32) NOT NULL DEFAULT 'Pending',
+        deployed_by   VARCHAR(255),
+        tools         JSONB       NOT NULL DEFAULT '[]',
+        env_vars      JSONB       NOT NULL DEFAULT '{}',
+        labels        JSONB       NOT NULL DEFAULT '{}',
+        annotations   JSONB       NOT NULL DEFAULT '{}',
+        -- Container entrypoint override. Both default to empty array '[]'
+        -- meaning "use the image's default ENTRYPOINT/CMD" — backward-
+        -- compatible with deploys made before this column existed. When
+        -- non-empty, command flows to the K8s container.command field
+        -- (overrides image ENTRYPOINT) and args flows to container.args
+        -- (overrides image CMD). Common case: forcing stdio-default MCP
+        -- server images (mcp/everything, tzolov/mcp-everything-server)
+        -- into HTTP mode via args=["node","dist/index.js","streamableHttp"].
+        command       JSONB       NOT NULL DEFAULT '[]',
+        args          JSONB       NOT NULL DEFAULT '[]',
+        group_name    VARCHAR(255),
+        -- Slice 6f: data plane selector. "legacy" routes through the legacy
+        -- xDS push handler (existing behavior); "v3" routes through the v3
+        -- ADS pull-driven handler (slice 6e Option A). The v3 ADS subscriber
+        -- in src/gateway/v3/ads_subscriber.cpp filters on this field —
+        -- only servers with routing_mode='v3' are exposed to v3 Envoy.
+        routing_mode  VARCHAR(16) NOT NULL DEFAULT 'v3',
+        upstream_path VARCHAR(255) NOT NULL DEFAULT '/',
+        upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1',
+        tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2',
+        -- Provenance discriminator (Brick 2b provenance gate). WHO/WHAT
+        -- registered this row, independent of where the server runs:
+        --   'application' = registered IN-APP by an operator (Deploy wizard,
+        --                   mcpctl, REST API). The default for all interactive
+        --                   deploys.
+        --   'inventory'   = pushed by the mcp-inventory reconcile path.
+        -- Set once on INSERT; deliberately NOT updated on conflict (provenance
+        -- is immutable — a re-registration must not silently flip origin).
+        origin        VARCHAR(32) NOT NULL DEFAULT 'application'
+                      CHECK (origin IN ('application', 'inventory')),
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (name, namespace),
+        -- ── Per-type data invariants ─────────────────────────────────────────
+        -- The load-bearing invariant: Internal/Hybrid rows REQUIRE an image
+        -- (because Magertron deploys a pod for them); External rows REQUIRE
+        -- an endpoint_url + auth_type (because Magertron proxies to a vendor
+        -- endpoint, no pod involved). Image absence is the signal of
+        -- "external", image presence is the signal of "internal/hybrid".
+        --
+        -- We do NOT enforce that image_tag/mcp_port/replicas/transport are
+        -- NULL on External rows. Postgres column DEFAULTS (image_tag='latest',
+        -- transport='http', replicas=1) fire automatically on INSERT before
+        -- the CHECK constraint runs, and overriding them per-type would
+        -- require either dropping the defaults (breaks every Internal INSERT)
+        -- or special-cased default suppression in every code path. C++ already
+        -- type-switches on server_type and ignores irrelevant fields for
+        -- External rows, so harmless default values riding along do no damage.
+        CONSTRAINT deployed_servers_type_invariant CHECK (
+            -- internal / hybrid: a pod Magertron runs (image present, no
+            -- endpoint_url). Credentials are OPTIONAL — pure-internal carries
+            -- none; a hybrid (internal pod calling a credentialed external API)
+            -- carries auth_type + credential_secret_ref. The old strict version
+            -- forced both NULL, which rejected every hybrid deploy.
+            (server_type IN ('internal', 'hybrid')
+             AND image IS NOT NULL
+             AND endpoint_url IS NULL)
+            OR
+            (server_type = 'external'
+             AND image IS NULL
+             AND endpoint_url IS NOT NULL
+             AND auth_type IS NOT NULL)
+        )
+    );
+    -- For existing installs (upgrade path from pre-1.15 schema):
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS command JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(16) NOT NULL DEFAULT 'v3';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_path VARCHAR(255) NOT NULL DEFAULT '/';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS upstream_http_version VARCHAR(8) NOT NULL DEFAULT 'http1';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS tls_min_version VARCHAR(8) NOT NULL DEFAULT 'tls1_2';
+    -- Brick 2b provenance gate: origin discriminator (application | inventory).
+    -- Default 'application' so any pre-existing rows are treated as operator-
+    -- registered. Set once on INSERT, never flipped on conflict (see db_client).
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS origin VARCHAR(32) NOT NULL DEFAULT 'application';
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_origin_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_origin_check
+        CHECK (origin IN ('application', 'inventory'));
+    -- Default-flip migration (legacy → v3): on clusters created BEFORE the flip,
+    -- the routing_mode column already exists with DEFAULT 'legacy', so the
+    -- ADD COLUMN IF NOT EXISTS above is a no-op and would NOT change the default.
+    -- This explicit SET DEFAULT ensures upgrading customers also default new
+    -- servers to v3 — no manual ALTER required. Idempotent (safe every deploy).
+    -- NOTE: only changes the column DEFAULT for future inserts; it does NOT
+    -- rewrite existing rows (those keep their stored routing_mode).
+    ALTER TABLE deployed_servers ALTER COLUMN routing_mode SET DEFAULT 'v3';
+    -- ── External MCP server support (session 2.13) ───────────────────────────
+    -- server_type discriminator. Default 'internal' for any pre-existing rows.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS server_type VARCHAR(32) NOT NULL DEFAULT 'internal';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS endpoint_url TEXT;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS auth_type    VARCHAR(32);
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_secret_ref VARCHAR(255);
+    -- Session 2.14: credential_mode discriminator for the External auth model.
+    -- Default 'centralized' so any pre-existing External rows get a sane value
+    -- with no data migration. See the inline column comment above for semantics.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS credential_mode VARCHAR(16) NOT NULL DEFAULT 'centralized';
+    -- static_headers: operator-defined HTTP headers injected on every outbound
+    -- call to this server by the ext_authz path (see external_service.cpp).
+    -- Validated as a flat string->string JSON object at registration time
+    -- (rest_server.cpp rejects non-objects and reserved header names).
+    -- Default '{}' so pre-existing rows inject nothing. NOT NULL keeps the
+    -- read path free of null-checks. Idempotent for fresh installs + upgrades.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS static_headers JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+    -- rest_metering_config: per-server REST quantity-mapping. Where the
+    -- billable magnitude lives (request path and/or response header), what
+    -- unit/dimension to record, and how to derive the operation (tool_name).
+    -- Consumed by the ext_authz REST classifier + the ALS response-side
+    -- true-up. '{}' = bill calls-only (no mapping). Mirrors static_headers:
+    -- routing/config, not a secret; NOT NULL keeps the read path null-free.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS rest_metering_config JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+    -- is_llm: does this server serve a MODEL rather than an MCP tool surface?
+    --
+    -- ⚠ NOT THE SOURCE OF TRUTH. The canonical signal is labels->>'kind'='llm',
+    -- which predates this column and is what everything actually reads:
+    -- inventory_census() buckets internal_llm/external_llm off it, the
+    -- deployment manager labels pods from it, and the drift prober excludes
+    -- model endpoints from tools/list probing on it. Those labels also carry
+    -- 'model' and 'provider', which a boolean cannot express and which a
+    -- model-contract drift probe will need.
+    --
+    -- This column exists because it was added before that convention was
+    -- found. It is kept for compatibility, defaults FALSE, and is not consulted
+    -- by any code path. If you are writing a query that needs to know whether a
+    -- server is a model endpoint, use labels->>'kind' — a row can have the
+    -- label without the flag, and trusting the flag alone will miss it.
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS is_llm BOOLEAN NOT NULL DEFAULT FALSE;
+
+    -- Partial index on the CANONICAL signal, not the flag above. Both the drift
+    -- prober and the future model-contract probe need "which servers are model
+    -- endpoints", and that set is small relative to the fleet.
+    CREATE INDEX IF NOT EXISTS deployed_servers_llm_kind_idx
+        ON deployed_servers (namespace, name) WHERE labels->>'kind' = 'llm';
+
+    -- Slice C: widen the auth_type CHECK to allow 'oauth2-authorization-code'
+    -- (delegated authorization-code flow). The original inline constraint was
+    -- anonymous and auto-named deployed_servers_auth_type_check; drop + re-add
+    -- idempotently so existing DBs pick up the new value.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_auth_type_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_auth_type_check
+        CHECK (auth_type IS NULL OR auth_type IN
+            ('none', 'bearer', 'api-key',
+             'oauth2-client-credentials', 'oauth2-authorization-code', 'mtls'));
+    -- Session 2.13 fix: the original (chart 2.4.24) version of
+    -- deployed_servers_type_invariant required image_tag/mcp_port to be NULL
+    -- on External rows. That conflicted with Postgres column DEFAULTS firing
+    -- on INSERT (image_tag DEFAULT 'latest', etc), making External INSERTs
+    -- impossible. Drop and recreate with the relaxed version that only
+    -- enforces the load-bearing invariants (image presence/absence).
+    --
+    -- Hybrid (2026-07): the internal/hybrid branch no longer forces
+    -- auth_type/credential_secret_ref NULL. A hybrid is an internally-deployed
+    -- pod that calls a credentialed external API, so it legitimately carries a
+    -- credential while having an image and no endpoint_url. This is the
+    -- authoritative definition — it runs on every init/restart, so it must be
+    -- the relaxed version or hybrid deploys get rejected after every reboot.
+    -- Idempotent: drop only if present, then recreate.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_type_invariant;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_type_invariant CHECK (
+        (server_type IN ('internal', 'hybrid')
+         AND image IS NOT NULL
+         AND endpoint_url IS NULL)
+        OR
+        (server_type = 'external'
+         AND image IS NULL
+         AND endpoint_url IS NOT NULL
+         AND auth_type IS NOT NULL)
+    );
+    -- ── Fleet reconstruction columns (2026-07-16) ───────────────────────────
+    -- These eight fields exist in McpServerSpec (deployment_manager.hpp) and
+    -- are used to build the Kubernetes Deployment, but were NEVER persisted.
+    -- The row recorded WHAT was deployed, not HOW — routing and RBAC only ever
+    -- needed name/namespace/image/port, so nothing surfaced the gap.
+    --
+    -- It surfaces on restore. A dump restored onto a fresh cluster has rows but
+    -- no workloads; anything rebuilding those pods from the DB gets struct
+    -- defaults for every field below. A server deployed with memory_limit_mb
+    -- 2048 silently comes back at 512 and OOMKills under the same load it
+    -- handled before. Nothing in the failure points at the restore.
+    --
+    -- Defaults below MUST match the McpServerSpec initializers exactly, so
+    -- existing rows describe what those servers are actually running today.
+    -- If you change a default here, change it there in the same commit.
+    --   chart_name/chart_version : "" (empty = raw k8s POST, not helm)
+    --   min_replicas{1}  max_replicas{10}
+    --   cpu_request{0.1} cpu_limit{1.0}
+    --   memory_request_mb{128} memory_limit_mb{512}
+    --
+    -- NOTE: for rows that pre-date this migration the defaults are a GUESS —
+    -- they are what the spec would have used IF the deployer passed nothing.
+    -- An operator who overrode a limit before this migration has already lost
+    -- that value; it lives only in the live Deployment's manifest. Backfill
+    -- from the cluster before trusting these for a rebuild:
+    --   kubectl get deploy -n <ns> <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS chart_name        VARCHAR(255) NOT NULL DEFAULT '';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS chart_version     VARCHAR(64)  NOT NULL DEFAULT '';
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS min_replicas      INTEGER      NOT NULL DEFAULT 1;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS max_replicas      INTEGER      NOT NULL DEFAULT 10;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS cpu_request       DOUBLE PRECISION NOT NULL DEFAULT 0.1;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS cpu_limit         DOUBLE PRECISION NOT NULL DEFAULT 1.0;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS memory_request_mb BIGINT       NOT NULL DEFAULT 128;
+    ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS memory_limit_mb   BIGINT       NOT NULL DEFAULT 512;
+
+    -- Sanity bounds. These are not security controls — the API validates on the
+    -- way in — they exist so a bad UPDATE can't put the fleet in a state that
+    -- silently produces unschedulable pods on the next rebuild.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_scaling_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_scaling_check CHECK (
+        min_replicas >= 0
+        AND max_replicas >= min_replicas
+        AND replicas    >= 0
+        AND cpu_request  > 0
+        AND cpu_limit   >= cpu_request
+        AND memory_request_mb  > 0
+        AND memory_limit_mb   >= memory_request_mb
+    );
+
+    -- Fast filtering by type when listing servers per tenant or rendering
+    -- type-specific UI sections. Most queries scope by namespace + server_type.
+    CREATE INDEX IF NOT EXISTS deployed_servers_type_idx
+        ON deployed_servers (namespace, server_type);
+    -- Prevent duplicate External-server registrations against the same vendor
+    -- endpoint within a tenant namespace. Two operators registering "Nitro"
+    -- twice with different credentials would create ambiguous routing and
+    -- billing. Partial index (WHERE server_type = 'external') so Internal/
+    -- Hybrid rows with NULL endpoint_url don't conflict with each other.
+    CREATE UNIQUE INDEX IF NOT EXISTS deployed_servers_external_endpoint_unique_idx
+        ON deployed_servers (namespace, endpoint_url)
+        WHERE server_type = 'external';
+
+    -- ── Shared-contract clone pointer (#27 billing-family) ───────────────────
+    -- A clone points at its contract-owning origin and carries NO cost_contracts
+    -- row of its own. NULL clone_of = this server owns its contract (origin or
+    -- standalone); non-NULL = clone, billing resolves to clone_of. This is the
+    -- entire schema delta for the shared-contract sidecar: cost_contracts,
+    -- cost_budgets, meter_events, rated_costs are untouched (including
+    -- cost_contracts_active_uq — still one active contract per OWNING server;
+    -- clones simply have none). Rating/throttle resolve the family in
+    -- load_rating_events / load_active_contract / get_budget_for_server; the
+    -- dashboard contract-joins resolve via COALESCE(ds.clone_of, me.server_id).
+    -- Self-referential FK; a clone never deletes while it has its own children
+    -- (it has none), and an ORIGIN delete is BLOCKED by the C++ delete guard
+    -- while clones still point at it (so this FK is never violated by a cascade).
+    ALTER TABLE deployed_servers
+        ADD COLUMN IF NOT EXISTS clone_of UUID REFERENCES deployed_servers(id);
+    CREATE INDEX IF NOT EXISTS deployed_servers_clone_of_idx
+        ON deployed_servers (clone_of) WHERE clone_of IS NOT NULL;
+
+    -- ── REST API support (server_type='rest') ────────────────────────────────
+    -- 'rest' is a first-class endpoint-backed type: shaped exactly like
+    -- 'external' (no image, has endpoint_url + auth_type) but parsed as a raw
+    -- REST call rather than JSON-RPC/MCP at the ext_authz metering seam. It
+    -- rides the same governed-egress plane (cost_contracts, rate_schedules,
+    -- budgets, chargeback, galaxy) via the shared deployed_servers.id FK.
+    -- Three widenings, all idempotent (run on every init/restart):
+    --   1. server_type domain CHECK  → allow 'rest'
+    --   2. type_invariant shape CHECK → 'rest' shares the endpoint-backed branch
+    --   3. endpoint-uniqueness index  → 'rest' shares the per-namespace guard
+    -- The server_type domain CHECK was created ANONYMOUSLY on the base CREATE
+    -- TABLE (auto-named deployed_servers_server_type_check) and was never
+    -- widened by a later block, so existing DBs still reject 'rest'. Drop the
+    -- auto-named constraint and re-add it named + widened.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_server_type_check;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_server_type_check
+        CHECK (server_type IN ('internal', 'hybrid', 'external', 'rest'));
+
+    -- Widen the endpoint-backed branch of the shape invariant to cover 'rest'.
+    -- A 'rest' row is shaped identically to 'external': no image, has
+    -- endpoint_url + auth_type. Same load-bearing invariants apply.
+    ALTER TABLE deployed_servers DROP CONSTRAINT IF EXISTS deployed_servers_type_invariant;
+    ALTER TABLE deployed_servers ADD CONSTRAINT deployed_servers_type_invariant CHECK (
+        (server_type IN ('internal', 'hybrid')
+         AND image IS NOT NULL
+         AND endpoint_url IS NULL)
+        OR
+        (server_type IN ('external', 'rest')
+         AND image IS NULL
+         AND endpoint_url IS NOT NULL
+         AND auth_type IS NOT NULL)
+    );
+
+    -- Extend the per-namespace endpoint-uniqueness guard to 'rest' too, so two
+    -- REST servers can't claim the same vendor endpoint in one namespace
+    -- (ambiguous routing + billing, same rationale as External). Recreate the
+    -- partial index with a widened predicate; name unchanged to avoid dangling
+    -- references. DROP+CREATE (not IF NOT EXISTS) because the predicate changes.
+    -- ⚠ The key includes the MODEL. One vendor URL serves many models —
+    -- api.anthropic.com answers for Sonnet, Haiku and Opus alike — so keying
+    -- on the endpoint alone made an estate choose ONE Anthropic model, which
+    -- defeats one-model-per-server for the vendors it matters most for.
+    --
+    -- The guarantee survives: same endpoint AND same model is still refused,
+    -- which is the duplicate that would let traffic route around a contract.
+    --
+    -- COALESCE, because servers registered before the model field existed have
+    -- no label; they collapse to '' and behave exactly as before.
+    DROP INDEX IF EXISTS deployed_servers_external_endpoint_unique_idx;
+    CREATE UNIQUE INDEX deployed_servers_external_endpoint_unique_idx
+        ON deployed_servers (namespace, endpoint_url,
+                             COALESCE(labels->>'model', ''))
+        WHERE server_type IN ('external', 'rest');
+
+    -- ── External MCP server architecture (session 2.13) ──────────────────────
+    -- The deployed_servers table holds rows for all three deployment patterns:
+    --
+    --   server_type='internal'  → MCP server runs as a pod in this cluster.
+    --                             Magertron manages full lifecycle. image and
+    --                             image_tag specify what to deploy.
+    --
+    --   server_type='hybrid'    → Same as internal at registration; the
+    --                             distinction is operational (the server's
+    --                             tools reach external APIs at runtime,
+    --                             governed by NetworkPolicy egress rules).
+    --
+    --   server_type='external'  → MCP server runs at a vendor SaaS endpoint
+    --                             (e.g. Nitro Cloud). This row represents a
+    --                             proxy registration, not a deployable pod.
+    --                             endpoint_url + auth_type + credential_secret_ref
+    --                             tell Magertron's proxy where to forward
+    --                             traffic and how to authenticate. image is
+    --                             NULL because no in-cluster pod exists.
+    --
+    -- The deployed_servers_type_invariant CHECK constraint above enforces
+    -- per-type data integrity at the DB layer. Any code path that tries to
+    -- insert a malformed row (e.g. type='external' with NULL endpoint_url)
+    -- is rejected by Postgres regardless of whether the C++ or UI validator
+    -- ran correctly.
+    --
+    -- External-server rows are ONLY ever written by the admin API
+    -- (mcpctl / UI authenticated by an operator with the appropriate RBAC
+    -- permission). The inventory-plane ingestion path NEVER auto-registers
+    -- External servers — the security blast radius of an auto-discovered
+    -- external endpoint (DNS spoofing, vendor identity confusion) is too
+    -- large to permit. See design/external-mcp-servers.md (internal).
+
+    -- ── RBAC Roles ─────────────────────────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS roles (
+        id            VARCHAR(255) PRIMARY KEY,
+        name          VARCHAR(255) NOT NULL,
+        description   TEXT,
+        permissions   JSONB       NOT NULL DEFAULT '[]',
+        allowed_namespaces JSONB  NOT NULL DEFAULT '["*"]',
+        system_role   BOOLEAN     NOT NULL DEFAULT FALSE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- ⚠ EVIDENCE, NOT CONFIGURATION. mcp_tool_permissions names a role; without
+    -- this, what that role GRANTED at the moment of a decision is unrecoverable,
+    -- and an authority record resolves only half a reference.
+    --
+    -- ⚠ NO FOREIGN KEY to roles(id), deliberately — roles already cascades to
+    -- mcp_tool_permissions, and history that cascades is history that vanishes
+    -- when somebody tidies up after an incident.
+    CREATE TABLE IF NOT EXISTS role_versions (
+        version_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        role_id         VARCHAR(255) NOT NULL,
+        version         INTEGER      NOT NULL,
+        content_hash    TEXT         NOT NULL,
+        name            TEXT         NOT NULL,
+        description     TEXT         NOT NULL DEFAULT '',
+        permissions     JSONB        NOT NULL,
+        allowed_namespaces JSONB     NOT NULL,
+        is_admin_tier   BOOLEAN      NOT NULL,
+        created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+        created_by      TEXT,
+        CONSTRAINT role_versions_unique UNIQUE (role_id, version)
+    );
+    CREATE INDEX IF NOT EXISTS role_versions_role_idx
+        ON role_versions (role_id, version DESC);
+    CREATE INDEX IF NOT EXISTS role_versions_hash_idx
+        ON role_versions (content_hash);
+
+
+    -- Delegated administration: marks roles that confer administrative scope.
+    -- Only a global platform admin may grant or create an is_admin_tier role
+    -- (enforced in rest_server guard_admin_tier_grant + role create/update).
+    -- Additive + idempotent: safe on reinstall and safe to apply by hand to an
+    -- already-initialised cluster (the init entrypoint only runs on an empty
+    -- data dir, so existing volumes need a one-time manual apply of these two).
+    ALTER TABLE roles ADD COLUMN IF NOT EXISTS is_admin_tier BOOLEAN NOT NULL DEFAULT FALSE;
+    UPDATE roles SET is_admin_tier = TRUE WHERE id = 'system:platform-admin';
+
+    -- ── Governance Policies ────────────────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS governance_policies (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name          VARCHAR(255) UNIQUE NOT NULL,
+        description   TEXT        NOT NULL DEFAULT '',
+        rules         JSONB       NOT NULL DEFAULT '[]',
+        applies_to_namespaces JSONB NOT NULL DEFAULT '["*"]',
+        is_template   BOOLEAN     NOT NULL DEFAULT FALSE,
+        enabled       BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- ── governance_policy_versions ──────────────────────────────────────────
+    --
+    -- ⚠ EVIDENCE, NOT CONFIGURATION. governance_policies above holds what is
+    -- in force NOW; this holds what was in force THEN. An execution passport
+    -- asserting "admissible under policy X version 7" is unverifiable unless
+    -- version 7's text can still be produced — so these rows outlive the
+    -- policy they describe.
+    --
+    -- ⚠ APPEND-ONLY. There is deliberately no UPDATE path: a policy change
+    -- writes a NEW version. A row here is a statement about a moment, and
+    -- moments do not change.
+    --
+    -- ⚠ RETENTION IS THE VERIFICATION WINDOW. Purging a version makes every
+    -- passport referencing it unverifiable — which is worse than never having
+    -- signed one, because the object still LOOKS like evidence. These rows are
+    -- text and a hash; a million of them is a rounding error beside
+    -- meter_events. Do not prune them with the diagnostics.
+    CREATE TABLE IF NOT EXISTS governance_policy_versions (
+        -- The row's own identity: precise, and referenceable without a
+        -- two-column foreign key.
+        version_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+        -- ⚠ The policy's STABLE identity across versions. Deliberately NOT a
+        -- foreign key to governance_policies: a version must survive the
+        -- deletion of the policy it describes, or retiring a policy would
+        -- silently invalidate the history that references it.
+        policy_id       UUID        NOT NULL,
+
+        -- Monotonic PER POLICY, starting at 1. Legible in a passport as
+        -- "policy <id> version 7" — which is what a human reads, where the
+        -- uuid is what a machine follows.
+        version         INTEGER     NOT NULL,
+
+        -- ⚠ WHAT PROVES THE CONTENT. Over the semantic fields only — see the
+        -- header. An auditor with the passport and this hash can verify the
+        -- text without trusting policy_id, version, or us.
+        content_hash    TEXT        NOT NULL,
+
+        -- The content itself, so the hash can be checked against something.
+        -- A hash with no preimage proves nothing.
+        name            TEXT        NOT NULL,
+        description     TEXT        NOT NULL DEFAULT '',
+        rules           JSONB       NOT NULL,
+        applies_to_namespaces JSONB NOT NULL,
+        enabled         BOOLEAN     NOT NULL,
+
+        -- Provenance: who made this version, and when it came into force.
+        -- ⚠ created_by is nullable because seeded templates have no author,
+        -- and inventing "system" would assert an actor that never acted.
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_by      TEXT,
+
+        -- ⚠ Two policies cannot share a version number, and a version number
+        -- cannot be reused. This constraint is what makes "version 7" mean one
+        -- thing forever.
+        CONSTRAINT governance_policy_versions_unique UNIQUE (policy_id, version)
+    );
+
+    -- Passport verification looks up by (policy_id, version) or by hash;
+    -- both need to be fast at evidence scale.
+    CREATE INDEX IF NOT EXISTS governance_policy_versions_policy_idx
+        ON governance_policy_versions (policy_id, version DESC);
+    CREATE INDEX IF NOT EXISTS governance_policy_versions_hash_idx
+        ON governance_policy_versions (content_hash);
+
+    CREATE INDEX IF NOT EXISTS governance_policies_enabled_idx ON governance_policies (enabled);
+
+
+    -- ── LLM routing policies ──────────────────────────────────────────
+    --
+    -- Which model server a caller reaches when it asks for one WITHOUT
+    -- naming it:  POST /api/v1/llm/messages
+    --
+    -- The named route stays valid. A client naming a provider is making a
+    -- deliberate choice, and this table has nothing to say about it.
+    --
+    -- ⚠ Distinct from governance_policies above, which validates a
+    -- server's SPEC at registration. That answers 'is this allowed to
+    -- exist'; this answers 'who reaches it'.
+    CREATE TABLE IF NOT EXISTS llm_routing_policies (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name         VARCHAR(255) NOT NULL UNIQUE,
+        description  TEXT NOT NULL DEFAULT '',
+        -- Empty means 'any'. All three empty is the namespace-wide
+        -- default, which is legitimate and deliberate.
+        --
+        -- ⚠ SUBJECT ONLY. Namespace matching was dropped: a principal carries
+        -- no namespace, and the target server already has one. Role matching
+        -- too — a principal holds SEVERAL roles, so two role policies would
+        -- tie by construction. One dimension means no precedence rules and
+        -- no ties.
+    -- No role matching, deliberately: a principal holds SEVERAL roles, so
+    -- two role policies would tie by construction and the resolution
+    -- would depend on row order. Subject and namespace are both singular,
+    -- so a tie is impossible rather than merely handled.
+        -- No priority column: an operator reading 'matched on subject'
+        -- learns why; one reading 'policy 40 won' learns nothing.
+                match_subject    TEXT NOT NULL DEFAULT '',
+        -- ⚠ A SERVER, NOT A MODEL. One model per LLM server is enforced
+        -- and a duplicate within a namespace is blocked, so the
+        -- relationship is 1:1 and the model name is a query away.
+        --
+        -- ⚠ RESTRICT, never CASCADE: deleting a server that policies
+        -- still route to must fail loudly. A silently-vanishing route
+        -- sends callers to a refusal with no record of what changed.
+        target_server_id UUID NOT NULL
+            REFERENCES deployed_servers(id) ON DELETE RESTRICT,
+        -- ⚠ A disabled policy does NOT fall through to a less specific
+        -- match — it is out of consideration, and if nothing else
+        -- matches the call refuses. Falling through would mean
+        -- disabling a rule silently redirects traffic, which is the
+        -- opposite of what 'disabled' suggests.
+        enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        created_by   TEXT NOT NULL DEFAULT ''
+    );
+
+    CREATE INDEX IF NOT EXISTS llm_routing_policies_match_idx
+        ON llm_routing_policies (match_subject)
+        WHERE enabled;
+
+    -- ⚠ Two enabled policies with identical criteria are a configuration
+    -- error, not a precedence puzzle. Caught at write time rather than
+    -- resolved arbitrarily at 3am.
+    CREATE UNIQUE INDEX IF NOT EXISTS llm_routing_policies_unique_match
+        ON llm_routing_policies (match_subject)
+        WHERE enabled;
+    -- ── Image scans (deploy-time vulnerability scanning; SOC2 vuln-mgmt evidence) ─
+    -- Records every deploy-time image scan. Evidence-shaped: carries the image
+    -- DIGEST (auditor-grade identity, not just a mutable tag), the scanner used,
+    -- severity counts, the policy decision, and the full normalized result as
+    -- JSONB. Feeds the Evidence Forwarder → Probo as vulnerability-management
+    -- control evidence, and seeds the continuous/inventory-drift re-scan story.
+    -- Like meter_events/cost_contracts, scan rows are AUDIT EVIDENCE and must
+    -- OUTLIVE the server — deliberately NO foreign key / ON DELETE CASCADE from
+    -- deployed_servers (a deleted server's scan history is still evidence).
+    CREATE TABLE IF NOT EXISTS image_scans (
+        id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id       UUID,
+        image_ref       TEXT        NOT NULL,
+        image_digest    TEXT,
+        scanner         TEXT        NOT NULL,
+        critical        INTEGER     NOT NULL DEFAULT 0,
+        high            INTEGER     NOT NULL DEFAULT 0,
+        medium          INTEGER     NOT NULL DEFAULT 0,
+        low             INTEGER     NOT NULL DEFAULT 0,
+        unknown         INTEGER     NOT NULL DEFAULT 0,
+        scan_succeeded  BOOLEAN     NOT NULL DEFAULT FALSE,
+        scan_error      TEXT,
+        policy_decision TEXT,
+        raw_result      JSONB       NOT NULL DEFAULT '{}',
+        scanned_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        scanned_by      TEXT
+    );
+    CREATE INDEX IF NOT EXISTS image_scans_server_idx ON image_scans (server_id, scanned_at DESC);
+    CREATE INDEX IF NOT EXISTS image_scans_image_idx  ON image_scans (image_ref, scanned_at DESC);
+    CREATE INDEX IF NOT EXISTS image_scans_digest_idx ON image_scans (image_digest);
+
+    -- ── Webhooks ───────────────────────────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS webhooks (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name          VARCHAR(255) NOT NULL,
+        url           TEXT        NOT NULL,
+        secret        TEXT        NOT NULL DEFAULT '',
+        event_types   JSONB       NOT NULL DEFAULT '["*"]',
+        namespaces    JSONB       NOT NULL DEFAULT '["*"]',
+        enabled       BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- ── SSO Providers (Enterprise tier) ────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS sso_providers (
+        id              TEXT        PRIMARY KEY,
+        name            TEXT        NOT NULL,
+        type            TEXT        NOT NULL CHECK (type IN ('oidc', 'saml')),
+        -- OIDC fields
+        client_id       TEXT        NOT NULL DEFAULT '',
+        client_secret   TEXT        NOT NULL DEFAULT '',
+        discovery_url   TEXT        NOT NULL DEFAULT '',
+        redirect_uri    TEXT        NOT NULL DEFAULT '',
+        -- SAML fields
+        entity_id       TEXT        NOT NULL DEFAULT '',
+        sso_url         TEXT        NOT NULL DEFAULT '',
+        idp_certificate TEXT        NOT NULL DEFAULT '',
+        sp_certificate  TEXT        NOT NULL DEFAULT '',
+        sp_private_key  TEXT        NOT NULL DEFAULT '',
+        -- Which IdP attribute to use as the email when resolving to a platform user
+        email_attribute TEXT        NOT NULL DEFAULT 'email',
+        enabled         BOOLEAN     NOT NULL DEFAULT TRUE,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    ALTER TABLE sso_providers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    -- The audience an EXCHANGED token must carry, for token exchange.
+    --
+    -- Empty means this provider CANNOT be used for exchange — not that it
+    -- accepts any audience. A token minted for another service would
+    -- otherwise become a valid Magertron credential.
+    --
+    -- Defaults empty so an upgrade does not silently open every configured
+    -- IdP as a token oracle. An operator sets it deliberately.
+    ALTER TABLE sso_providers ADD COLUMN IF NOT EXISTS exchange_audience TEXT NOT NULL DEFAULT '';
+    CREATE INDEX IF NOT EXISTS sso_providers_enabled_idx
+        ON sso_providers (enabled) WHERE enabled = TRUE;
+
+    -- ── SSO login state (HA-shared; replaces in-memory per-replica map) ─────────
+    -- Short-lived OIDC round-trip state for the authorization-code flow. Shared
+    -- across orchestrator replicas so login-start and the IdP callback can land
+    -- on different pods. Rows are ephemeral (10-min TTL) and swept on access.
+    -- pending_id links a login to a two-phase MFA ticket (NULL for plain SSO).
+    CREATE TABLE IF NOT EXISTS sso_login_state (
+        state       TEXT PRIMARY KEY,           -- 256-bit CSRF/state token
+        provider_id TEXT        NOT NULL,
+        nonce       TEXT        NOT NULL,        -- OIDC replay-protection nonce
+        pending_id  TEXT,                        -- two-phase MFA linkage (nullable)
+        expires_at  TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS sso_login_state_expiry_idx
+        ON sso_login_state (expires_at);
+
+    -- ── Two-phase MFA pending tickets (HA-shared) ──────────────────────────────
+    -- Phase-1 (password OK for a privileged user) writes an opaque pending
+    -- ticket here; phase-2 (IdP callback) consumes it single-use. Shared across
+    -- replicas. Ephemeral (5-min TTL). Single-use is enforced atomically via
+    -- DELETE ... RETURNING so concurrent callbacks cannot double-consume.
+    CREATE TABLE IF NOT EXISTS mfa_pending (
+        pending_id  TEXT PRIMARY KEY,           -- opaque 256-bit ticket
+        username    TEXT        NOT NULL,
+        expires_at  TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS mfa_pending_expiry_idx
+        ON mfa_pending (expires_at);
+
+    -- ── SCIM Bearer Tokens (Enterprise tier) ───────────────────────────────────
+    -- Long-lived tokens used by SCIM clients (Okta, Azure AD) to authenticate
+    -- against /scim/v2/*. Raw token values are NEVER stored — only SHA-256
+    -- hashes. The prefix (first ~8 chars of the raw token) is retained so
+    -- operators can distinguish tokens in the admin UI. Soft-delete via
+    -- revoked_at so historical audit references to a revoked token resolve.
+    CREATE TABLE IF NOT EXISTS scim_tokens (
+        id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name           TEXT        NOT NULL,
+        token_hash     TEXT        NOT NULL UNIQUE,
+        token_prefix   TEXT        NOT NULL,
+        created_by     TEXT        NOT NULL,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_used_at   TIMESTAMPTZ,
+        revoked_at     TIMESTAMPTZ,
+        -- Set when an admin dismisses an already-revoked token from the list.
+        -- Row is retained for audit (which token provisioned which users);
+        -- dismissal only hides it from the default admin view. NULL = visible.
+        dismissed_at   TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS scim_tokens_hash_idx    ON scim_tokens (token_hash);
+    CREATE INDEX IF NOT EXISTS scim_tokens_revoked_idx ON scim_tokens (revoked_at);
+    -- For existing installs (upgrade path — dismiss/archive revoked tokens):
+    ALTER TABLE scim_tokens ADD COLUMN IF NOT EXISTS dismissed_at TIMESTAMPTZ;
+    -- Default list filters `WHERE dismissed_at IS NULL`; partial index keeps
+    -- that path fast as dismissed rows accumulate.
+    CREATE INDEX IF NOT EXISTS scim_tokens_visible_idx
+        ON scim_tokens (created_at DESC) WHERE dismissed_at IS NULL;
+
+    -- ═══════════════════════════════════════════════════════════════════════
+    -- Phase E: L8 Tool-Level RBAC
+    -- Design decisions: EXACT > REGEX > WILDCARD precedence, role_id required,
+    -- time-bound via valid_from/valid_until, server-scoped only.
+    -- ═══════════════════════════════════════════════════════════════════════
+
+    -- Tools discovered via tools/list probing on each deployed MCP server.
+    CREATE TABLE IF NOT EXISTS mcp_tools (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id       UUID NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        tool_name       TEXT NOT NULL,
+        description     TEXT,
+        input_schema    JSONB,
+        first_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (server_id, tool_name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_mcp_tools_server ON mcp_tools (server_id);
+
+    -- Tool-poisoning content scan verdict (flag-only; never blocks serving).
+    -- Set at tool-discovery/persist time by a description content scan that
+    -- detects vendor-supplied agent-directed instruction markers (e.g.
+    -- <agent-mandatory-instructions>). injection_flagged is re-evaluated on
+    -- every upsert, so a vendor that later removes the payload clears the flag.
+    ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS injection_flagged BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS injection_reason  TEXT;
+
+    -- Per-server governance knobs.
+    CREATE TABLE IF NOT EXISTS mcp_server_tool_governance (
+        server_id               UUID PRIMARY KEY REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        enforcement_enabled     BOOLEAN NOT NULL DEFAULT true,
+        log_tool_discovery      BOOLEAN NOT NULL DEFAULT true,
+        require_tool_discovery  BOOLEAN NOT NULL DEFAULT false,
+        updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_by              TEXT
+    );
+
+    -- Tool-level RBAC policies.
+    CREATE TABLE IF NOT EXISTS mcp_tool_permissions (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        role_id         VARCHAR(255) NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        server_id       UUID NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        pattern_type    TEXT NOT NULL CHECK (pattern_type IN ('EXACT','WILDCARD','REGEX')),
+        tool_pattern    TEXT NOT NULL,
+        effect          TEXT NOT NULL CHECK (effect IN ('ALLOW','DENY')),
+        valid_from      TIMESTAMPTZ,
+        valid_until     TIMESTAMPTZ,
+        CHECK (valid_from IS NULL OR valid_until IS NULL OR valid_from < valid_until),
+        reason          TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_by      TEXT,
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_by      TEXT,
+        UNIQUE (role_id, server_id, pattern_type, tool_pattern, effect)
+    );
+
+    -- ── tool permission history: steps 1 & 2 ────────────────────────────────
+    --
+    -- See docs/tool-permission-history-design.md. These two are the SAFE half:
+    -- nothing reads valid_until today, so neither changes any current
+    -- behaviour. They land first so the risky half — close-and-insert, plus
+    -- auditing every reader for `valid_until IS NULL` — can be written
+    -- carefully rather than under pressure.
+    --
+    -- ⚠ WHY THIS TABLE NEEDS HISTORY AT ALL. mcp_tool_permissions is the
+    -- authority behind most calls the gateway admits — a single prompt withheld
+    -- 46 of 121 tools by these rules — and until 2026-08-19 it had no audit
+    -- event of ANY kind (of 55 event kinds, none covered it) and no temporal
+    -- record. A permission that was changed left no trace of what it had been.
+
+    -- ── step 1: uniqueness among rules IN FORCE ─────────────────────────────
+    --
+    -- ⚠ The existing constraint spans ALL rows. Once closed rows accumulate, a
+    -- permission that was revoked and later re-granted collides with its own
+    -- history — the closed row still occupies the constraint. Uniqueness has to
+    -- mean "among the rules currently in force".
+    --
+    -- ⚠ ADDITIVE, NOT A REPLACEMENT. The original constraint stays for now: it
+    -- is harmless while no row is ever closed, and dropping it is a step-3
+    -- concern that belongs with the write-path change. Two overlapping
+    -- constraints are redundant, not wrong.
+    -- ⚠ STEP 3 PREREQUISITE — drop the all-rows constraint.
+    --
+    -- UNIQUE (role_id, server_id, pattern_type, tool_pattern, effect) does not
+    -- know about valid_until, so once revocation CLOSES a row instead of
+    -- deleting it, the closed row occupies the slot its own successor needs and
+    -- the insert collides. Re-granting a previously revoked permission would
+    -- fail outright.
+    --
+    -- The partial index below replaces it and means what was always intended:
+    -- uniqueness among the rules IN FORCE.
+    --
+    -- ⚠ Named explicitly rather than dropped by pattern — a wrong guess here
+    -- would silently remove a constraint somebody else depends on.
+    ALTER TABLE mcp_tool_permissions
+        DROP CONSTRAINT IF EXISTS
+        mcp_tool_permissions_role_id_server_id_pattern_type_tool_pa_key;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS mcp_tool_permissions_open_unique
+        ON mcp_tool_permissions
+           (role_id, server_id, pattern_type, tool_pattern, effect)
+     WHERE valid_until IS NULL;
+
+    -- ── step 2: every rule has an interval START ────────────────────────────
+    --
+    -- ⚠ HONEST BUT LIMITED. "In force since it was created" is true of every
+    -- row today — 0 of 111 carry a valid_until, so nothing has ever been
+    -- closed. It does NOT recover permissions revoked before this lands: those
+    -- were DELETEd outright and are gone, exactly as policy edits before
+    -- versioning are gone.
+    --
+    -- ⚠ Idempotent by its WHERE clause — a second run finds nothing, so this
+    -- is safe under SchemaGuard's re-apply-on-every-start. An unguarded
+    -- "runs once" backfill re-billed prepaid contracts on 2026-08-14; this one
+    -- asks the database what is missing rather than remembering.
+    UPDATE mcp_tool_permissions
+       SET valid_from = created_at
+     WHERE valid_from IS NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_tool_perms_lookup ON mcp_tool_permissions (role_id, server_id);
+    CREATE INDEX IF NOT EXISTS idx_tool_perms_server ON mcp_tool_permissions (server_id);
+    -- Note: a partial-index variant (idx_tool_perms_active WHERE valid_until
+    -- IS NULL OR valid_until > now()) was previously defined here but
+    -- removed because Postgres requires partial-index predicates to use
+    -- IMMUTABLE functions, and now() is STABLE. The base composite index
+    -- idx_tool_perms_lookup already covers (role_id, server_id) lookups.
+    -- Time-window filtering happens at query level via WHERE clauses.
+
+    -- Flattened view for admin UI (avoids N+1 joins in the frontend).
+    CREATE OR REPLACE VIEW v_tool_permission_summary AS
+    SELECT
+        p.id, p.role_id, r.name AS role_name,
+        p.server_id, s.name AS server_name,
+        p.pattern_type, p.tool_pattern, p.effect,
+        p.valid_from, p.valid_until,
+        CASE
+            WHEN p.valid_until IS NOT NULL AND p.valid_until < now() THEN 'expired'
+            WHEN p.valid_from  IS NOT NULL AND p.valid_from  > now() THEN 'scheduled'
+            ELSE 'active'
+        END AS status,
+        p.reason, p.created_at, p.created_by, p.updated_at, p.updated_by
+    FROM mcp_tool_permissions p
+    JOIN roles r            ON r.id = p.role_id
+    JOIN deployed_servers s ON s.id = p.server_id
+    ORDER BY s.name, r.name, p.pattern_type, p.tool_pattern;
+
+    -- ═══════════════════════════════════════════════════════════════════════
+    -- v1.7+ Multi-Replica HA — xDS snapshots
+    -- ═══════════════════════════════════════════════════════════════════════
+    -- Append-only log of xDS routes table snapshots. The leader pod writes
+    -- here on every route mutation; followers SELECT the latest row to
+    -- converge their in-memory state. Each row is a complete snapshot of
+    -- the routes table at write time (not a delta) so followers can
+    -- bootstrap from a single SELECT.
+    --
+    -- Volume profile: one row per route mutation. v1.7 has no retention,
+    -- so the table grows over time. v1.8 adds retention policy. See
+    -- HA-DEPLOYMENT.md "Known limitations" for operator guidance.
+    --
+    -- Used by: src/gateway/envoy_xds.cpp (write_snapshot_to_db,
+    --          polling_loop, listener_loop) via DbClient methods
+    --          insert_xds_snapshot / get_latest_xds_snapshot.
+    --
+    -- v1.8 LISTEN/NOTIFY adds a 'xds_snapshots_changed' channel on this
+    -- table; the NOTIFY is issued in the same transaction as INSERT so
+    -- followers' listener threads are guaranteed to see the row when
+    -- they receive the notification.
+    CREATE TABLE IF NOT EXISTS xds_snapshots (
+        id              BIGSERIAL    PRIMARY KEY,
+        routes          JSONB        NOT NULL,
+        schema_version  INTEGER      NOT NULL DEFAULT 1,
+        written_by      VARCHAR(253) NOT NULL,
+        created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    -- Followers always read MAX(id) on every poll, so a descending index
+    -- makes that lookup O(1).
+    CREATE INDEX IF NOT EXISTS idx_xds_snapshots_id_desc
+        ON xds_snapshots (id DESC);
+
+    -- ── Slice C: delegated OAuth (SEP-990 authorization-code) ────────────────
+    -- Short-lived correlation between START AUTH and the OAuth callback. The
+    -- random `state` token ties a browser redirect back to the originating
+    -- registration + user + PKCE verifier. Rows are one-shot (deleted on
+    -- callback) and swept on expiry. server_id FK matches mcp_tools (UUID).
+    CREATE TABLE IF NOT EXISTS oauth_pending_flows (
+        state             VARCHAR(64)  PRIMARY KEY,
+        server_id         UUID         NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        requesting_email  VARCHAR(320) NOT NULL,
+        code_verifier     VARCHAR(128) NOT NULL,
+        redirect_uri      TEXT         NOT NULL,
+        created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+        expires_at        TIMESTAMPTZ  NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_oauth_pending_flows_expiry
+        ON oauth_pending_flows (expires_at);
+
+    -- Per-user delegated tokens. The operator's probe token is simply the
+    -- first row for a given server. Keyed (email, server_id). refresh_token is
+    -- nullable (some authorization servers don't issue one).
+    CREATE TABLE IF NOT EXISTS external_user_tokens (
+        requesting_email  VARCHAR(320) NOT NULL,
+        server_id         UUID         NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        access_token      TEXT         NOT NULL,
+        refresh_token     TEXT,
+        expires_at        TIMESTAMPTZ  NOT NULL,
+        obtained_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
+        PRIMARY KEY (requesting_email, server_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_external_user_tokens_server
+        ON external_user_tokens (server_id);
+
+    -- ─── Slice C6b: polymorphic principal (user_email | service_account) ────
+    -- The (email, server_id) cache key only fit human users. Service accounts
+    -- have no email — they identify by subject. Migration: add a kind+id pair
+    -- to BOTH tables, backfill from requesting_email, swap the
+    -- external_user_tokens PK to use the new key. oauth_pending_flows PK stays
+    -- on `state` (already-unique correlator); the new columns are just
+    -- denormalized identity attached to the pending row.
+    -- requesting_email is KEPT (back-compat / audit) — populated alongside
+    -- principal_id when principal_kind='user_email', NULL/empty for SA rows.
+
+    ALTER TABLE oauth_pending_flows
+        ADD COLUMN IF NOT EXISTS principal_kind VARCHAR(32) NOT NULL DEFAULT 'user_email';
+    ALTER TABLE oauth_pending_flows
+        ADD COLUMN IF NOT EXISTS principal_id   TEXT        NOT NULL DEFAULT '';
+
+    ALTER TABLE external_user_tokens
+        ADD COLUMN IF NOT EXISTS principal_kind VARCHAR(32) NOT NULL DEFAULT 'user_email';
+    ALTER TABLE external_user_tokens
+        ADD COLUMN IF NOT EXISTS principal_id   TEXT        NOT NULL DEFAULT '';
+
+    -- Backfill existing rows. Only touches rows that haven't been migrated
+    -- (principal_id is still the default empty string) AND have a non-empty
+    -- requesting_email. Idempotent on re-run.
+    UPDATE oauth_pending_flows
+       SET principal_id = requesting_email
+     WHERE principal_id = '' AND requesting_email IS NOT NULL AND requesting_email <> '';
+
+    UPDATE external_user_tokens
+       SET principal_id = requesting_email
+     WHERE principal_id = '' AND requesting_email IS NOT NULL AND requesting_email <> '';
+
+    -- Enforce principal kind values. Strict allow-list.
+    ALTER TABLE oauth_pending_flows DROP CONSTRAINT IF EXISTS oauth_pending_flows_principal_kind_check;
+    ALTER TABLE oauth_pending_flows ADD CONSTRAINT oauth_pending_flows_principal_kind_check
+        CHECK (principal_kind IN ('user_email', 'service_account'));
+
+    ALTER TABLE external_user_tokens DROP CONSTRAINT IF EXISTS external_user_tokens_principal_kind_check;
+    ALTER TABLE external_user_tokens ADD CONSTRAINT external_user_tokens_principal_kind_check
+        CHECK (principal_kind IN ('user_email', 'service_account'));
+
+    -- Refuse blank principal_id. The default '' was only to make the
+    -- ADD COLUMN safe on existing rows; backfill above populates it, and
+    -- new INSERTs must supply it.
+    ALTER TABLE oauth_pending_flows DROP CONSTRAINT IF EXISTS oauth_pending_flows_principal_id_nonempty;
+    ALTER TABLE oauth_pending_flows ADD CONSTRAINT oauth_pending_flows_principal_id_nonempty
+        CHECK (principal_id <> '');
+
+    ALTER TABLE external_user_tokens DROP CONSTRAINT IF EXISTS external_user_tokens_principal_id_nonempty;
+    ALTER TABLE external_user_tokens ADD CONSTRAINT external_user_tokens_principal_id_nonempty
+        CHECK (principal_id <> '');
+
+    -- Swap the external_user_tokens PK from (requesting_email, server_id) to
+    -- (principal_kind, principal_id, server_id). The pkey is auto-named
+    -- external_user_tokens_pkey. Idempotent: drop if it has the old shape,
+    -- then add the new. We probe shape by looking at the index columns; if
+    -- the PK already includes principal_id, we leave it alone.
+    DO $$
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM pg_index i
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+            WHERE i.indrelid = 'external_user_tokens'::regclass
+              AND i.indisprimary
+              AND a.attname = 'requesting_email'
+        ) AND NOT EXISTS (
+            SELECT 1
+            FROM pg_index i
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+            WHERE i.indrelid = 'external_user_tokens'::regclass
+              AND i.indisprimary
+              AND a.attname = 'principal_id'
+        ) THEN
+            ALTER TABLE external_user_tokens DROP CONSTRAINT external_user_tokens_pkey;
+            ALTER TABLE external_user_tokens
+                ADD CONSTRAINT external_user_tokens_pkey
+                PRIMARY KEY (principal_kind, principal_id, server_id);
+        END IF;
+    END
+    $$;
+
+    -- Index for the new lookup pattern (kind, id, server) — the PK already
+    -- provides this, but explicit index on (principal_kind, principal_id)
+    -- helps "all tokens for this user across servers" queries (audit/UI).
+    CREATE INDEX IF NOT EXISTS idx_external_user_tokens_principal
+        ON external_user_tokens (principal_kind, principal_id);
+
+    -- ══════════════════════════════════════════════════════════════════════════
+    -- Unity Catalog — data-object governance (securable tree + grants)
+    -- ══════════════════════════════════════════════════════════════════════════
+    -- Governs catalog → schema → table access through the SAME RBAC engine and
+    -- the SAME audit trail (audit_events, plane='caller') as MCP tool access.
+    -- Lives in this one canonical schema file, in the shared mcp_platform DB, by
+    -- design: UC grants reference principals (users/groups/service accounts) by
+    -- the same string convention mcp_tool_permissions uses, and vend decisions
+    -- write to audit_events — neither works across a database boundary.
+    --
+    -- Naming: uc_ prefix (not a separate Postgres schema) to stay consistent with
+    -- the all-public, unqualified table convention used everywhere above.
+    --
+    -- Idempotent like the rest of this file: CREATE TABLE IF NOT EXISTS +
+    -- ALTER TABLE ADD COLUMN IF NOT EXISTS, safe on reinstall/upgrade.
+
+    -- ── Securable (one node of the catalog→schema→table tree) ───────────────────
+    -- parent_id is the ONLY structural link. A NULL parent = a catalog (top of
+    -- the tree). owner_id is set at create and NEVER inherited (Fact A). Leaf
+    -- metadata (storage_url / data_format) is NULL on containers.
+    --
+    -- owner_id / principals are TEXT by CONVENTION, not FK: a principal may be a
+    -- user ("user:<sub>"), a group ("group:<name>"), or a service account —
+    -- there is no single table to reference, exactly as mcp_tool_permissions
+    -- matches role ids by string. FK-ing owner_id to users(id) would break for
+    -- group- and SA-owned securables.
+    CREATE TABLE IF NOT EXISTS uc_securable (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        -- 'catalog' | 'schema' | 'table' | 'volume' | 'function'
+        type          VARCHAR(16) NOT NULL
+                      CHECK (type IN ('catalog','schema','table','volume','function')),
+        -- Self-referential parent. NULL only for catalogs. ON DELETE CASCADE:
+        -- deleting a container removes its subtree. This is pure access-control
+        -- metadata (NOT financial records) so cascading is correct here — unlike
+        -- meter_events/cost_contracts, which must outlive their servers.
+        parent_id     UUID        REFERENCES uc_securable(id) ON DELETE CASCADE,
+        -- Leaf/relative name (e.g. "orders"), NOT the 3-part path. Unique within
+        -- a parent so "sales.public.orders" and "hr.public.orders" coexist.
+        name          VARCHAR(255) NOT NULL,
+        owner_id      TEXT        NOT NULL,        -- Fact A: never inherited
+        -- Leaf-only. NULL on containers. storage_url is the target a credential
+        -- vend is scoped to (e.g. s3://bucket/sales/public/orders).
+        storage_url   TEXT,
+        data_format   VARCHAR(16)
+                      CHECK (data_format IS NULL OR
+                             data_format IN ('DELTA','PARQUET','ICEBERG')),
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- A catalog has a globally-unique name (parent_id IS NULL); a child's name is
+    -- unique within its parent. Two partial unique indexes express both without
+    -- a nullable-column composite-unique surprise (NULLs are distinct in a plain
+    -- UNIQUE, which would wrongly allow duplicate catalog names).
+    CREATE UNIQUE INDEX IF NOT EXISTS uc_securable_root_name_idx
+        ON uc_securable (name) WHERE parent_id IS NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS uc_securable_child_name_idx
+        ON uc_securable (parent_id, name) WHERE parent_id IS NOT NULL;
+    -- Parent lookups drive path_to_root; index the FK column.
+    CREATE INDEX IF NOT EXISTS uc_securable_parent_idx
+        ON uc_securable (parent_id);
+
+    -- ── Grant (one privilege for one principal on one securable) ────────────────
+    -- Modeled on mcp_tool_permissions: allow rows with an explicit-deny escape
+    -- hatch (deny wins). Inheritance is NOT stored — never materialized onto
+    -- children — it is resolved at check time by the C++ resolver walking parents
+    -- (uc_securable.cpp::can). Storing inherited rows would mean a table created
+    -- after a catalog-wide GRANT silently misses it.
+    --
+    -- privilege is a string matching the UcPrivilege enum tokens the hook parses:
+    --   use_catalog | use_schema | select | modify | create | manage |
+    --   external_use_schema | browse
+    -- external_use_schema is the credential-vending gate and, per the resolver,
+    -- is the one privilege that does NOT inherit downward.
+    -- ── Catalog change notification ──────────────────────────────────────
+    -- Collapses the refresh window from one timer interval to about a second.
+    --
+    -- The in-memory catalog is rebuilt on a 30s tick, which means a REVOKED
+    -- grant is still honoured for up to 30 seconds. That is a compliance
+    -- number, not a performance one, and "we stop enforcing your revocation
+    -- for half a minute" is a poor answer to an auditor.
+    --
+    -- A TRIGGER rather than an application-side NOTIFY, because most catalog
+    -- edits do not go through the API: operators grant with psql, migrations
+    -- rewrite rows, and a support engineer fixing something at 3am will not
+    -- remember to call an endpoint. The trigger fires for all of them.
+    --
+    -- The timer STAYS as a backstop. A dropped notification, a listener
+    -- connection that died and has not reconnected, or a replica that missed
+    -- the window must not mean permanent staleness — it should mean one more
+    -- tick of delay.
+    --
+    -- Payload is the table name only. The listener reloads everything anyway
+    -- (replace-all semantics are what make revocation work), so a larger
+    -- payload would carry information nobody reads, and NOTIFY payloads are
+    -- capped at 8000 bytes.
+    CREATE OR REPLACE FUNCTION uc_notify_change() RETURNS TRIGGER AS $$
+    BEGIN
+        PERFORM pg_notify('uc_changed', TG_TABLE_NAME);
+        RETURN NULL;   -- AFTER trigger; return value is ignored
+    END;
+    $$ LANGUAGE plpgsql;
+
+    -- STATEMENT-level, not row-level: a bulk revoke of two hundred grants
+    -- should wake the listener once, not two hundred times. The listener
+    -- reloads the whole store either way.
+    DROP TRIGGER IF EXISTS uc_securable_notify_trg ON uc_securable;
+    CREATE TRIGGER uc_securable_notify_trg
+        AFTER INSERT OR UPDATE OR DELETE ON uc_securable
+        FOR EACH STATEMENT EXECUTE FUNCTION uc_notify_change();
+
+    -- ── Per-namespace enforcement ────────────────────────────────────────
+    -- Whether the data-object check BLOCKS in this namespace, or only records.
+    --
+    -- UC_ENFORCE is a deployment-wide env var, which is the wrong granularity
+    -- for a shared cluster: it turns enforcement on for every tenant at once,
+    -- including ones whose grants are not mapped yet. Nobody flips a global
+    -- switch on production, so in practice it stays off and the feature is
+    -- demoable rather than adoptable.
+    --
+    -- ABSENT ROW = fall back to the env var. That keeps every existing
+    -- deployment behaving exactly as it does today, and makes this an opt-in
+    -- per tenant rather than a migration.
+    CREATE TABLE IF NOT EXISTS uc_namespace_config (
+        namespace   TEXT        PRIMARY KEY,
+        -- NULL means "no opinion, use the deployment default". Deliberately
+        -- three-valued: an operator who has explicitly set observe must not be
+        -- silently promoted to enforcing when someone flips the global flag.
+        enforce     BOOLEAN,
+        updated_by  TEXT,
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    DROP TRIGGER IF EXISTS uc_namespace_config_notify_trg ON uc_namespace_config;
+    CREATE TRIGGER uc_namespace_config_notify_trg
+        AFTER INSERT OR UPDATE OR DELETE ON uc_namespace_config
+        FOR EACH STATEMENT EXECUTE FUNCTION uc_notify_change();
+
+
+    CREATE TABLE IF NOT EXISTS uc_grant (
+        id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        securable_id  UUID        NOT NULL
+                      REFERENCES uc_securable(id) ON DELETE CASCADE,
+        -- Principal by convention: "user:<sub>", "group:<name>", or a service
+        -- account subject. TEXT, not FK (see uc_securable.owner_id rationale).
+        principal_id  TEXT        NOT NULL,
+        privilege     VARCHAR(32) NOT NULL
+                      CHECK (privilege IN ('use_catalog','use_schema','select',
+                                           'modify','create','manage',
+                                           'external_use_schema','browse')),
+        -- Explicit deny wins over allow, matching mcp_tool_permissions'
+        -- denied_role_ids semantics. FALSE = an allow grant.
+        deny          BOOLEAN     NOT NULL DEFAULT FALSE,
+        granted_by    TEXT,                              -- audit: who granted it
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- ── uc_grant history ────────────────────────────────────────────────────
+    --
+    -- Revocation CLOSES a grant rather than deleting it, so "could this
+    -- principal read this table at 14:32" is answerable. Unity Catalog is the
+    -- gate no principal bypasses; being unable to prove what it decided
+    -- afterwards was the largest remaining gap in the authority record.
+    ALTER TABLE uc_grant ADD COLUMN IF NOT EXISTS valid_from  TIMESTAMPTZ;
+    ALTER TABLE uc_grant ADD COLUMN IF NOT EXISTS valid_until TIMESTAMPTZ;
+
+    UPDATE uc_grant SET valid_from = created_at WHERE valid_from IS NULL;
+
+    -- A PARTIAL unique index, and the old one must go.
+    --
+    -- uc_grant_unique_idx spans ALL rows. Once a closed grant stays in the
+    -- table it occupies the slot its own successor needs, and re-granting a
+    -- revoked privilege fails outright. Dropping it is a PREREQUISITE of
+    -- closing rather than deleting, not a later tidy-up — the same trap the
+    -- tool-permission work hit on 2026-08-19.
+    DROP INDEX IF EXISTS uc_grant_unique_idx;
+    CREATE UNIQUE INDEX IF NOT EXISTS uc_grant_open_unique
+        ON uc_grant (securable_id, principal_id, privilege)
+     WHERE valid_until IS NULL;
+
+    CREATE INDEX IF NOT EXISTS uc_grant_history_idx
+        ON uc_grant (securable_id, valid_until);
+
+    -- The cascade has to go too.
+    --
+    -- A closed grant is a statement about a past moment and must not depend on
+    -- the continued existence of the securable it describes. With the cascade,
+    -- dropping a table from the catalog destroys the record of who could read
+    -- it — at exactly the moment somebody is tidying up after an incident.
+    ALTER TABLE uc_grant DROP CONSTRAINT IF EXISTS uc_grant_securable_id_fkey;
+
+
+    DROP TRIGGER IF EXISTS uc_grant_notify_trg ON uc_grant;
+    CREATE TRIGGER uc_grant_notify_trg
+        AFTER INSERT OR UPDATE OR DELETE ON uc_grant
+        FOR EACH STATEMENT EXECUTE FUNCTION uc_notify_change();
+
+    -- ── Catalog ingest ───────────────────────────────────────────────────
+    -- Where an object graph comes FROM.
+    --
+    -- A customer with thirty thousand tables does not create them through
+    -- POST /catalogs one at a time. Their catalog already exists — in
+    -- Databricks Unity Catalog, in Snowflake's information_schema, in Glue —
+    -- and Magertron has to READ it rather than have it retyped. Without this
+    -- there is no onboarding path at all for a real estate, and no amount of
+    -- UI work changes that.
+    CREATE TABLE IF NOT EXISTS uc_catalog_source (
+        id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        namespace     TEXT         NOT NULL,
+        name          VARCHAR(255) NOT NULL,
+        source_type   VARCHAR(32)  NOT NULL
+                      CHECK (source_type IN ('unity_catalog','snowflake',
+                                             'bigquery','glue','manual')),
+        -- Where to reach it. Credentials are NOT here: they live in the
+        -- existing BYOK store keyed on credential_ref, so a catalog source
+        -- cannot become a second place secrets accumulate.
+        endpoint_url   TEXT,
+        credential_ref TEXT,
+        -- Which slice to pull. A customer will not want their entire Snowflake
+        -- account mirrored on day one, and the first sync is where an
+        -- overbroad scope hurts most.
+        include_filter TEXT,
+        sync_interval_seconds INTEGER NOT NULL DEFAULT 3600
+                              CHECK (sync_interval_seconds >= 60),
+        enabled       BOOLEAN      NOT NULL DEFAULT TRUE,
+        -- The rename-safety notice, dismissed per source and for good.
+        --
+        -- Whether a rename upstream orphans grants is a property of the
+        -- CONNECTION, and an operator has no other way to learn it — so it is
+        -- shown until acknowledged. Repeating it forever would train people to
+        -- ignore an amber box, which is the box you want read when something
+        -- else appears in it.
+        --
+        -- NOT re-surfaced if stable_ids later changes. That would be Magertron
+        -- watching the warehouse's configuration and having opinions about it,
+        -- which is the customer's DBA's job.
+        rename_notice_ack BOOLEAN  NOT NULL DEFAULT FALSE,
+        last_sync_at      TIMESTAMPTZ,
+        last_sync_status  VARCHAR(16)
+                          CHECK (last_sync_status IN ('ok','partial','failed')),
+        last_sync_detail  TEXT,
+        -- Counters from the last run, so an operator can see "3 new, 1 gone"
+        -- without reading logs. A sync that reports zero changes for a week is
+        -- as informative as one that reports a hundred.
+        last_seen_count      INTEGER NOT NULL DEFAULT 0,
+        last_new_count       INTEGER NOT NULL DEFAULT 0,
+        last_absent_count    INTEGER NOT NULL DEFAULT 0,
+        -- WHICH view answered, and therefore what guarantee this source gives.
+        --
+        -- Snowflake exposes the same objects two ways. ACCOUNT_USAGE carries
+        -- TABLE_ID, so a rename updates a row in place and its grants survive;
+        -- INFORMATION_SCHEMA has no identifier, so a rename is
+        -- indistinguishable from a delete plus a create and every grant on the
+        -- old name is silently orphaned.
+        --
+        -- That is a property of the CONNECTION, not of the product, and an
+        -- operator cannot infer it from anywhere else. Recording it means the
+        -- UI can say "renames are not safe on this source" instead of leaving
+        -- someone to discover it when a deny disappears.
+        -- Who owns what this source brings in.
+        --
+        -- Without this every ingested object gets 'source:ingest', which
+        -- resolves to no principal — so a first sync produces a catalog nobody
+        -- can grant on, and the only route to administering it is the
+        -- break-glass claim, one object at a time. At thirty thousand objects
+        -- that is not a workflow.
+        --
+        -- Set at registration, applied to everything the source creates. NULL
+        -- keeps the old behaviour, so the objects arrive deliberately orphaned
+        -- and the UI offers to claim them.
+        -- A CONNECTION TEST, not a real source.
+        --
+        -- The wizard needs to answer "does this work, and what is behind it"
+        -- before an operator commits — but the poller's normal path ends in
+        -- writing securables, and a test that creates thirty thousand objects
+        -- somebody has not agreed to is not a test.
+        --
+        -- An explicit column rather than a name prefix: magic in a string is
+        -- one rename away from a test row being treated as production, and the
+        -- failure mode there is a catalog full of objects nobody asked for.
+        --
+        -- The poller READS a test source exactly as it reads a real one — same
+        -- credential path, same query, same view selection — and simply does
+        -- not push the result. What gets tested is what will run.
+        test_only            BOOLEAN NOT NULL DEFAULT FALSE,
+        default_owner        TEXT,
+        source_view          VARCHAR(32),
+        stable_ids           BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        UNIQUE (namespace, name)
+    );
+    -- CREATE TABLE IF NOT EXISTS above runs on a fresh database only, so a
+    -- column added there reaches new installs and nowhere else. This is what
+    -- carries it to an estate that already has the table.
+    ALTER TABLE uc_catalog_source
+        ADD COLUMN IF NOT EXISTS rename_notice_ack BOOLEAN NOT NULL DEFAULT FALSE;
+
+    CREATE INDEX IF NOT EXISTS uc_catalog_source_due_idx
+        ON uc_catalog_source (enabled, last_sync_at);
+
+    -- Ingest columns on the securable itself.
+    --
+    -- state: 'present' or 'absent'. An object that disappears upstream is
+    -- MARKED, never deleted — deleting it would cascade its grants, so a table
+    -- dropped and recreated would silently lose every deny that was on it.
+    -- Same invariant as meter_events: governance metadata outlives its subject,
+    -- and a human decides when it is really gone.
+    --
+    -- An absent object still resolves NORMALLY. Its denies still apply, because
+    -- "the upstream table vanished" is not evidence that access should widen —
+    -- and a sync failure must never become an authorization change.
+    --
+    -- external_id: the source's own identifier, when it has one. Keying on the
+    -- dotted path instead means a RENAME creates a new securable and orphans
+    -- every grant on the old one. Snowflake and Databricks both expose stable
+    -- ids; information_schema does not, so the path is the fallback and renames
+    -- are lossy there — which is worth saying out loud rather than discovering.
+    ALTER TABLE uc_securable ADD COLUMN IF NOT EXISTS
+        source_id     UUID REFERENCES uc_catalog_source(id) ON DELETE SET NULL;
+    ALTER TABLE uc_securable ADD COLUMN IF NOT EXISTS
+        external_id   TEXT;
+    ALTER TABLE uc_securable ADD COLUMN IF NOT EXISTS
+        state         VARCHAR(16) NOT NULL DEFAULT 'present';
+    ALTER TABLE uc_securable ADD COLUMN IF NOT EXISTS
+        last_seen_at  TIMESTAMPTZ;
+
+    DO $$ BEGIN
+        ALTER TABLE uc_securable ADD CONSTRAINT uc_securable_state_check
+            CHECK (state IN ('present','absent'));
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+    -- The upsert key when the source provides an identifier. Partial, because
+    -- hand-created securables have no external_id and must not collide.
+    CREATE UNIQUE INDEX IF NOT EXISTS uc_securable_external_idx
+        ON uc_securable (source_id, external_id)
+        WHERE source_id IS NOT NULL AND external_id IS NOT NULL;
+
+    -- "What went missing" is the question after every sync.
+    -- ⚠ MOVED UP 2026-08-14. This ALTER lived ~150 lines below, AFTER three
+    -- indexes that reference the column it adds. On an EXISTING database that
+    -- is harmless: a previous run already added the column. On a FRESH one the
+    -- first such index fails with 'column "namespace" does not exist', and
+    -- because the schema bootstrap stops at the first failure, EVERYTHING
+    -- BELOW NEVER RAN — departments, user_departments, meter_events,
+    -- cost_contracts, rate_schedules, rate_tiers, rated_costs, cost_budgets,
+    -- credit_purchases, platform_config, and the system:finance-user role.
+    --
+    -- Ten tables and a role, silently absent on EVERY fresh install. Invisible
+    -- on Free (the cost plane is tier-gated, so the customer sees an upgrade
+    -- prompt, not an error) and it surfaces the moment they pay for Pro and
+    -- open Reports. Found on a clean QA box 2026-08-14; every existing cluster
+    -- already had the column and could never reproduce it.
+    ALTER TABLE uc_securable
+        ADD COLUMN IF NOT EXISTS namespace TEXT NOT NULL DEFAULT 'default';
+
+    CREATE INDEX IF NOT EXISTS uc_securable_absent_idx
+        ON uc_securable (namespace) WHERE state = 'absent';
+
+    -- ── Search, for catalogs nobody browses ──────────────────────────────
+    -- At thirty thousand objects the tree is a drill-down, not a front door:
+    -- nobody scrolls to find a table, they type its name. Which makes search
+    -- the primary navigation and an unindexed ILIKE a sequential scan on every
+    -- keystroke.
+    --
+    -- pg_trgm because the useful query is a SUBSTRING match — someone types
+    -- "salar" and expects SALARIES. A btree cannot serve that; a trigram index
+    -- can, and it also handles the misspellings people actually type.
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+    CREATE INDEX IF NOT EXISTS uc_securable_name_trgm_idx
+        ON uc_securable USING gin (name gin_trgm_ops);
+
+    -- Scoped listing: the tree fetches one level at a time, and every one of
+    -- those is "children of this parent, in this namespace".
+    CREATE INDEX IF NOT EXISTS uc_securable_parent_idx
+        ON uc_securable (namespace, parent_id, name);
+
+    -- ── Tool → securable bindings ────────────────────────────────────────
+    -- WHICH DATA OBJECTS A TOOL TOUCHES. Without a row here a tool is never
+    -- checked at all: ext_authz looks up (server_id, tool_name), finds
+    -- nothing, and the call proceeds. So this table is what makes the catalog
+    -- apply to agent traffic — grants without bindings are recorded and never
+    -- consulted.
+    --
+    -- These three tables (with uc_warehouse_config and meter_call_securable
+    -- below) existed only on clusters where they had been applied by hand. A
+    -- fresh install created uc_securable and uc_grant, rendered the whole UI,
+    -- and governed nothing — the worst failure shape for a governance product,
+    -- because it looks like it is working.
+    --
+    -- In 01-schema.sql deliberately: SchemaGuard re-applies this file on every
+    -- restart, so existing clusters pick the tables up. 02-cost-metering.sql
+    -- runs only on a fresh volume, which is how they went missing.
+    --
+    -- No FK on server_id: a binding may name a server that is later removed
+    -- and re-registered with a new id, and losing the governance declaration
+    -- because a connector was reprovisioned is worse than a dangling row.
+    CREATE TABLE IF NOT EXISTS uc_tool_securable (
+        id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id     UUID         NOT NULL,
+        tool_name     VARCHAR(255) NOT NULL,
+        securable_id  UUID         NOT NULL
+                      REFERENCES uc_securable(id) ON DELETE CASCADE,
+        -- Selects WHICH privilege is checked: read→SELECT, write→MODIFY,
+        -- vend→EXTERNAL_USE_SCHEMA. An assertion about the tool's behaviour;
+        -- nothing verifies it against what the tool really does.
+        access_kind   VARCHAR(16)  NOT NULL DEFAULT 'read'
+                      CHECK (access_kind IN ('read','write','vend')),
+        declared_by   TEXT,
+        created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    -- The request-path lookup. Every tools/call hits this key.
+    CREATE INDEX IF NOT EXISTS uc_tool_securable_tool_idx
+        ON uc_tool_securable (server_id, tool_name);
+    CREATE INDEX IF NOT EXISTS uc_tool_securable_securable_idx
+        ON uc_tool_securable (securable_id);
+    -- Declaring the same binding twice is a no-op, not a second row.
+    CREATE UNIQUE INDEX IF NOT EXISTS uc_tool_securable_unique_idx
+        ON uc_tool_securable (server_id, tool_name, securable_id, access_kind);
+    -- Partial: "what can hand out storage credentials" is the question an
+    -- auditor asks most and the one worth answering without a scan.
+    CREATE INDEX IF NOT EXISTS uc_tool_securable_vend_idx
+        ON uc_tool_securable (securable_id) WHERE access_kind = 'vend';
+
+    DROP TRIGGER IF EXISTS uc_tool_securable_notify_trg ON uc_tool_securable;
+    CREATE TRIGGER uc_tool_securable_notify_trg
+        AFTER INSERT OR UPDATE OR DELETE ON uc_tool_securable
+        FOR EACH STATEMENT EXECUTE FUNCTION uc_notify_change();
+
+    -- ── Warehouse connection metadata ────────────────────────────────────
+    -- How to read usage back from a data warehouse, and in what unit.
+    --
+    -- connection_type is a TYPE DISCRIMINATOR, not a billing entity — it says
+    -- how to talk to the thing, which is why it is not called vendor.
+    --   inline     — the response carries the cost (BigQuery totalBytesProcessed)
+    --   reconciled — the cost arrives later from the vendor's own usage API
+    --   none       — no observable unit; calls are counted, not priced
+    CREATE TABLE IF NOT EXISTS uc_warehouse_config (
+        server_id          UUID         PRIMARY KEY
+                           REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        connection_type    VARCHAR(32)  NOT NULL
+                           CHECK (connection_type IN ('bigquery','snowflake',
+                                                      'databricks','redshift',
+                                                      'postgres','other')),
+        meter_unit         VARCHAR(24)
+                           CHECK (meter_unit IS NULL OR
+                                  meter_unit IN ('byte','credit')),
+        observability      VARCHAR(16)  NOT NULL DEFAULT 'none'
+                           CHECK (observability IN ('inline','reconciled','none')),
+        usage_json_path    TEXT,
+        connection_project VARCHAR(255),
+        connection_account VARCHAR(255),
+        created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        updated_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS uc_warehouse_config_connection_type_idx
+        ON uc_warehouse_config (connection_type);
+
+    -- ── Call → data object attribution ───────────────────────────────────
+    -- Which data objects a metered call actually touched.
+    --
+    -- Written by the audit flusher for ALLOWED calls only: a refused call never
+    -- reached the upstream service, so attributing usage to it would invent it.
+    -- This is what turns spend from "the connector cost £4,000" into "this
+    -- agent cost £4,000 against that table", and what draws the observed
+    -- principal→tool→object edge.
+    --
+    -- billing_group_id has no FK: it is assigned by a trigger on meter_events
+    -- and resolved back by join, and a metering row must never fail to write
+    -- because an attribution row raced it.
+    CREATE TABLE IF NOT EXISTS meter_call_securable (
+        billing_group_id UUID         NOT NULL,
+        securable_id     UUID         NOT NULL
+                         REFERENCES uc_securable(id) ON DELETE CASCADE,
+        -- Splits a call across several objects. 1.0 for the single-object case,
+        -- which is every case today — anything else is an estimate and should
+        -- be labelled as one.
+        weight           NUMERIC(6,4) NOT NULL DEFAULT 1.0
+                         CHECK (weight > 0 AND weight <= 1),
+        PRIMARY KEY (billing_group_id, securable_id)
+    );
+    CREATE INDEX IF NOT EXISTS meter_call_securable_securable_idx
+        ON meter_call_securable (securable_id);
+
+
+    -- One row per (securable, principal, privilege) IN FORCE: a re-grant flips
+    -- allow<->deny rather than stacking duplicates (matches
+    -- UcSecurableStore::add_grant).
+    --
+    -- The uniqueness is now PARTIAL, and the index that used to live here
+    -- spanned every row. Once revocation began closing grants rather than
+    -- deleting them, a closed row occupied the slot its own successor needed
+    -- and re-granting a revoked privilege silently did nothing — the insert
+    -- conflicted with the closed row, the DO UPDATE left valid_until set, and
+    -- the API reported success.
+    --
+    -- Declared as uc_grant_open_unique above, alongside the interval columns.
+    -- Recreating the all-rows version here would undo that on every schema
+    -- apply, which is exactly what happened on 2026-08-21: the DROP ran, then
+    -- this CREATE put it straight back, on every orchestrator restart.
+    -- Resolution walks grants for a securable; index the lookup column.
+    CREATE INDEX IF NOT EXISTS uc_grant_securable_idx
+        ON uc_grant (securable_id);
+    -- "What does this principal hold" (admin UI / access review).
+    CREATE INDEX IF NOT EXISTS uc_grant_principal_idx
+        ON uc_grant (principal_id);
+
+    -- ── Tool utilization: daily snapshot + waste buckets ──────────────────────
+    -- Answers the CFO question "what did we buy that nobody uses". Three
+    -- buckets per server, union = the whole catalog:
+    --   unprovisioned  in mcp_tools, no principal entitled
+    --   dark           entitled, zero calls in window
+    --   underused      entitled, calls > 0 but below calls_threshold
+    --   (active is the remainder)
+    --
+    -- ⚠ Entitlement and use are NOT computed here. The daily row is written by
+    -- the orchestrator from the agent-spread graph (tool_rbac::Evaluator for
+    -- CAN, meter_events for DOES) — the same projection the galaxy draws and
+    -- the assistant digest already reads. A second SQL definition of "dark"
+    -- would drift from the first; this schema only stores and rolls up.
+    --
+    -- Buckets are derived at read time from the N-day rollup, never stored,
+    -- so a threshold change is a config edit and not a backfill.
+
+    CREATE TABLE IF NOT EXISTS utilization_thresholds (
+        id                   SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+        window_days          INT  NOT NULL DEFAULT 30 CHECK (window_days > 0),
+        -- absolute calls per window; below this an entitled tool is 'underused'
+        calls_threshold      INT  NOT NULL DEFAULT 10 CHECK (calls_threshold >= 0),
+        -- servers whose exercised/catalog ratio falls under this are listed
+        -- in the assistant digest, same mechanism as budget alerts
+        coverage_threshold   NUMERIC(5,4) NOT NULL DEFAULT 0.20
+                             CHECK (coverage_threshold BETWEEN 0 AND 1),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    INSERT INTO utilization_thresholds (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+    -- One row per tool per day. Derived data, so cascade is correct here —
+    -- nothing financial lives in this table. Keyed by (server_id, tool_name)
+    -- because that is how meter_events and the spread graph identify a tool.
+    CREATE TABLE IF NOT EXISTS tool_usage_daily (
+        server_id            UUID NOT NULL
+                             REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        tool_name            VARCHAR(255) NOT NULL,
+        snapshot_date        DATE NOT NULL,
+        -- distinct principals with an entitled edge at capture time
+        entitled_principals  INT    NOT NULL DEFAULT 0,
+        -- sum of edge invocations for that day
+        calls                BIGINT NOT NULL DEFAULT 0,
+        PRIMARY KEY (server_id, tool_name, snapshot_date)
+    );
+    CREATE INDEX IF NOT EXISTS tool_usage_daily_date_idx
+        ON tool_usage_daily (snapshot_date);
+
+    -- Window rollup per tool; what the digest and Reporting read.
+    CREATE OR REPLACE VIEW v_tool_utilization AS
+    WITH cfg AS (SELECT * FROM utilization_thresholds WHERE id = 1),
+    win AS (
+        SELECT d.server_id, d.tool_name,
+               SUM(d.calls)               AS calls,
+               MAX(d.entitled_principals) AS entitled_principals
+        FROM tool_usage_daily d, cfg
+        WHERE d.snapshot_date > CURRENT_DATE - cfg.window_days
+        GROUP BY d.server_id, d.tool_name
+    )
+    SELECT t.server_id, t.tool_name,
+           COALESCE(w.calls, 0)               AS calls,
+           COALESCE(w.entitled_principals, 0) AS entitled_principals,
+           CASE
+             WHEN COALESCE(w.entitled_principals,0) = 0      THEN 'unprovisioned'
+             WHEN COALESCE(w.calls,0) = 0                    THEN 'dark'
+             WHEN COALESCE(w.calls,0) < cfg.calls_threshold  THEN 'underused'
+             ELSE 'active'
+           END AS bucket
+    FROM mcp_tools t
+    CROSS JOIN cfg
+    LEFT JOIN win w ON w.server_id = t.server_id AND w.tool_name = t.tool_name;
+
+    DROP VIEW IF EXISTS v_server_utilization;
+    -- Per-server coverage with the contract's monthly figure. Monthly is
+    -- derived from the term dates so it reconciles with the billing
+    -- dashboard. PAYG with no minimum yields NULL, not zero: the assistant
+    -- says "usage-billed", never "$0/mo".
+    --
+    -- ⚠ No snapshot rows in the window means NO OPINION: coverage is NULL and
+    -- flagged is false. Before this guard an empty table flagged every server
+    -- at 0%, which the assistant read as "nothing is used".
+    --
+    -- ⚠ No contract means NOT METERED, not unused. meter_events only exist for
+    -- servers under a cost_contract, so an uncontracted server always reads
+    -- 0 calls and would be a false positive. Coverage and the flag are scoped
+    -- to contracted servers; the rest carry NULL coverage and metered=false.
+    -- This is also the CFO's scope: the question is about contracts.
+    --
+    -- snapshot_days is PLATFORM-wide, not per server. A server with no rows
+    -- while others have them is not unknown: the graph emitted no edge for it
+    -- because nobody is entitled and nobody called — that is 0% with 0 dark,
+    -- the pure-unprovisioned case, and it should be reported as such.
+    CREATE OR REPLACE VIEW v_server_utilization AS
+    WITH cfg AS (SELECT * FROM utilization_thresholds WHERE id = 1),
+    days AS (
+        SELECT COUNT(DISTINCT d.snapshot_date) AS snapshot_days
+        FROM tool_usage_daily d, cfg
+        WHERE d.snapshot_date > CURRENT_DATE - cfg.window_days
+    ),
+    agg AS (
+        SELECT server_id,
+               COUNT(*)                                          AS catalog_tools,
+               COUNT(*) FILTER (WHERE bucket <> 'unprovisioned') AS entitled_tools,
+               COUNT(*) FILTER (WHERE bucket = 'dark')           AS dark_tools,
+               COUNT(*) FILTER (WHERE bucket = 'underused')      AS underused_tools,
+               COUNT(*) FILTER (WHERE calls > 0)                 AS exercised_tools,
+               SUM(calls)                                        AS calls
+        FROM v_tool_utilization GROUP BY server_id
+    )
+    SELECT s.id AS server_id, s.namespace, s.name, s.server_type,
+           COALESCE(a.catalog_tools,0)   AS catalog_tools,
+           COALESCE(a.entitled_tools,0)  AS entitled_tools,
+           COALESCE(a.dark_tools,0)      AS dark_tools,
+           COALESCE(a.underused_tools,0) AS underused_tools,
+           COALESCE(a.exercised_tools,0) AS exercised_tools,
+           COALESCE(a.calls,0)           AS calls,
+           COALESCE(dy.snapshot_days,0)  AS snapshot_days,
+           (c.id IS NOT NULL)            AS metered,
+           CASE WHEN c.id IS NULL
+                  OR COALESCE(dy.snapshot_days,0) = 0
+                  OR COALESCE(a.catalog_tools,0) = 0 THEN NULL
+                ELSE a.exercised_tools::numeric / a.catalog_tools END AS coverage,
+           (c.id IS NOT NULL
+             AND COALESCE(dy.snapshot_days,0) > 0
+             AND COALESCE(a.catalog_tools,0) > 0
+             AND a.exercised_tools::numeric / a.catalog_tools < cfg.coverage_threshold)
+                                          AS flagged,
+           c.id AS contract_id, c.vendor_name, c.contract_type,
+           CASE WHEN COALESCE(c.minimum_amount_usd,0) > 0
+                THEN round(c.minimum_amount_usd
+                           / GREATEST(1, (c.term_end - c.term_start) / 30.4375), 2)
+           END                            AS committed_usd_per_month
+    FROM deployed_servers s
+    CROSS JOIN cfg
+    LEFT JOIN agg a ON a.server_id = s.id
+    CROSS JOIN days dy
+    LEFT JOIN cost_contracts c ON c.server_id = s.id;
+
+    -- ── Multi-tenancy: namespace confinement ────────────────────────────────────
+    -- Magertron is namespace-multi-tenanted; UC securables must be too. This
+    -- column does exactly ONE job: which tenant owns this node. It is NOT a
+    -- permission scope and nothing in the resolver may read it to decide a
+    -- privilege. That separation is the direct lesson of the
+    -- permission.namespace overload bug, where one field served as both RBAC
+    -- guard and tenancy confinement; decoupling them was the fix. Privilege
+    -- resolution answers "may this principal do this verb here"; confinement
+    -- answers "is this node visible to this tenant at all". Evaluated
+    -- independently, both must pass. (uc_securable.cpp: GATE 1 / GATE 2.)
+
+    -- Catalog names are unique PER NAMESPACE, not globally. The index created
+    -- above makes them global, which collides the first time two tenants each
+    -- create a catalog called "sales". Replace it.
+    DROP INDEX IF EXISTS uc_securable_root_name_idx;
+    CREATE UNIQUE INDEX IF NOT EXISTS uc_securable_root_name_idx
+        ON uc_securable (namespace, name) WHERE parent_id IS NULL;
+
+    -- Child-name uniqueness is unchanged: parent_id already scopes it, and the
+    -- composite FK below guarantees the parent shares this namespace.
+
+    -- Cross-namespace subtree guard, enforced by the database rather than by
+    -- application discipline. Making (id, namespace) unique lets the parent FK
+    -- carry the namespace, so a child physically cannot reference a parent in
+    -- another tenant. Without it, one bad INSERT hangs a table in tenant A off
+    -- a schema in tenant B and every ancestor walk crosses the boundary.
+    --
+    -- Postgres has no ADD CONSTRAINT IF NOT EXISTS, so each is dropped first to
+    -- keep this file re-runnable — the idempotency contract the rest of this
+    -- schema relies on.
+    ALTER TABLE uc_securable
+        DROP CONSTRAINT IF EXISTS uc_securable_parent_id_fkey;
+    ALTER TABLE uc_securable
+        DROP CONSTRAINT IF EXISTS uc_securable_parent_ns_fkey;
+    ALTER TABLE uc_securable
+        DROP CONSTRAINT IF EXISTS uc_securable_id_ns_key;
+
+    ALTER TABLE uc_securable
+        ADD  CONSTRAINT uc_securable_id_ns_key UNIQUE (id, namespace);
+    ALTER TABLE uc_securable
+        ADD  CONSTRAINT uc_securable_parent_ns_fkey
+             FOREIGN KEY (parent_id, namespace)
+             REFERENCES  uc_securable (id, namespace) ON DELETE CASCADE;
+
+    -- Tenant-scoped listing is the hot query for the admin UI and access review.
+    CREATE INDEX IF NOT EXISTS uc_securable_namespace_idx
+        ON uc_securable (namespace);
+
+    -- Deliberately NOT added to uc_grant. A grant's namespace is the namespace
+    -- of the securable it points at; denormalizing it onto the grant row makes
+    -- two sources of truth that can diverge — the same failure shape this
+    -- section exists to avoid. Tenant-scoped grant queries join through
+    -- uc_securable.
+  02-cost-metering.sql: |
+    -- ════════════════════════════════════════════════════════════════════════
+    -- Magertron Cost Metering & Contract Rating (v1)
+    -- USD-only · credit-based · 1:1 operation→credit (tool-call-group ready)
+    -- Layering:  meter_event (dumb) → cost_contract/rate_schedule → rated_cost
+    -- All statements idempotent so reinstalls / upgrades are safe.
+    -- FKs target deployed_servers(id) which is UUID. caller_user_id is the JWT
+    -- subject (TEXT, no FK — agents are not necessarily rows in users).
+    -- ════════════════════════════════════════════════════════════════════════
+
+    -- ── Departments / cost centers (allocation dimension) ───────────────────────
+    CREATE TABLE IF NOT EXISTS departments (
+        id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        name         VARCHAR(255) NOT NULL UNIQUE,
+        cost_center  TEXT,                              -- finance GL / cost-center code
+        -- Associated tenant namespace (people-axis → workload-axis link).
+        -- NON-UNIQUE on purpose: multiple departments may share one namespace
+        -- (e.g. Engineering + Computer Science → mcp-eng-csis). Nullable so
+        -- legacy departments created before this column remain valid and can be
+        -- backfilled via the editor. Required on new departments at the API.
+        namespace    TEXT,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    -- Idempotent backfill for deployments whose departments table predates the
+    -- namespace column (CREATE TABLE IF NOT EXISTS above won't alter it).
+    ALTER TABLE departments ADD COLUMN IF NOT EXISTS namespace TEXT;
+
+    -- Effective-dated user→department membership (SCD type 2). Lets us resolve a
+    -- user's department AS OF any incurred_at so org moves never restate history.
+    CREATE TABLE IF NOT EXISTS user_departments (
+        id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id        TEXT        NOT NULL,            -- identity subject (JWT sub)
+        dept_id        UUID        NOT NULL REFERENCES departments(id),
+        effective_from TIMESTAMPTZ NOT NULL,
+        effective_to   TIMESTAMPTZ,                     -- NULL = current
+        CONSTRAINT user_dept_range_ck
+            CHECK (effective_to IS NULL OR effective_to > effective_from)
+    );
+    CREATE INDEX IF NOT EXISTS user_departments_lookup_idx
+        ON user_departments (user_id, effective_from DESC);
+
+    -- ── METER (append-only, immutable, PRICELESS — Magertron is a dumb meter) ───
+    CREATE TABLE IF NOT EXISTS meter_events (
+        event_id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        incurred_at       TIMESTAMPTZ NOT NULL,         -- when the call happened (period attribution)
+        recorded_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        caller_user_id    TEXT        NOT NULL,
+        caller_dept_id    UUID        REFERENCES departments(id),  -- snapshot at incurred_at
+        server_id         UUID        NOT NULL REFERENCES deployed_servers(id),
+        tool_id           TEXT        NOT NULL,
+        method            TEXT        NOT NULL,          -- the billable atom
+        -- Move 1: the priced DIMENSION of this event. 'calls' (one row = one call,
+        -- the v1 default) or a usage axis like 'input_tokens' / 'output_tokens'.
+        -- A tool call that bills on multiple axes emits one meter_events row PER
+        -- dimension. Open TEXT (no CHECK) — vendors invent dimensions ('images',
+        -- 'gb', 'seconds'); the rate card prices whatever a vendor bills.
+        dimension         TEXT        NOT NULL DEFAULT 'calls',
+        billing_group_id  UUID,                          -- v1: = event_id; future: batch group
+        quantity          NUMERIC(20,6) NOT NULL CHECK (quantity >= 0),
+        unit              TEXT        NOT NULL DEFAULT 'credit'
+                            CHECK (unit IN ('credit','call','token','byte')),
+        status            TEXT        NOT NULL DEFAULT 'success'
+                            CHECK (status IN ('success','error')),
+        session_id        TEXT,
+        idempotency_key   TEXT        UNIQUE             -- retries must not double-count
+    );
+    -- Default a row to its own billing group (v1 behavior).
+    CREATE OR REPLACE FUNCTION meter_events_default_group() RETURNS TRIGGER AS $$
+    BEGIN
+        IF NEW.billing_group_id IS NULL THEN
+            NEW.billing_group_id := NEW.event_id;
+        END IF;
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS meter_events_group_trg ON meter_events;
+    CREATE TRIGGER meter_events_group_trg
+        BEFORE INSERT ON meter_events
+        FOR EACH ROW EXECUTE FUNCTION meter_events_default_group();
+
+    CREATE INDEX IF NOT EXISTS meter_events_incurred_idx ON meter_events (incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_server_idx   ON meter_events (server_id, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_dept_idx     ON meter_events (caller_dept_id, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_method_idx   ON meter_events (server_id, tool_id, method, dimension, incurred_at);
+    CREATE INDEX IF NOT EXISTS meter_events_group_idx    ON meter_events (billing_group_id);
+
+    -- Dual principal: the human a service account was acting for.
+    --
+    -- NULL is the ordinary case and means something — no agent was involved,
+    -- a person or a script acted directly.
+    --
+    -- caller_user_id names whoever AUTHENTICATED, which is the AGENT on a
+    -- delegated call. A chargeback query reading caller_user_id as "the user"
+    -- would bill the service account instead of the person.
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS on_behalf_of_subject TEXT;
+    CREATE INDEX IF NOT EXISTS meter_events_obo_idx ON meter_events (on_behalf_of_subject, incurred_at) WHERE on_behalf_of_subject IS NOT NULL;
+    -- Move 1: dimension migration for upgrade paths (pre-existing rows = 'calls').
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
+
+    -- Agent Spread Graph: roles the principal held at invocation time (roles-as-
+    -- exercised). The graph derives CURRENT roles from users.roles +
+    -- service_accounts.role_ids; this column adds timestamped history that
+    -- survives a principal being deleted. Pre-existing rows = NULL. Populated by
+    -- the MeterOnDestruct emitter (service.cpp) from ev_.roles. Optional —
+    -- omit the emitter write and the column simply stays NULL with no other effect.
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS caller_roles TEXT[];
+    -- Speeds the agent-spread observed-access projection (GROUP BY caller/server/
+    -- tool). Useful even without caller_roles populated.
+    CREATE INDEX IF NOT EXISTS meter_events_caller_idx
+        ON meter_events (caller_user_id, server_id, tool_id, incurred_at);
+
+    -- ── CONTRACT (digital twin of the vendor agreement) ─────────────────────────
+    CREATE TABLE IF NOT EXISTS cost_contracts (
+        id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_id           UUID        NOT NULL REFERENCES deployed_servers(id),
+        vendor_name         TEXT        NOT NULL,
+        currency            TEXT        NOT NULL DEFAULT 'USD',   -- dormant in v1
+        term_start          DATE        NOT NULL,
+        term_end            DATE        NOT NULL,
+        commitment_credits  NUMERIC(20,6),               -- committed/prepaid, in CREDITS
+        minimum_amount_usd  NUMERIC(20,2),               -- true-up floor
+        billing_period      TEXT        NOT NULL DEFAULT 'monthly'
+                              CHECK (billing_period IN ('monthly','quarterly','annual')),
+        period_anchor       TEXT        NOT NULL DEFAULT 'calendar'  -- Move 4: period boundary
+                              CHECK (period_anchor IN ('calendar','anniversary')),
+        status              TEXT        NOT NULL DEFAULT 'active'
+                              CHECK (status IN ('active','expired','suspended')),
+        created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT cost_contract_term_ck CHECK (term_end > term_start)
+    );
+    -- At most one ACTIVE contract per server.
+    CREATE UNIQUE INDEX IF NOT EXISTS cost_contracts_active_uq
+        ON cost_contracts (server_id) WHERE status = 'active';
+
+    -- ── Prepaid-vs-Committed model (burn-down) ──────────────────────────────────
+    -- bill_commitment_true_up is the EXPLICIT switch for the commitment true-up
+    -- rail (rating_worker step 5). It replaces the old implicit inference
+    -- "minimum_amount_usd > 0 => charge a true-up". Default FALSE: a contract only
+    -- owes a use-it-or-lose-it commitment true-up when this is deliberately set.
+    -- Prepaid balances (burn-down) live in credit_purchases below and DO NOT set
+    -- this flag — a prepaid pool is drawn down, not owed as a period fee.
+    ALTER TABLE cost_contracts
+        ADD COLUMN IF NOT EXISTS bill_commitment_true_up BOOLEAN NOT NULL DEFAULT FALSE;
+    -- Behavior-preserving backfill: reproduce the OLD "minimum > 0 => true-up"
+    -- behavior via the new flag, so introducing the column changes nothing
+    -- observable. The rating worker keeps using the old path until it is switched
+    -- to read this flag; exa/Anthropic are flipped to burn-down (flag FALSE) as a
+    -- deliberate, separate data step. Guarded so it only backfills once (won't
+    -- clobber an explicitly-set flag on re-run: only touches rows still at the
+    -- default FALSE that have a positive minimum).
+    -- ⚠ GUARDED 2026-08-14. The comment above claims this "only backfills
+    -- once", reasoning that it touches only rows still at the default FALSE.
+    -- That reasoning does not hold: a DELIBERATE false and a DEFAULT false are
+    -- indistinguishable. SchemaGuard re-applies this file on EVERY orchestrator
+    -- startup, so every prepaid contract was being flipped back to committed —
+    -- reinstating the exact phantom-fee behaviour the flag was added to end.
+    --
+    -- Caught by rate-engine-suite S8, which creates a contract with
+    -- minimum=1000 and the flag FALSE, then finds it TRUE moments later and a
+    -- $500 true-up written. Not a test bug: set a customer's contract to
+    -- prepaid and the next restart bills them a commitment true-up.
+    --
+    -- Now runs ONLY when contract_type is absent — i.e. on a database that
+    -- predates the explicit-model column, which is precisely the population the
+    -- backfill was written for. Once contract_type exists, the model is
+    -- RECORDED and inference must not override it.
+    DO $backfill$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'cost_contracts'
+              AND column_name = 'contract_type'
+        ) THEN
+            UPDATE cost_contracts
+                SET bill_commitment_true_up = TRUE
+                WHERE minimum_amount_usd IS NOT NULL
+                  AND minimum_amount_usd > 0
+                  AND bill_commitment_true_up = FALSE;
+        END IF;
+    END
+    $backfill$;
+
+    -- ── Explicit contract type (payg | committed | prepaid) ─────────────────────
+    -- The STORED commercial model. Prior to this, type was reconstructed from
+    -- (minimum_amount_usd, bill_commitment_true_up, credit_purchases presence),
+    -- which is ambiguous — a prepaid pool that hasn't been funded yet is
+    -- indistinguishable from PAYG. A GRC system should RECORD the model, not infer
+    -- it, and reporting/metering get a single clean discriminator to group on.
+    -- Committed and prepaid are both sunk-cost / burn-down; they differ in WHEN
+    -- money moved (committed = obligation billed over the term; prepaid = cash
+    -- transferred upfront into credit_purchases). The rating worker still anchors
+    -- on minimum_amount_usd + bill_commitment_true_up — this column is the
+    -- reporting/UI source of truth, not a new rating input.
+    -- (The inference backfill lives AFTER credit_purchases is created below, since
+    -- it references that table.)
+    ALTER TABLE cost_contracts
+        ADD COLUMN IF NOT EXISTS contract_type TEXT NOT NULL DEFAULT 'payg';
+    -- CHECK added separately (idempotent) so re-runs don't error on a duplicate
+    -- constraint; matches the ADD COLUMN IF NOT EXISTS upgrade-path convention.
+    ALTER TABLE cost_contracts
+        DROP CONSTRAINT IF EXISTS cost_contracts_contract_type_check;
+    ALTER TABLE cost_contracts
+        ADD CONSTRAINT cost_contracts_contract_type_check
+        CHECK (contract_type IN ('payg','committed','prepaid'));
+
+    -- ── CREDIT BALANCE (prepaid credit packs → burn-down) ───────────────────────
+    CREATE TABLE IF NOT EXISTS credit_purchases (
+        id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        contract_id        UUID        NOT NULL REFERENCES cost_contracts(id),
+        credits_purchased  NUMERIC(20,6) NOT NULL CHECK (credits_purchased > 0),
+        usd_paid           NUMERIC(20,2) NOT NULL CHECK (usd_paid >= 0),
+        purchased_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        note               TEXT
+    );
+    CREATE INDEX IF NOT EXISTS credit_purchases_contract_idx
+        ON credit_purchases (contract_id, purchased_at);
+
+    -- Behavior-preserving backfill for contract_type (column added above, with
+    -- credit_purchases now guaranteed to exist so the EXISTS probe is safe on a
+    -- fresh DB). Infers the OLD implicit model so existing rows carry an accurate
+    -- stated type instead of silently defaulting to 'payg': a credit_purchases
+    -- row => funded upfront (prepaid); else a positive commitment/minimum =>
+    -- committed; else payg. Guarded to only touch rows still at the default
+    -- 'payg' (won't clobber an explicitly-set type on re-run).
+    UPDATE cost_contracts c SET contract_type =
+        CASE
+            WHEN EXISTS (SELECT 1 FROM credit_purchases p WHERE p.contract_id = c.id) THEN 'prepaid'
+            WHEN COALESCE(c.commitment_credits, 0) > 0 THEN 'committed'
+            WHEN COALESCE(c.minimum_amount_usd, 0) > 0 THEN 'committed'
+            ELSE 'payg'
+        END
+        WHERE c.contract_type = 'payg';
+
+    -- ── RATE SCHEDULE + TIERS (per-method pricing, versioned, tiered) ───────────
+    CREATE TABLE IF NOT EXISTS rate_schedules (
+        id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        contract_id       UUID        NOT NULL REFERENCES cost_contracts(id),
+        tool_id           TEXT        NOT NULL,
+        method            TEXT        NOT NULL,          -- the billable atom
+        -- Move 1: the priced dimension this schedule governs ('calls' default,
+        -- 'input_tokens', 'output_tokens', …). Part of the selection key — the
+        -- rating engine matches a meter_event to its schedule on
+        -- (contract_id, tool_id, method, dimension) + SCD effective window.
+        dimension         TEXT        NOT NULL DEFAULT 'calls',
+        pricing_model     TEXT        NOT NULL DEFAULT 'flat'
+                            CHECK (pricing_model IN ('flat','tiered','bundled')),
+        included_credits  NUMERIC(20,6) DEFAULT 0,       -- bundle free before charges
+        -- Move 2b: flat per-period fee for pricing_model='bundled'. A bundle is a
+        -- COMMITMENT — owed every period regardless of usage (you bought the combo
+        -- meal; the fee stands even if you eat none of it). The bundle CEILING is
+        -- included_credits (usage up to it is absorbed at $0 via the allowance),
+        -- and OVERAGE beyond the ceiling walks the tiers. The worker emits one
+        -- synthetic 'bundle_fee' rated_cost row per (contract, schedule, period).
+        bundle_fee_usd    NUMERIC(20,2) NOT NULL DEFAULT 0,
+        bill_errors       BOOLEAN     NOT NULL DEFAULT FALSE,
+        effective_from    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        effective_to      TIMESTAMPTZ,                   -- NULL = current version
+        CONSTRAINT rate_sched_range_ck
+            CHECK (effective_to IS NULL OR effective_to > effective_from)
+    );
+    CREATE INDEX IF NOT EXISTS rate_schedules_lookup_idx
+        ON rate_schedules (contract_id, tool_id, method, dimension, effective_from DESC);
+    -- Move 1: dimension migration for upgrade paths (pre-existing schedules = 'calls').
+    ALTER TABLE rate_schedules ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
+    -- Move 2b: per-period bundle fee (flat commitment charge). Default 0 = no fee.
+    ALTER TABLE rate_schedules ADD COLUMN IF NOT EXISTS bundle_fee_usd NUMERIC(20,2) NOT NULL DEFAULT 0;
+
+    CREATE TABLE IF NOT EXISTS rate_tiers (
+        id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        rate_id         UUID         NOT NULL REFERENCES rate_schedules(id) ON DELETE CASCADE,
+        tier_seq        INT          NOT NULL,           -- 1,2,3...
+        up_to_credits   NUMERIC(20,6),                   -- NULL = unbounded top tier
+        usd_per_credit  NUMERIC(20,12) NOT NULL CHECK (usd_per_credit >= 0),
+        CONSTRAINT rate_tier_seq_uq UNIQUE (rate_id, tier_seq)
+    );
+
+    -- ── RATED COST (rating-engine output: ESTIMATED → FINAL) ────────────────────
+    CREATE TABLE IF NOT EXISTS rated_costs (
+        id                     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        billing_group_id       UUID        NOT NULL,     -- what was priced (v1: one event)
+        contract_id            UUID        NOT NULL REFERENCES cost_contracts(id),
+        rate_id                UUID        NOT NULL REFERENCES rate_schedules(id),
+        period                 DATE        NOT NULL,      -- first day of accounting period
+        tool_id                TEXT        NOT NULL DEFAULT '',  -- per-tool attribution
+                                                                -- ('' = contract-level rows:
+                                                                -- bundle_fee, true_up)
+        dimension              TEXT        NOT NULL DEFAULT 'calls',  -- Move 1: which dimension priced
+        credits                NUMERIC(20,6) NOT NULL,
+        usd_per_credit_applied NUMERIC(20,12) NOT NULL,
+        amount_usd             NUMERIC(20,10) NOT NULL,
+        tier_applied           INT,                       -- explainability
+        cost_state             TEXT        NOT NULL DEFAULT 'ESTIMATED'
+                                 CHECK (cost_state IN ('ESTIMATED','FINAL')),
+        rated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Token-rate precision (2026-09-19). NUMERIC(20,8) cannot express a price
+    -- below $0.10 per million tokens: TypeSafe Jev at $0.042/M is 4.2e-8 and
+    -- was silently stored as 4.0e-8 — a 4.8% underbill on every call, with
+    -- nothing logged and nothing to notice. Anthropic never hit it because its
+    -- cheapest dimension (cache_read, $0.30/M) is 3.0e-7 and fits.
+    --
+    -- Decision models, embeddings and rerankers all price below that line, so
+    -- this is now the common case rather than an exotic one.
+    --
+    -- amount_usd is widened for a DIFFERENT reason: it rounds the RESULT, and
+    -- at these rates a small call rates to 0.000000. A rate needs precision; a
+    -- total needs range. Do not collapse them to one type.
+    --
+    -- CREATE TABLE IF NOT EXISTS leaves existing clusters alone, so these run
+    -- unconditionally. Re-running is a no-op beyond a table rewrite.
+    ALTER TABLE rate_tiers  ALTER COLUMN usd_per_credit         TYPE NUMERIC(20,12);
+    ALTER TABLE rated_costs ALTER COLUMN usd_per_credit_applied TYPE NUMERIC(20,12);
+    ALTER TABLE rated_costs ALTER COLUMN amount_usd             TYPE NUMERIC(20,10);
+    -- One ESTIMATED and/or one FINAL per (group, tool, dimension) keeps re-rating
+    -- idempotent. Move 1: dimension is in the key because one billing_group
+    -- (one call) can produce multiple rated rows — one per priced dimension
+    -- (calls, input_tokens, output_tokens) — which must coexist. tool_id is in
+    -- the key so per-tool costs (search vs answer vs research) coexist too rather
+    -- than collapsing into one row when they share a dimension.
+    CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_tool_state_uq
+        ON rated_costs (billing_group_id, tool_id, dimension, cost_state);
+    CREATE INDEX IF NOT EXISTS rated_costs_period_idx
+        ON rated_costs (contract_id, period, cost_state);
+    -- Move 1 migrations (upgrade paths): dimension column + reshaped unique index.
+    ALTER TABLE rated_costs ADD COLUMN IF NOT EXISTS dimension TEXT NOT NULL DEFAULT 'calls';
+    DROP INDEX IF EXISTS rated_costs_group_state_uq;
+    CREATE UNIQUE INDEX IF NOT EXISTS rated_costs_group_state_uq
+        ON rated_costs (billing_group_id, dimension, cost_state);
+
+    -- ── VIEW: credit balance & commitment burn-down ─────────────────────────────
+    CREATE OR REPLACE VIEW contract_balances AS
+    SELECT
+        c.id            AS contract_id,
+        c.server_id,
+        c.vendor_name,
+        c.commitment_credits,
+        COALESCE(p.credits_purchased, 0)                       AS credits_purchased,
+        COALESCE(u.credits_consumed, 0)                        AS credits_consumed,
+        COALESCE(p.credits_purchased, 0)
+          - COALESCE(u.credits_consumed, 0)                    AS credits_remaining,
+        CASE WHEN COALESCE(p.usd_paid,0) > 0 AND COALESCE(p.credits_purchased,0) > 0
+             THEN p.usd_paid / p.credits_purchased END         AS implied_usd_per_credit,
+        -- Explicit commercial model, exposed so balance/reporting queries can
+        -- group by type without re-deriving it. Appended LAST: CREATE OR REPLACE
+        -- VIEW can only add columns at the end of the select list, never mid-list.
+        c.contract_type
+    FROM cost_contracts c
+    LEFT JOIN (
+        SELECT contract_id,
+               SUM(credits_purchased) AS credits_purchased,
+               SUM(usd_paid)          AS usd_paid
+        FROM credit_purchases GROUP BY contract_id
+    ) p ON p.contract_id = c.id
+    LEFT JOIN (
+        SELECT contract_id, SUM(credits) AS credits_consumed
+        FROM rated_costs
+        WHERE cost_state = 'FINAL'      -- settled credits; include ESTIMATED for live view
+        GROUP BY contract_id
+    ) u ON u.contract_id = c.id;
+
+    -- ── Cost budgets (per-server dollar throttle) ───────────────────────────────
+    -- Authoritative here so fresh DBs match the live schema. (Previously this
+    -- table lived only in the standalone 02-cost-metering.sql with a stale
+    -- limit_usd-only shape; the live DB was migrated to threshold_pct. This
+    -- definition matches the live \d cost_budgets.)
+    --
+    --   threshold_pct : block point as a % of the contract commitment
+    --                   (limit = commitment * threshold_pct / 100)
+    --   limit_usd     : absolute dollar ceiling, independent of commitment
+    --                   (PAYG caps / limits beyond commitment). NULL = use the
+    --                   threshold_pct path. The gate PREFERS limit_usd when set.
+    --   override      : platform-admin "let it through" (resume traffic over budget)
+    CREATE TABLE IF NOT EXISTS cost_budgets (
+        id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+        scope_type    VARCHAR(16)   NOT NULL DEFAULT 'server'
+                      CHECK (scope_type IN ('server','tool','department')),
+        server_id     UUID          NOT NULL REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        threshold_pct NUMERIC(5,2)  NOT NULL DEFAULT 100
+                      CHECK (threshold_pct >= 0 AND threshold_pct <= 100),
+        override      BOOLEAN       NOT NULL DEFAULT FALSE,
+        created_by    TEXT          NOT NULL,
+        created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+    );
+    -- Absolute ceiling column (added after initial ship; idempotent for upgrades).
+    ALTER TABLE cost_budgets ADD COLUMN IF NOT EXISTS limit_usd NUMERIC(12,2);
+    -- At most one server-scoped budget per server.
+    CREATE UNIQUE INDEX IF NOT EXISTS cost_budgets_server_uq
+        ON cost_budgets (server_id) WHERE scope_type = 'server';
+  03-seed.sql: |
+    -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
+    -- (default: bcrypt of "admin" — CHANGE for production).
+    -- provisioned_via='password' ensures no provenance badge appears next to admin
+    -- in the Users tab. The ON CONFLICT clause back-fills the column on upgrades
+    -- where admin was seeded before provisioned_via existed.
+    INSERT INTO users (username, password_hash, roles, enabled, provisioned_via{{ if .Values.seed.adminEmail }}, email{{ end }})
+    VALUES (
+        'admin',
+        {{ .Values.seed.adminPasswordHash | quote }},
+        ARRAY['system:platform-admin'],
+        TRUE,
+        'password'{{ if .Values.seed.adminEmail }},
+        {{ .Values.seed.adminEmail | quote }}{{ end }}
+    )
+    ON CONFLICT (username) DO UPDATE
+        SET provisioned_via = COALESCE(users.provisioned_via, 'password'){{ if .Values.seed.adminEmail }},
+            email = COALESCE(users.email, EXCLUDED.email){{ end }};
+
+    -- ── System roles ───────────────────────────────────────────────────────────
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:platform-admin', 'Platform Admin', 'Full access to all namespaces and operations',
+     '["Deploy","Undeploy","Scale","Read","Write","ManageRoles","AuditRead","ViewLogs"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:deploy-manager', 'Deploy Manager', 'Deploy and manage servers in production and staging',
+     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs","AuditRead"]',
+     '["mcp-prod","mcp-staging"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:operator', 'Operator', 'Deploy and manage servers in dev and staging only — no production access',
+     '["Deploy","Undeploy","Scale","Read","Write","ViewLogs"]',
+     '["mcp-dev","mcp-staging"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:viewer', 'Viewer', 'Read-only access across all namespaces',
+     '["Read","AuditRead"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Billing / FinOps persona. Scoped to the cost/billing surface ONLY via the
+    -- BillingRead/BillingWrite actions — deliberately has NO Deploy/Scale/Write/
+    -- ManageRoles, so a finance user can see and manage contracts, rate cards,
+    -- rated costs, and period close, but cannot touch server governance or RBAC.
+    -- Enforcement: billing endpoints guard on Action::BillingRead/BillingWrite
+    -- (paired C++ change). AuditRead is included so finance can see the audit
+    -- trail behind a cost (compliance/chargeback defensibility).
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:finance-user', 'Finance User', 'Cost, contract, and budget visibility + management — no governance or deploy access',
+     '["BillingRead","BillingWrite","AuditRead"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- ── Machine / consumer roles ────────────────────────────────────────────────
+    -- Purpose-built LOW-PRIVILEGE roles for service accounts (agent daemons,
+    -- assistants) that consume governed egress — LLM providers and metered REST
+    -- APIs — on behalf of end users. Deliberately minimal: they hold ONLY Read,
+    -- which is the permission the egress proxies' Read guard requires (see
+    -- handle_llm_proxy / handle_rest_token_proxy). They carry NO Deploy/Scale/
+    -- Write/ManageRoles/Billing — a leaked daemon token must not be able to
+    -- administer the platform.
+    --
+    -- These roles are GRANT TARGETS, not capability bundles. The role by itself
+    -- grants access to NOTHING specific — actual access to a given LLM/REST
+    -- provider comes from an explicit per-provider WILDCARD ALLOW row in
+    -- mcp_tool_permissions (seeded at provider onboarding / managed in the Tool
+    -- Explorer's access panel). So: role = "I am a consumer of this class",
+    -- grant = "specifically this provider". A consumer SA with no grant is
+    -- authenticated but authorized for nothing (the LLM lockdown returns
+    -- llm_not_authorized).
+    --
+    -- Separation of concerns: llm-consumer (spend LLM keys) is distinct from
+    -- api-consumer (call metered REST APIs) is distinct from mcp-consumer (invoke
+    -- MCP tools), so an admin can grant exactly one class without the others.
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:llm-consumer', 'LLM Consumer', 'Service-account role for daemons/assistants that invoke governed LLM providers. Access to each LLM is granted explicitly per-provider; the role alone grants nothing.',
+     '["Read"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Agent. The role tool GRANTS are written against — an agent holds this
+    -- and an administrator grants it specific tools per server. Held by
+    -- mcp-assistant-sa (the docked assistant and the desktop daemon) and by
+    -- customer agents.
+    --
+    -- ⚠ Read on five resource types and nothing more. The grants decide what it
+    -- can reach; this role only makes it eligible to be granted.
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:agent', 'Agent', 'Service-account role for agents that invoke governed MCP tools. Tool access is granted explicitly per server; the role alone grants nothing.',
+     '[{"actions":1,"namespace":"*","resource_name":"*","resource_type":0},
+       {"actions":1,"namespace":"*","resource_name":"*","resource_type":1},
+       {"actions":1,"namespace":"*","resource_name":"*","resource_type":2},
+       {"actions":1,"namespace":"*","resource_name":"*","resource_type":4},
+       {"actions":1,"namespace":"*","resource_name":"*","resource_type":5}]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Evidence reader. Held by mcp-evidence-agent so the evidence MCP server
+    -- can read authority records and audit history as itself.
+    --
+    -- ⚠ THE Deploy BIT (actions 5 = Read|Deploy) IS LOAD-BEARING AND MISNAMED.
+    -- handle_turn_evidence() gates on Action::Deploy as the platform's stand-in
+    -- for "this is an operator action", the same way ~41 other handlers do.
+    -- Removing it does not narrow this credential, it breaks it — and the
+    -- symptom is a 403 that reads like a bug in the MCP server.
+    --
+    -- 257 on AuditLog is Read|AuditRead.
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:evidence-reader', 'Evidence reader', 'Read authority records and audit history; deploys nothing.',
+     '[{"actions":5,"namespace":"*","resource_name":"*","resource_type":0},
+       {"actions":257,"namespace":"*","resource_name":"*","resource_type":3}]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Model comparison. Held only by the synthetic 'system-compare' subject
+    -- the orchestrator signs for when an admin runs a side-by-side.
+    --
+    -- ⚠ Reaches EVERY model server, by design: a comparison that silently
+    -- omits a model an operator has registered is worse than no comparison.
+    -- Grants are inserted automatically when an LLM server is registered.
+    --
+    -- ⚠ NON-DELEGABLE (see MCP_NON_DELEGABLE_ROLES). An agent acting as this
+    -- would reach models its own routing policy forbids.
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:model-compare', 'Model Comparison', 'Internal role for side-by-side model cost comparison. Held only by the synthetic system-compare subject, never by a user or a stored service account. Reaches every registered LLM provider.',
+     '["Read"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:api-consumer', 'API Consumer', 'Service-account role for daemons/agents that call governed, metered REST APIs. Access to each API is granted explicitly per-provider; the role alone grants nothing.',
+     '["Read"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- ⚠ ADDED 2026-08-14. Both are declared in rbac_engine.cpp as built-in
+    -- roles (is_system_role = true) but were never seeded here, so a FRESH
+    -- install had 8 of the 10 system roles. Peppy has all ten only because
+    -- someone inserted these two by hand months ago — no customer would have.
+    --
+    -- system:mcp-consumer is the load-bearing one: it is what a developer
+    -- needs to use the portal and call tools. Without a row the admin cannot
+    -- see or assign it in the UI, which reads this table — so the primary
+    -- Free-tier workflow has no reachable path. system:auditor is
+    -- completeness, and SOC 2 relevant.
+    --
+    -- ⚠ PERMISSIONS MUST MATCH rbac_engine.cpp. MCPConsumer grants
+    -- MCPServer:* -> Read; Auditor grants AuditLog:* -> AuditRead. A row that
+    -- disagrees with the engine is worse than an absent one, because the
+    -- resolver and the UI would then describe different access.
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:mcp-consumer', 'MCP consumer', 'Invoke MCP tools via the gateway; no administrative access',
+     '["Read"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
+    ('system:auditor', 'Auditor', 'Read access to audit logs only',
+     '["AuditRead"]',
+     '["*"]', TRUE)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Admin gains the billing actions so the superuser passes billing guards too.
+    -- Idempotent: only rewrites if the billing actions are not already present.
+    UPDATE roles
+       SET permissions = '["Deploy","Undeploy","Scale","Read","Write","ManageRoles","AuditRead","ViewLogs","BillingRead","BillingWrite"]'
+     WHERE id = 'system:platform-admin'
+       AND NOT (permissions @> '["BillingRead"]');
+
+    -- ⚠ SEEDED DISABLED 2026-08-14. These are TEMPLATES (is_template=TRUE) —
+    -- starting points an operator adopts, not rules that should enforce on
+    -- arrival. Shipped enabled, enterprise-standard blocks the very first
+    -- deploy from the catalog: it requires labels.team, the deploy wizard does
+    -- not ask for one, and Governance is a paid tab so a Free user cannot see
+    -- or edit the policy that is refusing them. A dead end at the primary Free
+    -- workflow, found on a clean QA box.
+    --
+    -- Compare the vulnerability policy below, which ships ENABLED and is
+    -- deliberately severity=WARNING so a first run still deploys. That is the
+    -- right shape for a default; these two were not following it.
+    --
+    -- An operator enables them once they have decided their labelling and
+    -- resource conventions. ON CONFLICT DO NOTHING means an existing install
+    -- that already enabled them is untouched.
+    -- ── Governance policy templates ────────────────────────────────────────────
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
+    VALUES (
+        'enterprise-standard',
+        'Default enterprise governance policy — enforces security, resource limits, naming, and transport standards.',
+        TRUE, FALSE, '["mcp-prod","mcp-staging"]',
+        '[
+          {"category":"security","field":"transport","operator":"in","value":["streamable_http","sse"],"severity":"error","message":"Only Streamable HTTP or SSE transport allowed — stdio is not permitted in production"},
+          {"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":2048,"severity":"error","message":"Memory limit must not exceed 2Gi"},
+          {"category":"resource_limits","field":"cpu_limit","operator":"lte","value":2.0,"severity":"error","message":"CPU limit must not exceed 2 cores"},
+          {"category":"resource_limits","field":"replicas","operator":"lte","value":10,"severity":"error","message":"Initial replicas must not exceed 10"},
+          {"category":"resource_limits","field":"replicas","operator":"gte","value":1,"severity":"error","message":"Must have at least 1 replica"},
+          {"category":"naming","field":"labels.team","operator":"exists","value":true,"severity":"error","message":"Label team is required for all MCP servers"},
+          {"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens, 3-63 chars"},
+          {"category":"tool_safety","field":"tools.*.read_only","operator":"equals","value":true,"severity":"warning","message":"Mutating tools detected — review required before production use"}
+        ]'::jsonb
+    ) ON CONFLICT (name) DO NOTHING;
+
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
+    VALUES (
+        'dev-relaxed',
+        'Relaxed policy for development environments — minimal restrictions.',
+        TRUE, FALSE, '["mcp-dev"]',
+        '[
+          {"category":"resource_limits","field":"memory_limit_mb","operator":"lte","value":4096,"severity":"error","message":"Memory limit must not exceed 4Gi even in dev"},
+          {"category":"resource_limits","field":"replicas","operator":"lte","value":5,"severity":"warning","message":"Consider keeping dev replicas under 5"},
+          {"category":"naming","field":"name","operator":"regex","value":"^[a-z][a-z0-9-]{2,62}$","severity":"error","message":"Server name must be lowercase alphanumeric with hyphens, 3-63 chars"}
+        ]'::jsonb
+    ) ON CONFLICT (name) DO NOTHING;
+
+    -- ── Default vulnerability policy (secure-by-default, non-blocking) ──────────
+    -- Ships ENABLED across ALL namespaces so every governed internal server is
+    -- evaluated against a critical-vulnerability rule on day one — the premise
+    -- "every governed server is scanned and evaluated" holds without an operator
+    -- authoring anything. Deliberately severity=WARNING, not error: it FLAGS a
+    -- critical CVE (visible in the deploy wizard + the server Scan tab) but does
+    -- NOT block the deploy, so a first-run / demo image that carries a critical
+    -- still deploys. An org ESCALATES to enforcement by editing this policy's
+    -- severity from "warning" to "error" (the message says so). Unlike the two
+    -- policies above this is is_template=FALSE and "*"-scoped — it's an ACTIVE
+    -- default, not a starting-point template. ON CONFLICT DO NOTHING = seed-once:
+    -- if an operator deletes or edits it, it is never resurrected.
+    INSERT INTO governance_policies (name, description, is_template, enabled, applies_to_namespaces, rules)
+    VALUES (
+        'Flag critical vulnerabilities',
+        'Warns when a deployed image has critical CVEs (from the deploy-time scan). Change this policy''s severity from warning to error to BLOCK such deploys.',
+        FALSE, TRUE, '["*"]',
+        '[
+          {"category":"vulnerability","field":"scan.critical","operator":"lte","value":0,"severity":"warning","message":"Image has critical vulnerabilities — review before production. Set this policy severity to error to block."}
+        ]'::jsonb
+    ) ON CONFLICT (name) DO NOTHING;
+{{- end }}
