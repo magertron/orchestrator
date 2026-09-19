@@ -2364,7 +2364,7 @@ data:
         rate_id         UUID         NOT NULL REFERENCES rate_schedules(id) ON DELETE CASCADE,
         tier_seq        INT          NOT NULL,           -- 1,2,3...
         up_to_credits   NUMERIC(20,6),                   -- NULL = unbounded top tier
-        usd_per_credit  NUMERIC(20,8) NOT NULL CHECK (usd_per_credit >= 0),
+        usd_per_credit  NUMERIC(20,12) NOT NULL CHECK (usd_per_credit >= 0),
         CONSTRAINT rate_tier_seq_uq UNIQUE (rate_id, tier_seq)
     );
 
@@ -2380,13 +2380,32 @@ data:
                                                                 -- bundle_fee, true_up)
         dimension              TEXT        NOT NULL DEFAULT 'calls',  -- Move 1: which dimension priced
         credits                NUMERIC(20,6) NOT NULL,
-        usd_per_credit_applied NUMERIC(20,8) NOT NULL,
-        amount_usd             NUMERIC(20,6) NOT NULL,
+        usd_per_credit_applied NUMERIC(20,12) NOT NULL,
+        amount_usd             NUMERIC(20,10) NOT NULL,
         tier_applied           INT,                       -- explainability
         cost_state             TEXT        NOT NULL DEFAULT 'ESTIMATED'
                                  CHECK (cost_state IN ('ESTIMATED','FINAL')),
         rated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    -- Token-rate precision (2026-09-19). NUMERIC(20,8) cannot express a price
+    -- below $0.10 per million tokens: TypeSafe Jev at $0.042/M is 4.2e-8 and
+    -- was silently stored as 4.0e-8 — a 4.8% underbill on every call, with
+    -- nothing logged and nothing to notice. Anthropic never hit it because its
+    -- cheapest dimension (cache_read, $0.30/M) is 3.0e-7 and fits.
+    --
+    -- Decision models, embeddings and rerankers all price below that line, so
+    -- this is now the common case rather than an exotic one.
+    --
+    -- amount_usd is widened for a DIFFERENT reason: it rounds the RESULT, and
+    -- at these rates a small call rates to 0.000000. A rate needs precision; a
+    -- total needs range. Do not collapse them to one type.
+    --
+    -- CREATE TABLE IF NOT EXISTS leaves existing clusters alone, so these run
+    -- unconditionally. Re-running is a no-op beyond a table rewrite.
+    ALTER TABLE rate_tiers  ALTER COLUMN usd_per_credit         TYPE NUMERIC(20,12);
+    ALTER TABLE rated_costs ALTER COLUMN usd_per_credit_applied TYPE NUMERIC(20,12);
+    ALTER TABLE rated_costs ALTER COLUMN amount_usd             TYPE NUMERIC(20,10);
     -- One ESTIMATED and/or one FINAL per (group, tool, dimension) keeps re-rating
     -- idempotent. Move 1: dimension is in the key because one billing_group
     -- (one call) can produce multiple rated rows — one per priced dimension
