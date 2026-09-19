@@ -1974,9 +1974,9 @@ data:
     LEFT JOIN win w ON w.server_id = t.server_id AND w.tool_name = t.tool_name;
 
     DROP VIEW IF EXISTS v_server_utilization;
-    -- Per-server coverage with the contract's monthly figure. Monthly is
-    -- derived from the term dates so it reconciles with the billing
-    -- dashboard. PAYG with no minimum yields NULL, not zero: the assistant
+    -- Per-server coverage with the contract's monthly figure, derived
+    -- from billing_period: minimum_amount_usd is a minimum PER PERIOD,
+    -- not a whole-term total. PAYG with no minimum yields NULL, not zero: the assistant
     -- says "usage-billed", never "$0/mo".
     --
     -- ⚠ No snapshot rows in the window means NO OPINION: coverage is NULL and
@@ -2029,8 +2029,24 @@ data:
              AND a.exercised_tools::numeric / a.catalog_tools < cfg.coverage_threshold)
                                           AS flagged,
            c.id AS contract_id, c.vendor_name, c.contract_type,
-           CASE WHEN COALESCE(c.minimum_amount_usd,0) > 0
-                THEN round(c.minimum_amount_usd
+           -- minimum_amount_usd is a minimum PER BILLING PERIOD, not a
+           -- whole-term total. Dividing by the term understated every monthly
+           -- commitment ~12x (wix-dcr-server: $20/mo reported as $1.67/mo on a
+           -- 12-month term) and never read billing_period at all.
+           --
+           -- This column is the EXPOSURE figure the utilization ranking sorts
+           -- on. Understating it ranked committed servers BELOW PAYG ones,
+           -- which is backwards: dark tools on PAYG cost nothing, while a
+           -- committed server bills whether its tools are called or not.
+           --
+           -- ELSE, not NULL, for an unrecognised billing_period: a slightly
+           -- wrong number keeps the server in the ranking; NULL drops it out
+           -- silently.
+           CASE WHEN COALESCE(c.minimum_amount_usd,0) <= 0 THEN NULL
+                WHEN c.billing_period = 'monthly'   THEN round(c.minimum_amount_usd, 2)
+                WHEN c.billing_period = 'quarterly' THEN round(c.minimum_amount_usd / 3, 2)
+                WHEN c.billing_period = 'annual'    THEN round(c.minimum_amount_usd / 12, 2)
+                ELSE round(c.minimum_amount_usd
                            / GREATEST(1, (c.term_end - c.term_start) / 30.4375), 2)
            END                            AS committed_usd_per_month
     FROM deployed_servers s
