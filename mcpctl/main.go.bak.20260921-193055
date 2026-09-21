@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-const version = "3.1.0"
+const version = "3.0.1"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -1616,12 +1616,6 @@ WEBHOOKS:
 RETENTION:
   retention status                     Show retention policy + per-table stats
 
-ESTATE DIGEST:
-  digest                               Show the estate findings (as the assistant card shows them)
-  digest status                        On/off, freshness, and why it is idle if it is
-                                       (exits 2 when on but not running — usable as a monitor)
-  digest enable | disable              Turn the digest on or off (Settings → Estate digest)
-
 GOVERNANCE:
   governance list                      List all policies
   governance evaluate <file>           Evaluate spec against policies
@@ -2635,184 +2629,6 @@ func cmdRetentionStatus(gf globalFlags) {
 	tw.Flush()
 }
 
-// ─── Estate digest ───────────────────────────────────────────────────────────
-//
-// ⚠ Findings are printed VERBATIM. The orchestrator renders them once so the
-// same fact reads the same way every morning; reformatting here would give
-// that away without anyone being able to tell.
-
-func cmdDigest(gf globalFlags, args []string) {
-	if len(args) == 0 || args[0] == "show" {
-		cmdDigestShow(gf)
-		return
-	}
-	switch args[0] {
-	case "status":
-		cmdDigestStatus(gf)
-	case "enable", "on":
-		cmdDigestSet(gf, true)
-	case "disable", "off":
-		cmdDigestSet(gf, false)
-	default:
-		fmt.Printf("Unknown digest subcommand: %s\n", args[0])
-		fmt.Println("Available: show (default), status, enable, disable")
-		os.Exit(1)
-	}
-}
-
-type digestSetting struct {
-	Enabled       bool   `json:"enabled"`
-	BlockedReason string `json:"blocked_reason"`
-}
-
-type digestFindings struct {
-	Have      bool    `json:"have"`
-	Block     string  `json:"block"`
-	Uncertain int     `json:"uncertain"`
-	Severity  float64 `json:"severity"`
-	Stale     bool    `json:"stale"`
-}
-
-func fetchDigestSetting(gf globalFlags) digestSetting {
-	body, err := apiGet(gf, "/settings/estate-digest")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
-	}
-	var d digestSetting
-	if err := json.Unmarshal(body, &d); err != nil {
-		fmt.Fprintln(os.Stderr, "Error parsing response:", err)
-		os.Exit(1)
-	}
-	return d
-}
-
-func fetchDigestFindings(gf globalFlags) digestFindings {
-	body, err := apiGet(gf, "/assistant/findings")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
-	}
-	var f digestFindings
-	if err := json.Unmarshal(body, &f); err != nil {
-		fmt.Fprintln(os.Stderr, "Error parsing response:", err)
-		os.Exit(1)
-	}
-	return f
-}
-
-func cmdDigestShow(gf globalFlags) {
-	f := fetchDigestFindings(gf)
-	if gf.jsonOut {
-		emitJSON(f)
-		return
-	}
-	if !f.Have {
-		// ⚠ Say WHY there is nothing, rather than printing nothing. An empty
-		// screen reads as a quiet estate, and it might be a stopped worker.
-		d := fetchDigestSetting(gf)
-		switch {
-		case !d.Enabled:
-			fmt.Println("Estate digest is off. Turn it on with: mcpctl digest enable")
-		case d.BlockedReason != "":
-			fmt.Println("Estate digest is on but not running:", d.BlockedReason)
-		default:
-			fmt.Println("No findings yet — the first digest appears within 15 minutes of enabling.")
-		}
-		return
-	}
-	fmt.Print(f.Block)
-	if !strings.HasSuffix(f.Block, "\n") {
-		fmt.Println()
-	}
-	if f.Stale {
-		fmt.Println("\n(stale — the last refresh is older than an hour)")
-	}
-	if f.Uncertain > 0 {
-		// No "(s)" — the card stopped doing that, and so does this.
-		noun := "findings"
-		if f.Uncertain == 1 {
-			noun = "finding"
-		}
-		fmt.Printf("\n%d %s the classifier was unsure about — ask the assistant for more detail.\n",
-			f.Uncertain, noun)
-	}
-}
-
-func cmdDigestStatus(gf globalFlags) {
-	d := fetchDigestSetting(gf)
-	f := fetchDigestFindings(gf)
-	idle := d.Enabled && d.BlockedReason != ""
-
-	if gf.jsonOut {
-		emitJSON(map[string]interface{}{
-			"enabled":        d.Enabled,
-			"running":        d.Enabled && d.BlockedReason == "",
-			"blocked_reason": d.BlockedReason,
-			"have_findings":  f.Have,
-			"stale":          f.Stale,
-			"uncertain":      f.Uncertain,
-		})
-	} else {
-		state := "off — nothing leaves the cluster"
-		switch {
-		case idle:
-			state = "on, but not running"
-		case d.Enabled:
-			state = "on"
-		}
-		fmt.Printf("Estate digest:  %s\n", state)
-		if idle {
-			fmt.Printf("Why:            %s\n", d.BlockedReason)
-		}
-		if d.Enabled && !idle {
-			switch {
-			case !f.Have:
-				fmt.Println("Findings:       none yet — first digest within 15 minutes")
-			case f.Stale:
-				fmt.Println("Findings:       present, but stale (older than an hour)")
-			default:
-				fmt.Println("Findings:       current")
-			}
-			if f.Uncertain > 0 {
-				fmt.Printf("Uncertain:      %d\n", f.Uncertain)
-			}
-		}
-	}
-
-	// ⚠ Exit 2 when on-but-idle, so this can drive a Healthchecks check the
-	// same way disk-watch does. Off exits 0: off is a choice, not a fault.
-	if idle {
-		os.Exit(2)
-	}
-}
-
-func cmdDigestSet(gf globalFlags, enabled bool) {
-	body, err := apiPut(gf, "/settings/estate-digest", map[string]bool{"enabled": enabled})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
-	}
-	if gf.jsonOut {
-		var raw interface{}
-		_ = json.Unmarshal(body, &raw)
-		emitJSON(raw)
-		return
-	}
-	if !enabled {
-		fmt.Println("Estate digest disabled — nothing leaves the cluster.")
-		return
-	}
-	// Re-read: turning it on may reveal a reason it still cannot run, and
-	// that sentence is the point of the command.
-	d := fetchDigestSetting(gf)
-	if d.BlockedReason != "" {
-		fmt.Println("Estate digest enabled, but it cannot run yet:", d.BlockedReason)
-		return
-	}
-	fmt.Println("Estate digest enabled — the first findings appear within 15 minutes.")
-}
-
 func humanBytes(b int64) string {
 	const unit = 1024
 	if b < unit {
@@ -2912,8 +2728,6 @@ func main() {
 		cmdWebhooks(gf, cmdArgs)
 	case "retention":
 		cmdRetention(gf, cmdArgs)
-	case "digest":
-		cmdDigest(gf, cmdArgs)
 	case "version":
 		fmt.Printf("mcpctl v%s\n", version)
 	case "help", "-h", "--help":
