@@ -2108,19 +2108,6 @@ data:
     -- two sources of truth that can diverge — the same failure shape this
     -- section exists to avoid. Tenant-scoped grant queries join through
     -- uc_securable.
-
-    -- Mute: incident-response kill switch (include/mcp/mute.hpp).
-    -- Orthogonal to server lifecycle state; mute is not revoke.
-    CREATE TABLE IF NOT EXISTS access_mutes (
-      kind      text        NOT NULL CHECK (kind IN ('server','principal')),
-      key       text        NOT NULL,
-      label     text        NOT NULL DEFAULT '',
-      muted_by  text        NOT NULL DEFAULT '',
-      reason    text        NOT NULL DEFAULT '',
-      muted_at  timestamptz NOT NULL DEFAULT now(),
-      PRIMARY KEY (kind, key)
-    );
-
   02-cost-metering.sql: |
     -- ════════════════════════════════════════════════════════════════════════
     -- Magertron Cost Metering & Contract Rating (v1)
