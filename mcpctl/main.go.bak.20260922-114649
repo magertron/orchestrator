@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-const version = "3.2.0"
+const version = "3.1.0"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -1112,141 +1112,6 @@ func cmdApprove(gf globalFlags, args []string) {
 	fmt.Printf("✓ External server %s/%s state: %s\n", ns, name, state)
 }
 
-// cmdMute mutes or unmutes a server or a principal.
-//
-// Mute is the incident-response kill switch: every call is refused with a 403
-// that says "muted", and an audit row records who pressed it and why. It is
-// NOT revoke — grants, roles, tokens and the server's lifecycle state are left
-// alone, so unmute puts everything back exactly as it was.
-//
-// Backed by PUT /api/v1/servers/{ns}/{name}/mute and PUT /api/v1/principals/mute.
-func cmdMute(gf globalFlags, args []string, mute bool) {
-	verb := "mute"
-	if !mute {
-		verb = "unmute"
-	}
-	reason := ""
-	var pos []string
-	for i := 0; i < len(args); i++ {
-		switch {
-		case args[i] == "--reason" && i+1 < len(args):
-			reason = args[i+1]
-			i++
-		case strings.HasPrefix(args[i], "--reason="):
-			reason = strings.TrimPrefix(args[i], "--reason=")
-		default:
-			pos = append(pos, args[i])
-		}
-	}
-	usage := func() {
-		fmt.Printf("Usage: mcpctl %s server <namespace> <name>%s\n", verb, map[bool]string{true: " [--reason \"...\"]", false: ""}[mute])
-		fmt.Printf("       mcpctl %s principal <subject>%s\n", verb, map[bool]string{true: " [--reason \"...\"]", false: ""}[mute])
-		fmt.Println()
-		fmt.Println("A muted server refuses every call. A muted principal is refused as the")
-		fmt.Println("calling agent and as the person an agent acts on behalf of.")
-		fmt.Println("Grants and tokens are not touched; unmute restores everything.")
-		fmt.Println()
-		fmt.Println("Examples:")
-		fmt.Println("  mcpctl mute server mcp-prod payments-agent --reason \"suspicious transfers\"")
-		fmt.Println("  mcpctl mute principal svc-payout-bot")
-		fmt.Println("  mcpctl unmute server mcp-prod payments-agent")
-		os.Exit(1)
-	}
-	if len(pos) < 2 {
-		usage()
-	}
-	payload := map[string]interface{}{"muted": mute}
-	if reason != "" {
-		payload["reason"] = reason
-	}
-	switch pos[0] {
-	case "server":
-		if len(pos) < 3 {
-			usage()
-		}
-		ns, name := pos[1], pos[2]
-		body, err := apiPut(gf, fmt.Sprintf("/servers/%s/%s/mute", ns, name), payload)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		var r map[string]interface{}
-		_ = json.Unmarshal(body, &r)
-		changed, _ := r["changed"].(bool)
-		switch {
-		case mute && changed:
-			fmt.Printf("✓ Muted %s/%s. Every call to it is now refused.\n", ns, name)
-		case mute:
-			fmt.Printf("%s/%s was already muted. Nothing changed.\n", ns, name)
-		case changed:
-			fmt.Printf("✓ Unmuted %s/%s. Calls are allowed again.\n", ns, name)
-		default:
-			fmt.Printf("%s/%s was not muted. Nothing changed.\n", ns, name)
-		}
-	case "principal", "user", "service-account", "sa":
-		subject := pos[1]
-		payload["subject"] = subject
-		body, err := apiPut(gf, "/principals/mute", payload)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		var r map[string]interface{}
-		_ = json.Unmarshal(body, &r)
-		changed, _ := r["changed"].(bool)
-		switch {
-		case mute && changed:
-			fmt.Printf("✓ Muted %s. Refused as a caller and as an on-behalf-of principal.\n", subject)
-		case mute:
-			fmt.Printf("%s was already muted. Nothing changed.\n", subject)
-		case changed:
-			fmt.Printf("✓ Unmuted %s.\n", subject)
-		default:
-			fmt.Printf("%s was not muted. Nothing changed.\n", subject)
-		}
-	default:
-		usage()
-	}
-}
-
-// cmdMutes lists everything currently muted, newest first.
-// Backed by GET /api/v1/mutes.
-func cmdMutes(gf globalFlags, args []string) {
-	body, err := apiGet(gf, "/mutes")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-	var r struct {
-		Mutes []struct {
-			Kind    string `json:"kind"`
-			Key     string `json:"key"`
-			Label   string `json:"label"`
-			MutedBy string `json:"muted_by"`
-			Reason  string `json:"reason"`
-			MutedAt string `json:"muted_at"`
-		} `json:"mutes"`
-	}
-	if err := json.Unmarshal(body, &r); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: malformed mutes response: %v\n", err)
-		os.Exit(1)
-	}
-	if len(r.Mutes) == 0 {
-		fmt.Println("Nothing is muted.")
-		return
-	}
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "KIND\tWHAT\tMUTED BY\tSINCE\tREASON")
-	for _, m := range r.Mutes {
-		what := m.Label
-		if what == "" {
-			what = m.Key
-		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", m.Kind, what, m.MutedBy, m.MutedAt, m.Reason)
-	}
-	w.Flush()
-}
-
 // cmdDisable flips an External MCP server registration to 'Inactive'.
 //
 // Backed by POST /api/v1/servers/{ns}/{name}/disable (Session 2.13, Step 3.5).
@@ -1706,10 +1571,6 @@ SERVERS:
   register-external [opts]             Register an external (vendor-hosted) MCP server proxy
   approve <ns> <name>                  Approve an external MCP server registration (→ Active)
   disable <ns> <name>                  Disable an external MCP server (block proxy traffic)
-  mute server <ns> <name>              Refuse every call to a server (403, audited)
-  mute principal <subject>             Refuse a user/service account, as caller or on-behalf-of
-  unmute server|principal ...          Lift a mute; grants and tokens were never touched
-  mutes                                List everything currently muted
   undeploy <ns> <name>                 Remove a server
   scale <ns> <name> <replicas>         Scale server replicas
   restart <ns> <name>                  Rolling restart
@@ -3003,12 +2864,6 @@ func main() {
 		cmdApprove(gf, cmdArgs)
 	case "disable":
 		cmdDisable(gf, cmdArgs)
-	case "mute":
-		cmdMute(gf, cmdArgs, true)
-	case "unmute":
-		cmdMute(gf, cmdArgs, false)
-	case "mutes":
-		cmdMutes(gf, cmdArgs)
 	case "undeploy":
 		cmdUndeploy(gf, cmdArgs)
 	case "scale":
