@@ -2181,7 +2181,7 @@ data:
         billing_group_id  UUID,                          -- v1: = event_id; future: batch group
         quantity          NUMERIC(20,6) NOT NULL CHECK (quantity >= 0),
         unit              TEXT        NOT NULL DEFAULT 'credit'
-                            CHECK (unit IN ('credit','call','token','byte')),
+                            CHECK (unit IN ('credit','call','token','byte','usd')),
         status            TEXT        NOT NULL DEFAULT 'success'
                             CHECK (status IN ('success','error')),
         session_id        TEXT,
