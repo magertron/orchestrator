@@ -19,3 +19,4 @@ docs/magertron*.jpg
 mcpctl/dist/
 .DS_Store
 *.bak.*
+docs/charts-dev/
