@@ -9,9 +9,12 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,7 +28,7 @@ import (
 	"time"
 )
 
-const version = "3.2.0"
+const version = "3.3.0"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -1710,6 +1713,15 @@ SERVERS:
   mute principal <subject>             Refuse a user/service account, as caller or on-behalf-of
   unmute server|principal ...          Lift a mute; grants and tokens were never touched
   mutes                                List everything currently muted
+
+MERCHANTS:
+  merchant list                        API customers, with roles and key counts
+  merchant get <id>                    One merchant and its credentials
+  merchant create <id> [--name N] [--role R]…
+  merchant grant <id> --role R…        Replace the merchant's roles (keys unaffected)
+  merchant suspend|resume <id>         Stop or allow every credential it holds
+  merchant issue-key <id> [--label L]  Generate a credential; only its hash is sent
+  merchant revoke-key <key-id>         Revoke one credential, immediately
   undeploy <ns> <name>                 Remove a server
   scale <ns> <name> <replicas>         Scale server replicas
   restart <ns> <name>                  Rolling restart
@@ -1917,6 +1929,428 @@ func flagPresent(args []string, name string) (bool, []string) {
 		out = append(out, a)
 	}
 	return present, out
+}
+
+// ─── merchants ───────────────────────────────────────────────────────────────
+//
+// A merchant is the principal an API key authenticates TO. Its roles decide
+// which APIs it may call; the credential decides only who is calling. That
+// split is why `grant` does not touch a key and `issue-key` does not touch
+// entitlement.
+
+type merchantRow struct {
+	MerchantID  string   `json:"merchant_id"`
+	DisplayName string   `json:"display_name"`
+	Roles       []string `json:"roles"`
+	Status      string   `json:"status"`
+	CreatedAt   string   `json:"created_at"`
+	UpdatedAt   string   `json:"updated_at"`
+}
+
+type merchantKeyRow struct {
+	ID         string `json:"id"`
+	MerchantID string `json:"merchant_id"`
+	HashPrefix string `json:"hash_prefix"`
+	Label      string `json:"label"`
+	CreatedBy  string `json:"created_by"`
+	CreatedAt  string `json:"created_at"`
+	LastUsedAt string `json:"last_used_at"`
+	Revoked    bool   `json:"revoked"`
+}
+
+func fetchMerchants(gf globalFlags) []merchantRow {
+	body, err := apiGet(gf, "/merchants")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var r struct {
+		Merchants []merchantRow `json:"merchants"`
+	}
+	if err := json.Unmarshal(body, &r); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: malformed merchants response: %v\n", err)
+		os.Exit(1)
+	}
+	return r.Merchants
+}
+
+// fetchMerchantKeys returns every credential, revoked ones included.
+//
+// ⚠ Revoked keys are kept deliberately: "which credential made this call" has
+// to stay answerable after the credential is gone, and an operator reading a
+// support ticket needs to see that a key existed and was revoked rather than
+// that it never existed.
+func fetchMerchantKeys(gf globalFlags) []merchantKeyRow {
+	body, err := apiGet(gf, "/merchants/keys?include_revoked=1")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var r struct {
+		Keys []merchantKeyRow `json:"keys"`
+	}
+	if err := json.Unmarshal(body, &r); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: malformed merchant-keys response: %v\n", err)
+		os.Exit(1)
+	}
+	return r.Keys
+}
+
+func merchantUsage() {
+	fmt.Println("Usage: mcpctl merchant <command> [arguments]")
+	fmt.Println()
+	fmt.Println("  list                                 Every merchant, with role and key counts")
+	fmt.Println("  get <id>                             One merchant and its credentials")
+	fmt.Println("  create <id> [--name N] [--role R]…   Create a merchant")
+	fmt.Println("  grant <id> --role R [--role R]…      REPLACE the merchant's roles")
+	fmt.Println("  suspend <id>                         Stop every credential it holds")
+	fmt.Println("  resume <id>                          Allow it again")
+	fmt.Println("  delete <id>                          Only if it has no credentials and no billing")
+	fmt.Println("  keys <id>                            Its credentials")
+	fmt.Println("  issue-key <id> [--label L]           Generate a credential and register its hash")
+	fmt.Println("  issue-key <id> --hash <sha256>       Register one you generated elsewhere")
+	fmt.Println("  revoke-key <key-id>                  Revoke one credential")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  mcpctl merchant create acme --name \"Acme Corp\" --role custom:payments")
+	fmt.Println("  mcpctl merchant issue-key acme --label production")
+	fmt.Println("  mcpctl merchant grant acme --role custom:payments --role custom:payouts")
+	fmt.Println("  mcpctl merchant suspend acme")
+	os.Exit(1)
+}
+
+func cmdMerchants(gf globalFlags, args []string) {
+	if len(args) == 0 {
+		merchantUsage()
+	}
+	switch args[0] {
+	case "list", "ls":
+		cmdMerchantList(gf)
+	case "get", "show":
+		if len(args) < 2 {
+			merchantUsage()
+		}
+		cmdMerchantGet(gf, args[1])
+	case "create", "add":
+		cmdMerchantCreate(gf, args[1:])
+	case "grant", "roles":
+		cmdMerchantGrant(gf, args[1:])
+	case "suspend":
+		if len(args) < 2 {
+			merchantUsage()
+		}
+		cmdMerchantStatus(gf, args[1], "suspended")
+	case "resume", "activate":
+		if len(args) < 2 {
+			merchantUsage()
+		}
+		cmdMerchantStatus(gf, args[1], "active")
+	case "delete", "rm":
+		if len(args) < 2 {
+			merchantUsage()
+		}
+		cmdMerchantDelete(gf, args[1])
+	case "keys":
+		if len(args) < 2 {
+			merchantUsage()
+		}
+		cmdMerchantKeys(gf, args[1])
+	case "issue-key", "issue":
+		cmdMerchantIssueKey(gf, args[1:])
+	case "revoke-key", "revoke":
+		if len(args) < 2 {
+			merchantUsage()
+		}
+		cmdMerchantRevokeKey(gf, args[1])
+	default:
+		merchantUsage()
+	}
+}
+
+func cmdMerchantList(gf globalFlags) {
+	ms := fetchMerchants(gf)
+	if gf.jsonOut {
+		emitJSON(ms)
+		return
+	}
+	if len(ms) == 0 {
+		fmt.Println("No merchants.")
+		return
+	}
+	keys := fetchMerchantKeys(gf)
+	active := map[string]int{}
+	for _, k := range keys {
+		if !k.Revoked {
+			active[k.MerchantID]++
+		}
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "MERCHANT\tNAME\tSTATUS\tKEYS\tENTITLED TO")
+	for _, m := range ms {
+		roles := strings.Join(m.Roles, ",")
+		if roles == "" {
+			// ⚠ Not cosmetic. No roles means every guarded call this merchant
+			// makes is refused, which from their side looks like a broken
+			// gateway rather than a configuration they are missing.
+			roles = "(none — every call refused)"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
+			m.MerchantID, m.DisplayName, m.Status, active[m.MerchantID], roles)
+	}
+	w.Flush()
+}
+
+func findMerchant(gf globalFlags, id string) merchantRow {
+	// One row, one request. This listed every merchant and filtered locally
+	// before GET /merchants/{id} existed.
+	body, err := apiGet(gf, "/merchants/"+id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var m merchantRow
+	if err := json.Unmarshal(body, &m); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: malformed merchant response: %v\n", err)
+		os.Exit(1)
+	}
+	return m
+}
+
+func cmdMerchantGet(gf globalFlags, id string) {
+	m := findMerchant(gf, id)
+	if gf.jsonOut {
+		emitJSON(m)
+		return
+	}
+	fmt.Printf("Merchant:     %s\n", m.MerchantID)
+	fmt.Printf("Name:         %s\n", m.DisplayName)
+	fmt.Printf("Status:       %s\n", m.Status)
+	roles := strings.Join(m.Roles, ", ")
+	if roles == "" {
+		roles = "(none — every call refused)"
+	}
+	fmt.Printf("Entitled to:  %s\n", roles)
+	fmt.Printf("Created:      %s\n", m.CreatedAt)
+	fmt.Println()
+	printMerchantKeys(gf, id)
+}
+
+func printMerchantKeys(gf globalFlags, id string) {
+	var mine []merchantKeyRow
+	for _, k := range fetchMerchantKeys(gf) {
+		if k.MerchantID == id {
+			mine = append(mine, k)
+		}
+	}
+	if len(mine) == 0 {
+		fmt.Println("No credentials. This merchant cannot call anything yet.")
+		return
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "KEY ID\tHASH\tLABEL\tLAST USED\tSTATE")
+	for _, k := range mine {
+		state := "active"
+		if k.Revoked {
+			state = "revoked"
+		}
+		last := k.LastUsedAt
+		if last == "" {
+			last = "never"
+		}
+		fmt.Fprintf(w, "%s\t%s…\t%s\t%s\t%s\n", k.ID, k.HashPrefix, k.Label, last, state)
+	}
+	w.Flush()
+}
+
+func cmdMerchantKeys(gf globalFlags, id string) { printMerchantKeys(gf, id) }
+
+func cmdMerchantCreate(gf globalFlags, args []string) {
+	name, args := flagValue(args, "name")
+	roles, args := flagValuesMulti(args, "role")
+	if len(args) < 1 {
+		merchantUsage()
+	}
+	id := args[0]
+	if name == "" {
+		name = id
+	}
+	if roles == nil {
+		roles = []string{}
+	}
+	payload := map[string]interface{}{
+		"merchant_id":  id,
+		"display_name": name,
+		"roles":        roles,
+	}
+	if _, err := apiPost(gf, "/merchants", payload); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("✓ Created merchant %s.\n", id)
+	if len(roles) == 0 {
+		fmt.Println("  It holds no roles, so every call it makes will be refused.")
+		fmt.Printf("  Grant one:  mcpctl merchant grant %s --role <role-id>\n", id)
+	} else {
+		fmt.Printf("  Issue a credential:  mcpctl merchant issue-key %s\n", id)
+	}
+}
+
+// cmdMerchantGrant REPLACES the role list.
+//
+// ⚠ Replaces, not appends, and the confirmation says so. "grant" reads as
+// additive, and an operator who assumed that would remove every other
+// entitlement the merchant holds with one command — silently, since the
+// result looks like a success.
+func cmdMerchantGrant(gf globalFlags, args []string) {
+	roles, args := flagValuesMulti(args, "role")
+	if len(args) < 1 {
+		merchantUsage()
+	}
+	id := args[0]
+	before := findMerchant(gf, id)
+	if roles == nil {
+		roles = []string{}
+	}
+	if _, err := apiPut(gf, "/merchants/"+id, map[string]interface{}{"roles": roles}); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("✓ %s is now entitled to: %s\n", id, strings.Join(roles, ", "))
+	if len(before.Roles) > 0 {
+		fmt.Printf("  (was: %s — this REPLACES the list, it does not add to it)\n",
+			strings.Join(before.Roles, ", "))
+	}
+	if len(roles) == 0 {
+		fmt.Println("  With no roles, every call this merchant makes is refused.")
+	}
+	fmt.Println("  Its existing credentials are unchanged and keep working.")
+}
+
+func cmdMerchantStatus(gf globalFlags, id, status string) {
+	if _, err := apiPut(gf, "/merchants/"+id,
+		map[string]interface{}{"status": status}); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	if status == "suspended" {
+		fmt.Printf("✓ Suspended %s. Every credential it holds is refused at the door.\n", id)
+		fmt.Printf("  Reversible:  mcpctl merchant resume %s\n", id)
+	} else {
+		fmt.Printf("✓ Resumed %s. Its credentials work again.\n", id)
+	}
+}
+
+// cmdMerchantDelete removes a merchant that owns no history.
+//
+// ⚠ The platform refuses (409) for one that has held a credential or been
+// billed. That refusal is surfaced with what to do instead — an operator told
+// only "failed" tries again harder, and the thing they would reach for next is
+// deleting the meter rows.
+func cmdMerchantDelete(gf globalFlags, id string) {
+	if err := apiDelete(gf, "/merchants/"+id); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, "A merchant that has held a credential or been billed cannot be")
+		fmt.Fprintln(os.Stderr, "deleted — removing it would leave its metered usage with no owner.")
+		fmt.Fprintf(os.Stderr, "To stop it instead:  mcpctl merchant suspend %s\n", id)
+		os.Exit(1)
+	}
+	fmt.Printf("✓ Deleted merchant %s.\n", id)
+}
+
+// cmdMerchantIssueKey generates a credential locally and registers its hash.
+//
+// ⚠ THE PLAINTEXT NEVER LEAVES THIS FUNCTION'S LOCAL VARIABLE. It is written
+// to stdout once and sent nowhere: the request body carries key_hash only. The
+// platform therefore cannot log, leak or return a credential it never had —
+// which is also why losing it means issuing another, not recovering this one.
+func cmdMerchantIssueKey(gf globalFlags, args []string) {
+	label, args := flagValue(args, "label")
+	prefix, args := flagValue(args, "prefix")
+	given, args := flagValue(args, "hash")
+	if len(args) < 1 {
+		merchantUsage()
+	}
+	id := args[0]
+	if prefix == "" {
+		prefix = "ak_live_"
+	}
+
+	raw := ""
+	hash := given
+	if hash == "" {
+		// crypto/rand, not math/rand. 24 bytes is 192 bits of entropy, which is
+		// past any argument about guessability.
+		buf := make([]byte, 24)
+		if _, err := rand.Read(buf); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: could not generate a credential: %v\n", err)
+			os.Exit(1)
+		}
+		raw = prefix + hex.EncodeToString(buf)
+		sum := sha256.Sum256([]byte(raw))
+		hash = hex.EncodeToString(sum[:])
+	} else {
+		// ⚠ The rejection does NOT quote the value. The mistake this catches is
+		// passing the key instead of its hash — and echoing it would put a live
+		// credential in the terminal and the shell history, which is exactly
+		// what the check exists to prevent. The length is enough to diagnose.
+		if len(hash) != 64 || strings.TrimLeft(hash, "0123456789abcdef") != "" {
+			fmt.Fprintf(os.Stderr,
+				"Error: --hash must be a SHA-256: 64 lowercase hex characters (got %d).\n",
+				len(hash))
+			fmt.Fprintln(os.Stderr,
+				"       This is the hash of the credential, never the credential itself.")
+			fmt.Fprintln(os.Stderr,
+				"       Hash it first:  printf %s \"$KEY\" | sha256sum")
+			fmt.Fprintln(os.Stderr,
+				"       The value is not repeated here: if it were a real credential,")
+			fmt.Fprintln(os.Stderr,
+				"       this message would put it in your terminal and your history.")
+			os.Exit(1)
+		}
+	}
+
+	payload := map[string]interface{}{
+		"merchant_id": id,
+		"key_hash":    hash,
+		"label":       label,
+	}
+	body, err := apiPost(gf, "/merchants/keys", payload)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	var r struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal(body, &r)
+
+	if raw == "" {
+		fmt.Printf("✓ Registered a credential for %s (key %s).\n", id, r.ID)
+		return
+	}
+	if gf.jsonOut {
+		// ⚠ Still only once, and only to stdout. A caller piping this is
+		// storing it deliberately; there is no second chance either way.
+		emitJSON(map[string]string{"merchant_id": id, "key_id": r.ID, "key": raw})
+		return
+	}
+	fmt.Printf("✓ Issued a credential for %s.\n\n", id)
+	fmt.Printf("    %s\n\n", raw)
+	fmt.Println("Copy it now — it is shown once and cannot be recovered.")
+	fmt.Println("Only its SHA-256 was sent; the platform never received the key itself.")
+	fmt.Printf("Revoke it with:  mcpctl merchant revoke-key %s\n", r.ID)
+}
+
+func cmdMerchantRevokeKey(gf globalFlags, keyID string) {
+	if err := apiDelete(gf, "/merchants/keys/"+keyID); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	// ⚠ Immediate, and irreversible. There is no un-revoke, and the hash can
+	// never be registered again — the revoked row still holds it.
+	fmt.Printf("✓ Revoked %s. The next call carrying it fails.\n", keyID)
+	fmt.Println("  Other credentials for the same merchant are unaffected.")
 }
 
 // ─── orgs ────────────────────────────────────────────────────────────────────
@@ -3009,6 +3443,8 @@ func main() {
 		cmdMute(gf, cmdArgs, false)
 	case "mutes":
 		cmdMutes(gf, cmdArgs)
+	case "merchant", "merchants":
+		cmdMerchants(gf, cmdArgs)
 	case "undeploy":
 		cmdUndeploy(gf, cmdArgs)
 	case "scale":
