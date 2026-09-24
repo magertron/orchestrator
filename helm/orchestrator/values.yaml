@@ -1882,7 +1882,7 @@ probo:
       repository: quay.io/minio/minio
       tag: "latest"
     mcImage:                 # the mc client, for the bucket-creation Job
-      repository: quay.io/minio/mc
+      repository: minio/mc                  # NOT quay.io: it 401s on this tag (2026-09)
       tag: "latest"
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
