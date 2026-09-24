@@ -1882,7 +1882,16 @@ probo:
       repository: quay.io/minio/minio
       tag: "latest"
     mcImage:                 # the mc client, for the bucket-creation Job
-      repository: minio/mc                  # NOT quay.io: it 401s on this tag (2026-09)
+      # ⚠ WAS minio/mc. MinIO gated its prebuilt images — quay.io began 401ing
+      # (2026-09) and Docker Hub followed, so neither registry will serve it.
+      # This Job is a helm hook, so an unpullable image here rolls back the
+      # WHOLE release rather than just probo.
+      #
+      # aws-cli is ungated and official, and the Job needs exactly one thing:
+      # create a bucket, idempotently, against an S3-compatible endpoint.
+      # (The key is still called mcImage. It is a misnomer now — rename it
+      #  next time this chart is open for another reason.)
+      repository: amazon/aws-cli
       tag: "latest"
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"

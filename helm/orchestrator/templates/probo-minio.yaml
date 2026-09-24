@@ -148,11 +148,27 @@ spec:
             - -c
             - |
               set -e
+              export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY"
+              export AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY"
+              export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+              # MinIO ignores the region; aws-cli refuses to start without one.
+              # IMDS is not reachable in-cluster and each lookup costs a timeout.
+              export AWS_EC2_METADATA_DISABLED=true
+
               echo "Waiting for MinIO at $MINIO_SVC ..."
-              until mc alias set m "$MINIO_SVC" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" >/dev/null 2>&1; do
+              until aws --endpoint-url "$MINIO_SVC" s3api list-buckets >/dev/null 2>&1; do
                 echo "  minio not ready, retrying..."; sleep 3;
               done
+
               echo "Creating bucket '$BUCKET' (ignore if exists)..."
-              mc mb --ignore-existing "m/$BUCKET"
+              aws --endpoint-url "$MINIO_SVC" s3api create-bucket \
+                  --bucket "$BUCKET" >/dev/null 2>&1 || true
+
+              # Assert, do not assume. create-bucket exits non-zero both when the bucket
+              # already exists (fine) and when credentials or the endpoint are wrong (not
+              # fine), and nothing in its exit code separates the two. Without this line
+              # the Job reports success and probod fails later for a reason that points
+              # nowhere near here.
+              aws --endpoint-url "$MINIO_SVC" s3api head-bucket --bucket "$BUCKET"
               echo "Bucket ready."
 {{- end }}
