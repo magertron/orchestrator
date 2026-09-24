@@ -1,26 +1,5 @@
 Package: mcpctl
 Architecture: amd64
-Version: 2.0.6
-Priority: optional
-Section: utils
-Maintainer: Magertron <support@magertron.com>
-Filename: pool/main/m/mcpctl/mcpctl_2.0.6_amd64.deb
-Size: 1961802
-MD5sum: 068b6040c5977076b4f844052d9a916b
-SHA1: 8e5cbb118d20bcbb2b7e29a4f7ebc2e03082c99a
-SHA256: 56753201527ee9c64d6bc7cae580f687ee9750d649f04361b8bf87e70efe1f62
-SHA512: 904ecd2599613866bebed33111d6830bca6a131e11be91540fe9c306738bd7e7b8aa8845671373e5d04ead346fbe734dfc0111d869e373fdba577398294768fd
-Homepage: https://magertron.com
-Description: Magertron MCP Orchestrator CLI
- mcpctl is the command-line interface for managing a Magertron MCP
- Orchestrator deployment. Authenticate, deploy MCP servers, manage
- service accounts, review audit logs, and inspect cluster state.
- .
- Requires a running Magertron orchestrator (see https://magertron.com
- for installation).
-
-Package: mcpctl
-Architecture: amd64
 Version: 3.0.0
 Priority: optional
 Section: utils
@@ -94,6 +73,27 @@ MD5sum: 65348432385f04dd8ba40ce088b08b85
 SHA1: 52db55f7c5057884392d449c298a497f657d2d75
 SHA256: db41436719f97594454cb7f8263c71129fd92b9080da4dac16d98f3d86d4a176
 SHA512: c4667e7454cfee83280761faeb430643682e7ca404eb7534f6819c791a95f70c5d21b7c70fa2352b26850b1b121aa70b91220dc2a78c66837238c849a534edca
+Homepage: https://magertron.com
+Description: Magertron MCP Orchestrator CLI
+ mcpctl is the command-line interface for managing a Magertron MCP
+ Orchestrator deployment. Authenticate, deploy MCP servers, manage
+ service accounts, review audit logs, and inspect cluster state.
+ .
+ Requires a running Magertron orchestrator (see https://magertron.com
+ for installation).
+
+Package: mcpctl
+Architecture: amd64
+Version: 3.3.0
+Priority: optional
+Section: utils
+Maintainer: Magertron <support@magertron.com>
+Filename: pool/main/m/mcpctl/mcpctl_3.3.0_amd64.deb
+Size: 2070614
+MD5sum: 7be4a0bd1ffe0bf02d5a922e4634ecbd
+SHA1: d64d238d1608603a5d55c1fe71f8db93db1e095e
+SHA256: e54e76ebe8e5b86b4aad970bfad55f00f299ef0f479450415c1179c27b952aa4
+SHA512: 98dde2ff9787345a75cf63b89b8a7ee523ca5f2ddc68f443578089bf49c8cef26d8a62ec39ede67c79c6500d48564f08f8cb81a67c485a313dbe1f64cd64faac
 Homepage: https://magertron.com
 Description: Magertron MCP Orchestrator CLI
  mcpctl is the command-line interface for managing a Magertron MCP
