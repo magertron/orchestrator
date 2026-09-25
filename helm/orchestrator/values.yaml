@@ -1407,7 +1407,7 @@ postgresql:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: "2"
+      cpu: "4"
       memory: 2Gi
   # ── /dev/shm sizing ────────────────────────────────────────────────────────
   # k8s gives a container a 64MB /dev/shm by default. Postgres allocates
