@@ -342,7 +342,7 @@ orchestrator:
     #
     # ⚠ 48 to 96 was tested and did NOT reliably improve on 48. The knee moves
     # to something else at that point; do not raise it expecting more.
-    dbPoolSize: "48"
+    dbPoolSize: "32"
 
     # ── 3.1.01: hot-path read cache TTL (MCP_HOT_PATH_CACHE_TTL_SEC) ──────
     # TTL for DbClient's per-namespace server/permission/governance read
