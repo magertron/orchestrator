@@ -590,6 +590,26 @@ data:
                               envoy_grpc:
                                 cluster_name: als_sink
                             transport_api_version: V3
+                          # ── Idempotency-Key -> ALS (cost-meter dedupe) ──────────────
+                          #
+                          # meter_events has a UNIQUE index on idempotency_key; that index
+                          # is what makes a merchant's retry bill once. The meter rows are
+                          # keyed on this header when the caller sends it, so the ALS —
+                          # which flips status on failure and emits the byte rows — has to
+                          # see the same value or it can no longer find the row it is
+                          # trying to true up.
+                          #
+                          # ⚠ LOWERCASE, deliberately. The ALS delivers headers under the
+                          # name configured here; "Idempotency-Key" would produce a map key
+                          # that never matches a lookup for the lowercase form, which reads
+                          # exactly like a caller that never sent the header.
+                          #
+                          # ⚠ Pairs with mcp-platform-private (als_server.cpp, db_client,
+                          # MeterOnDestruct). This side alone is inert — Envoy logs a header
+                          # nobody reads. The other side alone silently falls back to
+                          # request_id and the replay keeps double-billing.
+                          additional_request_headers_to_log:
+                            - idempotency-key
 
         # ─── Inventory plane listener (Pass 3, Option C) ────────────────────────
         # Mirror of legacy bootstrap's mcp_inventory_listener. Same port
