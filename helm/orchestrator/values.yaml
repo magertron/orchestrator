@@ -342,7 +342,44 @@ orchestrator:
     #
     # ⚠ 48 to 96 was tested and did NOT reliably improve on 48. The knee moves
     # to something else at that point; do not raise it expecting more.
-    dbPoolSize: "32"
+    #
+    # ── 2026-09-26: 32 -> 48 ──────────────────────────────────────────────
+    # ⚠ WHY THIS SAT AT 32 DESPITE THE 48 MEASUREMENT ABOVE: the C++ clamp in
+    # mcp-platform-private (src/core/db_client.cpp) was [1,32]. dbPoolSize: 48
+    # would have been silently reduced to 32 at startup, so the chart was set
+    # to the most the binary would honour. The measurement was taken, written
+    # down here, and then capped by a constant in a different repository.
+    #
+    # ⚠ REQUIRES 3.9.23 OR LATER, which raises that clamp to [1,128]. Against
+    # an older image this value silently becomes 32 again. Verify, do not
+    # assume:
+    #     kubectl logs -n mcp-system <pod> -c orchestrator | grep MCP_DB_POOL_SIZE
+    #     "out of range [1,32], clamping to 32"  ->  image is pre-3.9.23
+    #
+    # ⚠ THE RANGE AND THE VALUE LIVE IN DIFFERENT REPOS AND NOTHING CHECKS
+    # THEM AGAINST EACH OTHER. That is the same structural gap that let
+    # MCP_DB_POOL_SIZE=48 become 4 for months. If this value is ever raised
+    # again, confirm the clamp in db_client.cpp accepts it FIRST.
+    #
+    # Merchant REST ingress, 2026-09-26, allowed path, pool 32:
+    #     10,000 rps  p50 4.35ms  p95 19.16ms  100.00%   healthy
+    #     12,000 rps  p50 2.652s  throughput 6,555/s     collapse
+    # Per-stage timing inside Check() at 12,000 rps:
+    #     auth=114,803us  vs  path=2us server=16us parse=5us
+    # `auth` is the credential lookup — uncached by design (authz_cache.hpp,
+    # test_76), so it takes a pooled connection on EVERY authorization.
+    # Postgres was at 167m of 4000m and ext_authz hosts were split
+    # 121,699/121,700: the database was not busy and the load was not skewed.
+    # 32 slots was the service capacity; the gRPC threads were only the queue
+    # in front of it (1024 -> 512 threads bought just +12.5%).
+    #
+    # ⚠ CONNECTION BUDGET — count replicas + 1, because old and new pods
+    # COEXIST during a rolling restart:
+    #     steady   2 x 48 + 63 idle = 159 of 300  ✓
+    #     rollout  3 x 48 + 63 idle = 207 of 300  ✓
+    #     ⚠ at replicaCount 4:  5 x 48 + 63 = 303  ✗ OVER, mid-rollout only
+    # REDO THIS SUM before raising orchestrator.replicaCount.
+    dbPoolSize: "48"
 
     # ── 3.1.01: hot-path read cache TTL (MCP_HOT_PATH_CACHE_TTL_SEC) ──────
     # TTL for DbClient's per-namespace server/permission/governance read
