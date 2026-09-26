@@ -318,6 +318,34 @@ spec:
               value: {{ .Values.orchestrator.env.admissionSampleEvery | default "64" | quote }}
             - name: MCP_ADMISSION_ALPHA_PCT
               value: {{ .Values.orchestrator.env.admissionAlphaPct | default "10" | quote }}
+            # ── merchant credential snapshot (3.9.26) ────────────────────────
+            # ⚠ Template default "0" = OFF, so a chart that omits the value is
+            # unchanged. values.yaml carries the deliberate setting.
+            #
+            # Takes the per-request credential read off the authorization path.
+            # Measured 2026-09-26: resolve_merchant_key was 85,000-192,000us under
+            # load against 151us uncontended, because the credential SELECT queued
+            # behind WAL contention from the audit drain. With the snapshot on,
+            # auth= fell to 6-18us.
+            - name: MCP_MERCHANT_SNAPSHOT
+              value: {{ .Values.orchestrator.env.merchantSnapshot | default "0" | quote }}
+            # Backstop refresh. ⚠ NOT the invalidation mechanism — NOTIFY from the
+            # 3.9.25 triggers is. If this ever becomes the mechanism, the design is
+            # the refresh-interval cache authz_cache.hpp explicitly rejected.
+            - name: MCP_MERCHANT_SNAPSHOT_TTL_SEC
+              value: {{ .Values.orchestrator.env.merchantSnapshotTtlSec | default "15" | quote }}
+            # ⚠ Past this age the snapshot STOPS ANSWERING and the live query is
+            # used. A credential decision is never served from a snapshot of
+            # unknown age: slow, then unavailable, never wrong.
+            - name: MCP_MERCHANT_SNAPSHOT_MAX_AGE_SEC
+              value: {{ .Values.orchestrator.env.merchantSnapshotMaxAgeSec | default "60" | quote }}
+            # ── per-stage Check() latency log ─────────────────────────────────
+            # ⚠ WAS NOT IN THIS CHART AT ALL, so it fell to the binary's compiled
+            # default of 50ms on every deploy. At 50 a large fraction of requests
+            # log under load and the logging itself costs throughput — 200 -> 100
+            # moved throughput 6,911 -> 5,828/s on 2026-09-26. Default 200 here.
+            - name: MCP_CHECK_LATENCY_LOG_THRESHOLD_MS
+              value: {{ .Values.orchestrator.env.checkLatencyLogThresholdMs | default "200" | quote }}
             # ── 1.9.0: tenant namespace isolation policy toggle ──────────
             # When the orchestrator creates a tenant namespace at runtime
             # (because someone deploys an MCP server into a not-yet-
