@@ -207,33 +207,14 @@ spinner() {
 # Returns 0 if all pods become Ready, 1 on timeout.
 #
 # Falls back to a plain wait when stdout isn't a TTY (CI logs).
-# ─── Controller kind (3.9.35) ────────────────────────────────────────────
-# The orchestrator installs as a Deployment normally and as a StatefulSet when
-# the journal is enabled (each replica needs its own volume, and a Deployment
-# cannot give it one). Anything that addresses the controller by kind has to
-# ask rather than assume: `kubectl rollout status deploy/mcp-orchestrator`
-# against a StatefulSet returns NotFound, which read as a failed install even
-# though helm had just succeeded.
-orchestrator_kind() {
-    local ns="$1" name="$2"
-    if kubectl get statefulset "$name" -n "$ns" >/dev/null 2>&1; then
-        echo "statefulset"
-    else
-        echo "deploy"
-    fi
-}
 rollout_progress() {
     local ns="$1" prefix="$2" timeout="$3"
     local bar_width=24
-    # 3.9.35: desired replica count, resolved once and cached.
-    local want=""
 
     if [ "$IS_TTY" = "0" ] || [ "${NON_INTERACTIVE:-0}" = "1" ]; then
         # No fancy rendering in CI — wait for the main orchestrator
         # deployment via the canonical kubectl rollout status call.
-        kubectl rollout status -n "$ns" \
-            "$(orchestrator_kind "$ns" "$prefix")/${prefix}" \
-            --timeout="${timeout}s"   # 3.9.35: was hardcoded deploy/
+        kubectl rollout status -n "$ns" "deploy/${prefix}" --timeout="${timeout}s"
         return $?
     fi
 
@@ -278,23 +259,6 @@ rollout_progress() {
         local total="${counts##* }"
         ready="${ready:-0}"
         total="${total:-0}"
-        # 3.9.35: ⚠ compare against DESIRED replicas, not against the
-        # pods we happen to see. With podManagementPolicy: Parallel a
-        # StatefulSet's pods appear over a few hundred milliseconds, so a poll
-        # landing on the first one alone would read 1/1 and report the rollout
-        # complete while two replicas were still being created.
-        if [ -z "$want" ]; then
-            want=$(kubectl get "$(orchestrator_kind "$ns" "$prefix")" "$prefix" \
-                   -n "$ns" -o jsonpath='{.spec.replicas}' 2>/dev/null || true)
-            case "$want" in ''|*[!0-9]*) want="" ;; esac
-        fi
-        # if/then, never `[ ... ] && ...` -- this script runs under set -e, and
-        # a short-circuited && is a failing command at the end of a block.
-        if [ -n "$want" ]; then
-            if [ "$total" -lt "$want" ]; then
-                total="$want"
-            fi
-        fi
 
         # If no pods yet (deployment still being created), render an
         # empty bar with placeholder total so user sees something happening.
@@ -536,63 +500,17 @@ Common options:
                               (see Operators Guide 16.4). Size the node
                               accordingly. Leave off to use the Anthropic-
                               backed assistant instead.
-  --journal                   Enable the durable audit/meter journal. The
-                              orchestrator installs as a StatefulSet with a
-                              per-pod PersistentVolumeClaim, events are
-                              appended to local disk and drained to Postgres
-                              asynchronously, and a request is answered as
-                              soon as its events are durable on that disk
-                              rather than committed in the database.
-                              ⚠ A BUFFER, NOT CAPACITY. Postgres writes the
-                              same rows at the same rate; the journal stops
-                              that rate being the caller's problem. Sustained
-                              arrivals above the drain rate fill the volume,
-                              and a full journal refuses requests.
-                              Off by default — it changes the pod controller.
-  --journal-size <size>       Size of each replica's journal volume, as a
-                              Kubernetes quantity (default 50Gi). Requires
-                              --journal. Size it against your measured drain
-                              rate: the volume holds arrivals-minus-drained,
-                              so 12,000 events/s of surplus is roughly
-                              17 GB/hour.
-  --journal-storage-class <c> StorageClass for the journal volumes. Requires
-                              --journal. Empty uses the cluster default.
-                              ⚠ With a node-local provisioner (local-path)
-                              the volume is pinned to a node, so a replica can
-                              only restart where its journal already is.
-  --discard-journal           Delete every journal volume in the namespace.
-                              ⚠ DESTROYS any audit and meter events that have
-                              not yet been drained to Postgres. Meter events
-                              are what invoices are built from.
-                              Required by --mode reinstall when journal
-                              volumes exist, because deleting the namespace
-                              would destroy them regardless. Use it for a
-                              clean test install; never to clear a warning on
-                              a customer's cluster.
   -h, --help                  Show this message
 
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
   NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
   API_PUBLIC_URL, ENABLE_PROBO, ENABLE_OLLAMA,
-  HELM_REPO_NAME, RELEASE_NAME, JOURNAL, JOURNAL_SIZE,
-  JOURNAL_STORAGE_CLASS, DISCARD_JOURNAL
+  HELM_REPO_NAME, RELEASE_NAME
 
 EOF
 }
 
-# ─── Journal defaults (3.9.35) ───────────────────────────────────────────
-# JOURNAL=1 installs the orchestrator as a StatefulSet with a per-pod PVC and
-# turns on the durable audit/meter journal. Off by default: it changes the pod
-# controller, and that is not a default anyone should get by surprise.
-JOURNAL="${JOURNAL:-0}"
-JOURNAL_SIZE="${JOURNAL_SIZE:-}"
-JOURNAL_STORAGE_CLASS="${JOURNAL_STORAGE_CLASS:-}"
-# DISCARD_JOURNAL=1 deletes every journal PVC in the namespace. Required in
-# reinstall mode when journal volumes exist, because the namespace delete
-# would destroy them regardless and an undrained journal holds meter events
-# that have never been invoiced.
-DISCARD_JOURNAL="${DISCARD_JOURNAL:-0}"
 # ─── Parse args ──────────────────────────────────────────────────────────────
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -612,10 +530,6 @@ while [ $# -gt 0 ]; do
         --enable-probo)    ENABLE_PROBO=1; shift ;;
         --enable-ollama)   ENABLE_OLLAMA=1; shift ;;
         --uc-observe)      UC_OBSERVE=1; shift ;;
-        --journal)             JOURNAL=1; shift ;;
-        --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
-        --journal-storage-class) JOURNAL_STORAGE_CLASS="$2"; shift 2 ;;
-        --discard-journal)     DISCARD_JOURNAL=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -638,27 +552,6 @@ case "$SERVICE_TYPE" in
     *) echo "ERROR: --service-type must be nodeport|loadbalancer|clusterip (got: $SERVICE_TYPE)" >&2; exit 1 ;;
 esac
 
-
-# ─── Validate journal args (3.9.35) ──────────────────────────────────────
-if [ -n "$JOURNAL_SIZE" ]; then
-    # Both suffix families are legal Kubernetes quantities: binary (Mi/Gi/Ti)
-    # and decimal (M/G/T). 50G is 50x10^9 bytes and 50Gi is 50x2^30, about 7%
-    # more. Accepting both and rejecting "50GB" is the point of the check.
-    if ! printf '%s' "$JOURNAL_SIZE" | grep -qE '^[0-9]+(Mi|Gi|Ti|M|G|T)$'; then
-        echo "ERROR: --journal-size must be a Kubernetes quantity." >&2
-        echo "       Accepted suffixes: Mi Gi Ti (binary) or M G T (decimal)." >&2
-        echo "       e.g. 50Gi, 100Gi, 50G.  Got: $JOURNAL_SIZE" >&2
-        exit 1
-    fi
-fi
-if [ "$JOURNAL" != "1" ]; then
-    if [ -n "$JOURNAL_SIZE" ] || [ -n "$JOURNAL_STORAGE_CLASS" ]; then
-        echo "ERROR: --journal-size / --journal-storage-class were passed without" >&2
-        echo "       --journal, so they would have no effect. Add --journal, or" >&2
-        echo "       drop them." >&2
-        exit 1
-    fi
-fi
 if [ -n "$LICENSE_FILE" ]; then
     if [ ! -f "$LICENSE_FILE" ]; then
         echo "ERROR: license file not found at: $LICENSE_FILE" >&2
@@ -896,74 +789,6 @@ echo "  target version: $CHART_VERSION"
 # inventory PVC, which causes helm uninstall to leave that one resource
 # alone, plus from not deleting the namespaces holding the PVCs and
 # customer deployments.
-
-# ─── Journal volumes (3.9.35) ────────────────────────────────────────────
-# Read BEFORE teardown, while the release still exists.
-#
-# A StatefulSet's volumeClaimTemplate PVCs are created by the StatefulSet
-# controller, not by Helm. `helm uninstall` therefore leaves them alone, and
-# pod -N re-attaches to journal-<sts>-N on the way back up — which is exactly
-# what makes an upgrade safe for a customer whose journal has a backlog.
-#
-# Two things destroy them anyway:
-#   --mode reinstall   deletes the namespace, cascade-deleting the PVCs
-#   --discard-journal  deletes them on purpose
-#
-# An undrained journal holds audit and meter events that never reached
-# Postgres. Meter events are what invoices are built from, so discarding them
-# discards revenue and leaves nothing behind to notice it by. Hence the guard.
-#
-# ⚠ This keys on whether journal PVCs EXIST, not on the mode. A cluster that
-# never ran the journal has none, and sees nothing below.
-JOURNAL_PVCS=""
-if kubectl get ns "$NAMESPACE" >/dev/null 2>&1; then
-    JOURNAL_PVCS=$(kubectl get pvc -n "$NAMESPACE" -l component=orchestrator-journal \
-        -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
-fi
-
-if [ -n "$JOURNAL_PVCS" ]; then
-    echo ""
-    echo "  Journal volumes present:"
-    # Printed one per line rather than counted: an ordinal above your replica
-    # count (journal-mcp-orchestrator-4 on a 2-replica install) is an ORPHAN,
-    # holding events that nothing will ever drain until the stand-alone drain
-    # job exists. Seeing the names is how you catch that.
-    printf '%s\n' "$JOURNAL_PVCS" | while IFS= read -r _p; do
-        if [ -n "$_p" ]; then
-            info "    $_p"
-        fi
-    done
-
-    if [ "$DISCARD_JOURNAL" = "1" ]; then
-        warn "--discard-journal: these will be DELETED after teardown."
-        note "Audit and meter events not yet drained to Postgres are lost."
-    elif [ "$MODE" = "reinstall" ]; then
-        if [ "$NON_INTERACTIVE" = "1" ]; then
-            echo "" >&2
-            err "--mode reinstall deletes the namespace, and these journal volumes"
-            err "with it. They may hold audit and meter events that never reached"
-            err "Postgres; meter events are what invoices are built from."
-            echo "" >&2
-            echo "  Pass --discard-journal to delete them deliberately, or use" >&2
-            echo "  --mode upgrade to keep them (pods re-attach on restart)." >&2
-            exit 1
-        fi
-        echo ""
-        warn "--mode reinstall deletes the namespace, and these volumes with it."
-        note "Undrained audit and meter events would be lost."
-        printf "  Delete the journal volumes and continue? [y/N] "
-        read -r _ans || _ans=""
-        case "$_ans" in
-            y|Y|yes|YES) DISCARD_JOURNAL=1 ;;
-            *)
-                err "Aborted. Use --mode upgrade to preserve the journal."
-                exit 1
-                ;;
-        esac
-    else
-        ok "Journal volumes preserved (mode=upgrade); pods re-attach on restart."
-    fi
-fi
 section "Tearing down existing release"
 spinner_start "Tearing down existing release (this can take 30-60s)"
 # Suppress BOTH stdout and stderr of teardown commands. Their chatter
@@ -989,37 +814,6 @@ ok "Existing release torn down"
 # startup as part of its reconcile loop against the deploy_servers DB.
 section "Cleaning orchestrator-managed leftovers"
 kubectl delete networkpolicy -A -l managed-by=mcp-orchestrator --ignore-not-found 2>/dev/null || true
-
-# ─── Journal PVC delete (3.9.35) ─────────────────────────────────────────
-# After teardown, so the pods that mount these volumes are gone — a PVC with a
-# live consumer sits in Terminating behind the pvc-protection finalizer and the
-# delete appears to hang.
-#
-# Runs in BOTH modes when asked. In reinstall mode the namespace delete below
-# would remove them anyway; doing it explicitly here means the log says so.
-if [ "$DISCARD_JOURNAL" = "1" ] && [ -n "${JOURNAL_PVCS:-}" ]; then
-    echo ""
-    journal_pvc_gone=0
-    kubectl delete pvc -n "$NAMESPACE" -l component=orchestrator-journal \
-        --ignore-not-found=true --timeout=60s >/dev/null 2>&1 || true
-    for i in 1 2 3 4 5 6 7 8 9 10; do
-        if [ -z "$(kubectl get pvc -n "$NAMESPACE" -l component=orchestrator-journal \
-                   -o name 2>/dev/null || true)" ]; then
-            ok "Journal volumes deleted"
-            journal_pvc_gone=1
-            break
-        fi
-        echo "  waiting for journal volume release... ($i/10)"
-        sleep 2
-    done
-    if [ "$journal_pvc_gone" != "1" ]; then
-        # ⚠ Not fatal, but say it plainly: in upgrade mode a surviving PVC is
-        # re-attached by the new pod, so --discard-journal did not do what it
-        # said. In reinstall mode the namespace delete still catches it.
-        warn "Journal volumes still present after 20s."
-        note "In upgrade mode the new pods will re-attach to them."
-    fi
-fi
 
 # ─── Tear down namespaces (reinstall mode only) ──────────────────────────────
 if [ "$MODE" = "reinstall" ]; then
@@ -1290,29 +1084,6 @@ if [ "$ENABLE_OLLAMA" = "1" ]; then
     note "Ensure this node has headroom for the model (Operators Guide 16.4)."
 fi
 
-
-# Durable journal (3.9.35). Passed EXPLICITLY in both directions, exactly
-# like ucEnforce above and for the same reason: the rendered pod spec should
-# state which mode it is in, and MCP_JOURNAL left unrendered falls back to the
-# binary's compiled default rather than to the chart's.
-#
-# journal.enabled=true also switches the orchestrator from a Deployment to a
-# StatefulSet. That is free here — this script uninstalls and reinstalls rather
-# than running `helm upgrade`, so there is no in-place kind change to fail on.
-if [ "$JOURNAL" = "1" ]; then
-    HELM_VALUES+=( --set "journal.enabled=true" )
-    if [ -n "$JOURNAL_SIZE" ]; then
-        HELM_VALUES+=( --set "journal.persistence.size=$JOURNAL_SIZE" )
-    fi
-    if [ -n "$JOURNAL_STORAGE_CLASS" ]; then
-        HELM_VALUES+=( --set "journal.persistence.storageClass=$JOURNAL_STORAGE_CLASS" )
-    fi
-    note "Journal ON — orchestrator installs as a StatefulSet with a per-pod PVC."
-    note "⚠ The journal is a buffer, not extra capacity: sustained arrivals above"
-    note "  the drain rate fill the volume, and a full journal refuses requests."
-else
-    HELM_VALUES+=( --set "journal.enabled=false" )
-fi
 # Wrapper function so we can pass it to spinner.
 do_helm_install() {
     helm install "$RELEASE_NAME" "${HELM_REPO_NAME}/mcp-orchestrator" \

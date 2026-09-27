@@ -214,7 +214,6 @@ data:
     CREATE INDEX IF NOT EXISTS audit_events_ts_idx        ON audit_events (ts DESC);
     CREATE INDEX IF NOT EXISTS audit_events_actor_idx     ON audit_events (actor);
     CREATE INDEX IF NOT EXISTS audit_events_server_idx    ON audit_events (server_name, namespace);
-    CREATE INDEX IF NOT EXISTS audit_events_event_uid_idx ON audit_events (event_uid);
     CREATE INDEX IF NOT EXISTS audit_events_class_idx     ON audit_events (class_uid, activity_id);
     CREATE INDEX IF NOT EXISTS audit_events_request_idx   ON audit_events (request_id) WHERE request_id IS NOT NULL;
 
