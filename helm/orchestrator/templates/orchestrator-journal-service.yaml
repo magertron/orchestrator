@@ -1,0 +1,27 @@
+{{- if .Values.journal.enabled }}
+# Headless Service for the orchestrator StatefulSet.
+#
+# A StatefulSet requires spec.serviceName, and the Service it names must be
+# headless (clusterIP: None) for stable per-pod DNS. Nothing routes traffic
+# here — the ordinary mcp-orchestrator Service continues to do that. This
+# exists so each replica has an identity, which is what binds a pod to its
+# own journal volume across restarts.
+#
+# Rendered ONLY when the journal is enabled, so a chart installed without
+# --journal is byte-identical to before this file existed.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-orchestrator-journal
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "mcp.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+{{- end }}
