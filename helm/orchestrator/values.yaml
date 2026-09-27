@@ -2364,3 +2364,27 @@ externalSecrets:
   #     properties: [key, header_name]           # keys per the Secret Contract
   #     # remoteKey: optional; defaults to "<namespace>/<secretName>"
   items: []
+
+# ── Durable audit/meter journal ──────────────────────────────────────────────
+# Off by default: enabling it changes the orchestrator's pod controller from a
+# Deployment to a StatefulSet with a per-replica PersistentVolumeClaim.
+#
+# ⚠ A BUFFER, NOT CAPACITY. Postgres writes the same rows at the same rate;
+# the journal stops that rate being the caller's problem. Sustained arrivals
+# above the drain rate fill the volume, and a full journal REFUSES requests.
+#
+# ⚠ These keys must exist even when disabled. `.Values.journal.enabled`
+# against an undefined `journal` is a nil-pointer template error, which would
+# break every install that does NOT use --journal.
+journal:
+  enabled: false
+  # Set false ONLY to inspect an accumulating journal. The writer keeps
+  # appending with nothing removing segments; the volume fills and requests
+  # are refused. A diagnostic, never a configuration.
+  drain: true
+  persistence:
+    # Size against measured drain rate: the volume holds arrivals-minus-
+    # drained. Roughly 0.4 KB per event.
+    size: 50Gi
+    # Empty uses the cluster default StorageClass.
+    storageClass: ""

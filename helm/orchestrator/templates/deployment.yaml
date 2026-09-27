@@ -1,20 +1,38 @@
 apiVersion: apps/v1
+{{- if .Values.journal.enabled }}
+kind: StatefulSet
+{{- else }}
 kind: Deployment
+{{- end }}
 metadata:
   name: {{ include "mcp.fullname" . }}
   namespace: {{ include "mcp.namespace" . }}
   labels:
     {{- include "mcp.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.journal.enabled }}
+  # A StatefulSet REQUIRES serviceName. The Service it names is headless and
+  # exists only to give each replica a stable DNS identity; nothing routes
+  # traffic through it — the ordinary mcp-orchestrator Service still does.
+  serviceName: mcp-orchestrator-journal
+  {{- end }}
   replicas: {{ .Values.orchestrator.replicaCount }}
   selector:
     matchLabels:
       {{- include "mcp.selectorLabels" . | nindent 6 }}
+  {{- if .Values.journal.enabled }}
+  # StatefulSets take updateStrategy, not strategy. OrderedReady is the
+  # default and is what we want: one replica at a time, so a journal that
+  # fails to open stops the rollout instead of taking every pod down.
+  updateStrategy:
+    type: RollingUpdate
+  {{- else }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
+  {{- end }}
   template:
     metadata:
       labels:
@@ -61,6 +79,30 @@ spec:
               containerPort: {{ .Values.envoy.v3ads.port }}
             {{- end }}
           env:
+            {{- if .Values.journal.enabled }}
+            # ── Durable journal ────────────────────────────────────────────────
+            # MCP_JOURNAL is read ONCE into a function-local static in
+            # journal.cpp:135, so this is start-time only.
+            #
+            # MCP_JOURNAL_DIR MUST equal the volumeMount path below. The container
+            # runs readOnlyRootFilesystem: true, so an unmounted path cannot be
+            # written — and main() treats that as FATAL, not degraded: it logs
+            # critical and returns 1 rather than running a pod that reports Ready
+            # while failing to record.
+            #
+            # POD_NAME is already set above via the Downward API; the journal uses
+            # it in segment filenames so an orphaned volume is attributable.
+            - name: MCP_JOURNAL
+              value: "1"
+            - name: MCP_JOURNAL_DIR
+              value: /var/lib/mcp/journal
+            {{- if not .Values.journal.drain }}
+            # Diagnostic only: the writer appends and nothing removes segments, so
+            # the volume fills and requests are refused. Never a configuration.
+            - name: MCP_JOURNAL_DRAIN
+              value: "0"
+            {{- end }}
+            {{- end }}
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -509,6 +551,13 @@ spec:
             - secretRef:
                 name: {{ include "mcp.fullname" . }}-secrets
           volumeMounts:
+            {{- if .Values.journal.enabled }}
+            # Matches MCP_JOURNAL_DIR exactly. The volume comes from the
+            # volumeClaimTemplate at the end of this file — one per replica, not a
+            # shared PVC.
+            - name: journal
+              mountPath: /var/lib/mcp/journal
+            {{- end }}
             - name: config
               mountPath: /etc/mcp
               readOnly: true
@@ -755,3 +804,26 @@ spec:
           labelSelector:
             matchLabels:
               {{- include "mcp.selectorLabels" . | nindent 14 }}
+
+{{- if .Values.journal.enabled }}
+  # ── Journal volumes ──────────────────────────────────────────────────
+  # ONE PER REPLICA. The journal is a local append log; a shared volume
+  # would have two writers appending to one file. Per-pod volumes are also
+  # why rows arrive in Postgres interleaved across pods — each drains
+  # independently.
+  #
+  # ⚠ With a node-local provisioner (local-path) each volume is pinned to
+  # a node, so a replica can only restart where its journal already is.
+  volumeClaimTemplates:
+    - metadata:
+        name: journal
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- with .Values.journal.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.journal.persistence.size | default "50Gi" }}
+{{- end }}
