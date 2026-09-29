@@ -2510,6 +2510,69 @@ data:
     -- At most one server-scoped budget per server.
     CREATE UNIQUE INDEX IF NOT EXISTS cost_budgets_server_uq
         ON cost_budgets (server_id) WHERE scope_type = 'server';
+
+    -- ── Rating watermarks — incremental rating (2026-09-29) ─────────────────
+    -- MAGERTRON-PATCH: rating-watermark-schema
+    --
+    -- Every rating pass re-read and re-rated the ENTIRE billing period. Cost is
+    -- O(events in period) and grows all month: 3.6 GB resident measured on the
+    -- leader at month end, and a single pass over ~200,000 events wrote 204,229
+    -- rated_costs rows (2026-09-28).
+    --
+    -- rate_period folds events in incurred_at order and NEVER reprices an
+    -- earlier event, so a pass MAY resume mid-period — given exactly the state
+    -- the previous pass ended with. That state is two maps (PeriodCarry, see
+    -- mcp/rating_engine.hpp) and it lives here.
+    --
+    --   watermark_at  : highest SETTLED incurred_at already rated.
+    --                   ⚠ Set BY POSTGRES from the same predicates the pass
+    --                   used — never round-tripped through the application.
+    --                   RatingEvent.incurred_at is a display string from
+    --                   to_char(...) with NO timezone; converting it back would
+    --                   shift by hours the first time a session timezone
+    --                   differed, and the symptom would be silently skipped
+    --                   billable events.
+    --
+    --   schedule_hash : fingerprint of the contract's rate_schedules + tiers.
+    --                   Neither table has an updated_at, so there is nothing
+    --                   else to compare. A changed hash forces a FULL re-rate
+    --                   of the open period and resets the watermark, which
+    --                   preserves today's behaviour exactly: editing a rate
+    --                   card mid-period reprices the whole period.
+    --
+    --   carry         : PeriodCarry as {"cum":{…},"allowance_used":{…}},
+    --                   keyed tool_id \x1f method \x1f dimension.
+    --                   ⚠ BOTH maps, always. Allowance units are absorbed at $0
+    --                   and DO NOT advance tier position:
+    --                       cum[key] = start + (quantity - allowance_taken)
+    --                   Persist only `cum` and tier position drifts across
+    --                   passes — mispricing the customer in a direction the
+    --                   period totals will not reveal.
+    --
+    --   full_rerate_at: when this contract/period last had a FULL re-rate. A
+    --                   late event whose incurred_at lands BELOW the watermark
+    --                   is invisible to incremental passes forever, so one full
+    --                   re-rate per UTC day sweeps them up.
+    --
+    -- A FINAL period is never re-rated (period_is_finalized gates the worker),
+    -- so a row here only ever concerns an open, ESTIMATED period.
+    CREATE TABLE IF NOT EXISTS rating_watermarks (
+        contract_id    UUID        NOT NULL,
+        period         DATE        NOT NULL,
+        watermark_at   TIMESTAMPTZ NOT NULL,
+        schedule_hash  TEXT        NOT NULL,
+        carry          JSONB       NOT NULL DEFAULT '{}'::jsonb,
+        events_rated   BIGINT      NOT NULL DEFAULT 0,
+        rows_written   BIGINT      NOT NULL DEFAULT 0,
+        full_rerate_at TIMESTAMPTZ,
+        updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (contract_id, period)
+    );
+
+    -- Columns added after initial ship land here, idempotent for upgrades —
+    -- same discipline as cost_budgets.limit_usd above.
+    ALTER TABLE rating_watermarks
+        ADD COLUMN IF NOT EXISTS full_rerate_at TIMESTAMPTZ;
   03-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
