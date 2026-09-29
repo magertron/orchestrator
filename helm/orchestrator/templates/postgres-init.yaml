@@ -213,7 +213,13 @@ data:
     CREATE INDEX IF NOT EXISTS audit_events_ts_idx        ON audit_events (ts DESC);
     CREATE INDEX IF NOT EXISTS audit_events_actor_idx     ON audit_events (actor);
     CREATE INDEX IF NOT EXISTS audit_events_server_idx    ON audit_events (server_name, namespace);
-    CREATE INDEX IF NOT EXISTS audit_events_class_idx     ON audit_events (class_uid, activity_id);
+    -- ⚠ REMOVED 2026-09-29: audit_events_class_idx (class_uid, activity_id) and
+    -- audit_events_plane_ts_idx (plane, ts). pg_stat_user_indexes, never reset:
+    -- 1 and 0 scans over the life of the database (371 MB + 1.1 GB), and no code
+    -- path filters on either column -- pure cost on every audit insert, the
+    -- write that bounds the journal drain. Dropped live with CONCURRENTLY.
+    -- ⚠ Do not re-add without a query that reads them: SchemaGuard would rebuild
+    -- them NON-concurrently on the next start and block audit writes.
     CREATE INDEX IF NOT EXISTS audit_events_request_idx   ON audit_events (request_id) WHERE request_id IS NOT NULL;
 
     -- Dual principal: the human a service account was acting for.
@@ -227,7 +233,6 @@ data:
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS on_behalf_of_subject TEXT;
     CREATE INDEX IF NOT EXISTS audit_events_obo_idx ON audit_events (on_behalf_of_subject, ts) WHERE on_behalf_of_subject IS NOT NULL;
     CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
-    CREATE INDEX IF NOT EXISTS audit_events_plane_ts_idx  ON audit_events (plane, ts DESC);
 
     -- ── Audit immutability guard (R-06) ─────────────────────────────────────────
     -- audit_events is append-only. UPDATE is always denied. DELETE is denied

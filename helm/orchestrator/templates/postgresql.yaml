@@ -92,6 +92,20 @@ spec:
             # losing a standby is recoverable, losing the primary is an outage.
             - -c
             - max_slot_wal_keep_size={{ .Values.postgresql.maxSlotWalKeepSize | default "8GB" }}
+            # ── write-path tuning (2026-09-29) ─────────────────────────────────
+            # The journal drain is bounded by random-key index inserts into audit_events
+            # and meter_events. max_wal_size / checkpoint_timeout cut checkpoint
+            # frequency, and with it the full-page images written after each one;
+            # wal_compression shrinks those images. Template defaults are Postgres's
+            # own, so a chart rendered without these values is unchanged.
+            - -c
+            - effective_cache_size={{ .Values.postgresql.effectiveCacheSize | default "4GB" }}
+            - -c
+            - max_wal_size={{ .Values.postgresql.maxWalSize | default "1GB" }}
+            - -c
+            - checkpoint_timeout={{ .Values.postgresql.checkpointTimeout | default "5min" }}
+            - -c
+            - wal_compression={{ .Values.postgresql.walCompression | default "off" }}
           ports:
             - name: postgres
               containerPort: 5432

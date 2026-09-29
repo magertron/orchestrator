@@ -1456,7 +1456,15 @@ postgresql:
   # what let the pool go to 48 and moved the tested ceiling from 12,000 to
   # 16,000 rps.
   maxConnections: 300
-  sharedBuffers: "512MB"
+  # ⚠ WRITE-PATH TUNING (2026-09-29). Measured on peppy: 2Gi limit held ~1.1 GB
+  # of file cache against ~20 GB of random-key indexes, so nearly every audit
+  # and meter insert read its index page from disk -- the ~1,700/s drain ceiling.
+  # Moderate defaults that fit a small box; a large one can raise them.
+  sharedBuffers: "1536MB"
+  effectiveCacheSize: "4GB"
+  maxWalSize: "4GB"          # fewer checkpoints -> fewer full-page images
+  checkpointTimeout: "15min"
+  walCompression: "lz4"      # compress the full-page images
   # ⚠ SAFETY BOUND — see the comment in templates/postgresql.yaml. An inactive
   # replication slot took a cluster down on 2026-09-10 by retaining 42 GB.
   maxSlotWalKeepSize: "8GB"
@@ -1517,10 +1525,12 @@ postgresql:
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 1Gi
+    # ⚠ NO CPU LIMIT (2026-09-29): measured 198 throttled periods during drain
+    # bursts. The memory limit also bounds the FILE CACHE -- keep it well above
+    # sharedBuffers.
     limits:
-      cpu: "4"
-      memory: 2Gi
+      memory: 6Gi
   # ── /dev/shm sizing ────────────────────────────────────────────────────────
   # k8s gives a container a 64MB /dev/shm by default. Postgres allocates
   # parallel-worker shared memory there (dynamic_shared_memory_type=posix), so
