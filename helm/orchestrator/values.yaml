@@ -2382,6 +2382,13 @@ journal:
   # appending with nothing removing segments; the volume fills and requests
   # are refused. A diagnostic, never a configuration.
   drain: true
+  # Journal ingress decisions (audit + meter rows) and REFUSE (503) any
+  # request the journal cannot record. Without it the journal runs but
+  # ingress audit and billing bypass it through in-memory queues that drop
+  # under load -- measured 2026-09-29 at 5k/s: 45% of audit rows and 1% of
+  # meter rows lost, every caller answered 200. false ONLY to measure the
+  # unprotected path; never a production configuration.
+  recordOrRefuse: true
   persistence:
     # Size against measured drain rate: the volume holds arrivals-minus-
     # drained. Roughly 0.4 KB per event.

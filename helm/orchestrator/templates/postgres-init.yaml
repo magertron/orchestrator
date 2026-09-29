@@ -2120,6 +2120,25 @@ data:
       PRIMARY KEY (kind, key)
     );
 
+    -- ── Journal drain state, per pod (2026-09-29) ─────────────────────────────
+    -- Each orchestrator's journal drainer upserts the append time of its OLDEST
+    -- entry not yet in Postgres (0 = nothing pending, -1 = unknown), every ~10s.
+    -- The FINAL period-close gate reads EVERY row: without it the gate saw only
+    -- the leader's own journal, so a backlog on any other pod -- or an orphaned
+    -- volume -- let a period go FINAL (immutable) while still missing rows.
+    --
+    -- A row whose updated_at stops moving is a pod that died or was scaled away
+    -- with its journal; the gate treats it as blocking (fail closed) until that
+    -- volume is drained and the row is deleted by an operator.
+    --
+    -- In 01, not 02: SchemaGuard re-applies this file on every start, so existing
+    -- clusters get it on upgrade. The drainer also creates it if missing.
+    CREATE TABLE IF NOT EXISTS journal_drain_state (
+        pod                 TEXT        PRIMARY KEY,
+        oldest_undrained_us BIGINT      NOT NULL,
+        updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
   02-cost-metering.sql: |
     -- ════════════════════════════════════════════════════════════════════════
     -- Magertron Cost Metering & Contract Rating (v1)

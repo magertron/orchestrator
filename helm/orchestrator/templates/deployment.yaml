@@ -102,6 +102,17 @@ spec:
             - name: MCP_JOURNAL_DRAIN
               value: "0"
             {{- end }}
+            {{- if .Values.journal.recordOrRefuse }}
+            # ── Record-or-refuse ────────────────────────────────────────────────
+            # Journal every ingress decision (audit row + meter rows) BEFORE
+            # answering, and refuse (503) what cannot be recorded. Without it the
+            # journal runs but ingress audit and billing bypass it through the
+            # in-memory queues, which drop under load. Measured 2026-09-29 at
+            # 5k/s: 45% of audit rows and 1% of meter rows lost, every caller
+            # answered 200. With it: 300,000 served = 300,000 recorded, to the cent.
+            - name: MCP_RECORD_OR_REFUSE
+              value: "1"
+            {{- end }}
             {{- end }}
             - name: POD_NAMESPACE
               valueFrom:
