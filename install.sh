@@ -569,14 +569,24 @@ Common options:
                               would destroy them regardless. Use it for a
                               clean test install; never to clear a warning on
                               a customer's cluster.
-  -h, --help                  Show this message
+  --require-drained           Upgrade only: refuse while ANY journal volume
+                             holds undrained bytes. Use it when a release
+                             changes the meter-key or billing-group format:
+                             the new build cannot match entries the old one
+                             wrote. Stop ingress and let the drain reach zero.
+ --allow-undrained-orphans   Upgrade only: proceed past journal volumes no
+                             running pod drains. Only after draining each with
+                             orchestrator --drain-only (POD_NAME = the volume's
+                             pod) and seeing 'Safe to delete the volume'.
+ -h, --help                  Show this message
 
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
   NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
   API_PUBLIC_URL, ENABLE_PROBO, ENABLE_OLLAMA,
   HELM_REPO_NAME, RELEASE_NAME, JOURNAL, JOURNAL_SIZE,
-  JOURNAL_STORAGE_CLASS, DISCARD_JOURNAL
+  JOURNAL_STORAGE_CLASS, DISCARD_JOURNAL, REQUIRE_DRAINED,
+ ALLOW_UNDRAINED_ORPHANS
 
 EOF
 }
@@ -593,6 +603,28 @@ JOURNAL_STORAGE_CLASS="${JOURNAL_STORAGE_CLASS:-}"
 # would destroy them regardless and an undrained journal holds meter events
 # that have never been invoiced.
 DISCARD_JOURNAL="${DISCARD_JOURNAL:-0}"
+# REQUIRE_DRAINED=1 refuses an upgrade while ANY journal holds undrained bytes.
+# Use it when a release changes the meter-key or billing-group format: the new
+# build cannot match entries the old one wrote (2026-09-29).
+REQUIRE_DRAINED="${REQUIRE_DRAINED:-0}"
+# ALLOW_UNDRAINED_ORPHANS=1 lets an upgrade proceed past journal volumes that no
+# running pod drains. Only after draining them with orchestrator --drain-only.
+ALLOW_UNDRAINED_ORPHANS="${ALLOW_UNDRAINED_ORPHANS:-0}"
+# Undrained bytes in one journal directory ($1 = pod name), run INSIDE that pod:
+# every segment above the checkpoint's, plus the tail of the checkpoint's own.
+# POSIX sh only -- the orchestrator image has no bash.
+JOURNAL_MEASURE_SH='d=/var/lib/mcp/journal/$1; cs=0; co=0
+if [ -f "$d/checkpoint.json" ]; then
+  cs=$(grep -o "\"segment\":[0-9]*" "$d/checkpoint.json" | grep -o "[0-9]*$"); cs=$(expr "${cs:-0}" + 0)
+  co=$(grep -o "\"offset\":[0-9]*" "$d/checkpoint.json" | grep -o "[0-9]*$"); co=$(expr "${co:-0}" + 0)
+fi
+t=0
+for f in "$d"/[0-9]*.jsonl; do
+  [ -f "$f" ] || continue
+  n=${f##*/}; n=$(expr "${n%.jsonl}" + 0); z=$(wc -c < "$f")
+  if [ "$n" -gt "$cs" ]; then t=$((t + z)); elif [ "$n" -eq "$cs" ]; then t=$((t + z - co)); fi
+done
+echo "$t"'
 # ─── Parse args ──────────────────────────────────────────────────────────────
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -616,6 +648,8 @@ while [ $# -gt 0 ]; do
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
         --journal-storage-class) JOURNAL_STORAGE_CLASS="$2"; shift 2 ;;
         --discard-journal)     DISCARD_JOURNAL=1; shift ;;
+        --require-drained)     REQUIRE_DRAINED=1; shift ;;
+        --allow-undrained-orphans) ALLOW_UNDRAINED_ORPHANS=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -961,6 +995,48 @@ if [ -n "$JOURNAL_PVCS" ]; then
                 ;;
         esac
     else
+        # ── undrained-journal guard (2026-09-29) ───────────────────────────
+        # Preserving a volume is not the same as it being safe. An orphan (no
+        # running pod) holds events nothing will drain. A live one drains on
+        # restart -- but with the NEW build, which cannot match entries written
+        # in an older meter-key format. Found on peppy: orphans 2 and 3 held 331
+        # undrained true-ups from a scale-down, invisible to everything.
+        _orphans=""; _live=""
+        while IFS= read -r _p; do
+            [ -n "$_p" ] || continue
+            _pod="${_p#journal-}"
+            if [ "$(kubectl get pod -n "$NAMESPACE" "$_pod" -o jsonpath='{.status.phase}' 2>/dev/null)" = "Running" ]; then
+                _b=$(kubectl exec -n "$NAMESPACE" "$_pod" -c orchestrator -- sh -c "$JOURNAL_MEASURE_SH" _ "$_pod" 2>/dev/null || true)
+                [ -n "$_b" ] || _b="?"
+                [ "$_b" = "0" ] || _live="${_live}${_pod}=${_b}B "
+            else
+                _orphans="${_orphans}${_p} "
+            fi
+        done <<< "$JOURNAL_PVCS"
+
+        if [ -n "$_orphans" ] && [ "$ALLOW_UNDRAINED_ORPHANS" != "1" ]; then
+            echo "" >&2
+            err "Journal volumes with NO running pod: $_orphans"
+            err "Nothing drains these. They may hold audit and meter events that never"
+            err "reached Postgres; meter events are what invoices are built from."
+            echo "" >&2
+            echo "  For each: run orchestrator --drain-only as a Job with that volume mounted" >&2
+            echo "  and POD_NAME set to the volume's pod, wait for 'Safe to delete the volume'," >&2
+            echo "  delete the PVC, and re-run. --allow-undrained-orphans overrides this." >&2
+            exit 1
+        fi
+        if [ -n "$_live" ]; then
+            if [ "$REQUIRE_DRAINED" = "1" ]; then
+                echo "" >&2
+                err "--require-drained: journals still hold undrained bytes: $_live"
+                echo "  Stop ingress, wait for journal.drainer.oldest_undrained_age_s = 0 in" >&2
+                echo "  /debug/stats on every pod, then re-run." >&2
+                exit 1
+            fi
+            warn "Undrained journal bytes: $_live"
+            note "The upgraded pods drain these on start. If this release changes the meter"
+            note "key or billing-group format, stop and re-run with --require-drained."
+        fi
         ok "Journal volumes preserved (mode=upgrade); pods re-attach on restart."
     fi
 fi

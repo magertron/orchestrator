@@ -46,6 +46,8 @@
 #
 # Why both modes run helm uninstall + resource cleanup:
 # the orchestrator creates NetworkPolicies named mcp-server-isolation outside
+
+
 # of helm's ownership. On `helm upgrade --install` these collide with helm's
 # ownership-validation logic and the upgrade fails ("invalid ownership
 # metadata"). The clean uninstall + resource cleanup + fresh install dance
@@ -205,14 +207,33 @@ spinner() {
 # Returns 0 if all pods become Ready, 1 on timeout.
 #
 # Falls back to a plain wait when stdout isn't a TTY (CI logs).
+# ─── Controller kind (3.9.35) ────────────────────────────────────────────
+# The orchestrator installs as a Deployment normally and as a StatefulSet when
+# the journal is enabled (each replica needs its own volume, and a Deployment
+# cannot give it one). Anything that addresses the controller by kind has to
+# ask rather than assume: `kubectl rollout status deploy/mcp-orchestrator`
+# against a StatefulSet returns NotFound, which read as a failed install even
+# though helm had just succeeded.
+orchestrator_kind() {
+    local ns="$1" name="$2"
+    if kubectl get statefulset "$name" -n "$ns" >/dev/null 2>&1; then
+        echo "statefulset"
+    else
+        echo "deploy"
+    fi
+}
 rollout_progress() {
     local ns="$1" prefix="$2" timeout="$3"
     local bar_width=24
+    # 3.9.35: desired replica count, resolved once and cached.
+    local want=""
 
     if [ "$IS_TTY" = "0" ] || [ "${NON_INTERACTIVE:-0}" = "1" ]; then
         # No fancy rendering in CI — wait for the main orchestrator
         # deployment via the canonical kubectl rollout status call.
-        kubectl rollout status -n "$ns" "deploy/${prefix}" --timeout="${timeout}s"
+        kubectl rollout status -n "$ns" \
+            "$(orchestrator_kind "$ns" "$prefix")/${prefix}" \
+            --timeout="${timeout}s"   # 3.9.35: was hardcoded deploy/
         return $?
     fi
 
@@ -257,6 +278,23 @@ rollout_progress() {
         local total="${counts##* }"
         ready="${ready:-0}"
         total="${total:-0}"
+        # 3.9.35: ⚠ compare against DESIRED replicas, not against the
+        # pods we happen to see. With podManagementPolicy: Parallel a
+        # StatefulSet's pods appear over a few hundred milliseconds, so a poll
+        # landing on the first one alone would read 1/1 and report the rollout
+        # complete while two replicas were still being created.
+        if [ -z "$want" ]; then
+            want=$(kubectl get "$(orchestrator_kind "$ns" "$prefix")" "$prefix" \
+                   -n "$ns" -o jsonpath='{.spec.replicas}' 2>/dev/null || true)
+            case "$want" in ''|*[!0-9]*) want="" ;; esac
+        fi
+        # if/then, never `[ ... ] && ...` -- this script runs under set -e, and
+        # a short-circuited && is a failing command at the end of a block.
+        if [ -n "$want" ]; then
+            if [ "$total" -lt "$want" ]; then
+                total="$want"
+            fi
+        fi
 
         # If no pods yet (deployment still being created), render an
         # empty bar with placeholder total so user sees something happening.
@@ -341,7 +379,7 @@ banner() {
 LICENSE_FILE="${LICENSE_FILE:-}"
 MODE="${MODE:-upgrade}"
 SERVICE_TYPE="${SERVICE_TYPE:-nodeport}"
-NODE_PORT="${NODE_PORT:-30443}"
+NODE_PORT="${NODE_PORT:-30444}"
 CHART_VERSION="${CHART_VERSION:-}"
 NAMESPACE="${NAMESPACE:-mcp-system}"
 SKIP_NODE_LABEL="${SKIP_NODE_LABEL:-0}"
@@ -379,8 +417,50 @@ ENABLE_PROBO="${ENABLE_PROBO:-0}"
 # rather use the Anthropic-backed assistant, leave this off and configure
 # the Anthropic provider + key instead.
 ENABLE_OLLAMA="${ENABLE_OLLAMA:-0}"
+
+# ── Unity Catalog enforcement ───────────────────────────────────────────────
+# ON by default, and that is the safe default rather than the aggressive one.
+#
+# The data-object check only runs for a tool that has a DECLARED BINDING —
+# a row in uc_tool_securable saying "this tool reaches that table". A fresh
+# install has none, so nothing is checked and nothing can be denied. Declaring
+# a binding is therefore the opt-in, and it is a deliberate administrative act.
+#
+# Defaulting to observe would mean that act quietly does nothing: an operator
+# maps a tool to a table, expects it governed, and it is not — with no error to
+# tell them. That is a worse failure than a denial, because it is silent.
+#
+# UC_OBSERVE=1 or --uc-observe resolves verdicts and records them to
+# audit_events WITHOUT blocking, which is the right setting while mapping an
+# existing estate: it shows exactly what would be refused before anything is.
+UC_OBSERVE="${UC_OBSERVE:-0}"
 HELM_REPO_NAME="${HELM_REPO_NAME:-magertron}"
 RELEASE_NAME="${RELEASE_NAME:-mcp}"
+
+# ── adopt_orchestrator_netpols ───────────────────────────────────────────────
+# ⚠ The orchestrator creates mcp-server-isolation at runtime so namespaces made
+# after install are covered. The chart creates the same policy. When the
+# orchestrator got there first, Helm refuses to adopt it and the whole install
+# fails on ownership metadata — which is what happens on every REinstall over a
+# cluster that has been running.
+#
+# ⚠ We stamp Helm's metadata onto the EXISTING object rather than changing what
+# the orchestrator writes: that label is also the policy's podSelector, so
+# altering it would change which pods are isolated. This touches ownership only.
+adopt_orchestrator_netpols() {
+  local ns
+  for ns in $(kubectl get networkpolicy -A \
+                -o jsonpath='{range .items[?(@.metadata.name=="mcp-server-isolation")]}{.metadata.namespace}{"\n"}{end}' \
+                2>/dev/null); do
+    kubectl label   networkpolicy mcp-server-isolation -n "$ns" \
+      "app.kubernetes.io/managed-by=Helm" --overwrite >/dev/null 2>&1 || true
+    kubectl annotate networkpolicy mcp-server-isolation -n "$ns" \
+      "meta.helm.sh/release-name=${RELEASE_NAME:-mcp}" \
+      "meta.helm.sh/release-namespace=${NAMESPACE:-mcp-system}" \
+      --overwrite >/dev/null 2>&1 || true
+  done
+}
+adopt_orchestrator_netpols
 
 usage() {
     cat <<'EOF'
@@ -398,7 +478,7 @@ Common options:
   --mode <upgrade|reinstall>  upgrade preserves data (default).
                               reinstall destroys data for a fresh start.
   --service-type <type>       nodeport (default), loadbalancer, clusterip
-  --node-port <number>        NodePort to pin (default 30443; only used with
+  --node-port <number>        NodePort for the v3 Envoy (default 30444; only used with
                               --service-type nodeport)
   --chart-version <version>   Pin chart version (default: latest --devel)
   --namespace <name>          Install namespace (default mcp-system)
@@ -438,6 +518,16 @@ Common options:
                               and a bootstrap admin token for MCP
                               registration; without them probod will not
                               become ready.
+  --uc-observe                Run Unity Catalog data-object checks in
+                              OBSERVE mode: every verdict is resolved and
+                              written to audit_events with the rule that
+                              decided it, but no call is blocked. Off by
+                              default — i.e. enforcement is ON.
+                              Nothing is checked until a tool is bound to a
+                              data object, so a fresh install denies
+                              nothing either way. Use this while mapping an
+                              existing estate, to see what WOULD be refused
+                              before anything is.
   --enable-ollama             Deploy the bundled Ollama local LLM (the
                               advisory assistant's local "brain") and point
                               the assistant provider at it. Off by default.
@@ -446,17 +536,95 @@ Common options:
                               (see Operators Guide 16.4). Size the node
                               accordingly. Leave off to use the Anthropic-
                               backed assistant instead.
-  -h, --help                  Show this message
+  --journal                   Enable the durable audit/meter journal. The
+                              orchestrator installs as a StatefulSet with a
+                              per-pod PersistentVolumeClaim, events are
+                              appended to local disk and drained to Postgres
+                              asynchronously, and a request is answered as
+                              soon as its events are durable on that disk
+                              rather than committed in the database.
+                              ⚠ A BUFFER, NOT CAPACITY. Postgres writes the
+                              same rows at the same rate; the journal stops
+                              that rate being the caller's problem. Sustained
+                              arrivals above the drain rate fill the volume,
+                              and a full journal refuses requests.
+                              Off by default — it changes the pod controller.
+  --journal-size <size>       Size of each replica's journal volume, as a
+                              Kubernetes quantity (default 50Gi). Requires
+                              --journal. Size it against your measured drain
+                              rate: the volume holds arrivals-minus-drained,
+                              so 12,000 events/s of surplus is roughly
+                              17 GB/hour.
+  --journal-storage-class <c> StorageClass for the journal volumes. Requires
+                              --journal. Empty uses the cluster default.
+                              ⚠ With a node-local provisioner (local-path)
+                              the volume is pinned to a node, so a replica can
+                              only restart where its journal already is.
+  --discard-journal           Delete every journal volume in the namespace.
+                              ⚠ DESTROYS any audit and meter events that have
+                              not yet been drained to Postgres. Meter events
+                              are what invoices are built from.
+                              Required by --mode reinstall when journal
+                              volumes exist, because deleting the namespace
+                              would destroy them regardless. Use it for a
+                              clean test install; never to clear a warning on
+                              a customer's cluster.
+  --require-drained           Upgrade only: refuse while ANY journal volume
+                             holds undrained bytes. Use it when a release
+                             changes the meter-key or billing-group format:
+                             the new build cannot match entries the old one
+                             wrote. Stop ingress and let the drain reach zero.
+ --allow-undrained-orphans   Upgrade only: proceed past journal volumes no
+                             running pod drains. Only after draining each with
+                             orchestrator --drain-only (POD_NAME = the volume's
+                             pod) and seeing 'Safe to delete the volume'.
+ -h, --help                  Show this message
 
 Environment variables (override defaults; CLI flags override env):
   LICENSE_FILE, MODE, SERVICE_TYPE, NODE_PORT, CHART_VERSION,
   NAMESPACE, NODE_NAME, LABEL_NODES, SKIP_NODE_LABEL, NON_INTERACTIVE,
   API_PUBLIC_URL, ENABLE_PROBO, ENABLE_OLLAMA,
-  HELM_REPO_NAME, RELEASE_NAME
+  HELM_REPO_NAME, RELEASE_NAME, JOURNAL, JOURNAL_SIZE,
+  JOURNAL_STORAGE_CLASS, DISCARD_JOURNAL, REQUIRE_DRAINED,
+ ALLOW_UNDRAINED_ORPHANS
 
 EOF
 }
 
+# ─── Journal defaults (3.9.35) ───────────────────────────────────────────
+# JOURNAL=1 installs the orchestrator as a StatefulSet with a per-pod PVC and
+# turns on the durable audit/meter journal. Off by default: it changes the pod
+# controller, and that is not a default anyone should get by surprise.
+JOURNAL="${JOURNAL:-0}"
+JOURNAL_SIZE="${JOURNAL_SIZE:-}"
+JOURNAL_STORAGE_CLASS="${JOURNAL_STORAGE_CLASS:-}"
+# DISCARD_JOURNAL=1 deletes every journal PVC in the namespace. Required in
+# reinstall mode when journal volumes exist, because the namespace delete
+# would destroy them regardless and an undrained journal holds meter events
+# that have never been invoiced.
+DISCARD_JOURNAL="${DISCARD_JOURNAL:-0}"
+# REQUIRE_DRAINED=1 refuses an upgrade while ANY journal holds undrained bytes.
+# Use it when a release changes the meter-key or billing-group format: the new
+# build cannot match entries the old one wrote (2026-09-29).
+REQUIRE_DRAINED="${REQUIRE_DRAINED:-0}"
+# ALLOW_UNDRAINED_ORPHANS=1 lets an upgrade proceed past journal volumes that no
+# running pod drains. Only after draining them with orchestrator --drain-only.
+ALLOW_UNDRAINED_ORPHANS="${ALLOW_UNDRAINED_ORPHANS:-0}"
+# Undrained bytes in one journal directory ($1 = pod name), run INSIDE that pod:
+# every segment above the checkpoint's, plus the tail of the checkpoint's own.
+# POSIX sh only -- the orchestrator image has no bash.
+JOURNAL_MEASURE_SH='d=/var/lib/mcp/journal/$1; cs=0; co=0
+if [ -f "$d/checkpoint.json" ]; then
+  cs=$(grep -o "\"segment\":[0-9]*" "$d/checkpoint.json" | grep -o "[0-9]*$"); cs=$(expr "${cs:-0}" + 0)
+  co=$(grep -o "\"offset\":[0-9]*" "$d/checkpoint.json" | grep -o "[0-9]*$"); co=$(expr "${co:-0}" + 0)
+fi
+t=0
+for f in "$d"/[0-9]*.jsonl; do
+  [ -f "$f" ] || continue
+  n=${f##*/}; n=$(expr "${n%.jsonl}" + 0); z=$(wc -c < "$f")
+  if [ "$n" -gt "$cs" ]; then t=$((t + z)); elif [ "$n" -eq "$cs" ]; then t=$((t + z - co)); fi
+done
+echo "$t"'
 # ─── Parse args ──────────────────────────────────────────────────────────────
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -475,6 +643,13 @@ while [ $# -gt 0 ]; do
         --label-nodes)     LABEL_NODES=1; shift ;;
         --enable-probo)    ENABLE_PROBO=1; shift ;;
         --enable-ollama)   ENABLE_OLLAMA=1; shift ;;
+        --uc-observe)      UC_OBSERVE=1; shift ;;
+        --journal)             JOURNAL=1; shift ;;
+        --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
+        --journal-storage-class) JOURNAL_STORAGE_CLASS="$2"; shift 2 ;;
+        --discard-journal)     DISCARD_JOURNAL=1; shift ;;
+        --require-drained)     REQUIRE_DRAINED=1; shift ;;
+        --allow-undrained-orphans) ALLOW_UNDRAINED_ORPHANS=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -497,6 +672,27 @@ case "$SERVICE_TYPE" in
     *) echo "ERROR: --service-type must be nodeport|loadbalancer|clusterip (got: $SERVICE_TYPE)" >&2; exit 1 ;;
 esac
 
+
+# ─── Validate journal args (3.9.35) ──────────────────────────────────────
+if [ -n "$JOURNAL_SIZE" ]; then
+    # Both suffix families are legal Kubernetes quantities: binary (Mi/Gi/Ti)
+    # and decimal (M/G/T). 50G is 50x10^9 bytes and 50Gi is 50x2^30, about 7%
+    # more. Accepting both and rejecting "50GB" is the point of the check.
+    if ! printf '%s' "$JOURNAL_SIZE" | grep -qE '^[0-9]+(Mi|Gi|Ti|M|G|T)$'; then
+        echo "ERROR: --journal-size must be a Kubernetes quantity." >&2
+        echo "       Accepted suffixes: Mi Gi Ti (binary) or M G T (decimal)." >&2
+        echo "       e.g. 50Gi, 100Gi, 50G.  Got: $JOURNAL_SIZE" >&2
+        exit 1
+    fi
+fi
+if [ "$JOURNAL" != "1" ]; then
+    if [ -n "$JOURNAL_SIZE" ] || [ -n "$JOURNAL_STORAGE_CLASS" ]; then
+        echo "ERROR: --journal-size / --journal-storage-class were passed without" >&2
+        echo "       --journal, so they would have no effect. Add --journal, or" >&2
+        echo "       drop them." >&2
+        exit 1
+    fi
+fi
 if [ -n "$LICENSE_FILE" ]; then
     if [ ! -f "$LICENSE_FILE" ]; then
         echo "ERROR: license file not found at: $LICENSE_FILE" >&2
@@ -734,6 +930,116 @@ echo "  target version: $CHART_VERSION"
 # inventory PVC, which causes helm uninstall to leave that one resource
 # alone, plus from not deleting the namespaces holding the PVCs and
 # customer deployments.
+
+# ─── Journal volumes (3.9.35) ────────────────────────────────────────────
+# Read BEFORE teardown, while the release still exists.
+#
+# A StatefulSet's volumeClaimTemplate PVCs are created by the StatefulSet
+# controller, not by Helm. `helm uninstall` therefore leaves them alone, and
+# pod -N re-attaches to journal-<sts>-N on the way back up — which is exactly
+# what makes an upgrade safe for a customer whose journal has a backlog.
+#
+# Two things destroy them anyway:
+#   --mode reinstall   deletes the namespace, cascade-deleting the PVCs
+#   --discard-journal  deletes them on purpose
+#
+# An undrained journal holds audit and meter events that never reached
+# Postgres. Meter events are what invoices are built from, so discarding them
+# discards revenue and leaves nothing behind to notice it by. Hence the guard.
+#
+# ⚠ This keys on whether journal PVCs EXIST, not on the mode. A cluster that
+# never ran the journal has none, and sees nothing below.
+JOURNAL_PVCS=""
+if kubectl get ns "$NAMESPACE" >/dev/null 2>&1; then
+    JOURNAL_PVCS=$(kubectl get pvc -n "$NAMESPACE" -l component=orchestrator-journal \
+        -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+fi
+
+if [ -n "$JOURNAL_PVCS" ]; then
+    echo ""
+    echo "  Journal volumes present:"
+    # Printed one per line rather than counted: an ordinal above your replica
+    # count (journal-mcp-orchestrator-4 on a 2-replica install) is an ORPHAN,
+    # holding events that nothing will ever drain until the stand-alone drain
+    # job exists. Seeing the names is how you catch that.
+    printf '%s\n' "$JOURNAL_PVCS" | while IFS= read -r _p; do
+        if [ -n "$_p" ]; then
+            info "    $_p"
+        fi
+    done
+
+    if [ "$DISCARD_JOURNAL" = "1" ]; then
+        warn "--discard-journal: these will be DELETED after teardown."
+        note "Audit and meter events not yet drained to Postgres are lost."
+    elif [ "$MODE" = "reinstall" ]; then
+        if [ "$NON_INTERACTIVE" = "1" ]; then
+            echo "" >&2
+            err "--mode reinstall deletes the namespace, and these journal volumes"
+            err "with it. They may hold audit and meter events that never reached"
+            err "Postgres; meter events are what invoices are built from."
+            echo "" >&2
+            echo "  Pass --discard-journal to delete them deliberately, or use" >&2
+            echo "  --mode upgrade to keep them (pods re-attach on restart)." >&2
+            exit 1
+        fi
+        echo ""
+        warn "--mode reinstall deletes the namespace, and these volumes with it."
+        note "Undrained audit and meter events would be lost."
+        printf "  Delete the journal volumes and continue? [y/N] "
+        read -r _ans || _ans=""
+        case "$_ans" in
+            y|Y|yes|YES) DISCARD_JOURNAL=1 ;;
+            *)
+                err "Aborted. Use --mode upgrade to preserve the journal."
+                exit 1
+                ;;
+        esac
+    else
+        # ── undrained-journal guard (2026-09-29) ───────────────────────────
+        # Preserving a volume is not the same as it being safe. An orphan (no
+        # running pod) holds events nothing will drain. A live one drains on
+        # restart -- but with the NEW build, which cannot match entries written
+        # in an older meter-key format. Found on peppy: orphans 2 and 3 held 331
+        # undrained true-ups from a scale-down, invisible to everything.
+        _orphans=""; _live=""
+        while IFS= read -r _p; do
+            [ -n "$_p" ] || continue
+            _pod="${_p#journal-}"
+            if [ "$(kubectl get pod -n "$NAMESPACE" "$_pod" -o jsonpath='{.status.phase}' 2>/dev/null)" = "Running" ]; then
+                _b=$(kubectl exec -n "$NAMESPACE" "$_pod" -c orchestrator -- sh -c "$JOURNAL_MEASURE_SH" _ "$_pod" 2>/dev/null || true)
+                [ -n "$_b" ] || _b="?"
+                [ "$_b" = "0" ] || _live="${_live}${_pod}=${_b}B "
+            else
+                _orphans="${_orphans}${_p} "
+            fi
+        done <<< "$JOURNAL_PVCS"
+
+        if [ -n "$_orphans" ] && [ "$ALLOW_UNDRAINED_ORPHANS" != "1" ]; then
+            echo "" >&2
+            err "Journal volumes with NO running pod: $_orphans"
+            err "Nothing drains these. They may hold audit and meter events that never"
+            err "reached Postgres; meter events are what invoices are built from."
+            echo "" >&2
+            echo "  For each: run orchestrator --drain-only as a Job with that volume mounted" >&2
+            echo "  and POD_NAME set to the volume's pod, wait for 'Safe to delete the volume'," >&2
+            echo "  delete the PVC, and re-run. --allow-undrained-orphans overrides this." >&2
+            exit 1
+        fi
+        if [ -n "$_live" ]; then
+            if [ "$REQUIRE_DRAINED" = "1" ]; then
+                echo "" >&2
+                err "--require-drained: journals still hold undrained bytes: $_live"
+                echo "  Stop ingress, wait for journal.drainer.oldest_undrained_age_s = 0 in" >&2
+                echo "  /debug/stats on every pod, then re-run." >&2
+                exit 1
+            fi
+            warn "Undrained journal bytes: $_live"
+            note "The upgraded pods drain these on start. If this release changes the meter"
+            note "key or billing-group format, stop and re-run with --require-drained."
+        fi
+        ok "Journal volumes preserved (mode=upgrade); pods re-attach on restart."
+    fi
+fi
 section "Tearing down existing release"
 spinner_start "Tearing down existing release (this can take 30-60s)"
 # Suppress BOTH stdout and stderr of teardown commands. Their chatter
@@ -759,6 +1065,37 @@ ok "Existing release torn down"
 # startup as part of its reconcile loop against the deploy_servers DB.
 section "Cleaning orchestrator-managed leftovers"
 kubectl delete networkpolicy -A -l managed-by=mcp-orchestrator --ignore-not-found 2>/dev/null || true
+
+# ─── Journal PVC delete (3.9.35) ─────────────────────────────────────────
+# After teardown, so the pods that mount these volumes are gone — a PVC with a
+# live consumer sits in Terminating behind the pvc-protection finalizer and the
+# delete appears to hang.
+#
+# Runs in BOTH modes when asked. In reinstall mode the namespace delete below
+# would remove them anyway; doing it explicitly here means the log says so.
+if [ "$DISCARD_JOURNAL" = "1" ] && [ -n "${JOURNAL_PVCS:-}" ]; then
+    echo ""
+    journal_pvc_gone=0
+    kubectl delete pvc -n "$NAMESPACE" -l component=orchestrator-journal \
+        --ignore-not-found=true --timeout=60s >/dev/null 2>&1 || true
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if [ -z "$(kubectl get pvc -n "$NAMESPACE" -l component=orchestrator-journal \
+                   -o name 2>/dev/null || true)" ]; then
+            ok "Journal volumes deleted"
+            journal_pvc_gone=1
+            break
+        fi
+        echo "  waiting for journal volume release... ($i/10)"
+        sleep 2
+    done
+    if [ "$journal_pvc_gone" != "1" ]; then
+        # ⚠ Not fatal, but say it plainly: in upgrade mode a surviving PVC is
+        # re-attached by the new pod, so --discard-journal did not do what it
+        # said. In reinstall mode the namespace delete still catches it.
+        warn "Journal volumes still present after 20s."
+        note "In upgrade mode the new pods will re-attach to them."
+    fi
+fi
 
 # ─── Tear down namespaces (reinstall mode only) ──────────────────────────────
 if [ "$MODE" = "reinstall" ]; then
@@ -840,10 +1177,6 @@ if [ -z "$LICENSE_FILE" ]; then
         echo "      --from-file=license.json=/path/to/license.json -n $NAMESPACE"
         echo "    kubectl rollout restart deployment/mcp-orchestrator -n $NAMESPACE"
     fi
-elif [ "$MODE" = "upgrade" ] && kubectl get secret -n "$NAMESPACE" mcp-license >/dev/null 2>&1; then
-    echo "  License secret already exists, leaving as-is (mode=upgrade)."
-    echo "  To replace, delete the secret first:"
-    echo "    kubectl delete secret -n $NAMESPACE mcp-license"
 else
     kubectl delete secret -n "$NAMESPACE" mcp-license --ignore-not-found 2>/dev/null || true
     kubectl create secret generic mcp-license \
@@ -987,6 +1320,28 @@ HELM_VALUES=(
 if [ -n "$API_PUBLIC_URL" ]; then
     HELM_VALUES+=( --set "orchestrator.env.apiPublicUrl=$API_PUBLIC_URL" )
 fi
+# Inventory reconcile cadence (ticks of 60 s). Dev/test clusters export
+# MCP_RECONCILE_EVERY_TICKS=1 so reconcile-gated regression tests run in a
+# minute; customers leave it unset and get the chart default (5).
+if [ -n "${MCP_RECONCILE_EVERY_TICKS:-}" ]; then
+    HELM_VALUES+=( --set "orchestrator.env.reconcileEveryTicks=$MCP_RECONCILE_EVERY_TICKS" )
+fi
+
+# Unity Catalog enforcement. Passed EXPLICITLY in both directions rather than
+# relying on the chart default, so the rendered deployment always states which
+# mode it is in — an operator reading `kubectl get deploy -o yaml` should never
+# have to infer it from an absent variable.
+#
+# This also closes a real trap: setting UC_ENFORCE with `kubectl set env` does
+# not survive `helm upgrade`, which rewrites the pod spec from values. Every
+# upgrade silently reverted enforcement to observe, and the only symptom was a
+# call succeeding that should not have.
+if [ "$UC_OBSERVE" = "1" ]; then
+    HELM_VALUES+=( --set "orchestrator.env.ucEnforce=0" )
+    note "Unity Catalog: OBSERVE mode — verdicts recorded, nothing blocked."
+else
+    HELM_VALUES+=( --set "orchestrator.env.ucEnforce=1" )
+fi
 
 # Opt-in: deploy the Probo GRC subsystem. Chart default is probo.enabled=false,
 # so this --set is the only thing that turns it on. The S3 endpoint/creds and
@@ -1011,6 +1366,29 @@ if [ "$ENABLE_OLLAMA" = "1" ]; then
     note "Ensure this node has headroom for the model (Operators Guide 16.4)."
 fi
 
+
+# Durable journal (3.9.35). Passed EXPLICITLY in both directions, exactly
+# like ucEnforce above and for the same reason: the rendered pod spec should
+# state which mode it is in, and MCP_JOURNAL left unrendered falls back to the
+# binary's compiled default rather than to the chart's.
+#
+# journal.enabled=true also switches the orchestrator from a Deployment to a
+# StatefulSet. That is free here — this script uninstalls and reinstalls rather
+# than running `helm upgrade`, so there is no in-place kind change to fail on.
+if [ "$JOURNAL" = "1" ]; then
+    HELM_VALUES+=( --set "journal.enabled=true" )
+    if [ -n "$JOURNAL_SIZE" ]; then
+        HELM_VALUES+=( --set "journal.persistence.size=$JOURNAL_SIZE" )
+    fi
+    if [ -n "$JOURNAL_STORAGE_CLASS" ]; then
+        HELM_VALUES+=( --set "journal.persistence.storageClass=$JOURNAL_STORAGE_CLASS" )
+    fi
+    note "Journal ON — orchestrator installs as a StatefulSet with a per-pod PVC."
+    note "⚠ The journal is a buffer, not extra capacity: sustained arrivals above"
+    note "  the drain rate fill the volume, and a full journal refuses requests."
+else
+    HELM_VALUES+=( --set "journal.enabled=false" )
+fi
 # Wrapper function so we can pass it to spinner.
 do_helm_install() {
     helm install "$RELEASE_NAME" "${HELM_REPO_NAME}/mcp-orchestrator" \
@@ -1038,15 +1416,11 @@ fi
 
 # ─── Pin NodePort (only if service-type=nodeport) ────────────────────────────
 # The chart picks a random NodePort by default. If the customer asked for a
-# specific port (default 30443 to match the historical tooling), patch it
+# specific port (default 30444, the v3 Envoy NodePort), the chart pins it
 # in here. Skip for loadbalancer / clusterip.
-if [ "$SERVICE_TYPE" = "nodeport" ]; then
-    section "Pinning Envoy NodePort to $NODE_PORT"
-    kubectl patch svc -n "$NAMESPACE" mcp-orchestrator-envoy \
-        -p "{\"spec\":{\"ports\":[{\"name\":\"https\",\"port\":443,\"nodePort\":${NODE_PORT},\"targetPort\":10443,\"protocol\":\"TCP\"}]}}" \
-        >/dev/null
-    ok "NodePort pinned to $NODE_PORT"
-fi
+# NodePort is pinned by the chart itself (envoy-v3-service.yaml reads
+# .Values.envoy.v3.nodePort), so there is nothing to patch here. The legacy
+# service this used to patch no longer exists.
 
 # ─── Verify orchestrator inventory admin bootstrap ───────────────────────────
 # The orchestrator self-mints its own inventory admin bootstrap token at
@@ -1093,9 +1467,9 @@ section "Access"
 case "$SERVICE_TYPE" in
     nodeport)
         # Pick any node's external or internal IP.
-        NODE_IP=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="ExternalIP")].address}{"\n"}{end}' 2>/dev/null | head -1)
+        NODE_IP=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="ExternalIP")].address}{"\n"}{end}' 2>/dev/null | head -1 | awk '{print $1}')
         if [ -z "$NODE_IP" ]; then
-            NODE_IP=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}' 2>/dev/null | head -1)
+            NODE_IP=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}' 2>/dev/null | head -1 | awk '{print $1}')
         fi
         echo "  UI / API: https://${NODE_IP}:${NODE_PORT}"
         echo "  (TLS is self-signed; use -k with curl or accept the cert warning.)"

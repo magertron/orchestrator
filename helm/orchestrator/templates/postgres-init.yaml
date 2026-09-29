@@ -240,7 +240,14 @@ data:
     -- write that bounds the journal drain. Dropped live with CONCURRENTLY.
     -- ⚠ Do not re-add without a query that reads them: SchemaGuard would rebuild
     -- them NON-concurrently on the next start and block audit writes.
-    CREATE INDEX IF NOT EXISTS audit_events_request_idx   ON audit_events (request_id) WHERE request_id IS NOT NULL;
+    -- ⚠ HASH, not btree (2026-09-29). request_id is Envoy's random x-request-id and
+    -- is only ever looked up by equality (db_client.cpp: WHERE a.request_id = $1).
+    -- The btree stored the whole 36-char key at a random leaf per insert: 4 GB on
+    -- peppy, 475 lookups in the life of the database, paid on every audit insert.
+    -- A hash index keeps a 4-byte hash per row. Existing clusters drop the old
+    -- audit_events_request_idx BY HAND with DROP INDEX CONCURRENTLY -- never here,
+    -- where SchemaGuard would run it non-concurrently and block audit writes.
+    CREATE INDEX IF NOT EXISTS audit_events_request_hash_idx ON audit_events USING hash (request_id) WHERE request_id IS NOT NULL;
 
     -- Dual principal: the human a service account was acting for.
     --
