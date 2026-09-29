@@ -177,7 +177,6 @@ data:
     -- tool calls they decided on, and both principals' catalog checks.
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS turn_id  TEXT;
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS is_model BOOLEAN NOT NULL DEFAULT FALSE;
-    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS turn_id  TEXT;
     
     -- The question a turn started, captured at the LLM proxy. OFF by default.
     --
@@ -250,19 +249,6 @@ data:
     -- ⚠ ALTER, not just a CREATE TABLE change: an install made before this fix
     -- has been recording nothing, and needs the columns added on upgrade. What
     -- it missed is unrecoverable, but it starts recording again from here.
-    -- The catalog-source connectivity test stages a test_only row and returns
-    -- 202, leaving the connector to attempt it on its next poll. It needs a
-    -- status meaning "staged, not yet attempted" — and there was not one, so
-    -- the placeholder insert failed the check constraint every time and the
-    -- test could never report anything. Every install, since it shipped.
-    --
-    -- Drop and re-add rather than skip: 'pending' is additional, so no existing
-    -- row can violate the new form.
-    ALTER TABLE uc_catalog_source
-        DROP CONSTRAINT IF EXISTS uc_catalog_source_last_sync_status_check;
-    ALTER TABLE uc_catalog_source
-        ADD CONSTRAINT uc_catalog_source_last_sync_status_check
-        CHECK (last_sync_status IN ('ok', 'partial', 'failed', 'pending'));
 
     -- ── Pinned prompt entitlements ────────────────────────────────────────
     --
@@ -317,42 +303,10 @@ data:
     CREATE INDEX IF NOT EXISTS turn_entitlements_expiry_idx
         ON turn_entitlements (expires_at);
 
-    -- ── Prepaid opening balance ───────────────────────────────────────────
-    --
-    -- A prepaid pool is anchored to a dated snapshot of what the VENDOR says is
-    -- left, and computed forward from there. Without an anchor the pool is the
-    -- sum of every top-up ever recorded, which is only correct if every one was
-    -- real money — and in practice some are reconciliations made to close a
-    -- drift, which double-counts.
-    --
-    -- kind:
-    --   'opening_balance'  the vendor's own figure at a known instant. The most
-    --                      recent one wins and everything before it is ignored.
-    --   'purchase'         real money added to the vendor account after it.
-    --   'adjustment'       a correction. RECORDED FOR AUDIT, EXCLUDED FROM THE
-    --                      POOL — including them is what makes a reconciled
-    --                      balance drift again the moment the window moves.
-    ALTER TABLE credit_purchases
-        ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'purchase';
-    ALTER TABLE credit_purchases
-        ADD CONSTRAINT credit_purchases_kind_check
-        CHECK (kind IN ('opening_balance','purchase','adjustment'))
-        NOT VALID;
-
-    -- ⚠ Separate from purchased_at, which is when the ROW was written. The
-    -- anchor is when the vendor's figure was TRUE — usually midnight, or
-    -- whenever the console was read. Spend is counted strictly after it.
-    ALTER TABLE credit_purchases
-        ADD COLUMN IF NOT EXISTS effective_from timestamptz;
-
-    CREATE INDEX IF NOT EXISTS credit_purchases_opening_idx
-        ON credit_purchases (contract_id, effective_from DESC)
-        WHERE kind = 'opening_balance';
 
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS securable_name text;
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS securable_type text;
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS tool_name      text;
-    ALTER TABLE sso_login_state ADD COLUMN IF NOT EXISTS return_to text;
 
 
     -- (missing_ok), so normal INSERT/SELECT traffic is unaffected.
@@ -599,7 +553,7 @@ data:
          AND image IS NOT NULL
          AND endpoint_url IS NULL)
         OR
-        (server_type = 'external'
+        (server_type IN ('external', 'rest')
          AND image IS NULL
          AND endpoint_url IS NOT NULL
          AND auth_type IS NOT NULL)
@@ -1053,6 +1007,9 @@ data:
     );
     CREATE INDEX IF NOT EXISTS sso_login_state_expiry_idx
         ON sso_login_state (expires_at);
+    -- ⚠ ORDERING FIX (2026-09-29): moved here from earlier in the schema, where it ran
+    -- BEFORE this table existed -- skipped on a fresh install's first boot.
+    ALTER TABLE sso_login_state ADD COLUMN IF NOT EXISTS return_to text;
 
     -- ── Two-phase MFA pending tickets (HA-shared) ──────────────────────────────
     -- Phase-1 (password OK for a privileged user) writes an opaque pending
@@ -1690,6 +1647,21 @@ data:
     -- carries it to an estate that already has the table.
     ALTER TABLE uc_catalog_source
         ADD COLUMN IF NOT EXISTS rename_notice_ack BOOLEAN NOT NULL DEFAULT FALSE;
+    -- ⚠ ORDERING FIX (2026-09-29): moved here from earlier in the schema, where it ran
+    -- BEFORE this table existed -- skipped on a fresh install's first boot.
+    -- The catalog-source connectivity test stages a test_only row and returns
+    -- 202, leaving the connector to attempt it on its next poll. It needs a
+    -- status meaning "staged, not yet attempted" — and there was not one, so
+    -- the placeholder insert failed the check constraint every time and the
+    -- test could never report anything. Every install, since it shipped.
+    --
+    -- Drop and re-add rather than skip: 'pending' is additional, so no existing
+    -- row can violate the new form.
+    ALTER TABLE uc_catalog_source
+        DROP CONSTRAINT IF EXISTS uc_catalog_source_last_sync_status_check;
+    ALTER TABLE uc_catalog_source
+        ADD CONSTRAINT uc_catalog_source_last_sync_status_check
+        CHECK (last_sync_status IN ('ok', 'partial', 'failed', 'pending'));
 
     CREATE INDEX IF NOT EXISTS uc_catalog_source_due_idx
         ON uc_catalog_source (enabled, last_sync_at);
@@ -2245,6 +2217,9 @@ data:
     -- the MeterOnDestruct emitter (service.cpp) from ev_.roles. Optional —
     -- omit the emitter write and the column simply stays NULL with no other effect.
     ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS caller_roles TEXT[];
+    -- ⚠ ORDERING FIX (2026-09-29): moved here from earlier in the schema, where it ran
+    -- BEFORE this table existed -- skipped on a fresh install's first boot.
+    ALTER TABLE meter_events ADD COLUMN IF NOT EXISTS turn_id  TEXT;
     -- Speeds the agent-spread observed-access projection (GROUP BY caller/server/
     -- tool). Useful even without caller_roles populated.
     CREATE INDEX IF NOT EXISTS meter_events_caller_idx
@@ -2355,6 +2330,40 @@ data:
     );
     CREATE INDEX IF NOT EXISTS credit_purchases_contract_idx
         ON credit_purchases (contract_id, purchased_at);
+    -- ⚠ ORDERING FIX (2026-09-29): moved here from earlier in the schema, where it ran
+    -- BEFORE this table existed -- skipped on a fresh install's first boot.
+    -- ── Prepaid opening balance ───────────────────────────────────────────
+    --
+    -- A prepaid pool is anchored to a dated snapshot of what the VENDOR says is
+    -- left, and computed forward from there. Without an anchor the pool is the
+    -- sum of every top-up ever recorded, which is only correct if every one was
+    -- real money — and in practice some are reconciliations made to close a
+    -- drift, which double-counts.
+    --
+    -- kind:
+    --   'opening_balance'  the vendor's own figure at a known instant. The most
+    --                      recent one wins and everything before it is ignored.
+    --   'purchase'         real money added to the vendor account after it.
+    --   'adjustment'       a correction. RECORDED FOR AUDIT, EXCLUDED FROM THE
+    --                      POOL — including them is what makes a reconciled
+    --                      balance drift again the moment the window moves.
+    ALTER TABLE credit_purchases
+        ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'purchase';
+    ALTER TABLE credit_purchases DROP CONSTRAINT IF EXISTS credit_purchases_kind_check;
+    ALTER TABLE credit_purchases
+        ADD CONSTRAINT credit_purchases_kind_check
+        CHECK (kind IN ('opening_balance','purchase','adjustment'))
+        NOT VALID;
+
+    -- ⚠ Separate from purchased_at, which is when the ROW was written. The
+    -- anchor is when the vendor's figure was TRUE — usually midnight, or
+    -- whenever the console was read. Spend is counted strictly after it.
+    ALTER TABLE credit_purchases
+        ADD COLUMN IF NOT EXISTS effective_from timestamptz;
+
+    CREATE INDEX IF NOT EXISTS credit_purchases_opening_idx
+        ON credit_purchases (contract_id, effective_from DESC)
+        WHERE kind = 'opening_balance';
 
     -- Behavior-preserving backfill for contract_type (column added above, with
     -- credit_purchases now guaranteed to exist so the EXISTS probe is safe on a
@@ -2598,18 +2607,23 @@ data:
     -- provisioned_via='password' ensures no provenance badge appears next to admin
     -- in the Users tab. The ON CONFLICT clause back-fills the column on upgrades
     -- where admin was seeded before provisioned_via existed.
+    -- ⚠ squote, not quote (2026-09-29): Helm's quote emits DOUBLE quotes, which SQL
+    -- reads as an IDENTIFIER, so this insert failed on every start. Skipped when no
+    -- hash is set, rather than failing.
+    {{- if .Values.seed.adminPasswordHash }}
     INSERT INTO users (username, password_hash, roles, enabled, provisioned_via{{ if .Values.seed.adminEmail }}, email{{ end }})
     VALUES (
         'admin',
-        {{ .Values.seed.adminPasswordHash | quote }},
+        {{ .Values.seed.adminPasswordHash | squote }},
         ARRAY['system:platform-admin'],
         TRUE,
         'password'{{ if .Values.seed.adminEmail }},
-        {{ .Values.seed.adminEmail | quote }}{{ end }}
+        {{ .Values.seed.adminEmail | squote }}{{ end }}
     )
     ON CONFLICT (username) DO UPDATE
         SET provisioned_via = COALESCE(users.provisioned_via, 'password'){{ if .Values.seed.adminEmail }},
             email = COALESCE(users.email, EXCLUDED.email){{ end }};
+    {{- end }}
 
     -- ── System roles ───────────────────────────────────────────────────────────
     INSERT INTO roles (id, name, description, permissions, allowed_namespaces, system_role) VALUES
