@@ -16,6 +16,23 @@ data:
 
     CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+    -- ── uuidv7() (2026-09-29) ─────────────────────────────────────────────────
+    -- Postgres 17 has no built-in uuidv7 (it arrives in 18). 48-bit Unix ms, then
+    -- random, version 7, RFC 9562 variant. Used as the DEFAULT for the hottest
+    -- random-key primary keys: time-ordered keys land on the same few index pages
+    -- instead of a random page per insert -- the journal drain's ceiling.
+    CREATE OR REPLACE FUNCTION uuidv7() RETURNS uuid AS $$
+    DECLARE
+        ms bigint := floor(extract(epoch FROM clock_timestamp()) * 1000);
+        b  bytea  := gen_random_bytes(16);
+    BEGIN
+        b := overlay(b placing substring(int8send(ms) from 3 for 6) from 1 for 6);
+        b := set_byte(b, 6, (get_byte(b, 6) & 15) | 112);
+        b := set_byte(b, 8, (get_byte(b, 8) & 63) | 128);
+        RETURN encode(b, 'hex')::uuid;
+    END
+    $$ LANGUAGE plpgsql VOLATILE;
+
     -- ── Users ──────────────────────────────────────────────────────────────────
     -- password_hash = "SSO_ONLY" sentinel for SSO/SCIM-provisioned users
     -- (defeats any accidental password-login path since no bcrypt produces that).
@@ -211,6 +228,9 @@ data:
      WHERE turn_id IS NOT NULL;
 
     CREATE INDEX IF NOT EXISTS audit_events_ts_idx        ON audit_events (ts DESC);
+    -- uuidv7 defaults (2026-09-29): new rows only; existing ids are untouched.
+    ALTER TABLE audit_events ALTER COLUMN id        SET DEFAULT uuidv7();
+    ALTER TABLE audit_events ALTER COLUMN event_uid SET DEFAULT uuidv7();
     CREATE INDEX IF NOT EXISTS audit_events_actor_idx     ON audit_events (actor);
     CREATE INDEX IF NOT EXISTS audit_events_server_idx    ON audit_events (server_name, namespace);
     -- ⚠ REMOVED 2026-09-29: audit_events_class_idx (class_uid, activity_id) and
@@ -2201,6 +2221,9 @@ data:
     CREATE INDEX IF NOT EXISTS meter_events_dept_idx     ON meter_events (caller_dept_id, incurred_at);
     CREATE INDEX IF NOT EXISTS meter_events_method_idx   ON meter_events (server_id, tool_id, method, dimension, incurred_at);
     CREATE INDEX IF NOT EXISTS meter_events_group_idx    ON meter_events (billing_group_id);
+    -- uuidv7 default (2026-09-29). billing_group_id stays sha256(request_id):
+    -- ALS must derive the same value independently, and has no decision time.
+    ALTER TABLE meter_events ALTER COLUMN event_id SET DEFAULT uuidv7();
 
     -- Dual principal: the human a service account was acting for.
     --
