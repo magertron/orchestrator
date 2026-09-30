@@ -832,6 +832,12 @@ data:
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Who a role is FOR: 'internal' (staff, agents, service accounts) or
+    -- 'merchant' (ingress API customers). Classifies; grants nothing. The
+    -- orchestrator also adds this on first use (ensure_role_audience_column).
+    ALTER TABLE roles ADD COLUMN IF NOT EXISTS audience text
+        NOT NULL DEFAULT 'internal' CHECK (audience IN ('internal','merchant'));
+
     -- ⚠ EVIDENCE, NOT CONFIGURATION. mcp_tool_permissions names a role; without
     -- this, what that role GRANTED at the moment of a decision is unrecoverable,
     -- and an authority record resolves only half a reference.
