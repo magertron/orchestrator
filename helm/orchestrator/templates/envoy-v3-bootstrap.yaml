@@ -610,6 +610,7 @@ data:
                           # request_id and the replay keeps double-billing.
                           additional_request_headers_to_log:
                             - idempotency-key
+                            - x-idempotency-key          # Everpay et al.; C++ reads it only when idempotency-key is absent
 
         # ─── Inventory plane listener (Pass 3, Option C) ────────────────────────
         # Mirror of legacy bootstrap's mcp_inventory_listener. Same port
