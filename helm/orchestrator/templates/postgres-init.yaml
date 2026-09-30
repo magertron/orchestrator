@@ -110,8 +110,8 @@ data:
 
     CREATE TABLE IF NOT EXISTS audit_events (
         -- ── Core identity ───────────────────────────────────────────────────
-        id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-        event_uid         UUID         NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+        id                UUID         NOT NULL DEFAULT gen_random_uuid(),
+        event_uid         UUID         NOT NULL DEFAULT gen_random_uuid(),
         -- event_uid is the OCSF-equivalent globally-unique id, exported as
         -- metadata.uid in OCSF payloads. Distinct from `id` so we can later
         -- migrate to externally-issued ids without breaking primary key refs.
@@ -159,8 +159,69 @@ data:
         unmapped          JSONB        NOT NULL DEFAULT '{}',     -- OCSF overflow
 
         -- ── Timestamps ──────────────────────────────────────────────────────
-        ts                TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-    );
+        ts                TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+        -- ⚠ PARTITIONED BY MONTH ON ts (2026-09-30). Every unique key on a
+        -- partitioned table must include the partition key, so the primary key
+        -- is (id, ts) and the replay-dedup key is (event_uid, ts). A replayed
+        -- journal entry carries the SAME ts (the decision time), so dedup is
+        -- exactly as strong as UNIQUE (event_uid) was. The drainer inserts with
+        -- ON CONFLICT (event_uid, ts) DO NOTHING (3.9.70+).
+        CONSTRAINT audit_events_pkey       PRIMARY KEY (id, ts),
+        CONSTRAINT audit_events_uid_ts_key UNIQUE (event_uid, ts)
+    ) PARTITION BY RANGE (ts);
+
+    -- Monthly partitions: this month and the next two, plus a DEFAULT that
+    -- catches any row whose month has no partition (it must stay empty; a
+    -- non-empty default blocks creating that month's partition). After boot
+    -- DbClient::ensure_audit_partitions() keeps three months ahead, hourly.
+    -- Bounds are UTC midnights, the same names and bounds the C++ uses.
+    --
+    -- An install that predates partitioning keeps its plain table (CREATE
+    -- TABLE IF NOT EXISTS above skips it) until ops/partition-audit-events.sh
+    -- converts it; for that table this block only guarantees the
+    -- (event_uid, ts) unique index the drainer's ON CONFLICT needs.
+    DO $$
+    DECLARE
+        kind  "char";
+        m     timestamp;   -- month start as a UTC wall-clock time, no zone
+    BEGIN
+        SELECT c.relkind INTO kind FROM pg_class c
+         WHERE c.oid = 'audit_events'::regclass;
+
+        IF kind = 'p' THEN
+            FOR i IN 0..2 LOOP
+                -- month arithmetic on a zone-less timestamp, THEN pinned to
+                -- UTC: doing it on timestamptz in a non-UTC session leaves
+                -- day-sized gaps between partitions.
+                m := date_trunc('month', now() AT TIME ZONE 'UTC') + make_interval(months => i);
+                EXECUTE format(
+                    'CREATE TABLE IF NOT EXISTS %I PARTITION OF audit_events FOR VALUES FROM (%L) TO (%L)',
+                    'audit_events_' || to_char(m, 'YYYY_MM'),
+                    to_char(m,                      'YYYY-MM-DD HH24:MI:SS') || '+00',
+                    to_char(m + interval '1 month', 'YYYY-MM-DD HH24:MI:SS') || '+00');
+            END LOOP;
+            EXECUTE 'CREATE TABLE IF NOT EXISTS audit_events_default PARTITION OF audit_events DEFAULT';
+
+        ELSIF NOT EXISTS (
+                SELECT 1 FROM pg_index i
+                 WHERE i.indrelid = 'audit_events'::regclass
+                   AND i.indisunique AND i.indisvalid
+                   AND strpos(pg_get_indexdef(i.indexrelid), '(event_uid, ts)') > 0) THEN
+            -- ⚠ Blocks audit inserts while it builds (the journal holds them).
+            -- On a large table, build it by hand first instead:
+            --   CREATE UNIQUE INDEX CONCURRENTLY audit_events_uid_ts_key ON audit_events (event_uid, ts);
+            RAISE NOTICE 'audit_events: building UNIQUE (event_uid, ts) on the unpartitioned table';
+            CREATE UNIQUE INDEX IF NOT EXISTS audit_events_uid_ts_key ON audit_events (event_uid, ts);
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_index i
+                 WHERE i.indrelid = 'audit_events'::regclass
+                   AND i.indisunique AND i.indisvalid
+                   AND strpos(pg_get_indexdef(i.indexrelid), '(event_uid, ts)') > 0) THEN
+                RAISE WARNING 'audit_events: no VALID unique index on (event_uid, ts) (an invalid audit_events_uid_ts_key left by an interrupted build?) -- drop it CONCURRENTLY and rebuild, or the drainer cannot insert audit rows';
+            END IF;
+        END IF;
+    END $$;
 
     -- WHICH catalog object a UC verdict concerned, unambiguously.
     --
@@ -260,6 +321,8 @@ data:
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS on_behalf_of_subject TEXT;
     CREATE INDEX IF NOT EXISTS audit_events_obo_idx ON audit_events (on_behalf_of_subject, ts) WHERE on_behalf_of_subject IS NOT NULL;
     CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
+    -- per-namespace audit listing, newest first (in use on peppy; was hand-built)
+    CREATE INDEX IF NOT EXISTS idx_audit_events_ns_ts ON audit_events (namespace, ts DESC);
 
     -- ── Audit immutability guard (R-06) ─────────────────────────────────────────
     -- audit_events is append-only. UPDATE is always denied. DELETE is denied
