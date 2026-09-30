@@ -2405,3 +2405,9 @@ journal:
     size: 50Gi
     # Empty uses the cluster default StorageClass.
     storageClass: ""
+
+# Headers (comma-separated) that may carry a pass-through merchant's own
+# vendor key, registered by SHA-256 under Merchants -> keys. Used by ext_authz
+# on REST ingress only when Authorization carries no bearer. Empty = off.
+# Everpay: x-everpay-api-key
+merchantKeyHeaders: ""

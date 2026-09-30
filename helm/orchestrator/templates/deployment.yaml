@@ -114,6 +114,13 @@ spec:
               value: "1"
             {{- end }}
             {{- end }}
+            # Pass-through merchants whose vendor key travels in a vendor header
+            # (Everpay: x-everpay-api-key). ext_authz resolves the merchant from it
+            # when Authorization carries no bearer, REST ingress only. Unset = off.
+            {{- with .Values.merchantKeyHeaders }}
+            - name: MCP_MERCHANT_KEY_HEADERS
+              value: {{ . | quote }}
+            {{- end }}
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
