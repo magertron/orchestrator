@@ -34,6 +34,17 @@ All resources are gated behind .Values.probo.enabled by their templates.
 http://{{ include "probo.minioName" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local:9000
 {{- end }}
 
+{{/* Built-in evidence store (s3proxy). Fixed name, see values probo.s3proxy */}}
+{{- define "probo.s3Name" -}}
+{{ .Values.probo.s3proxy.name | default "probo-s3" }}
+{{- end }}
+
+{{/* probo-s3 in-cluster endpoint. Port 80 and no port in the URL: probod's
+     pre-signed links sign the bare host. */}}
+{{- define "probo.s3Endpoint" -}}
+http://{{ include "probo.s3Name" . }}.{{ include "mcp.namespace" . }}.svc.cluster.local
+{{- end }}
+
 {{/* Common Probo labels — extend mcp.labels with a subsystem tag */}}
 {{- define "probo.labels" -}}
 {{ include "mcp.labels" . }}

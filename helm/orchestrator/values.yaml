@@ -1902,6 +1902,25 @@ drift:
 # upstream ghcr.io/getprobo/probo; mirror to curtismager20/* for a shipped product.
 probo:
   enabled: false
+
+  # Built-in evidence store (Oct 2026). s3proxy with a filesystem backend on a
+  # local PVC, replacing the bundled MinIO, whose images stopped being pullable
+  # from quay.io and Docker Hub (Sept 2026). probod signs evidence links for
+  # http://<name>.<ns>.svc.cluster.local (port 80, no port in the signed host).
+  # The name is fixed (not release-prefixed) so an existing hand-made probo-s3
+  # can be adopted without moving its data. The PVC is kept on uninstall.
+  s3proxy:
+    enabled: true
+    name: probo-s3
+    image:
+      repository: andrewgaul/s3proxy
+      tag: "latest"
+    storage:
+      size: 10Gi
+      storageClassName: ""
+    resources:
+      requests: {cpu: 50m, memory: 256Mi}
+      limits: {cpu: "1", memory: 1Gi}
   replicaCount: 1
 
   # probod placement. Like the orchestrator + its postgres, probod is part of the

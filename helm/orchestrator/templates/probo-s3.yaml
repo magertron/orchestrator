@@ -1,0 +1,118 @@
+{{- if and .Values.probo.enabled .Values.probo.s3proxy.enabled }}
+{{- /*
+  probo-s3: Probo's evidence store. s3proxy with a filesystem backend.
+  Names and the Deployment selector (app: probo-s3) match the objects first
+  created by hand on peppy (2026-09-27), so Helm adopts them in place.
+  Selector is immutable - do not change it.
+*/}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "probo.s3Name" . }}-data
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: probo-s3
+    {{- include "probo.labels" . | nindent 4 }}
+  annotations:
+    # Evidence must outlive the release. helm uninstall leaves this PVC.
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.probo.s3proxy.storage.storageClassName }}
+  storageClassName: {{ .Values.probo.s3proxy.storage.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.probo.s3proxy.storage.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "probo.s3Name" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: probo-s3
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: probo-s3
+  ports:
+    - name: s3
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "probo.s3Name" . }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    app: probo-s3
+    {{- include "probo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: probo-s3
+  template:
+    metadata:
+      labels:
+        app: probo-s3
+    spec:
+      {{- with .Values.probo.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: mkbucket
+          image: "{{ .Values.probo.s3proxy.image.repository }}:{{ .Values.probo.s3proxy.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "mkdir -p /data/{{ .Values.probo.objectStore.bucket }} && ls -la /data"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: s3proxy
+          image: "{{ .Values.probo.s3proxy.image.repository }}:{{ .Values.probo.s3proxy.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: S3PROXY_ENDPOINT
+              value: "http://0.0.0.0:80"
+            - name: S3PROXY_AUTHORIZATION
+              value: "aws-v4"
+            # Same keys probod uses (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY),
+            # so uploads and pre-signed links verify against one identity.
+            - name: S3PROXY_IDENTITY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_ACCESS_KEY
+            - name: S3PROXY_CREDENTIAL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "probo.secretsName" . }}
+                  key: PROBO_S3_SECRET_KEY
+            - name: JCLOUDS_PROVIDER
+              value: "filesystem"
+            - name: JCLOUDS_FILESYSTEM_BASEDIR
+              value: "/data"
+          ports:
+            - name: s3
+              containerPort: 80
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.probo.s3proxy.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "probo.s3Name" . }}-data
+{{- end }}
