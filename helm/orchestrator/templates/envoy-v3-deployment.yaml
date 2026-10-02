@@ -37,6 +37,10 @@ spec:
         # a restart.
         checksum/bootstrap: {{ include (print $.Template.BasePath "/envoy-v3-bootstrap.yaml") . | sha256sum }}
     spec:
+      {{- with .Values.envoy.v3.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: envoy-v3
           # Reuses the same Envoy image+tag as the legacy Envoy. Pinned via

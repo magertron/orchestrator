@@ -1126,6 +1126,16 @@ envoy:
   # disabled; enable for slice 6e validation. Production-default stays off
   # until v3 proves out under load.
   v3:
+    # Keep Envoy off the control plane: peppy runs the k3s server and the
+    # Cloudflare tunnel, and our best latency numbers had no Envoy there.
+    # Set to {} to allow any node.
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
     # ── Overload protection (3.7.x) ──────────────────────────────────────
     # ⚠ MUST TRACK resources.limits.memory. This is the budget Envoy measures
     # ITSELF against; Kubernetes enforces the container limit separately, and
