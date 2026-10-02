@@ -2928,6 +2928,25 @@ data:
         ]'::jsonb
     ) ON CONFLICT (name) DO NOTHING;
 
+    -- ── Merchants (ingress API customers) ──────────────────────────────────────
+    -- Also created by the orchestrator at startup (ensure_merchants_table); kept
+    -- here so this file stays the schema's source of truth. Same idempotent form.
+    -- 'suspended' stops every credential the merchant holds at the door.
+    CREATE TABLE IF NOT EXISTS merchants (
+        merchant_id  TEXT        PRIMARY KEY,
+        display_name TEXT        NOT NULL DEFAULT '',
+        role_ids     TEXT        NOT NULL DEFAULT '',
+        status       TEXT        NOT NULL DEFAULT 'active',
+        created_by   TEXT        NOT NULL DEFAULT '',
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    -- Merchant logo (2026-10-02): PNG/JPEG/WebP <= 256 KB, validated by the API.
+    ALTER TABLE merchants
+        ADD COLUMN IF NOT EXISTS logo            BYTEA,
+        ADD COLUMN IF NOT EXISTS logo_type       TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS logo_updated_at TIMESTAMPTZ;
+
     -- ── Default vulnerability policy (secure-by-default, non-blocking) ──────────
     -- Ships ENABLED across ALL namespaces so every governed internal server is
     -- evaluated against a critical-vulnerability rule on day one — the premise
