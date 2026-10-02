@@ -800,6 +800,19 @@ if ! kubectl auth can-i create namespace >/dev/null 2>&1; then
 fi
 echo "  perms:      ok (can create namespaces)"
 
+# k3s ships Traefik, and its ServiceLB (svclb) pods take ports 80 AND 443 on
+# EVERY node. Nothing in Magertron routes through it: https://<node-ip> answers
+# with Traefik's 404, and on a workstation that is also a node, a local
+# port-forward to :80 is silently captured. Report only — this installer runs
+# on clusters it does not own.
+if kubectl get svc -n kube-system traefik >/dev/null 2>&1; then
+    warn "Traefik (bundled with k3s) is installed and holds ports 80 and 443 on every node."
+    note "Magertron does not use it. Reach the UI on the Envoy NodePort (default ${NODE_PORT:-30444})."
+    note "To remove it on k3s (run on the server node):"
+    note "  echo 'disable: [traefik]' | sudo tee -a /etc/rancher/k3s/config.yaml && sudo systemctl restart k3s"
+    note "k3s then uninstalls Traefik and its svclb pods on its own."
+fi
+
 # ─── Preflight: helm repo ────────────────────────────────────────────────────
 section "Preflight: helm repo"
 if ! helm repo list 2>/dev/null | grep -q "^${HELM_REPO_NAME}\b"; then

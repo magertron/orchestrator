@@ -149,10 +149,13 @@ if command -v k3s >/dev/null 2>&1 && systemctl is-active --quiet k3s; then
   # disabling its Traefik or rewriting its kubeconfig mode without being asked
   # would be a rude thing for an installer to do.
   if kubectl get svc -n kube-system traefik >/dev/null 2>&1; then
-    warn "Traefik is running and holds port 443."
+    warn "Traefik is running and holds ports 80 and 443 on every node (svclb)."
     note "Nothing routes through it to Magertron, so https://<node-ip> will"
-    note "answer with Traefik's 404 rather than the dashboard. Either reach the"
-    note "UI on :30444, or disable Traefik and re-run."
+    note "answer with Traefik's 404 rather than the dashboard, and a local"
+    note "port-forward to :80 on any node is silently captured. Reach the UI"
+    note "on :30444, or remove Traefik (on the server node), then re-run:"
+    note "  echo 'disable: [traefik]' | sudo tee -a /etc/rancher/k3s/config.yaml"
+    note "  sudo systemctl restart k3s      # k3s uninstalls Traefik + svclb itself"
   fi
 else
   # ⚠ Both flags at INSTALL time, not afterwards.
