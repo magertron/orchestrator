@@ -798,7 +798,6 @@ curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
         </svg>
       </div>
     </div>
-    <p class="mag-arch-caption">The person's token says <strong>who it is for</strong>; the agent's says <strong>who is acting</strong>. The exchange signs them into one five-minute token, so an agent cannot quietly drop the person — or add one.</p>
 
     <div class="center" style="margin-top: 8px;">
       <div class="section-desc" style="margin-bottom: 18px;">Magertron™ is not another agent framework. It sits underneath the one you already use — anything that can make an HTTPS call.</div>
@@ -841,58 +840,6 @@ curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
           <li>Magertron™ tokens never outlive five minutes</li>
           <li>Acting for a person: their directory token is the subject, yours the actor</li>
         </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Refusals -->
-<section class="dev-section" id="refusals">
-  <div class="container">
-    <div class="center">
-      <div class="section-label">When it says no</div>
-      <div class="section-title">Know which refusals<br>to retry.</div>
-      <div class="section-desc">Most refusals are decisions; retrying one only adds load and noise. The client applies these rules for you.</div>
-    </div>
-    <div class="table-scroll">
-      <table class="rtable">
-        <tr><th>Refusal</th><th>Retry?</th><th>Why</th></tr>
-        <tr><td>403 <code>No permission for …</code></td><td class="once">Once, after re-exchanging</td><td>A token carries the roles held when it was minted. A newly granted role arrives with a fresh token.</td></tr>
-        <tr><td>429 <code>PDP at capacity …</code></td><td class="yes">Yes, with backoff</td><td>Load shedding — no decision was made, and nothing was billed.</td></tr>
-        <tr><td>429 <code>Spend limit reached …</code></td><td class="no">No</td><td>The budget stopped the call before it was billed. A person must lift the limit.</td></tr>
-        <tr><td>403 <code>tool-approval: …</code></td><td class="no">No</td><td>The vendor changed the tool. Calls resume once a human approves the change.</td></tr>
-        <tr><td>403 <code>… non-delegable role …</code></td><td class="no">No</td><td>An agent may never act for an administrator. By design.</td></tr>
-        <tr><td>Network error on <code>tools/call</code></td><td class="yes">Yes, same key</td><td>The same <code>Idempotency-Key</code> means the call is metered once, however many times it arrives.</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- What the platform does -->
-<section class="dev-section" id="platform">
-  <div class="container">
-    <div class="center">
-      <div class="section-label">Not your problem</div>
-      <div class="section-title">What the platform does<br>that your code doesn't.</div>
-    </div>
-    <div class="feature-grid two">
-      <div class="feature-card"><div class="feature-icon">⚿</div><h3>Credential injection</h3><p>Your agent never sees a vendor API key. It presents its own identity; the gateway attaches the credential upstream.</p></div>
-      <div class="feature-card"><div class="feature-icon">◈</div><h3>Tool approval</h3><p>If a vendor changes a tool's schema, calls stop until a human reviews the difference — regardless of your permissions.</p></div>
-      <div class="feature-card"><div class="feature-icon">▦</div><h3>Metering by person</h3><p>Every call is attributed to the identities on it. Delegated calls bill the person, with your agent shown alongside.</p></div>
-      <div class="feature-card"><div class="feature-icon">⛊</div><h3>Budgets that hold</h3><p>A call that would exceed the contract's ceiling is refused with a 429 — not billed and apologised for later.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta">
-  <div class="container">
-    <div class="cta-box">
-      <h2>Clone it. Run it. Govern it.</h2>
-      <p>The example, the guide and a live Magertron™ instance of your own to point it at.</p>
-      <div class="hero-actions" style="position: relative;">
-        <a class="btn-primary" href="https://github.com/magertron/agent-examples" target="_blank" rel="noopener">agent-examples on GitHub →</a>
-        <a class="btn-secondary" href="#" onclick="openDemoModal(event)">Get a live instance</a>
       </div>
     </div>
   </div>
