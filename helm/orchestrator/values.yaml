@@ -1126,14 +1126,17 @@ envoy:
   # disabled; enable for slice 6e validation. Production-default stays off
   # until v3 proves out under load.
   v3:
-    # Keep Envoy off the control plane: peppy runs the k3s server and the
-    # Cloudflare tunnel, and our best latency numbers had no Envoy there.
-    # Set to {} to allow any node.
+    # Prefer worker nodes for Envoy: keep the gateway off the control plane
+    # when a worker can take it. PREFERRED, not required — a single-node
+    # cluster's only node IS the control plane, and a required rule left
+    # Envoy Pending there (4.0.12). To pin strictly on a multi-node cluster,
+    # override with requiredDuringSchedulingIgnoredDuringExecution.
     affinity:
       nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
                 - key: node-role.kubernetes.io/control-plane
                   operator: DoesNotExist
     # ── Overload protection (3.7.x) ──────────────────────────────────────
