@@ -659,75 +659,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   </div>
 </section>
 
-<!-- Three calls -->
-<section class="dev-section" id="three-calls">
-  <div class="container">
-    <div class="center">
-      <div class="section-label">Three calls</div>
-      <div class="section-title">Credential. Catalogue.<br>Tool call.</div>
-      <div class="section-desc">That is the whole integration. The gateway decides, per call, whether it may proceed — you do not implement any of that.</div>
-    </div>
-
-    <div class="steps">
-      <div class="step"><div class="n">01</div><h3>Get a credential</h3><p>Trade your agent's token for a five-minute Magertron™ token. Cache it; refresh before it expires.</p></div>
-      <div class="step"><div class="n">02</div><h3>Read the catalogue</h3><p>Ask what may be called. Each tool comes with the platform's verdict for the principal asking.</p></div>
-      <div class="step"><div class="n">03</div><h3>Call the tool</h3><p>JSON-RPC over HTTP, with an idempotency key so a retry is never billed twice.</p></div>
-    </div>
-
-    <div class="code-card">
-      <div class="code-tabs" role="tablist">
-        <button class="code-tab" role="tab" aria-selected="true" data-panel="p-go">Go</button>
-        <button class="code-tab" role="tab" aria-selected="false" data-panel="p-curl">curl</button>
-        <button class="code-tab" role="tab" aria-selected="false" data-panel="p-obo">Acting for a person</button>
-      </div>
-      <div class="code-panel on" id="p-go" role="tabpanel"><pre><span class="k">mc</span>, _ := magertron.New(magertron.Options{GatewayURL: <span class="s">"https://mcp.acme.com"</span>})
-
-<span class="c">// 1 · a credential: your agent's token, exchanged for five-minute ones</span>
-<span class="k">agent</span> := &amp;magertron.Exchange{Client: mc, Subject: magertron.StaticToken(saToken)}
-
-<span class="c">// 2 · what may you call?</span>
-<span class="k">tools</span>, err := mc.Catalog(ctx, agent)
-
-<span class="c">// 3 · call it — authorized, metered, audited, and retried safely</span>
-<span class="k">out</span>, err := mc.CallTool(ctx, agent, tools[0], json.RawMessage(<span class="s">`{"timezone":"UTC"}`</span>))
-
-<span class="k">var</span> r *magertron.Refusal
-<span class="k">if</span> errors.As(err, &amp;r) &amp;&amp; r.Kind == magertron.KindSpendLimit {
-    <span class="c">// a human must lift the limit — tell someone, do not retry</span>
-}</pre></div>
-      <div class="code-panel" id="p-curl" role="tabpanel"><pre><span class="c"># 1 · trade the long-lived token for a five-minute one</span>
-<span class="k">TOKEN</span>=$(curl -s -X POST <span class="s">"$GW/api/v1/token/exchange"</span> -H <span class="s">'Content-Type: application/json'</span> \
-  -d <span class="s">"{\"grant_type\":\"urn:ietf:params:oauth:grant-type:token-exchange\",
-       \"subject_token\":\"$SA_TOKEN\",
-       \"subject_token_type\":\"urn:ietf:params:oauth:token-type:jwt\"}"</span> \
-  | python3 -c <span class="s">'import sys,json; print(json.load(sys.stdin)["access_token"])'</span>)
-
-<span class="c"># 2 · what may you call?</span>
-curl -s <span class="s">"$GW/api/v1/portal/catalog"</span> -H <span class="s">"Authorization: Bearer $TOKEN"</span>
-
-<span class="c"># 3 · call a tool (after initialize — see the guide, §4)</span>
-curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
-  -H <span class="s">"Authorization: Bearer $TOKEN"</span> -H <span class="s">"Idempotency-Key: $(uuidgen)"</span> \
-  -H <span class="s">'Content-Type: application/json'</span> -H <span class="s">'Accept: application/json, text/event-stream'</span> \
-  -d <span class="s">'{"jsonrpc":"2.0","id":2,"method":"tools/call",
-       "params":{"name":"get_system_time","arguments":{"timezone":"UTC"}}}'</span></pre></div>
-      <div class="code-panel" id="p-obo" role="tabpanel"><pre><span class="c">// Acting for a person: the subject is the PERSON, the actor is YOUR agent.</span>
-<span class="k">forJane</span> := &amp;magertron.Exchange{
-    Client:  mc,
-    Subject: magertron.StaticToken(janeToken), <span class="c">// who it is FOR</span>
-    Actor:   magertron.StaticToken(saToken),   <span class="c">// who is ACTING</span>
-}
-
-<span class="c">// "What can Jane do?" — asked with Jane's credential alone</span>
-<span class="k">tools</span>, err := mc.Catalog(ctx, &amp;magertron.Exchange{Client: mc, Subject: magertron.StaticToken(janeToken)})
-
-<span class="c">// Allowed only where BOTH Jane and the agent are permitted.</span>
-<span class="c">// Billed to Jane, with the agent shown alongside: "jane · via support-agent".</span>
-<span class="k">out</span>, err := mc.CallTool(ctx, forJane, tool, args)</pre></div>
-    </div>
-  </div>
-</section>
-
 <!-- How it works -->
 <section class="dev-section" id="how">
   <div class="container">
@@ -808,6 +739,75 @@ curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
         <a href="/devin/">Devin</a>
         <span>your own Go, Python or TypeScript</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- Three calls -->
+<section class="dev-section" id="three-calls">
+  <div class="container">
+    <div class="center">
+      <div class="section-label">Three calls</div>
+      <div class="section-title">Credential. Catalogue.<br>Tool call.</div>
+      <div class="section-desc">That is the whole integration. The gateway decides, per call, whether it may proceed — you do not implement any of that.</div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Get a credential</h3><p>Trade your agent's token for a five-minute Magertron™ token. Cache it; refresh before it expires.</p></div>
+      <div class="step"><div class="n">02</div><h3>Read the catalogue</h3><p>Ask what may be called. Each tool comes with the platform's verdict for the principal asking.</p></div>
+      <div class="step"><div class="n">03</div><h3>Call the tool</h3><p>JSON-RPC over HTTP, with an idempotency key so a retry is never billed twice.</p></div>
+    </div>
+
+    <div class="code-card">
+      <div class="code-tabs" role="tablist">
+        <button class="code-tab" role="tab" aria-selected="true" data-panel="p-go">Go</button>
+        <button class="code-tab" role="tab" aria-selected="false" data-panel="p-curl">curl</button>
+        <button class="code-tab" role="tab" aria-selected="false" data-panel="p-obo">Acting for a person</button>
+      </div>
+      <div class="code-panel on" id="p-go" role="tabpanel"><pre><span class="k">mc</span>, _ := magertron.New(magertron.Options{GatewayURL: <span class="s">"https://mcp.acme.com"</span>})
+
+<span class="c">// 1 · a credential: your agent's token, exchanged for five-minute ones</span>
+<span class="k">agent</span> := &amp;magertron.Exchange{Client: mc, Subject: magertron.StaticToken(saToken)}
+
+<span class="c">// 2 · what may you call?</span>
+<span class="k">tools</span>, err := mc.Catalog(ctx, agent)
+
+<span class="c">// 3 · call it — authorized, metered, audited, and retried safely</span>
+<span class="k">out</span>, err := mc.CallTool(ctx, agent, tools[0], json.RawMessage(<span class="s">`{"timezone":"UTC"}`</span>))
+
+<span class="k">var</span> r *magertron.Refusal
+<span class="k">if</span> errors.As(err, &amp;r) &amp;&amp; r.Kind == magertron.KindSpendLimit {
+    <span class="c">// a human must lift the limit — tell someone, do not retry</span>
+}</pre></div>
+      <div class="code-panel" id="p-curl" role="tabpanel"><pre><span class="c"># 1 · trade the long-lived token for a five-minute one</span>
+<span class="k">TOKEN</span>=$(curl -s -X POST <span class="s">"$GW/api/v1/token/exchange"</span> -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">"{\"grant_type\":\"urn:ietf:params:oauth:grant-type:token-exchange\",
+       \"subject_token\":\"$SA_TOKEN\",
+       \"subject_token_type\":\"urn:ietf:params:oauth:token-type:jwt\"}"</span> \
+  | python3 -c <span class="s">'import sys,json; print(json.load(sys.stdin)["access_token"])'</span>)
+
+<span class="c"># 2 · what may you call?</span>
+curl -s <span class="s">"$GW/api/v1/portal/catalog"</span> -H <span class="s">"Authorization: Bearer $TOKEN"</span>
+
+<span class="c"># 3 · call a tool (after initialize — see the guide, §4)</span>
+curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
+  -H <span class="s">"Authorization: Bearer $TOKEN"</span> -H <span class="s">"Idempotency-Key: $(uuidgen)"</span> \
+  -H <span class="s">'Content-Type: application/json'</span> -H <span class="s">'Accept: application/json, text/event-stream'</span> \
+  -d <span class="s">'{"jsonrpc":"2.0","id":2,"method":"tools/call",
+       "params":{"name":"get_system_time","arguments":{"timezone":"UTC"}}}'</span></pre></div>
+      <div class="code-panel" id="p-obo" role="tabpanel"><pre><span class="c">// Acting for a person: the subject is the PERSON, the actor is YOUR agent.</span>
+<span class="k">forJane</span> := &amp;magertron.Exchange{
+    Client:  mc,
+    Subject: magertron.StaticToken(janeToken), <span class="c">// who it is FOR</span>
+    Actor:   magertron.StaticToken(saToken),   <span class="c">// who is ACTING</span>
+}
+
+<span class="c">// "What can Jane do?" — asked with Jane's credential alone</span>
+<span class="k">tools</span>, err := mc.Catalog(ctx, &amp;magertron.Exchange{Client: mc, Subject: magertron.StaticToken(janeToken)})
+
+<span class="c">// Allowed only where BOTH Jane and the agent are permitted.</span>
+<span class="c">// Billed to Jane, with the agent shown alongside: "jane · via support-agent".</span>
+<span class="k">out</span>, err := mc.CallTool(ctx, forJane, tool, args)</pre></div>
     </div>
   </div>
 </section>
