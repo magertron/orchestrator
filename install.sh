@@ -481,6 +481,7 @@ Common options:
   --node-port <number>        NodePort for the v3 Envoy (default 30444; only used with
                               --service-type nodeport)
   --chart-version <version>   Pin chart version (default: latest --devel)
+  --skip-disk-check            Install even if the disk is below the minimum (not recommended)
   --namespace <name>          Install namespace (default mcp-system)
   --node-name <node>          Node to label workload=stateful and
                               workload-inventory=true. Only used with
@@ -650,6 +651,7 @@ while [ $# -gt 0 ]; do
         --discard-journal)     DISCARD_JOURNAL=1; shift ;;
         --require-drained)     REQUIRE_DRAINED=1; shift ;;
         --allow-undrained-orphans) ALLOW_UNDRAINED_ORPHANS=1; shift ;;
+        --skip-disk-check) SKIP_DISK_CHECK=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -672,6 +674,31 @@ case "$SERVICE_TYPE" in
     *) echo "ERROR: --service-type must be nodeport|loadbalancer|clusterip (got: $SERVICE_TYPE)" >&2; exit 1 ;;
 esac
 
+
+# ─── Preflight: disk (2026-10-05) ─────────────────────────────────────────────
+# A design partner's 10 GB VM lost its control plane mid-deploy: kubelet evicts
+# pods — Postgres included — once the node's disk passes ~85-90%. Refuse a disk
+# too small to run on; warn on one that will fill quickly.
+DISK_MIN_GB="${MAG_DISK_MIN_GB:-15}"
+DISK_REC_GB="${MAG_DISK_REC_GB:-30}"
+DISK_FREE_REC_GB=10
+disk_path=/
+if [ -d /var/lib/rancher ]; then disk_path=/var/lib/rancher; fi
+read -r disk_total_kb disk_avail_kb < <(df -Pk "$disk_path" | awk 'NR==2 {print $2, $4}')
+disk_total_gb=$(( disk_total_kb / 1048576 ))
+disk_avail_gb=$(( disk_avail_kb / 1048576 ))
+if [ "$disk_total_gb" -lt "$DISK_MIN_GB" ]; then
+    if [ "${SKIP_DISK_CHECK:-0}" = "1" ]; then
+        warn "Disk at ${disk_path} is ${disk_total_gb} GB, below the ${DISK_MIN_GB} GB minimum. Continuing (--skip-disk-check)."
+    else
+        err "Disk at ${disk_path} is ${disk_total_gb} GB. Magertron™ needs at least ${DISK_MIN_GB} GB (${DISK_REC_GB} GB recommended)."
+        err "On a disk this small, Kubernetes evicts pods (Postgres included) as images and data grow,"
+        err "which takes the control plane down. Grow the disk, or pass --skip-disk-check to install anyway."
+        exit 1
+    fi
+elif [ "$disk_total_gb" -lt "$DISK_REC_GB" ] || [ "$disk_avail_gb" -lt "$DISK_FREE_REC_GB" ]; then
+    warn "Disk at ${disk_path}: ${disk_total_gb} GB total, ${disk_avail_gb} GB free. ${DISK_REC_GB} GB total and ${DISK_FREE_REC_GB} GB free are recommended."
+fi
 
 # ─── Validate journal args (3.9.35) ──────────────────────────────────────
 if [ -n "$JOURNAL_SIZE" ]; then
