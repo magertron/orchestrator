@@ -4,39 +4,44 @@ openapi: 3.1.0
 # Magertron Platform API — v1
 #
 # ⚠ SCOPE. The orchestrator registers ~101 routes under /api/v1. This document
-# describes the SUBSET that is intended for customer automation and whose
-# response shapes are asserted by the regression suite. An endpoint's absence
-# here does not mean it is unavailable — it means it is not yet a contract.
+# describes the SUBSET that is intended for customer automation. Endpoints
+# without `x-stability: preview` have response shapes asserted by the
+# regression suite; preview endpoints are documented from the handlers and may
+# still change. An endpoint's absence here does not mean it is unavailable — it
+# means it is not yet a contract.
 #
-# ⚠ PROVENANCE. Every response schema here was taken from a LIVE response on
-# 2026-08-16, not from reading the handlers. That matters: a first draft built
-# from the request side got four things wrong — three endpoints wrap their
-# results in an envelope rather than returning a bare array, Role.permissions
-# is a structured object rather than a list of names, Budget carries live
-# consumption fields, and User reports two different timestamp formats.
+# ⚠ PROVENANCE. Every non-preview response schema here was taken from a LIVE
+# response on 2026-08-16, not from reading the handlers. That matters: a first
+# draft built from the request side got four things wrong — three endpoints
+# wrap their results in an envelope rather than returning a bare array,
+# Role.permissions is a structured object rather than a list of names, Budget
+# carries live consumption fields, and User reports two different timestamp
+# formats. Preview endpoints (added 2026-10-05) were documented from the
+# handlers and a design partner's live trial; they carry the marker until a
+# test pins their shape.
 #
 # ⚠ Where the API is inconsistent, this document says so rather than tidying it
 # up. A spec that describes what you wish you had shipped is worse than none.
 #
 # NOT IN v1, deliberately:
-#   * Metering and cost EXPORT (/api/v1/billing/...). The endpoints exist; no
-#     test asserts their shape, so their contract cannot yet be promised.
 #   * Unity Catalog (/api/v1/uc/...). Substantial and well-tested, but newer —
 #     held for v2 rather than frozen early.
 #   * Governance policy CRUD. Configured in the UI; not an automation surface.
+#   * Service-account and contract CRUD — used by the console, documented next.
 # =============================================================================
 
 info:
-  title: Magertron Platform API
-  version: "1.0.0"
+  title: Magertron™ Platform API
+  version: "1.1.0"
   summary: Governed control plane for MCP servers, agents and their traffic.
   description: |
-    Magertron sits between agents and the MCP servers, LLM providers and REST
+    Magertron™ sits between agents and the MCP servers, LLM providers and REST
     APIs they call. This API is the automation surface for the control plane:
     registering and approving servers, provisioning roles and users, setting
-    tool-level permissions, and capping spend.
+    tool-level permissions, capping spend — and, in preview, the endpoints an
+    agent developer needs: token exchange, the developer portal, and metering.
 
-    ## Three failure modes every client must handle
+    ## Failure modes every client must handle
 
     **503 — not the current leader.** Mutating operations are leader-only, and
     the service load-balances across replicas. On a multi-replica install a
@@ -54,28 +59,77 @@ info:
     **400 — validation.** Field-level, with the offending value named. See each
     operation for its ranges.
 
+    **404 — no such route.** Any unmatched path under `/api/`, `/mcp/` or
+    `/healthz` returns `404` with `{"error":"not_found","detail":"No API route
+    matches <path>"}`. (Builds before 2026-10-05 answered unmatched API paths
+    with `200` and the console's HTML, so a typo read as success.)
+
+    **500 — database errors are never echoed.** When a request fails inside the
+    database, the response says `database error (ref <8 hex>; details in the
+    server log)`. Quote the ref to your operator; the full message is logged
+    against it. Validation and parse errors keep their specific messages.
+
     ## Authentication
 
-    Two mechanisms, and automation wants the second.
+    **Password login** (`POST /auth/login`) is for people. Once an identity
+    provider is connected, administrator accounts are on a two-phase MFA chain:
+    login returns `mfa_required` with a pending ticket rather than a token, and
+    cannot be scripted.
 
-    **Password login** (`POST /auth/login`) is interactive. Administrator
-    accounts are on a two-phase MFA chain, so this returns `mfa_required` with
-    a pending ticket rather than a token — it cannot be scripted.
+    ⚠ **Bootstrap mode.** On an install with **no identity provider connected
+    yet**, an administrator's password login returns a token directly, with
+    `mfa_bootstrap: true` in the response, and the audit log records a
+    `BootstrapAdminLogin` event ("privileged password login with no IdP
+    configured"). MFA is enforced as soon as an IdP exists. Treat bootstrap as
+    an install-time state: connect an identity provider before production use.
 
     **Service-account tokens** are what automation uses: a signed JWT carrying
     `scope_kind=service_account`, with no interactive MFA step. Create the
     service account and its key in the admin UI, then present the token as
     `Authorization: Bearer <jwt>`.
 
+    **Exchanged tokens** (`POST /token/exchange`, preview) are what an agent
+    uses: an RFC 8693 exchange that turns the agent's own token — and, when
+    acting for someone, that person's token — into a five-minute credential.
+
     ⚠ The token's `sub` is the identity every grant is keyed on. Delegated
     OAuth in particular matches on an exact `sub`, and a mismatch returns
     `consent_required` — which reads as "nobody authorized this" rather than
     "you authorized a different principal".
 
+    ### Token scopes
+
+    A token may carry a `scopes` claim that **narrows** what it can call at the
+    gateway. A call must be allowed by the principal's roles **and** match one
+    of the token's scopes; scopes never widen access.
+
+    | Scope | Allows |
+    |---|---|
+    | `*` | everything the roles allow |
+    | `tool:<glob>` | tools matching the glob, e.g. `tool:get_system_time`, `tool:search_*` |
+    | `server:<ns>/<name>` | ⚠ not matched yet — a token whose only scopes are `server:` is refused |
+
+    Scopes for other services in the same claim (e.g. `inventory:read`) do not
+    affect gateway calls. Service accounts get scopes from their *Scopes*
+    field; the developer portal mints tool-scoped tokens (`POST /portal/token`).
+    Before 2026-10-05 the claim was written but not enforced.
+
+    ### Gateway denials
+
+    Tool calls go through the MCP gateway (`/mcp/{ns}/{name}/`), not this API,
+    but their refusals have one documented shape worth keying on:
+
+    ```
+    403 ext_authz: No permission for tool '<tool>'. Principal '<sub>' has roles [<roles>]. Reason: <admin's text, when the rule has one>
+    ```
+
+    The prefix `No permission for tool` is stable; the `Reason:` text is
+    whatever an administrator wrote on the rule and must not be parsed.
+
     ## Namespaces
 
-    There is no namespace editor in the admin UI and no namespace endpoint in
-    this API — namespaces are not managed as objects.
+    There is **no endpoint to create or delete namespaces**, and no namespace
+    editor in the admin UI — namespaces are not managed as objects.
 
     A namespace comes into being when a server is registered into it: you name
     it **explicitly**, in the deploy wizard or in `POST /servers`, and the
@@ -101,19 +155,21 @@ info:
     * New optional request fields may be added. Existing requests keep working.
     * Status codes for a given outcome will not change.
 
+    Operations marked `x-stability: preview` are **excluded from these
+    promises** until a regression test pins their shape. They are documented
+    because developers need them now; expect additive changes.
+
     **Breaking changes go to `/api/v2`.** When v2 ships, **v1 remains
     supported for 12 months** from that date.
 
     ⚠ **What is NOT covered.** The orchestrator registers roughly a hundred
-    routes under `/api/v1/`. This document describes eighteen of them. The rest
-    are reachable, and some are useful, but they carry no contract and may
-    change in any release without notice. In particular:
+    routes under `/api/v1/`. This document describes thirty operations across
+    twenty-five paths, six of them in preview. The rest are reachable, and some are useful, but they carry no
+    contract and may change in any release without notice. In particular:
 
     * `/api/v1/uc/...` — Unity Catalog. Substantial and well-tested, but newer;
       held for v2 rather than frozen early.
-    * `/api/v1/billing/...` — metering and cost export. Commercially the most
-      interesting gap, and deliberately excluded: nothing currently asserts
-      those response shapes, so their contract cannot honestly be promised.
+    * Service-account and contract creation — console-driven today.
     * Governance policy CRUD, drift, and the assistant endpoints.
 
     If you need one of those, say so — the bar for adding an endpoint to v1 is
@@ -159,8 +215,16 @@ tags:
     description: Per-server spend caps enforced at the gateway.
   - name: Auth
     description: Obtaining a token.
+  - name: Agents
+    description: |
+      Preview. What an agent developer needs: token exchange, the developer
+      portal's catalog and token minting.
+  - name: Billing
+    description: Preview. Metering and contract cost reads.
   - name: Namespaces
     description: Enumerating tenants.
+  - name: System
+    description: Preview. Host health.
 
 # =============================================================================
 paths:
@@ -173,9 +237,14 @@ paths:
       operationId: login
       security: []
       description: |
-        ⚠ Interactive only. Accounts on the two-phase MFA chain — which
-        includes administrators by policy — receive `mfa_required: true` and a
-        `pending` ticket instead of a token, and must complete the IdP leg.
+        For people, not automation. Once an identity provider is connected,
+        accounts on the two-phase MFA chain — which includes administrators by
+        policy — receive `mfa_required: true` and a `pending` ticket instead of
+        a token, and must complete the IdP leg.
+
+        ⚠ **Bootstrap mode:** with no identity provider connected, an
+        administrator receives a token directly, marked `mfa_bootstrap: true`.
+        See *Authentication* in the API description.
 
         **Automation should use a service-account token instead** and not call
         this endpoint at all.
@@ -201,6 +270,308 @@ paths:
                   - $ref: "#/components/schemas/LoginToken"
                   - $ref: "#/components/schemas/LoginMfaChallenge"
         "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ─── Agents (preview) ───────────────────────────────────────────────────
+  /token/exchange:
+    post:
+      tags: [Agents]
+      summary: Exchange a token for a short-lived Magertron credential (RFC 8693)
+      operationId: tokenExchange
+      x-stability: preview
+      security: []
+      description: |
+        Trades an agent's token — and, to act for a person, that person's token
+        — for a **five-minute** credential carrying both identities, signed.
+
+        * Agent alone: send `subject_token` = the agent's token.
+        * Acting for a person: `subject_token` = the **person's** token,
+          `actor_token` = the **agent's** token. ⚠ The RFC's names read
+          backwards: the subject is the human. Sending only a subject token is
+          a valid, **undelegated** exchange — calls with it are attributed to
+          the agent alone.
+
+        Both tokens must carry the exchange audience your platform team
+        configured (an id_token will not).
+
+        **Non-delegable roles.** If the person holds a non-delegable role
+        (default: `system:platform-admin`, `system:operator`,
+        `system:model-compare`; `MCP_NON_DELEGABLE_ROLES` overrides), the
+        exchange is refused with 403 and no credential is issued, and a
+        `TokenExchangeDenied` audit row names both identities.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [grant_type, subject_token, subject_token_type]
+              properties:
+                grant_type:
+                  type: string
+                  const: urn:ietf:params:oauth:grant-type:token-exchange
+                subject_token:
+                  type: string
+                  description: The agent's token, or — when delegating — the PERSON's token.
+                subject_token_type:
+                  type: string
+                  const: urn:ietf:params:oauth:token-type:jwt
+                actor_token:
+                  type: string
+                  description: When delegating, the AGENT's token.
+                actor_token_type:
+                  type: string
+                  const: urn:ietf:params:oauth:token-type:jwt
+      responses:
+        "200":
+          description: A credential valid for five minutes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, example: Bearer }
+                  expires_in: { type: integer, example: 300 }
+        "401":
+          description: |
+            A token failed verification, or names an identity the platform does
+            not know. The message says which, e.g.
+            `actor_token verification failed: …`,
+            `No user is provisioned for subject '…'. The person an agent acts for must be a known identity.`
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: The person holds a non-delegable role.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, const: access_denied }
+                  error_description: { type: string }
+              example:
+                error: access_denied
+                error_description: "user 'ops-admin' holds a non-delegable role (system:platform-admin): an agent may not act for an administrator"
+
+  /portal/catalog:
+    get:
+      tags: [Agents]
+      summary: What the caller may call
+      operationId: portalCatalog
+      x-stability: preview
+      description: |
+        The servers and tools the caller's roles reach, as the developer portal
+        shows them. When acting for a person, call it with the **person's**
+        token alone — the intersection with your agent hides tools your agent
+        happens to lack, which is a confusing answer to "what can I do here".
+        Every call is gated regardless, so nothing becomes reachable by being
+        listed.
+      responses:
+        "200":
+          description: The catalog.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /portal/token:
+    post:
+      tags: [Agents]
+      summary: Mint a personal token from the developer portal
+      operationId: portalToken
+      x-stability: preview
+      description: |
+        Mints a token for the signed-in person, for a script or agent they run.
+        It carries the person's own subject and roles — **never more**.
+
+        * `scope: "my-access"` (or omitted): everything the person's roles allow.
+        * `scope: "this-tool"` with `tool`: a token whose `scopes` claim is
+          `["tool:<tool>"]` — the gateway refuses any other tool with it.
+
+        ⚠ **Lifetime is one hour**, and the token cannot be revoked early: its
+        short life is the control. Anything that must run longer belongs on a
+        service account, which can be rotated and revoked.
+
+        Administrators can disable minting (`portal.allow_mint_token`); the
+        endpoint then returns 403.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                purpose:
+                  type: string
+                  description: Free-text label recorded in the audit log. Does not affect access.
+                scope:
+                  type: string
+                  enum: [my-access, this-tool]
+                  default: my-access
+                tool:
+                  type: string
+                  description: Required when `scope` is `this-tool`. Letters, digits, `_`, `-`, `.`; up to 128 characters.
+                  example: get_system_time
+      responses:
+        "200":
+          description: The token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  expires_in: { type: integer, example: 3600 }
+                  purpose: { type: string }
+                  scopes:
+                    type: array
+                    items: { type: string }
+                    description: Empty for `my-access`; `["tool:<tool>"]` for `this-tool`.
+        "400":
+          description: '`scope` is `this-tool` but `tool` is missing or invalid.'
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          description: |
+            Not signed in. ⚠ Deliberately 401, not 403, even when minting is
+            disabled: telling an unauthenticated caller a feature is off tells
+            them it exists.
+        "403":
+          description: Minting is disabled on this install, or the caller lacks portal access.
+
+  # ─── Billing (preview) ──────────────────────────────────────────────────
+  /billing/meter-events:
+    get:
+      tags: [Billing]
+      summary: Metered calls, one row per call per dimension
+      operationId: listMeterEvents
+      x-stability: preview
+      description: |
+        The raw meter: one row per call **per dimension** (`calls`, `bytes`,
+        tokens, `amount_usd`, …). Count calls on `dimension = calls`; the other
+        rows are the same call's other measures.
+
+        **Delegated calls** carry `on_behalf_of` (the person), `caller_type:
+        user`, and a `caller_display` of `<person> · via <agent>`.
+        `caller_user_id` remains the identity that authenticated (the agent).
+        Filtering by `caller_user_id` matches either identity.
+
+        **Retries** sent with the same `Idempotency-Key` produce one row.
+      parameters:
+        - { name: caller_user_id, in: query, schema: { type: string }, description: "Matches the authenticating identity OR the person a delegated call was for." }
+        - { name: caller_type, in: query, schema: { type: string, enum: [user, service_account] } }
+        - { name: dept_id, in: query, schema: { type: string, format: uuid } }
+        - { name: server_id, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: namespace, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: A page of meter rows.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/MeterEvent" }
+                  total: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /contracts/{contractId}/costs:
+    parameters:
+      - name: contractId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Billing]
+      summary: Rated cost of a contract for one billing period
+      operationId: getContractCosts
+      x-stability: preview
+      description: |
+        The rating engine's output for one period, by dimension.
+
+        ⚠ `cost_state` here is the **rating** state (`ESTIMATED` until the
+        period is finalised, then `FINAL`). The `cost_state` on meter events is
+        a different thing — whether a rate card priced the row (`RATED` or
+        blank). Calls appear here once rated, normally within a minute or two.
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema: { type: string, example: "2026-10" }
+          description: '`YYYY-MM` or `YYYY-MM-DD`; either is read as that month. (Earlier builds accepted only `YYYY-MM-DD`.)'
+      responses:
+        "200":
+          description: The period's costs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contract_id: { type: string, format: uuid }
+                  period: { type: string, example: "2026-10-01" }
+                  total_usd: { type: number }
+                  cost_state: { type: string, enum: [ESTIMATED, FINAL, ""] }
+                  by_dimension:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool_id: { type: string }
+                        dimension: { type: string }
+                        quantity: { type: number }
+                        amount_usd: { type: number }
+                        cost_state: { type: string }
+        "400":
+          description: |
+            `contract id must be a UUID`, or
+            `period must be YYYY-MM or YYYY-MM-DD, e.g. 2026-10`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  # ─── System (preview) ───────────────────────────────────────────────────
+  /admin/disk/health:
+    get:
+      tags: [System]
+      summary: Host disk usage, as the platform sees it
+      operationId: getDiskHealth
+      x-stability: preview
+      description: |
+        Free space on the node's disk, read from inside the orchestrator pod.
+        Kubernetes evicts pods — Postgres included — at roughly 85–90% used, so
+        the thresholds sit below that. At `critical`, deploying, scaling up and
+        pulling models are refused with `507`.
+        Thresholds: `MCP_DISK_WARN_PCT` (75), `MCP_DISK_CRIT_PCT` (80).
+      responses:
+        "200":
+          description: Disk usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  available: { type: boolean }
+                  path: { type: string, example: / }
+                  total_bytes: { type: integer }
+                  used_bytes: { type: integer }
+                  avail_bytes: { type: integer }
+                  used_pct: { type: number, example: 62.1 }
+                  status: { type: string, enum: [ok, warning, critical] }
+                  thresholds:
+                    type: object
+                    properties:
+                      warning_pct: { type: number }
+                      critical_pct: { type: number }
+        "403": { description: Caller may not read platform health. }
 
   # ─── Namespaces ─────────────────────────────────────────────────────────
   /namespaces:
@@ -275,6 +646,14 @@ paths:
         puts them in `Registered`; `POST /servers/{ns}/{name}/approve` moves
         them to `Active` and builds the gateway route.
 
+        ⚠ **Internal servers reach `Running` on their own**: the platform waits
+        for the pod, runs the MCP handshake and discovers its tools — typically
+        within seconds of the pod becoming ready.
+
+        ⚠ **Disk guard.** An internal deploy is refused with `507` when the
+        node's disk is at its critical threshold (see `GET /admin/disk/health`).
+        `"ignore_disk_guard": true` overrides, and is logged.
+
         ⚠ **Leader-only.** See the 503 note in the API description.
       requestBody:
         required: true
@@ -327,6 +706,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
         "503": { $ref: "#/components/responses/NotLeader" }
+        "507": { $ref: "#/components/responses/InsufficientDisk" }
 
   /servers/{namespace}/{name}:
     parameters:
@@ -545,6 +925,10 @@ paths:
         `system:mcp-consumer`, `system:llm-consumer` and `system:api-consumer`.
         With only the first, their agent is refused the moment it reaches a
         model, which reads as a broken platform rather than a missing grant.
+
+        ⚠ **Departments.** Delegated calls are charged to the *person's*
+        department. A user in no department charges nobody — map people to a
+        department for chargeback to attribute their spend.
       requestBody:
         required: true
         content:
@@ -625,6 +1009,11 @@ paths:
         refreshes about once a minute, so a freshly written grant can take that
         long to take effect. Automation that writes a grant and immediately
         exercises it should poll rather than assume.
+
+        ⚠ **`reason` is shown to callers.** When a rule refuses a call, its
+        reason is appended to the gateway's denial after the fixed
+        `No permission for tool …` text — write it for the person who will
+        read it.
       requestBody:
         required: true
         content:
@@ -653,30 +1042,66 @@ paths:
       summary: Dry-run an authorization decision
       operationId: testToolPermission
       description: |
-        Resolves what the policy engine WOULD decide, without making a call and
-        without writing anything. Useful for proving a grant before relying on
-        it, and for explaining a refusal.
+        Resolves what the policy engine WOULD decide for a set of roles,
+        without making a call and without writing anything. Useful for proving
+        a grant before relying on it, and for explaining a refusal: the trace
+        lists every rule that matched, in precedence order.
+
+        ⚠ **`role_ids` is an array.** (Earlier versions of this document showed
+        a single `role_id`; the endpoint has always required the array.)
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [role_ids, tool_name]
               properties:
-                role_id: { type: string }
-                tool_name: { type: string }
+                role_ids:
+                  type: array
+                  items: { type: string }
+                  example: ["system:mcp-consumer"]
+                tool_name: { type: string, example: get_system_time }
       responses:
         "200":
-          description: The decision and the rule that produced it.
+          description: The decision, the rule that produced it, and every rule that matched.
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  server: { type: string }
+                  tool_name: { type: string }
+                  role_ids:
+                    type: array
+                    items: { type: string }
                   allowed: { type: boolean }
-                  effect: { type: string, enum: [ALLOW, DENY] }
+                  effect_applied:
+                    type: string
+                    enum: [ALLOW, DENY, NO_POLICY, ENFORCEMENT_DISABLED]
+                  reason:
+                    type: string
+                    description: For a refusal, the same text the gateway returns — `No permission for tool …`.
+                  matched_policy_id: { type: string, format: uuid }
+                  matched_role_id: { type: string }
                   matched_pattern: { type: string }
-                  reason: { type: string }
+                  matched_pattern_type: { type: string, enum: [EXACT, WILDCARD, REGEX] }
+                  matching_policies_trace:
+                    type: array
+                    description: Every matching rule, in precedence order; the first decided.
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        role_id: { type: string }
+                        tool_pattern: { type: string }
+                        pattern_type: { type: string }
+                        effect: { type: string }
+        "400":
+          description: '`role_ids (array) and tool_name are required`.'
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /tool-rbac/permissions/{permissionId}:
     parameters:
@@ -727,7 +1152,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Budget" }
-        "404": { description: No budget set for this server. }
+        "404":
+          description: |
+            No budget set for this server. ⚠ The current message reads
+            `Server not found: <ns>/<name>` even when the server exists —
+            treat any 404 here as "no budget".
     put:
       tags: [Budgets]
       summary: Set or replace a server's budget
@@ -812,9 +1241,10 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        A service-account JWT for automation, or a token from `/auth/login` for
-        interactive use. The token's `sub` is the identity every grant is keyed
-        on.
+        A service-account JWT for automation, an exchanged token for an agent,
+        or a token from `/auth/login` for interactive use. The token's `sub` is
+        the identity every grant is keyed on; its optional `scopes` claim
+        narrows what it may call at the gateway.
 
   parameters:
     Namespace:
@@ -893,6 +1323,22 @@ components:
               error: { type: string }
               current: { type: integer }
               cap: { type: integer }
+    InsufficientDisk:
+      description: |
+        The node's disk is at its critical threshold, so an operation that adds
+        to it (deploy, scale up, model pull) was refused before it could take
+        the control plane down. Free space or grow the disk, then retry.
+        `"ignore_disk_guard": true` in the request body overrides (logged).
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, const: insufficient_disk }
+              detail: { type: string }
+              used_pct: { type: number }
+              critical_pct: { type: number }
+              avail_gb: { type: number }
 
   schemas:
 
@@ -925,7 +1371,7 @@ components:
             `Running` is the serving state for internal servers; `Active` is
             the serving state for external ones. `Registered` means an external
             server awaits approval.
-          enum: [Pending, Registered, Deploying, Running, Active, Inactive, Failed, ProbeFailed]
+          enum: [Pending, Registered, Deploying, Probing, Running, Active, Inactive, Failed, ProbeFailed]
         deployed_by: { type: string }
         routing_mode: { type: string, example: v3 }
         group_name: { type: string }
@@ -1002,6 +1448,11 @@ components:
 
     Health:
       type: object
+      description: |
+        Live figures for internal servers, filled by the platform's health
+        monitor. ⚠ On builds before 2026-10-05, one server whose Deployment had
+        disappeared stopped the monitor for every server after it, leaving all
+        zeros; those builds also left new internal servers in `Deploying`.
       properties:
         liveness: { type: boolean }
         readiness: { type: boolean }
@@ -1232,6 +1683,12 @@ components:
         env_vars:
           type: object
           additionalProperties: { type: string }
+        ignore_disk_guard:
+          type: boolean
+          default: false
+          description: |
+            Deploy even when the node's disk is critical. For emergencies;
+            logged. See `GET /admin/disk/health`.
 
     CreateExternalServer:
       type: object
@@ -1336,7 +1793,9 @@ components:
           description: ⚠ DENY wins over ALLOW when both match.
         valid_from: { type: string, format: date-time }
         valid_until: { type: string, format: date-time }
-        reason: { type: string }
+        reason:
+          type: string
+          description: Appended to the gateway's denial when this rule refuses a call — callers read it.
 
     ToolPermission:
       allOf:
@@ -1348,6 +1807,43 @@ components:
             created_at: { type: string, format: date-time }
             created_by: { type: string }
 
+    MeterEvent:
+      type: object
+      description: |
+        Preview. One measure of one call. A call writes one row per dimension;
+        `billing_group_id` ties a call's rows together.
+      properties:
+        incurred_at: { type: string, format: date-time }
+        caller_user_id:
+          type: string
+          description: The identity that authenticated — the agent, on a delegated call.
+        caller_type: { type: string, enum: [user, service_account] }
+        caller_display:
+          type: string
+          description: '`<person> · via <agent>` on a delegated call.'
+          example: "zuraiz-user@example.com · via zuraiz-path-a"
+        on_behalf_of:
+          type: string
+          description: The person a delegated call was made for. Empty on a direct call.
+        dept_id: { type: string }
+        dept_name: { type: string }
+        cost_center: { type: string }
+        server_id: { type: string, format: uuid }
+        server_name: { type: string }
+        namespace: { type: string }
+        tool_id: { type: string }
+        method: { type: string }
+        dimension: { type: string, example: calls }
+        quantity: { type: number }
+        amount_usd: { type: number }
+        cost_state:
+          type: string
+          description: '`RATED` when a rate card priced this dimension; blank when nothing did.'
+        status: { type: string, enum: [success, error] }
+        session_id: { type: string }
+        idempotency_key: { type: string }
+        billing_group_id: { type: string, format: uuid }
+
     LoginToken:
       type: object
       properties:
@@ -1356,6 +1852,12 @@ components:
         roles:
           type: array
           items: { type: string }
+        mfa_bootstrap:
+          type: boolean
+          description: |
+            True when an administrator logged in by password because no
+            identity provider is connected yet (bootstrap mode). MFA is
+            enforced once one is. Absent otherwise.
 
     LoginMfaChallenge:
       type: object
@@ -1404,4 +1906,5 @@ components:
       type: object
       properties:
         error: { type: string }
+        detail: { type: string }
         hint: { type: string }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
 <title>Build an Agent on Magertron™ — Governed Tool and Model Calls</title>
-<meta name="description" content="Open-source example code for agents that call tools and models through Magertron: token exchange, delegated calls for a person, idempotent retries, and the refusal rules. Apache-2.0, on GitHub.">
+<meta name="description" content="Open-source example code for agents that call tools and models through Magertron™: token exchange, delegated calls for a person, idempotent retries, and the refusal rules. Apache-2.0, on GitHub.">
 <link rel="canonical" href="https://magertron.com/developers.html">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://magertron.com/developers.html">
@@ -665,13 +665,13 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="center">
       <div class="section-label">Two identities, one call</div>
       <div class="section-title">The agent acts.<br>The person is accountable.</div>
-      <div class="section-desc">Every delegated call carries both identities, signed together by the platform. It can never reach further than the agent could alone — and the bill goes to the person who asked.</div>
+      <div class="section-desc">Every delegated call carries both identities, signed together by the platform. It can never reach further than the agent or the person could alone, an agent can never act for an administrator, and the bill goes to the person who asked.</div>
     </div>
 
     <div class="mag-arch-card">
       <div class="mag-arch-scroll">
         <svg viewBox="0 0 1000 400" role="img" aria-labelledby="dev-arch-title">
-          <title id="dev-arch-title">A person and an agent are exchanged into one token; the Magertron gateway authorizes both, injects vendor credentials, meters the call and routes it to tools and models; the chargeback bills the person via the agent.</title>
+          <title id="dev-arch-title">A person and an agent are exchanged into one token; the Magertron™ gateway authorizes both, injects vendor credentials, meters the call and routes it to tools and models; the chargeback bills the person via the agent.</title>
           <defs>
             <marker id="dh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" class="ma-head"/>
@@ -703,7 +703,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
           <text x="556" y="180" class="ma-t-sm"><tspan class="ma-acc">✓</tspan>  check the tool is approved</text>
           <text x="556" y="210" class="ma-t-sm"><tspan class="ma-acc">✓</tspan>  enforce the budget</text>
           <text x="556" y="240" class="ma-t-sm"><tspan class="ma-acc">✓</tspan>  inject the vendor credential</text>
-          <text x="556" y="270" class="ma-t-sm"><tspan class="ma-acc">✓</tspan>  meter each call exactly once</text>
+          <text x="556" y="270" class="ma-t-sm"><tspan class="ma-acc">✓</tspan>  meter once per Idempotency-Key</text>
           <text x="556" y="300" class="ma-t-sm"><tspan class="ma-acc">✓</tspan>  write the audit record</text>
 
           <!-- upstreams -->
@@ -755,7 +755,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="steps">
       <div class="step"><div class="n">01</div><h3>Get a credential</h3><p>Trade your agent's token for a five-minute Magertron™ token. Cache it; refresh before it expires.</p></div>
       <div class="step"><div class="n">02</div><h3>Read the catalogue</h3><p>Ask what may be called. Each tool comes with the platform's verdict for the principal asking.</p></div>
-      <div class="step"><div class="n">03</div><h3>Call the tool</h3><p>JSON-RPC over HTTP, with an idempotency key so a retry is never billed twice.</p></div>
+      <div class="step"><div class="n">03</div><h3>Call the tool</h3><p>JSON-RPC over HTTP, with an <code>Idempotency-Key</code> so a retry is never billed twice.</p></div>
     </div>
 
     <div class="code-card">
@@ -789,7 +789,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <span class="c"># 2 · what may you call?</span>
 curl -s <span class="s">"$GW/api/v1/portal/catalog"</span> -H <span class="s">"Authorization: Bearer $TOKEN"</span>
 
-<span class="c"># 3 · call a tool (after initialize — see the guide, §4)</span>
+<span class="c"># 3 · call a tool (after initialize — see the guide, §3)</span>
 curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
   -H <span class="s">"Authorization: Bearer $TOKEN"</span> -H <span class="s">"Idempotency-Key: $(uuidgen)"</span> \
   -H <span class="s">'Content-Type: application/json'</span> -H <span class="s">'Accept: application/json, text/event-stream'</span> \
@@ -827,7 +827,7 @@ curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
         <p>No identity provider needed. An administrator creates the service account — in the console, through SCIM or with Terraform — and Magertron™ signs its token.</p>
         <ul>
           <li>One service-account token, held in your secrets manager</li>
-          <li>Exchanged for five-minute tokens on every call</li>
+          <li>Exchanged for five-minute tokens, cached and refreshed before they expire</li>
           <li>Acting for a person: an admin issues the person's token, and the same exchange binds the two</li>
         </ul>
       </div>
@@ -837,7 +837,7 @@ curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
         <p>Already on Auth0, Entra ID or another OIDC directory? Your agent gets a token from it with client credentials, and Magertron™ exchanges it.</p>
         <ul>
           <li>Long-lived secrets stay in your directory</li>
-          <li>Magertron™ tokens never outlive five minutes</li>
+          <li>Exchanged Magertron™ tokens last five minutes</li>
           <li>Acting for a person: their directory token is the subject, yours the actor</li>
         </ul>
       </div>
@@ -923,7 +923,7 @@ curl -s -X POST <span class="s">"$GW/mcp/mcp-prod/time/"</span> \
     <h3 id="demo-modal-title">Get a live instance</h3>
     <p id="demo-modal-subtitle" style="margin-bottom:14px;">
       <strong style="color:var(--text-primary);">A private instance, today.</strong>
-      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      Not a slide deck and not a screen share — a URL and a login to a Magertron™
       of your own, with servers, traffic and audit history already running in it.
       Bring your own model key and the assistant works too.
     </p>
@@ -977,7 +977,7 @@ function openDemoModal(e, mode) {
     if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
   } else {
     if (title) title.textContent = 'Get a live instance';
-    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron™ instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
   }
 
   document.getElementById('demoModal').classList.add('open');
@@ -1045,7 +1045,7 @@ function submitDemoForm() {
   })
   .catch(err => {
     alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
-    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Send it over →'; }
   });
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
