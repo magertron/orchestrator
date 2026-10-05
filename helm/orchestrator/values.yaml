@@ -259,7 +259,7 @@ orchestrator:
     # A short dev interval removes the ~10-minute wait that makes a rating
     # test impractical:
     #   --set orchestrator.env.ratingIntervalSeconds=5
-    ratingIntervalSeconds: 600    # rate every 10 min   (must be > 0)
+    ratingIntervalSeconds: "60"   # was 600: a 10-minute gap kept calls out of the chargeback (design partner, 2026-10-05)
     ratingSettleSeconds: 60       # only rate events >60s old   (>= 0)
 
     # Delegated-token refresh sweeper. Leader-only.
