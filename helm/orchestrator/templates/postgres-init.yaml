@@ -2809,7 +2809,7 @@ data:
        {"actions":1,"namespace":"*","resource_name":"*","resource_type":4},
        {"actions":1,"namespace":"*","resource_name":"*","resource_type":5}]',
      '["*"]', TRUE)
-    ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO UPDATE SET system_role = TRUE;  -- #15: an earlier row was created with system_role false
 
     -- Evidence reader. Held by mcp-evidence-agent so the evidence MCP server
     -- can read authority records and audit history as itself.
