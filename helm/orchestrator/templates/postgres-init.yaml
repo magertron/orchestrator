@@ -548,6 +548,18 @@ data:
              AND auth_type IS NOT NULL)
         )
     );
+
+    -- Server icons (2026-10-06). Uploaded icon per server; the console falls
+    -- back to the catalog icon when there is none. Own table so the bytes never
+    -- ride along with deployed_servers reads (the ext_authz hot path).
+    CREATE TABLE IF NOT EXISTS server_icons (
+        server_id  uuid PRIMARY KEY REFERENCES deployed_servers(id) ON DELETE CASCADE,
+        icon       bytea       NOT NULL,
+        icon_type  text        NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        updated_by text        NOT NULL DEFAULT ''
+    );
+
     -- For existing installs (upgrade path from pre-1.15 schema):
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS command JSONB NOT NULL DEFAULT '[]';
     ALTER TABLE deployed_servers ADD COLUMN IF NOT EXISTS args    JSONB NOT NULL DEFAULT '[]';
