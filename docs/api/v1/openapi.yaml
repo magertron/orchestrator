@@ -390,6 +390,8 @@ paths:
         * `scope: "my-access"` (or omitted): everything the person's roles allow.
         * `scope: "this-tool"` with `tool`: a token whose `scopes` claim is
           `["tool:<tool>"]` — the gateway refuses any other tool with it.
+          Without `tool` (or with an invalid name) the request is refused with 400.
+          The response echoes `scope` and `scopes`.
 
         ⚠ **Lifetime is one hour**, and the token cannot be revoked early: its
         short life is the control. Anything that must run longer belongs on a
@@ -1104,6 +1106,39 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
 
   /tool-rbac/permissions/{permissionId}:
+    put:
+      tags: [RBAC]
+      summary: Change a tool permission
+      operationId: updateToolPermission
+      description: |
+        Fields sent replace; omitted fields keep their values. `role_id` and the
+        server cannot change.
+
+        ⚠ **An effect change (ALLOW ⇄ DENY) is a transition, not an edit.** The
+        rule is closed (its `valid_until` set) and a successor is created with a
+        NEW id, returned with `replaces: <old id>`, so the audit trail keeps the
+        fact that it ever said the other thing. A reason or pattern edit updates
+        in place.
+
+        ⚠ A PUT or DELETE to a closed rule's id returns **404** "is closed and
+        no longer in force". Follow `replaces` to the rule in force.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pattern_type: { type: string, enum: [EXACT, WILDCARD, REGEX] }
+                tool_pattern: { type: string }
+                effect: { type: string, enum: [ALLOW, DENY] }
+                reason: { type: string }
+                valid_from: { type: [string, "null"], format: date-time }
+                valid_until: { type: [string, "null"], format: date-time }
+      responses:
+        "200":
+          description: The rule in force — a new id with `replaces` after an effect change.
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { description: Unknown id, or the rule is closed. }
     parameters:
       - name: permissionId
         in: path
@@ -1154,9 +1189,7 @@ paths:
               schema: { $ref: "#/components/schemas/Budget" }
         "404":
           description: |
-            No budget set for this server. ⚠ The current message reads
-            `Server not found: <ns>/<name>` even when the server exists —
-            treat any 404 here as "no budget".
+            No budget set for this server. The message reads `No budget set for <ns>/<name>`.
     put:
       tags: [Budgets]
       summary: Set or replace a server's budget
@@ -1771,9 +1804,15 @@ components:
 
     PutBudget:
       type: object
+      description: |
+        At least one of `threshold_pct` or `limit_usd` is required; send both and
+        the stricter applies. An absolute-only budget (just `limit_usd`) is the
+        only usable kind on a server whose contract carries no commitment.
+        Numbers or numeric strings are accepted (console forms send strings).
+        `budget_amount_usd` is accepted as a legacy name for `limit_usd`.
       properties:
-        threshold_pct: { type: number, minimum: 0, maximum: 100 }
-        limit_usd: { type: number, minimum: 0 }
+        threshold_pct: { type: [number, string, "null"], minimum: 0, maximum: 100 }
+        limit_usd: { type: [number, string, "null"], minimum: 0 }
         override: { type: boolean, default: false }
 
     CreateToolPermission:
