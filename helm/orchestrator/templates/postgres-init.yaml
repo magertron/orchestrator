@@ -549,6 +549,25 @@ data:
         )
     );
 
+    -- Published prices (.x402, 2026-10-06): what MCP servers advertise per tool
+    -- (_meta.x402). A billing fact, compared with the contract rate; never gates
+    -- a call. usd_per_call only for assets with known decimals (USDC/USDT).
+    CREATE TABLE IF NOT EXISTS published_prices (
+        server_id     uuid          NOT NULL,
+        tool_name     text          NOT NULL,
+        scheme        text          NOT NULL DEFAULT 'x402',
+        amount        numeric(78,0) NOT NULL,
+        asset         text          NOT NULL DEFAULT '',
+        network       text          NOT NULL DEFAULT '',
+        pay_to        text          NOT NULL DEFAULT '',
+        usd_per_call  numeric(30,12),
+        first_seen_at timestamptz   NOT NULL DEFAULT now(),
+        observed_at   timestamptz   NOT NULL DEFAULT now(),
+        changed_at    timestamptz   NOT NULL DEFAULT now(),
+        PRIMARY KEY (server_id, tool_name, scheme)
+    );
+
+
     -- Server icons (2026-10-06). Uploaded icon per server; the console falls
     -- back to the catalog icon when there is none. Own table so the bytes never
     -- ride along with deployed_servers reads (the ext_authz hot path).
