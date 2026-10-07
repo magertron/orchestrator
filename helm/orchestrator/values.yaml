@@ -2113,7 +2113,7 @@ scanning:
   trivy:
     image:
       repository: aquasec/trivy
-      tag: "0.67.0"
+      tag: "0.75.0"
       pullPolicy: IfNotPresent
     port: 4954
     # The vuln DB is ~900MB. emptyDir re-downloads on pod restart; enable
@@ -2133,7 +2133,7 @@ scanning:
   adapter:
     image:
       repository: curtismager20/scanner-adapter
-      tag: "0.2.0"
+      tag: "0.2.1"
       pullPolicy: IfNotPresent
     port: 8080
     replicaCount: 1
