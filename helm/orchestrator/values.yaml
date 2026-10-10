@@ -1459,8 +1459,10 @@ loadBalancer:
 postgresql:
   enabled: true
   image:
-    repository: postgres
-    tag: 17-alpine
+    # Magertron build: postgres:17-alpine minus gosu (25 HIGH/CRITICAL), runs as uid 70.
+    # Source: images/postgres/Dockerfile in the orchestrator repo.
+    repository: curtismager20/mcp-postgres
+    tag: "17.11-alpine-nogosu"
   # ── Server settings (3.7.x) ──────────────────────────────────────────────
   # ⚠ maxConnections was the REAL ceiling on orchestrator.dbPoolSize, not the
   # pool. Stock Postgres allows 100 and roughly 63 are consumed at idle
@@ -1783,8 +1785,10 @@ inventory:
   postgresql:
     enabled: true
     image:
-      repository: postgres
-      tag: 17-alpine
+      # Magertron build: postgres:17-alpine minus gosu (25 HIGH/CRITICAL), runs as uid 70.
+      # Source: images/postgres/Dockerfile in the orchestrator repo.
+      repository: curtismager20/mcp-postgres
+      tag: "17.11-alpine-nogosu"
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
     tolerations: []
