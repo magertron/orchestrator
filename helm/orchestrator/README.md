@@ -1,9 +1,9 @@
-# MCP Orchestrator — Helm Chart
+# Magertron™ AI Orchestrator — Helm Chart
 
-**Current release:** the 3.6.x family — Helm chart on [magertron.com/charts](https://magertron.com/charts).
+**Current release:** see the Helm chart on [magertron.com/charts](https://magertron.com/charts).
 For the exact version being served: `helm repo update magertron && helm search repo magertron/mcp-orchestrator --versions | head -3`
 
-Install guide for the MCP Orchestrator Helm chart, focused on **on-prem and
+Install guide for the Magertron™ AI Orchestrator Helm chart, focused on **on-prem and
 private-cloud Kubernetes deployments**. If you're on a managed cloud
 (EKS / GKE / AKS), the chart works there too — see the last appendix.
 
@@ -73,7 +73,7 @@ Full CLI usage guide: see [mcpctl/README.md](mcpctl/README.md).
 
 ## What you're installing
 
-The chart deploys the full MCP Orchestrator platform to your cluster:
+The chart deploys the full Magertron™ AI Orchestrator platform to your cluster:
 
 - **Orchestrator** (2 replicas by default) — the control plane, REST API, and
   admin UI
@@ -130,7 +130,7 @@ kubectl get nodes     # confirms you can reach the cluster
 
 ### 3. A TLS certificate for your hostname
 
-MCP Orchestrator terminates TLS at the Envoy gateway using a cert you
+Magertron™ AI Orchestrator terminates TLS at the Envoy gateway using a cert you
 provide. Pick the hostname customers will use to reach the orchestrator
 (e.g. `mcp.yourcompany.com`) and get a cert+key for it.
 
