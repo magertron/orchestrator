@@ -1018,8 +1018,10 @@ envoy:
   # autoscaling block below extends this up to 10 replicas under load.
   replicaCount: 2
   image:
-    repository: envoyproxy/envoy
-    tag: distroless-v1.33.14
+    # Magertron build: Wolfi envoy 1.38.1 on wolfi-base, uid 65532, 0 Trivy findings.
+    # Source: images/envoy/Dockerfile. Replaces envoyproxy/envoy distroless (Debian 12).
+    repository: curtismager20/mcp-envoy
+    tag: "1.38.1"
   # ⚠️ limits.cpu: 4 — kept in LOCKSTEP with envoyV3.resources.limits.cpu.
   # (2026-07-17)
   #
