@@ -117,6 +117,12 @@ spec:
             # Pass-through merchants whose vendor key travels in a vendor header
             # (Everpay: x-everpay-api-key). ext_authz resolves the merchant from it
             # when Authorization carries no bearer, REST ingress only. Unset = off.
+            {{- if .Values.billing.allowPurgeOnDelete }}
+            # Billing retention: allow DELETE ...?purge_billing=true. Off by
+            # default; the regression sandbox opts in (install.sh --allow-billing-purge).
+            - name: MCP_BILLING_ALLOW_PURGE
+              value: "1"
+            {{- end }}
             {{- with .Values.merchantKeyHeaders }}
             - name: MCP_MERCHANT_KEY_HEADERS
               value: {{ . | quote }}

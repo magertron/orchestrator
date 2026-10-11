@@ -407,6 +407,9 @@ API_PUBLIC_URL="${API_PUBLIC_URL:-}"
 # (probo.objectStore.endpoint) and credentials, plus a bootstrap admin token for
 # MCP registration — see --help. Without those, probod will not become ready.
 ENABLE_PROBO="${ENABLE_PROBO:-0}"
+# Billing retention: purging billed usage on server delete is OFF unless asked
+# for. Only the regression sandbox should pass --allow-billing-purge.
+ALLOW_BILLING_PURGE="${ALLOW_BILLING_PURGE:-0}"
 # Opt-IN to the bundled Ollama local LLM — the "brain" of the advisory
 # assistant. Off by default because it is the heaviest optional component:
 # a ~3.3 GB image pull, and 4–5 GB of RAM while a model is loaded for
@@ -511,6 +514,8 @@ Common options:
                               chart's request-relative/localhost default).
   --non-interactive           Fail on any prompt instead of asking. Use
                               for CI / automation.
+  --allow-billing-purge       Allow DELETE ...?purge_billing=true to destroy a
+                              server's billed usage (regression sandboxes only).
   --enable-probo              Deploy the Probo GRC subsystem (probod +
                               its Postgres + headless Chrome), registered
                               as a type:internal MCP server. Off by
@@ -643,6 +648,7 @@ while [ $# -gt 0 ]; do
             SKIP_NODE_LABEL=1; shift ;;
         --label-nodes)     LABEL_NODES=1; shift ;;
         --enable-probo)    ENABLE_PROBO=1; shift ;;
+        --allow-billing-purge) ALLOW_BILLING_PURGE=1; shift ;;
         --enable-ollama)   ENABLE_OLLAMA=1; shift ;;
         --uc-observe)      UC_OBSERVE=1; shift ;;
         --journal)             JOURNAL=1; shift ;;
@@ -1387,6 +1393,9 @@ fi
 # so this --set is the only thing that turns it on. The S3 endpoint/creds and
 # bootstrap admin token still come from values (or a later --set); without them
 # probod stays NotReady, but the pods will deploy.
+if [ "$ALLOW_BILLING_PURGE" = "1" ]; then
+    HELM_VALUES+=( --set "billing.allowPurgeOnDelete=true" )
+fi
 if [ "$ENABLE_PROBO" = "1" ]; then
     HELM_VALUES+=( --set "probo.enabled=true" )
 fi

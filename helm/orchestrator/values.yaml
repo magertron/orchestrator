@@ -2449,3 +2449,12 @@ journal:
 # on REST ingress only when Authorization carries no bearer. Empty = off.
 # Everpay: x-everpay-api-key
 merchantKeyHeaders: ""
+
+# ── Billing retention ───────────────────────────────────────────────────────
+# Deleting a server never destroys its billed usage by default: a DELETE on a
+# server with billing records returns 409. allowPurgeOnDelete=true lets
+# DELETE /servers/{ns}/{name}?purge_billing=true remove them (audited as
+# ServerBillingPurged). Keep false for any installation that bills or charges
+# back; the regression sandbox sets it via install.sh --allow-billing-purge.
+billing:
+  allowPurgeOnDelete: false
