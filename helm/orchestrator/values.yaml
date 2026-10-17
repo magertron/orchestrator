@@ -2281,6 +2281,9 @@ secrets:
   #   --set-file secrets.evidencePrivateKey=evidence.key
   # if you need the key to live somewhere you control.
   evidencePrivateKey: ""   # PEM-encoded RSA private key (empty = auto-gen)
+  # MAG_SECRET_ENCRYPTION_KEY — empty = generate once, then reuse.
+  # A replica region: set to the PRIMARY's value (all regions share one).
+  secretEncryptionKey: ""
   jwtPublicKey: ""    # PEM-encoded RSA public key (derived from private if empty)
 
   # ── Probo GRC secrets (only relevant when probo.enabled=true) ───────────────

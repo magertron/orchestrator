@@ -563,6 +563,12 @@ Common options:
                               Console writes here answer 421. The JWT, evidence
                               key and DB password must match the primary's.
                               e.g. --region west --replica-of 10.0.0.5:30432
+  --region-bundle <file>      With --replica-of: import the primary's platform
+                              keys (JWT, evidence, DB passwords, secret
+                              encryption key) from a bundle made on the primary
+                              with ./region-bundle.sh export <file>, before
+                              installing. Prompts for the bundle passphrase
+                              (or set REGION_BUNDLE_PASSPHRASE).
   --journal-size <size>       Size of each replica's journal volume, as a
                               Kubernetes quantity (default 50Gi). Requires
                               --journal. Size it against your measured drain
@@ -663,6 +669,7 @@ while [ $# -gt 0 ]; do
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
         --region)              REGION="$2"; shift 2 ;;
         --replica-of)          REPLICA_OF="$2"; shift 2 ;;
+        --region-bundle)       REGION_BUNDLE="$2"; shift 2 ;;
         --journal-storage-class) JOURNAL_STORAGE_CLASS="$2"; shift 2 ;;
         --discard-journal)     DISCARD_JOURNAL=1; shift ;;
         --require-drained)     REQUIRE_DRAINED=1; shift ;;
@@ -1473,6 +1480,24 @@ if [ -n "${REPLICA_OF:-}" ]; then
 elif [ -n "${REGION:-}" ]; then
     HELM_VALUES+=( --set "orchestrator.twoRegion.region=$REGION" )
     note "Region '$REGION' — primary."
+fi
+# ── Region bundle: the primary's platform keys, imported BEFORE Helm runs so
+# the chart's lookup reuses them (fresh install and reinstall alike).
+if [ -n "${REGION_BUNDLE:-}" ]; then
+    if [ -z "${REPLICA_OF:-}" ]; then
+        echo "ERROR: --region-bundle is for a replica region; add --replica-of host:port." >&2
+        exit 1
+    fi
+    RB_SCRIPT="$(cd "$(dirname "$0")" && pwd)/region-bundle.sh"
+    if [ ! -x "$RB_SCRIPT" ]; then
+        echo "ERROR: region-bundle.sh not found (or not executable) next to install.sh." >&2
+        exit 1
+    fi
+    note "Importing the primary's platform keys from $REGION_BUNDLE ..."
+    if ! "$RB_SCRIPT" import "$REGION_BUNDLE"; then
+        echo "ERROR: region bundle import failed — nothing was installed." >&2
+        exit 1
+    fi
 fi
 
 # Wrapper function so we can pass it to spinner.
