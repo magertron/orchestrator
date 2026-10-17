@@ -425,22 +425,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       It is also not the answer to the enterprise MCP problem, because AgentCore solves
       <em>hosting</em>, and the enterprise problem is <em>governance</em>.
     </p>
-    <p>
-      A managed runtime inventories what its customers register with it. In a 5,000-person
-      enterprise, the small minority of MCP servers that platform engineering built deliberately —
-      with security review, with intent to be managed — belong on AgentCore (if the customer is
-      already on AWS). The other ninety percent — built by application teams, by data engineers,
-      by individual developers wrapping internal REST APIs in 30 minutes — were never registered
-      with anyone. They are running on dev VMs, under desks, in development namespaces, on
-      employee laptops. They have credentials. They are not, and will never be, configured as
-      AgentCore Gateway targets, because the people who run them do not know AgentCore Gateway
-      exists.
-    </p>
-    <p>
-      That is not a critique of AWS. It is a recognition that managed hosting and federated
-      governance are different layers of the stack. AgentCore is built for the first.
-      AI Orchestrator is being built for the second.
-    </p>
   </div>
 </section>
 
@@ -557,37 +541,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </table>
       </div>
     </details>
-  </div>
-</section>
-
-<section class="pick">
-  <div class="container">
-    <h2>So which one should you pick?</h2>
-    <div class="pick-row">
-      <div class="pick-card mcp-orch">
-        <div class="label">Pick AI Orchestrator when</div>
-        <h3>Sovereignty, control, or federation matters more than time-to-deploy.</h3>
-        <ul>
-          <li><strong>Regulated industries</strong> where data cannot leave your network — defense, financial services with localization mandates, regulated healthcare with PHI residency requirements, EU-strict deployments.</li>
-          <li><strong>Multi-cloud or non-AWS</strong> environments — Azure-first, GCP-first, or primarily on-premises operations.</li>
-          <li><strong>Existing Kubernetes investment</strong> with platform tooling already in place — Prometheus, ArgoCD, OPA, service mesh.</li>
-          <li><strong>Shadow MCP discovery</strong> — when the MCP servers you most need to govern are the ones nobody registered with anyone.</li>
-          <li><strong>Predictable economics at scale</strong> — fixed cluster capacity vs. per-session metering.</li>
-          <li><strong>Air-gapped or sovereign-cloud deployments</strong> — where managed cloud services are categorically excluded.</li>
-        </ul>
-      </div>
-      <div class="pick-card agentcore">
-        <div class="label">Pick AgentCore when</div>
-        <h3>You're already on AWS and just want to ship agents fast.</h3>
-        <ul>
-          <li><strong>AWS-committed organization</strong> with existing Bedrock workloads, IAM posture, and operational tooling in AWS.</li>
-          <li><strong>Need Memory, Code Interpreter, or Browser as managed services</strong> — capabilities AI Orchestrator does not provide.</li>
-          <li><strong>Bursty, low-to-moderate volume</strong> where consumption pricing is cheaper than fixed compute.</li>
-          <li><strong>Time-to-first-agent is the critical constraint</strong> — AgentCore is a container away from running; AI Orchestrator requires k8s setup.</li>
-          <li><strong>You want AWS to operate the substrate</strong> — patches, scaling, isolation, and observability handled by Amazon.</li>
-        </ul>
-      </div>
-    </div>
   </div>
 </section>
 

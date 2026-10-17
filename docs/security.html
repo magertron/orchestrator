@@ -629,44 +629,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
     <div class="divider"></div>
 
-    <!-- Platform controls — accordion -->
-    <div class="sec" style="margin-bottom:20px;">
-      <div class="sec-label">Platform Controls</div>
-      <h2>End to End Management</h2>
-    </div>
-    <div class="accordion">
-      <div class="acc-item" id="acc-7">
-        <div class="acc-header" onclick="toggleAcc(7)">
-          <div class="acc-header-left">
-            <span class="acc-num">04</span>
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
-                <span class="acc-title">Policy Enforcement</span>
-                <span class="acc-tag info">Full lifecycle</span>
-              </div>
-              <div class="acc-subtitle">End to End Management</div>
-            </div>
-          </div>
-          <span class="acc-chevron">⌄</span>
-        </div>
-        <div class="acc-body" id="body-7">
-          <div class="acc-body-inner">
-            <p>Every MCP and LLM request through the Envoy gateway is subject to these controls — no configuration required beyond deployment:</p>
-            <ul>
-              <li><strong>Authentication</strong> — Every request carries a JWT token. Unauthenticated requests are rejected at the gateway.</li>
-              <li><strong>RBAC authorization</strong> — Roles define which users can access which servers in which namespaces.</li>
-              <li><strong>Namespace isolation</strong> — Production, staging, and dev MCP servers are isolated with NetworkPolicy enforcement.</li>
-              <li><strong>Governance policies</strong> — Deployment-time policies block non-compliant servers before they go live.</li>
-              <li><strong>Audit trail</strong> — Every deployment, scale, restart, and config change is logged with actor, timestamp, and full state snapshot.</li>
-              <li><strong>Webhook notifications</strong> — Real-time alerts to Slack, email, or any HTTP endpoint when servers change state.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <div class="divider"></div>
 
     <!-- Dual-principal authorization -->
     <style>

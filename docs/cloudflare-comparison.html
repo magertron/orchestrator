@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-NH2TP9BZP7');
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
@@ -315,12 +306,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
     <div class="nav-links">
       <a href="/#features">AI Orchestrator</a>
-      <a href="/data-reach.html">AI Data Reach</a>
       <a href="/#pricing">Pricing</a>
       <a href="/security.html">Security</a>
       <a href="https://blog.magertron.com">Blog</a>
-      <a href="demos.html">Watch</a>
-      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+      <a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a>
+      <a href="/#schedule-demo" class="nav-cta">Schedule a Demo</a>
     </div>
   </div>
 </nav>
@@ -460,12 +450,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       in-cluster across every auth type and every call metered and rated against your own rate cards.
       Reaching the public internet doesn't mean handing governance to someone else's edge.
     </p>
-    <p>
-      <em>"We route our agents through Cloudflare"</em> answers where your traffic goes and what
-      your model tokens cost only. <em>"Magertron governs every MCP server in our environment —
-      internal, external, and air-gapped — with our own keys, metered and charged back to the teams
-      and agents that run them"</em> answers a question the edge can't reach from outside the network.
-    </p>
   </div>
 </section>
 
@@ -478,7 +462,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         Or grab the Helm chart and try it yourself.
       </p>
       <div class="cta-actions">
-        <a href="/#schedule-demo" class="btn-primary">Try it now </a>
+        <a href="/#schedule-demo" class="btn-primary">Schedule a Demo</a>
         <a href="https://github.com/magertron/orchestrator" class="btn-secondary" target="_blank">View on GitHub</a>
       </div>
     </div>
@@ -496,11 +480,9 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <h4>Product</h4>
         <ul>
           <li><a href="/#features">AI Orchestrator</a></li>
-          <li><a href="/data-reach.html">AI Data Reach</a></li>
           <li><a href="/#pricing">Pricing</a></li>
           <li><a href="/#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
-          <li><a href="/developers.html">Build an Agent</a></li>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
           <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
         </ul>
@@ -508,14 +490,10 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <div class="footer-col">
         <h4>Resources</h4>
         <ul>
-          <li><a href="rfp/">AI Governance RFP Template</a></li>
-          <li><a href="demos.html">Watch</a></li>
           <li><a href="/security.html">Security</a></li>
           <li><a href="/siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
-          <li><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a></li>
-          <li><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -532,7 +510,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         <h4>Social</h4>
         <ul>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
-          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
           <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
         </ul>
       </div>
@@ -546,8 +523,109 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   </div>
 </footer>
 
-<script src="/consent.js" defer></script>
+<!-- ══ Cookie consent + gated analytics loader ════════════════════════════════
+     The leadsy.ai visitor-analytics tag is NO LONGER hardcoded in <head>. It
+     loads ONLY after the visitor accepts, and the choice is remembered. On
+     return visits with prior consent it loads automatically; on decline it
+     never loads. This is the consent-gated (GDPR-appropriate) pattern.
+     Self-contained: scoped .mag-consent-* classes, no external deps.
+============================================================================= -->
+<div id="magConsent" class="mag-consent" role="dialog" aria-live="polite"
+     aria-label="Cookie consent" hidden>
+  <div class="mag-consent-inner">
+    <div class="mag-consent-text">
+      We use a first-party and third-party analytics tag to understand site
+      traffic and improve Magertron. It loads only if you accept. See our
+      <a href="privacy.html">Privacy Policy</a> for details.
+    </div>
+    <div class="mag-consent-actions">
+      <button type="button" class="mag-consent-btn mag-consent-decline" id="magConsentDecline">Decline</button>
+      <button type="button" class="mag-consent-btn mag-consent-accept" id="magConsentAccept">Accept</button>
+    </div>
+  </div>
+</div>
 
+<style>
+.mag-consent{
+  position:fixed;left:0;right:0;bottom:0;z-index:9999;
+  background:var(--bg-card);border-top:1px solid var(--border);
+  box-shadow:0 -8px 40px -12px rgba(0,0,0,.6);
+  animation:magConsentUp .35s ease-out;
+}
+@keyframes magConsentUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.mag-consent-inner{
+  max-width:1100px;margin:0 auto;padding:16px 24px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+}
+.mag-consent-text{
+  flex:1 1 340px;font-size:13.5px;line-height:1.55;color:var(--text-secondary);
+}
+.mag-consent-text a{color:var(--accent-text);text-decoration:none;}
+.mag-consent-text a:hover{text-decoration:underline;}
+.mag-consent-actions{display:flex;gap:10px;flex-shrink:0;}
+.mag-consent-btn{
+  font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  padding:9px 20px;border-radius:8px;border:1px solid var(--border);
+  transition:all .18s;white-space:nowrap;
+}
+.mag-consent-decline{
+  background:transparent;color:var(--text-secondary);
+}
+.mag-consent-decline:hover{color:var(--text);border-color:var(--text-tertiary);}
+.mag-consent-accept{
+  background:var(--accent);color:#fff;border-color:var(--border-accent);
+}
+.mag-consent-accept:hover{filter:brightness(1.1);}
+@media (max-width:560px){
+  .mag-consent-inner{flex-direction:column;align-items:stretch;gap:12px;}
+  .mag-consent-actions{justify-content:flex-end;}
+}
+</style>
+
+<script>
+(function(){
+  var KEY = 'mag-analytics-consent';   // 'granted' | 'denied'
+  var banner = document.getElementById('magConsent');
+
+  // Loads the leadsy.ai tag exactly once.
+  function loadAnalytics(){
+    if(document.getElementById('vtag-ai-js')) return;
+    var s = document.createElement('script');
+    s.id = 'vtag-ai-js';
+    s.async = true;
+    s.src = 'https://r2.leadsy.ai/tag.js';
+    s.setAttribute('data-pid','az6D5saf0GDIfc01');
+    s.setAttribute('data-version','062024');
+    document.head.appendChild(s);
+  }
+
+  function store(v){
+    try{ localStorage.setItem(KEY, v); }catch(e){}
+  }
+  function read(){
+    try{ return localStorage.getItem(KEY); }catch(e){ return null; }
+  }
+
+  var prior = read();
+  if(prior === 'granted'){
+    loadAnalytics();              // returning visitor who accepted → load, no banner
+  } else if(prior === 'denied'){
+    /* respected: do nothing, no banner */
+  } else {
+    if(banner){ banner.hidden = false; }   // first visit → ask
+  }
+
+  var accept  = document.getElementById('magConsentAccept');
+  var decline = document.getElementById('magConsentDecline');
+  if(accept) accept.addEventListener('click', function(){
+    store('granted'); if(banner) banner.hidden = true; loadAnalytics();
+  });
+  if(decline) decline.addEventListener('click', function(){
+    store('denied'); if(banner) banner.hidden = true;
+  });
+})();
+</script>
+<!-- ══ end cookie consent ═════════════════════════════════════════════════════ -->
 
 </body>
 </html>
