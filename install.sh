@@ -555,6 +555,14 @@ Common options:
                               arrivals above the drain rate fill the volume,
                               and a full journal refuses requests.
                               Off by default — it changes the pod controller.
+  --region <name>             Name this region (e.g. east, west). Optional on
+                              the primary; required with --replica-of.
+  --replica-of <host:port>    Install as a READ-REPLICA region. Reads stay on
+                              the local Postgres replica; writes, LISTEN and the
+                              control plane go to the primary at host:port.
+                              Console writes here answer 421. The JWT, evidence
+                              key and DB password must match the primary's.
+                              e.g. --region west --replica-of 10.0.0.5:30432
   --journal-size <size>       Size of each replica's journal volume, as a
                               Kubernetes quantity (default 50Gi). Requires
                               --journal. Size it against your measured drain
@@ -653,6 +661,8 @@ while [ $# -gt 0 ]; do
         --uc-observe)      UC_OBSERVE=1; shift ;;
         --journal)             JOURNAL=1; shift ;;
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
+        --region)              REGION="$2"; shift 2 ;;
+        --replica-of)          REPLICA_OF="$2"; shift 2 ;;
         --journal-storage-class) JOURNAL_STORAGE_CLASS="$2"; shift 2 ;;
         --discard-journal)     DISCARD_JOURNAL=1; shift ;;
         --require-drained)     REQUIRE_DRAINED=1; shift ;;
@@ -1438,6 +1448,33 @@ if [ "$JOURNAL" = "1" ]; then
 else
     HELM_VALUES+=( --set "journal.enabled=false" )
 fi
+# ── Two-region (--region / --replica-of) ─────────────────────────────────────
+# Maps to orchestrator.twoRegion.* in the chart. Neither flag = single region,
+# and the chart renders nothing for it.
+if [ -n "${REPLICA_OF:-}" ]; then
+    if [ -z "${REGION:-}" ]; then
+        echo "ERROR: --replica-of needs --region (e.g. --region west)." >&2
+        exit 1
+    fi
+    PRIMARY_HOST="${REPLICA_OF%:*}"
+    PRIMARY_PORT="${REPLICA_OF##*:}"
+    if [ "$PRIMARY_HOST" = "$REPLICA_OF" ] || [ -z "$PRIMARY_HOST" ] || \
+       ! [[ "$PRIMARY_PORT" =~ ^[0-9]+$ ]]; then
+        echo "ERROR: --replica-of must be host:port (e.g. 10.0.0.5:30432). Got: $REPLICA_OF" >&2
+        exit 1
+    fi
+    HELM_VALUES+=( --set "orchestrator.twoRegion.region=$REGION" )
+    HELM_VALUES+=( --set "orchestrator.twoRegion.regionRole=replica" )
+    HELM_VALUES+=( --set "orchestrator.twoRegion.dbPrimaryHost=$PRIMARY_HOST" )
+    HELM_VALUES+=( --set-string "orchestrator.twoRegion.dbPrimaryPort=$PRIMARY_PORT" )
+    note "Region '$REGION' — READ REPLICA of $PRIMARY_HOST:$PRIMARY_PORT."
+    note "  Reads stay local; writes and the control plane go to the primary."
+    note "  ⚠ JWT key, evidence key and DB password must match the primary's."
+elif [ -n "${REGION:-}" ]; then
+    HELM_VALUES+=( --set "orchestrator.twoRegion.region=$REGION" )
+    note "Region '$REGION' — primary."
+fi
+
 # Wrapper function so we can pass it to spinner.
 do_helm_install() {
     helm install "$RELEASE_NAME" "${HELM_REPO_NAME}/mcp-orchestrator" \
