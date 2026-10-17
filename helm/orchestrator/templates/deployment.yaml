@@ -135,6 +135,30 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- /* ── Two-region: orchestrator.twoRegion.* -> MCP_* env.
+                   Empty values render nothing; single-region manifest unchanged. */}}
+            {{- with .Values.orchestrator.twoRegion }}
+            {{- if .region }}
+            - name: MCP_REGION
+              value: {{ .region | toString | quote }}
+            {{- end }}
+            {{- if .regionRole }}
+            - name: MCP_REGION_ROLE
+              value: {{ .regionRole | toString | quote }}
+            {{- end }}
+            {{- if .dbPrimaryHost }}
+            - name: MCP_DB_PRIMARY_HOST
+              value: {{ .dbPrimaryHost | toString | quote }}
+            {{- end }}
+            {{- if .dbPrimaryPort }}
+            - name: MCP_DB_PRIMARY_PORT
+              value: {{ .dbPrimaryPort | toString | quote }}
+            {{- end }}
+            {{- if .dbWritePoolSize }}
+            - name: MCP_DB_WRITE_POOL_SIZE
+              value: {{ .dbWritePoolSize | toString | quote }}
+            {{- end }}
+            {{- end }}
             # POD_IP is exposed via Downward API so the LeaderLock can publish
             # it as a lease annotation when this pod becomes leader. Followers
             # then read the annotation and use it as the proxy_to_leader

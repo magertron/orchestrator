@@ -6,6 +6,19 @@ global:
 
 # ─── Orchestrator ─────────────────────────────────────────────────────────────
 orchestrator:
+  # ── Two-region (EAST/WEST) ────────────────────────────────────────────────
+  # All empty = single region, and NOTHING is rendered into the pod. Set on a
+  # replica-region install (e.g. foxygirl / WEST):
+  #   region: west          regionRole: replica
+  #   dbPrimaryHost: <primary Postgres host>   dbPrimaryPort: <port>
+  # The primary region (EAST) normally leaves all of these empty.
+  # Each maps 1:1 to an env var — see templates/deployment.yaml.
+  twoRegion:
+    region: ""            # MCP_REGION            east | west
+    regionRole: ""        # MCP_REGION_ROLE       primary (default) | replica
+    dbPrimaryHost: ""     # MCP_DB_PRIMARY_HOST   writes/LISTEN/control plane go here
+    dbPrimaryPort: ""     # MCP_DB_PRIMARY_PORT   default: same as local DB port
+    dbWritePoolSize: ""   # MCP_DB_WRITE_POOL_SIZE  1-32, default 4
   # ── Multi-replica HA (shipped in v1.13.0-dev) ─────────────────────────────
   # Default 2 replicas. The orchestrator runs Lease-based leader election
   # for the singleton work (HealthMonitor polling, xDS push to Envoy,
