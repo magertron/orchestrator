@@ -2,8 +2,8 @@ apiVersion: v2
 name: mcp-orchestrator
 description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering and audit for LLM, MCP and API traffic
 type: application
-version: 4.1.30
-appVersion: "4.1.30"
+version: 4.1.37
+appVersion: "4.1.37"
 keywords:
   - mcp
   - model-context-protocol
