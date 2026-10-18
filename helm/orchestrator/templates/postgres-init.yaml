@@ -2978,6 +2978,23 @@ data:
         ADD COLUMN IF NOT EXISTS logo_type       TEXT NOT NULL DEFAULT '',
         ADD COLUMN IF NOT EXISTS logo_updated_at TIMESTAMPTZ;
 
+    -- Two-region credential replication (2026-10-17). ENCRYPTED copies of
+    -- credential Secrets, published by the primary region and materialised by
+    -- replica regions (MAG_SECRET_ENCRYPTION_KEY, identical in every region).
+    -- Kubernetes Secrets stay the source of truth. materialized_in records which
+    -- regions created their local copy (ownership: never touch a foreign Secret).
+    -- The orchestrator also creates this at runtime; same idempotent form.
+    CREATE TABLE IF NOT EXISTS credential_replicas (
+        namespace       TEXT        NOT NULL,
+        name            TEXT        NOT NULL,
+        data_enc        TEXT        NOT NULL,
+        content_hash    TEXT        NOT NULL,
+        deleted         BOOLEAN     NOT NULL DEFAULT false,
+        materialized_in TEXT[]      NOT NULL DEFAULT '{}',
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (namespace, name)
+    );
+
     -- ── Default vulnerability policy (secure-by-default, non-blocking) ──────────
     -- Ships ENABLED across ALL namespaces so every governed internal server is
     -- evaluated against a critical-vulnerability rule on day one — the premise
