@@ -569,6 +569,18 @@ Common options:
                               with ./region-bundle.sh export <file>, before
                               installing. Prompts for the bundle passphrase
                               (or set REGION_BUNDLE_PASSPHRASE).
+  --enable-opa                Deploy the bundled OPA policy decision point and
+                              point Magertron's external-PDP gate at it. Starts
+                              with an allow-all policy.
+  --opa-policy <file.rego>    Your policy for the bundled OPA (implies
+                              --enable-opa). Package magertron, rule
+                              decision := {"allow": bool, "reason": string}.
+  --pdp-url <url>             Use YOUR OWN PDP instead (OPA, Styra, ...), e.g.
+                              http://opa.opa.svc:8181/v1/data/magertron/decision
+                              Wins over --enable-opa.
+  --pdp-namespaces <list>     Namespaces the PDP applies to: "*" (default) or
+                              "ns1,ns2".
+  --pdp-fail <open|closed>    PDP unreachable: closed (default) denies the call.
   --journal-size <size>       Size of each replica's journal volume, as a
                               Kubernetes quantity (default 50Gi). Requires
                               --journal. Size it against your measured drain
@@ -667,6 +679,11 @@ while [ $# -gt 0 ]; do
         --uc-observe)      UC_OBSERVE=1; shift ;;
         --journal)             JOURNAL=1; shift ;;
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
+        --enable-opa)          ENABLE_OPA=1; shift ;;
+        --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
+        --pdp-url)             PDP_URL="$2"; shift 2 ;;
+        --pdp-namespaces)      PDP_NAMESPACES="$2"; shift 2 ;;
+        --pdp-fail)            PDP_FAIL="$2"; shift 2 ;;
         --region)              REGION="$2"; shift 2 ;;
         --replica-of)          REPLICA_OF="$2"; shift 2 ;;
         --region-bundle)       REGION_BUNDLE="$2"; shift 2 ;;
@@ -1498,6 +1515,39 @@ if [ -n "${REGION_BUNDLE:-}" ]; then
         echo "ERROR: region bundle import failed — nothing was installed." >&2
         exit 1
     fi
+fi
+
+# ── External PDP (--enable-opa / --opa-policy / --pdp-url) ───────────────────
+# Maps to opa.* and orchestrator.pdp.* in the chart. No flag = PDP off.
+if [ -n "${PDP_FAIL:-}" ] && [ "$PDP_FAIL" != "open" ] && [ "$PDP_FAIL" != "closed" ]; then
+    echo "ERROR: --pdp-fail must be 'open' or 'closed'. Got: $PDP_FAIL" >&2
+    exit 1
+fi
+if [ -n "${PDP_URL:-}" ]; then
+    HELM_VALUES+=( --set-string "orchestrator.pdp.url=$PDP_URL" )
+    note "External PDP: $PDP_URL"
+    if [ "${ENABLE_OPA:-0}" = "1" ]; then
+        note "  (--pdp-url given — the bundled OPA is NOT deployed)"
+        ENABLE_OPA=0
+    fi
+fi
+if [ "${ENABLE_OPA:-0}" = "1" ]; then
+    HELM_VALUES+=( --set "opa.enabled=true" )
+    if [ -n "${OPA_POLICY:-}" ]; then
+        if [ ! -f "$OPA_POLICY" ]; then
+            echo "ERROR: --opa-policy file not found: $OPA_POLICY" >&2
+            exit 1
+        fi
+        HELM_VALUES+=( --set-file "opa.policy=$OPA_POLICY" )
+        note "Bundled OPA with policy $OPA_POLICY"
+    else
+        note "Bundled OPA with the starter allow-all policy (add rules with --opa-policy)"
+    fi
+fi
+if [ -n "${PDP_URL:-}" ] || [ "${ENABLE_OPA:-0}" = "1" ]; then
+    [ -n "${PDP_NAMESPACES:-}" ] && HELM_VALUES+=( --set-string "orchestrator.pdp.namespaces=$PDP_NAMESPACES" )
+    [ -n "${PDP_FAIL:-}" ]       && HELM_VALUES+=( --set-string "orchestrator.pdp.fail=$PDP_FAIL" )
+    note "  PDP namespaces: ${PDP_NAMESPACES:-*} · when unreachable: ${PDP_FAIL:-closed}"
 fi
 
 # Wrapper function so we can pass it to spinner.

@@ -159,6 +159,23 @@ spec:
               value: {{ .dbWritePoolSize | toString | quote }}
             {{- end }}
             {{- end }}
+            {{- /* ── External PDP: orchestrator.pdp.* (or the bundled OPA) -> MCP_PDP_*.
+                   Nothing set = nothing rendered. */}}
+            {{- $pdp := .Values.orchestrator.pdp | default dict }}
+            {{- $pdpUrl := $pdp.url | default "" }}
+            {{- if and (not $pdpUrl) .Values.opa.enabled }}
+            {{- $pdpUrl = printf "http://%s-opa.%s.svc.cluster.local:8181/v1/data/magertron/decision" (include "mcp.fullname" .) (include "mcp.namespace" .) }}
+            {{- end }}
+            {{- if $pdpUrl }}
+            - name: MCP_PDP_URL
+              value: {{ $pdpUrl | quote }}
+            - name: MCP_PDP_NAMESPACES
+              value: {{ $pdp.namespaces | default "*" | toString | quote }}
+            - name: MCP_PDP_TIMEOUT_MS
+              value: {{ $pdp.timeoutMs | default "200" | toString | quote }}
+            - name: MCP_PDP_FAIL
+              value: {{ $pdp.fail | default "closed" | toString | quote }}
+            {{- end }}
             # POD_IP is exposed via Downward API so the LeaderLock can publish
             # it as a lease annotation when this pod becomes leader. Followers
             # then read the annotation and use it as the proxy_to_leader

@@ -1,0 +1,96 @@
+{{- /*
+Bundled OPA — the optional policy decision point for Magertron's external-PDP
+gate (orchestrator env MCP_PDP_URL points here when orchestrator.pdp.url is
+empty). Enable with install.sh --enable-opa, or opa.enabled=true.
+Customers who run their own OPA/Styra/Cerbos leave this off and set
+orchestrator.pdp.url instead.
+*/}}
+{{- if .Values.opa.enabled }}
+{{- $name := printf "%s-opa" (include "mcp.fullname" .) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-policy
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+data:
+  magertron.rego: |
+{{ .Values.opa.policy | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: opa
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: opa
+      annotations:
+        # A policy change rolls this pod — OPA loads the file at start.
+        checksum/policy: {{ .Values.opa.policy | sha256sum }}
+    spec:
+      containers:
+        - name: opa
+          image: "{{ .Values.opa.image.repository }}:{{ .Values.opa.image.tag }}"
+          # ⚠ The FILE, not the directory: a ConfigMap mount also exposes
+          # ..data/ and a timestamped copy, and OPA would load the rule 3 times.
+          args: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=info",
+                 "/policies/magertron.rego"]
+          ports:
+            - name: http
+              containerPort: 8181
+          readinessProbe:
+            httpGet: {path: /health, port: 8181}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: 8181}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.opa.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - name: policy
+              mountPath: /policies
+              readOnly: true
+      volumes:
+        - name: policy
+          configMap:
+            name: {{ $name }}-policy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: opa
+  ports:
+    - name: http
+      port: 8181
+      targetPort: 8181
+{{- end }}

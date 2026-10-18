@@ -19,6 +19,17 @@ orchestrator:
     dbPrimaryHost: ""     # MCP_DB_PRIMARY_HOST   writes/LISTEN/control plane go here
     dbPrimaryPort: ""     # MCP_DB_PRIMARY_PORT   default: same as local DB port
     dbWritePoolSize: ""   # MCP_DB_WRITE_POOL_SIZE  1-32, default 4
+  # ── External policy decision point (bring your own OPA) ───────────────────
+  # After Magertron ALLOWS a call (approval, RBAC, UC), the PDP may still deny
+  # it on business rules Magertron does not own (amount limits, account lists).
+  # It can never allow what Magertron refused.
+  # url empty + opa.enabled false = off (nothing rendered).
+  # url empty + opa.enabled true  = the bundled OPA below is used.
+  pdp:
+    url: ""            # MCP_PDP_URL          e.g. http://opa.opa.svc:8181/v1/data/magertron/decision
+    namespaces: ""     # MCP_PDP_NAMESPACES   "*" (default) or "ns1,ns2"
+    timeoutMs: ""      # MCP_PDP_TIMEOUT_MS   default 200
+    fail: ""           # MCP_PDP_FAIL         closed (default) | open
   # ── Multi-replica HA (shipped in v1.13.0-dev) ─────────────────────────────
   # Default 2 replicas. The orchestrator runs Lease-based leader election
   # for the singleton work (HealthMonitor polling, xDS push to Envoy,
@@ -2474,3 +2485,27 @@ merchantKeyHeaders: ""
 # back; the regression sandbox sets it via install.sh --allow-billing-purge.
 billing:
   allowPurgeOnDelete: false
+
+# ── Bundled OPA (optional, like Probo) ──────────────────────────────────────
+# install.sh --enable-opa [--opa-policy file.rego]
+# The policy answers data.magertron.decision with {"allow": bool, "reason": str}.
+# Input: subject, roles, on_behalf_of, namespace, server, server_id,
+#        server_type, tool, method, arguments, turn_id, request_id.
+opa:
+  enabled: false
+  image:
+    repository: openpolicyagent/opa
+    tag: "1.0.0"
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+  policy: |
+    package magertron
+
+    # Starter policy: allow everything Magertron already allowed.
+    # Add deny rules below, e.g.
+    #   decision := {"allow": false, "reason": "transfers over $500 need approval"} if {
+    #       input.tool == "createTransfer"
+    #       input.arguments.amount > 500
+    #   }
+    default decision := {"allow": true}
