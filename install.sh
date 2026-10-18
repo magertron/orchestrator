@@ -565,9 +565,12 @@ Common options:
                               e.g. --region west --replica-of 10.0.0.5:30432
   --region-bundle <file>      With --replica-of: import the primary's platform
                               keys (JWT, evidence, DB passwords, secret
-                              encryption key) from a bundle made on the primary
+                              encryption key) AND its external PDP settings
+                              (bundled OPA policy, or its PDP URL; namespaces;
+                              fail mode) from a bundle made on the primary
                               with ./region-bundle.sh export <file>, before
-                              installing. Prompts for the bundle passphrase
+                              installing. PDP options on this command line win.
+                              Prompts once for the bundle passphrase
                               (or set REGION_BUNDLE_PASSPHRASE).
   --enable-opa                Deploy the bundled OPA policy decision point and
                               point Magertron's external-PDP gate at it. Starts
@@ -681,9 +684,9 @@ while [ $# -gt 0 ]; do
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
         --enable-opa)          ENABLE_OPA=1; shift ;;
         --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
-        --pdp-url)             PDP_URL="$2"; shift 2 ;;
-        --pdp-namespaces)      PDP_NAMESPACES="$2"; shift 2 ;;
-        --pdp-fail)            PDP_FAIL="$2"; shift 2 ;;
+        --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
+        --pdp-namespaces)      PDP_NAMESPACES="$2"; PDP_NAMESPACES_FLAG="$2"; shift 2 ;;
+        --pdp-fail)            PDP_FAIL="$2"; PDP_FAIL_FLAG="$2"; shift 2 ;;
         --region)              REGION="$2"; shift 2 ;;
         --replica-of)          REPLICA_OF="$2"; shift 2 ;;
         --region-bundle)       REGION_BUNDLE="$2"; shift 2 ;;
@@ -1510,11 +1513,44 @@ if [ -n "${REGION_BUNDLE:-}" ]; then
         echo "ERROR: region-bundle.sh not found (or not executable) next to install.sh." >&2
         exit 1
     fi
+    # One passphrase prompt for the whole install (import + PDP settings).
+    if [ -z "${REGION_BUNDLE_PASSPHRASE:-}" ]; then
+        read -r -s -p "Region bundle passphrase: " REGION_BUNDLE_PASSPHRASE; echo
+        export REGION_BUNDLE_PASSPHRASE
+    fi
     note "Importing the primary's platform keys from $REGION_BUNDLE ..."
     if ! "$RB_SCRIPT" import "$REGION_BUNDLE"; then
         echo "ERROR: region bundle import failed — nothing was installed." >&2
         exit 1
     fi
+    # The primary's external PDP, so both regions enforce the same rules.
+    # Anything given on this command line wins.
+    RB_PDP_DIR="$(mktemp -d)"
+    if ! "$RB_SCRIPT" pdp "$REGION_BUNDLE" "$RB_PDP_DIR"; then
+        echo "ERROR: could not read the PDP settings from the bundle — nothing was installed." >&2
+        exit 1
+    fi
+    if [ -f "$RB_PDP_DIR/pdp.env" ]; then
+        # shellcheck disable=SC1091
+        . "$RB_PDP_DIR/pdp.env"
+        if [ "${ENABLE_OPA:-0}" = "1" ] || [ -n "${PDP_URL_FLAG:-}" ]; then
+            PDP_URL="${PDP_URL_FLAG:-}"
+            note "  external PDP: using the options on this command line (bundle's settings ignored)"
+        elif [ "$PDP_MODE" = "bundled" ] && [ -f "$RB_PDP_DIR/opa-policy.rego" ]; then
+            ENABLE_OPA=1
+            OPA_POLICY="$RB_PDP_DIR/opa-policy.rego"
+            PDP_URL=""
+            note "  external PDP: bundled OPA with the primary's policy"
+        elif [ "$PDP_MODE" = "external" ] && [ -n "$PDP_URL" ]; then
+            note "  external PDP: the primary's own PDP at $PDP_URL"
+            note "  ⚠ make sure this region can reach it (or give --pdp-url for a local one)"
+        fi
+        PDP_NAMESPACES="${PDP_NAMESPACES_FLAG:-$PDP_NAMESPACES}"
+        PDP_FAIL="${PDP_FAIL_FLAG:-$PDP_FAIL}"
+    else
+        note "  (the bundle carries no external PDP settings)"
+    fi
+    unset REGION_BUNDLE_PASSPHRASE
 fi
 
 # ── External PDP (--enable-opa / --opa-policy / --pdp-url) ───────────────────
