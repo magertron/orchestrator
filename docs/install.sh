@@ -407,6 +407,9 @@ API_PUBLIC_URL="${API_PUBLIC_URL:-}"
 # (probo.objectStore.endpoint) and credentials, plus a bootstrap admin token for
 # MCP registration — see --help. Without those, probod will not become ready.
 ENABLE_PROBO="${ENABLE_PROBO:-0}"
+# Billing retention: purging billed usage on server delete is OFF unless asked
+# for. Only the regression sandbox should pass --allow-billing-purge.
+ALLOW_BILLING_PURGE="${ALLOW_BILLING_PURGE:-0}"
 # Opt-IN to the bundled Ollama local LLM — the "brain" of the advisory
 # assistant. Off by default because it is the heaviest optional component:
 # a ~3.3 GB image pull, and 4–5 GB of RAM while a model is loaded for
@@ -481,6 +484,7 @@ Common options:
   --node-port <number>        NodePort for the v3 Envoy (default 30444; only used with
                               --service-type nodeport)
   --chart-version <version>   Pin chart version (default: latest --devel)
+  --skip-disk-check            Install even if the disk is below the minimum (not recommended)
   --namespace <name>          Install namespace (default mcp-system)
   --node-name <node>          Node to label workload=stateful and
                               workload-inventory=true. Only used with
@@ -510,6 +514,8 @@ Common options:
                               chart's request-relative/localhost default).
   --non-interactive           Fail on any prompt instead of asking. Use
                               for CI / automation.
+  --allow-billing-purge       Allow DELETE ...?purge_billing=true to destroy a
+                              server's billed usage (regression sandboxes only).
   --enable-probo              Deploy the Probo GRC subsystem (probod +
                               its Postgres + headless Chrome), registered
                               as a type:internal MCP server. Off by
@@ -549,6 +555,35 @@ Common options:
                               arrivals above the drain rate fill the volume,
                               and a full journal refuses requests.
                               Off by default — it changes the pod controller.
+  --region <name>             Name this region (e.g. east, west). Optional on
+                              the primary; required with --replica-of.
+  --replica-of <host:port>    Install as a READ-REPLICA region. Reads stay on
+                              the local Postgres replica; writes, LISTEN and the
+                              control plane go to the primary at host:port.
+                              Console writes here answer 421. The JWT, evidence
+                              key and DB password must match the primary's.
+                              e.g. --region west --replica-of 10.0.0.5:30432
+  --region-bundle <file>      With --replica-of: import the primary's platform
+                              keys (JWT, evidence, DB passwords, secret
+                              encryption key) AND its external PDP settings
+                              (bundled OPA policy, or its PDP URL; namespaces;
+                              fail mode) from a bundle made on the primary
+                              with ./region-bundle.sh export <file>, before
+                              installing. PDP options on this command line win.
+                              Prompts once for the bundle passphrase
+                              (or set REGION_BUNDLE_PASSPHRASE).
+  --enable-opa                Deploy the bundled OPA policy decision point and
+                              point Magertron's external-PDP gate at it. Starts
+                              with an allow-all policy.
+  --opa-policy <file.rego>    Your policy for the bundled OPA (implies
+                              --enable-opa). Package magertron, rule
+                              decision := {"allow": bool, "reason": string}.
+  --pdp-url <url>             Use YOUR OWN PDP instead (OPA, Styra, ...), e.g.
+                              http://opa.opa.svc:8181/v1/data/magertron/decision
+                              Wins over --enable-opa.
+  --pdp-namespaces <list>     Namespaces the PDP applies to: "*" (default) or
+                              "ns1,ns2".
+  --pdp-fail <open|closed>    PDP unreachable: closed (default) denies the call.
   --journal-size <size>       Size of each replica's journal volume, as a
                               Kubernetes quantity (default 50Gi). Requires
                               --journal. Size it against your measured drain
@@ -642,14 +677,24 @@ while [ $# -gt 0 ]; do
             SKIP_NODE_LABEL=1; shift ;;
         --label-nodes)     LABEL_NODES=1; shift ;;
         --enable-probo)    ENABLE_PROBO=1; shift ;;
+        --allow-billing-purge) ALLOW_BILLING_PURGE=1; shift ;;
         --enable-ollama)   ENABLE_OLLAMA=1; shift ;;
         --uc-observe)      UC_OBSERVE=1; shift ;;
         --journal)             JOURNAL=1; shift ;;
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
+        --enable-opa)          ENABLE_OPA=1; shift ;;
+        --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
+        --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
+        --pdp-namespaces)      PDP_NAMESPACES="$2"; PDP_NAMESPACES_FLAG="$2"; shift 2 ;;
+        --pdp-fail)            PDP_FAIL="$2"; PDP_FAIL_FLAG="$2"; shift 2 ;;
+        --region)              REGION="$2"; shift 2 ;;
+        --replica-of)          REPLICA_OF="$2"; shift 2 ;;
+        --region-bundle)       REGION_BUNDLE="$2"; shift 2 ;;
         --journal-storage-class) JOURNAL_STORAGE_CLASS="$2"; shift 2 ;;
         --discard-journal)     DISCARD_JOURNAL=1; shift ;;
         --require-drained)     REQUIRE_DRAINED=1; shift ;;
         --allow-undrained-orphans) ALLOW_UNDRAINED_ORPHANS=1; shift ;;
+        --skip-disk-check) SKIP_DISK_CHECK=1; shift ;;
         --non-interactive) NON_INTERACTIVE=1; shift ;;
         -h|--help)         usage; exit 0 ;;
         *)
@@ -672,6 +717,31 @@ case "$SERVICE_TYPE" in
     *) echo "ERROR: --service-type must be nodeport|loadbalancer|clusterip (got: $SERVICE_TYPE)" >&2; exit 1 ;;
 esac
 
+
+# ─── Preflight: disk (2026-10-05) ─────────────────────────────────────────────
+# A design partner's 10 GB VM lost its control plane mid-deploy: kubelet evicts
+# pods — Postgres included — once the node's disk passes ~85-90%. Refuse a disk
+# too small to run on; warn on one that will fill quickly.
+DISK_MIN_GB="${MAG_DISK_MIN_GB:-15}"
+DISK_REC_GB="${MAG_DISK_REC_GB:-30}"
+DISK_FREE_REC_GB=10
+disk_path=/
+if [ -d /var/lib/rancher ]; then disk_path=/var/lib/rancher; fi
+read -r disk_total_kb disk_avail_kb < <(df -Pk "$disk_path" | awk 'NR==2 {print $2, $4}')
+disk_total_gb=$(( disk_total_kb / 1048576 ))
+disk_avail_gb=$(( disk_avail_kb / 1048576 ))
+if [ "$disk_total_gb" -lt "$DISK_MIN_GB" ]; then
+    if [ "${SKIP_DISK_CHECK:-0}" = "1" ]; then
+        warn "Disk at ${disk_path} is ${disk_total_gb} GB, below the ${DISK_MIN_GB} GB minimum. Continuing (--skip-disk-check)."
+    else
+        err "Disk at ${disk_path} is ${disk_total_gb} GB. Magertron™ needs at least ${DISK_MIN_GB} GB (${DISK_REC_GB} GB recommended)."
+        err "On a disk this small, Kubernetes evicts pods (Postgres included) as images and data grow,"
+        err "which takes the control plane down. Grow the disk, or pass --skip-disk-check to install anyway."
+        exit 1
+    fi
+elif [ "$disk_total_gb" -lt "$DISK_REC_GB" ] || [ "$disk_avail_gb" -lt "$DISK_FREE_REC_GB" ]; then
+    warn "Disk at ${disk_path}: ${disk_total_gb} GB total, ${disk_avail_gb} GB free. ${DISK_REC_GB} GB total and ${DISK_FREE_REC_GB} GB free are recommended."
+fi
 
 # ─── Validate journal args (3.9.35) ──────────────────────────────────────
 if [ -n "$JOURNAL_SIZE" ]; then
@@ -1360,6 +1430,9 @@ fi
 # so this --set is the only thing that turns it on. The S3 endpoint/creds and
 # bootstrap admin token still come from values (or a later --set); without them
 # probod stays NotReady, but the pods will deploy.
+if [ "$ALLOW_BILLING_PURGE" = "1" ]; then
+    HELM_VALUES+=( --set "billing.allowPurgeOnDelete=true" )
+fi
 if [ "$ENABLE_PROBO" = "1" ]; then
     HELM_VALUES+=( --set "probo.enabled=true" )
 fi
@@ -1402,6 +1475,117 @@ if [ "$JOURNAL" = "1" ]; then
 else
     HELM_VALUES+=( --set "journal.enabled=false" )
 fi
+# ── Two-region (--region / --replica-of) ─────────────────────────────────────
+# Maps to orchestrator.twoRegion.* in the chart. Neither flag = single region,
+# and the chart renders nothing for it.
+if [ -n "${REPLICA_OF:-}" ]; then
+    if [ -z "${REGION:-}" ]; then
+        echo "ERROR: --replica-of needs --region (e.g. --region west)." >&2
+        exit 1
+    fi
+    PRIMARY_HOST="${REPLICA_OF%:*}"
+    PRIMARY_PORT="${REPLICA_OF##*:}"
+    if [ "$PRIMARY_HOST" = "$REPLICA_OF" ] || [ -z "$PRIMARY_HOST" ] || \
+       ! [[ "$PRIMARY_PORT" =~ ^[0-9]+$ ]]; then
+        echo "ERROR: --replica-of must be host:port (e.g. 10.0.0.5:30432). Got: $REPLICA_OF" >&2
+        exit 1
+    fi
+    HELM_VALUES+=( --set "orchestrator.twoRegion.region=$REGION" )
+    HELM_VALUES+=( --set "orchestrator.twoRegion.regionRole=replica" )
+    HELM_VALUES+=( --set "orchestrator.twoRegion.dbPrimaryHost=$PRIMARY_HOST" )
+    HELM_VALUES+=( --set-string "orchestrator.twoRegion.dbPrimaryPort=$PRIMARY_PORT" )
+    note "Region '$REGION' — READ REPLICA of $PRIMARY_HOST:$PRIMARY_PORT."
+    note "  Reads stay local; writes and the control plane go to the primary."
+    note "  ⚠ JWT key, evidence key and DB password must match the primary's."
+elif [ -n "${REGION:-}" ]; then
+    HELM_VALUES+=( --set "orchestrator.twoRegion.region=$REGION" )
+    note "Region '$REGION' — primary."
+fi
+# ── Region bundle: the primary's platform keys, imported BEFORE Helm runs so
+# the chart's lookup reuses them (fresh install and reinstall alike).
+if [ -n "${REGION_BUNDLE:-}" ]; then
+    if [ -z "${REPLICA_OF:-}" ]; then
+        echo "ERROR: --region-bundle is for a replica region; add --replica-of host:port." >&2
+        exit 1
+    fi
+    RB_SCRIPT="$(cd "$(dirname "$0")" && pwd)/region-bundle.sh"
+    if [ ! -x "$RB_SCRIPT" ]; then
+        echo "ERROR: region-bundle.sh not found (or not executable) next to install.sh." >&2
+        exit 1
+    fi
+    # One passphrase prompt for the whole install (import + PDP settings).
+    if [ -z "${REGION_BUNDLE_PASSPHRASE:-}" ]; then
+        read -r -s -p "Region bundle passphrase: " REGION_BUNDLE_PASSPHRASE; echo
+        export REGION_BUNDLE_PASSPHRASE
+    fi
+    note "Importing the primary's platform keys from $REGION_BUNDLE ..."
+    if ! "$RB_SCRIPT" import "$REGION_BUNDLE"; then
+        echo "ERROR: region bundle import failed — nothing was installed." >&2
+        exit 1
+    fi
+    # The primary's external PDP, so both regions enforce the same rules.
+    # Anything given on this command line wins.
+    RB_PDP_DIR="$(mktemp -d)"
+    if ! "$RB_SCRIPT" pdp "$REGION_BUNDLE" "$RB_PDP_DIR"; then
+        echo "ERROR: could not read the PDP settings from the bundle — nothing was installed." >&2
+        exit 1
+    fi
+    if [ -f "$RB_PDP_DIR/pdp.env" ]; then
+        # shellcheck disable=SC1091
+        . "$RB_PDP_DIR/pdp.env"
+        if [ "${ENABLE_OPA:-0}" = "1" ] || [ -n "${PDP_URL_FLAG:-}" ]; then
+            PDP_URL="${PDP_URL_FLAG:-}"
+            note "  external PDP: using the options on this command line (bundle's settings ignored)"
+        elif [ "$PDP_MODE" = "bundled" ] && [ -f "$RB_PDP_DIR/opa-policy.rego" ]; then
+            ENABLE_OPA=1
+            OPA_POLICY="$RB_PDP_DIR/opa-policy.rego"
+            PDP_URL=""
+            note "  external PDP: bundled OPA with the primary's policy"
+        elif [ "$PDP_MODE" = "external" ] && [ -n "$PDP_URL" ]; then
+            note "  external PDP: the primary's own PDP at $PDP_URL"
+            note "  ⚠ make sure this region can reach it (or give --pdp-url for a local one)"
+        fi
+        PDP_NAMESPACES="${PDP_NAMESPACES_FLAG:-$PDP_NAMESPACES}"
+        PDP_FAIL="${PDP_FAIL_FLAG:-$PDP_FAIL}"
+    else
+        note "  (the bundle carries no external PDP settings)"
+    fi
+    unset REGION_BUNDLE_PASSPHRASE
+fi
+
+# ── External PDP (--enable-opa / --opa-policy / --pdp-url) ───────────────────
+# Maps to opa.* and orchestrator.pdp.* in the chart. No flag = PDP off.
+if [ -n "${PDP_FAIL:-}" ] && [ "$PDP_FAIL" != "open" ] && [ "$PDP_FAIL" != "closed" ]; then
+    echo "ERROR: --pdp-fail must be 'open' or 'closed'. Got: $PDP_FAIL" >&2
+    exit 1
+fi
+if [ -n "${PDP_URL:-}" ]; then
+    HELM_VALUES+=( --set-string "orchestrator.pdp.url=$PDP_URL" )
+    note "External PDP: $PDP_URL"
+    if [ "${ENABLE_OPA:-0}" = "1" ]; then
+        note "  (--pdp-url given — the bundled OPA is NOT deployed)"
+        ENABLE_OPA=0
+    fi
+fi
+if [ "${ENABLE_OPA:-0}" = "1" ]; then
+    HELM_VALUES+=( --set "opa.enabled=true" )
+    if [ -n "${OPA_POLICY:-}" ]; then
+        if [ ! -f "$OPA_POLICY" ]; then
+            echo "ERROR: --opa-policy file not found: $OPA_POLICY" >&2
+            exit 1
+        fi
+        HELM_VALUES+=( --set-file "opa.policy=$OPA_POLICY" )
+        note "Bundled OPA with policy $OPA_POLICY"
+    else
+        note "Bundled OPA with the starter allow-all policy (add rules with --opa-policy)"
+    fi
+fi
+if [ -n "${PDP_URL:-}" ] || [ "${ENABLE_OPA:-0}" = "1" ]; then
+    [ -n "${PDP_NAMESPACES:-}" ] && HELM_VALUES+=( --set-string "orchestrator.pdp.namespaces=$PDP_NAMESPACES" )
+    [ -n "${PDP_FAIL:-}" ]       && HELM_VALUES+=( --set-string "orchestrator.pdp.fail=$PDP_FAIL" )
+    note "  PDP namespaces: ${PDP_NAMESPACES:-*} · when unreachable: ${PDP_FAIL:-closed}"
+fi
+
 # Wrapper function so we can pass it to spinner.
 do_helm_install() {
     helm install "$RELEASE_NAME" "${HELM_REPO_NAME}/mcp-orchestrator" \
