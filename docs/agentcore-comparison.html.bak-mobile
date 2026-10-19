@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>AI Orchestrator vs AWS Bedrock AgentCore | Magertron</title>
+<meta name="description" content="A side-by-side comparison of Magertron's AI Orchestrator and Amazon Bedrock AgentCore. Hosting and governance are different problems — here is what each is built for, and where each one fits.">
+
+<link rel="canonical" href="https://magertron.com/agentcore-comparison.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/agentcore-comparison.html">
+<meta property="og:title" content="AI Orchestrator vs AWS Bedrock AgentCore">
+<meta property="og:description" content="Hosting MCP servers and governing MCP servers are different problems. Side-by-side comparison of Magertron's AI Orchestrator and AgentCore.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav (matches index.html) */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* Hero */
+.hero { padding: 110px 0 36px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 520px; height: 340px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.6; pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
+}
+.hero h1 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(28px, 3.6vw, 40px); line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 16px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto 16px; line-height: 1.65;
+}
+.hero .meta {
+  font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+  margin-top: 32px;
+}
+
+/* Section structure */
+section.content { padding: 60px 0; }
+section.content .container { max-width: 920px; }
+.section-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 12px;
+}
+section.content h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 20px;
+}
+section.content h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em; margin: 32px 0 12px;
+}
+section.content p {
+  font-size: 17px; color: var(--text-secondary); line-height: 1.8;
+  margin-bottom: 16px;
+}
+section.content strong { color: var(--text); font-weight: 600; }
+section.content em { color: var(--text); font-style: italic; }
+
+/* Two-column "at a glance" cards */
+.glance { padding: 40px 0 60px; }
+.glance .container { max-width: 1100px; }
+.glance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.glance-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px;
+}
+.glance-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.glance-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.glance-card-label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 8px;
+}
+.glance-card.mcp-orch .glance-card-label { color: var(--accent-text); }
+.glance-card.agentcore .glance-card-label { color: #ff9900; }
+.glance-card h3 {
+  font-family: var(--serif); font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 16px;
+}
+.glance-card p {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px;
+}
+.glance-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+}
+.glance-card ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start;
+}
+.glance-card ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.glance-card.agentcore ul li::before { color: #ff9900; }
+
+/* Comparison table */
+.comparison { padding: 40px 0 60px; }
+.comparison .container { max-width: 1100px; }
+.comparison table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.comparison th, .comparison td {
+  padding: 18px 24px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comparison thead th {
+  background: rgba(255, 255, 255, 0.02);
+  font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-tertiary); font-weight: 500;
+}
+.comparison thead th.col-mag { color: var(--accent-text); }
+.comparison thead th.col-aws { color: #ff9900; }
+.comparison tbody tr:last-child th,
+.comparison tbody tr:last-child td { border-bottom: none; }
+.comparison tbody th {
+  font-family: var(--sans); font-weight: 600; font-size: 14px;
+  color: var(--text); width: 24%;
+}
+.comparison tbody td {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* Collapsible wrapper for the comparison table */
+.cmp-toggle { margin: 0; }
+.cmp-toggle > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 24px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  transition: border-color 0.2s, background 0.2s;
+}
+.cmp-toggle > summary::-webkit-details-marker { display: none; }
+.cmp-toggle > summary:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+.cmp-toggle > summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.cmp-chevron {
+  flex-shrink: 0; color: var(--text-tertiary); font-size: 13px;
+  transition: transform 0.2s, color 0.2s;
+}
+.cmp-toggle[open] > summary .cmp-chevron { transform: rotate(90deg); color: var(--accent-text); }
+.cmp-label { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--text); }
+.cmp-count {
+  margin-left: auto; flex-shrink: 0;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary);
+}
+.cmp-toggle .when-open { display: none; }
+.cmp-toggle[open] .when-open { display: inline; }
+.cmp-toggle[open] .when-closed { display: none; }
+.cmp-body { margin-top: 16px; }
+
+/* Pills inside table cells */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-right: 6px; margin-bottom: 4px;
+}
+.pill.good { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+.pill.warn { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.3); }
+.pill.info { background: rgba(96, 165, 250, 0.1); color: var(--accent-text); border: 1px solid rgba(96, 165, 250, 0.3); }
+.pill.neutral { background: rgba(134, 148, 168, 0.1); color: var(--text-secondary); border: 1px solid rgba(134, 148, 168, 0.3); }
+
+/* "Pick X when..." section */
+.pick { padding: 60px 0; }
+.pick .container { max-width: 1100px; }
+.pick h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 48px; text-align: center;
+}
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.pick-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px;
+}
+.pick-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.pick-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.pick-card .label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 12px;
+}
+.pick-card.mcp-orch .label { color: var(--accent-text); }
+.pick-card.agentcore .label { color: #ff9900; }
+.pick-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  margin-bottom: 24px; letter-spacing: -0.02em;
+}
+.pick-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 14px;
+}
+.pick-card ul li {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pick-card ul li::before {
+  content: '✓'; color: var(--success); flex-shrink: 0; font-weight: 700;
+}
+.pick-card ul li strong { color: var(--text); font-weight: 600; }
+
+/* Closing CTA */
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 60px 48px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 700; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 32px; position: relative; }
+.cta-actions { display: flex; gap: 16px; justify-content: center; position: relative; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; color: white; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px;
+  font-weight: 500; font-size: 14px; border: 1px solid var(--border); text-decoration: none;
+  transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; color: var(--text); }
+
+/* Footer */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .glance-row, .pick-row { grid-template-columns: 1fr; }
+  .comparison table { font-size: 13px; }
+  .comparison th, .comparison td { padding: 14px 16px; }
+  .comparison tbody th { width: 30%; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links">
+      <a href="/#features">AI Orchestrator</a>
+      <a href="/data-reach.html">AI Data Reach</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/security.html">Security</a>
+      <a href="https://blog.magertron.com">Blog</a>
+      <a href="demos.html">Watch</a>
+      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Comparison</div>
+    <h1>AI Orchestrator vs <em>AWS Bedrock AgentCore</em></h1>
+    <p>
+      Both products run MCP servers. They are not the same product. AgentCore is a managed runtime
+      for the MCP servers AWS hosts. Magertron's AI Orchestrator is a Kubernetes-native governance
+      plane for the MCP servers across your enterprise, wherever they run.
+    </p>
+  </div>
+</section>
+
+<section class="glance">
+  <div class="container">
+    <div class="glance-row">
+      <div class="glance-card mcp-orch">
+        <div class="glance-card-label">AI Orchestrator</div>
+        <h3>The Kubernetes-native MCP control plane</h3>
+        <p>
+          Self-hosted in your cluster. Deploys MCP servers as pods, routes through Envoy with JWT
+          authentication, and is being built to federate inventory and governance across managed,
+          self-managed, and shadow MCP servers in your environment.
+        </p>
+        <ul>
+          <li>Runs in your Kubernetes cluster — any cloud, on-prem, air-gapped</li>
+          <li>OSS Free up to 20 servers, no signup, no credit card</li>
+          <li>Your data and credentials never leave your network</li>
+          <li>Fixed-capacity pricing, predictable at any scale</li>
+        </ul>
+      </div>
+      <div class="glance-card agentcore">
+        <div class="glance-card-label">AWS Bedrock AgentCore</div>
+        <h3>Managed runtime substrate for AI agents</h3>
+        <p>
+          A serverless AWS platform for hosting agents and MCP servers in per-session microVMs.
+          Twelve modular components — Runtime, Gateway, Memory, Identity, Browser, Code Interpreter,
+          Observability, and more — billed independently on consumption.
+        </p>
+        <ul>
+          <li>Fully managed by AWS, available in fourteen regions</li>
+          <li>Per-session microVM isolation, up to 8-hour sessions</li>
+          <li>Native integration with Bedrock models and the AWS ecosystem</li>
+          <li>Consumption-based pricing, idle wait time not charged</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">The framing</div>
+    <h2>Hosting MCP servers and governing MCP servers are different problems.</h2>
+    <p>
+      When AgentCore launched in October 2025, the obvious question for anyone building MCP
+      infrastructure was: is this the end of the category? It is a serious product from a serious
+      company. AWS shipped microVM-per-session isolation, up to 8-hour session limits,
+      consumption-based pricing that does not charge for I/O wait, and a Gateway service that
+      centralizes MCP tool routing across MCP servers, REST APIs, and AWS Lambda functions.
+      It is good work.
+    </p>
+    <p>
+      It is also not the answer to the enterprise MCP problem, because AgentCore solves
+      <em>hosting</em>, and the enterprise problem is <em>governance</em>.
+    </p>
+  </div>
+</section>
+
+<section class="comparison">
+  <div class="container">
+    <div class="section-eyebrow" style="text-align:center; margin-bottom: 32px;">Side by side</div>
+    <details class="cmp-toggle">
+      <summary>
+        <span class="cmp-chevron">&#9656;</span>
+        <span class="cmp-label"><span class="when-closed">Show the full comparison</span><span class="when-open">Hide the full comparison</span></span>
+        <span class="cmp-count">18 dimensions</span>
+      </summary>
+      <div class="cmp-body">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th class="col-mag">AI Orchestrator</th>
+          <th class="col-aws">AWS AgentCore</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Deployment model</th>
+          <td>Self-hosted on Kubernetes (any cloud, on-prem, air-gapped)</td>
+          <td>AWS-managed PaaS, 14 regions</td>
+        </tr>
+        <tr>
+          <th>Where MCP servers run</th>
+          <td>Kubernetes pods in your cluster</td>
+          <td>microVMs in AWS infrastructure</td>
+        </tr>
+        <tr>
+          <th>Cloud lock-in</th>
+          <td><span class="pill good">None</span> Runs anywhere k8s runs</td>
+          <td><span class="pill warn">AWS-native</span> Tightly coupled to Bedrock and AWS services</td>
+        </tr>
+        <tr>
+          <th>Pricing model</th>
+          <td>Software licensing. OSS Free up to 20 servers. Tiered pricing above. Fixed capacity.</td>
+          <td>Consumption-based per service. Runtime at $0.0895/vCPU-hr + $0.00945/GB-hr. Twelve components billed independently.</td>
+        </tr>
+        <tr>
+          <th>Predictable at scale</th>
+          <td><span class="pill good">Yes</span> Cost scales with cluster capacity, not request volume</td>
+          <td><span class="pill warn">Conditional</span> Favorable at low/moderate volume; crossover point exists for high-traffic workloads</td>
+        </tr>
+        <tr>
+          <th>Data sovereignty</th>
+          <td><span class="pill good">Full</span> Servers, credentials, and traffic stay in your network</td>
+          <td><span class="pill info">Regional</span> Data resides in selected AWS regions, subject to AWS compliance posture</td>
+        </tr>
+        <tr>
+          <th>Air-gapped deployment</th>
+          <td><span class="pill good">Supported</span></td>
+          <td><span class="pill warn">Not applicable</span> AgentCore is a managed cloud service</td>
+        </tr>
+        <tr>
+          <th>Time to first MCP server</th>
+          <td>Hours. Install k3s, deploy Helm chart, register server.</td>
+          <td>Minutes. Push a container, deploy.</td>
+        </tr>
+        <tr>
+          <th>Session isolation</th>
+          <td>Pod-level isolation, namespace policy</td>
+          <td><span class="pill good">microVM per session</span> Strong tenant isolation</td>
+        </tr>
+        <tr>
+          <th>Session length limit</th>
+          <td>No fixed limit — runs as long as the pod runs</td>
+          <td>Up to 8 hours per session</td>
+        </tr>
+        <tr>
+          <th>Auto-scale to zero</th>
+          <td><span class="pill warn">Not built-in</span> HPA scales replicas, minimums are configurable</td>
+          <td><span class="pill good">Yes</span> Native to AgentCore Runtime</td>
+        </tr>
+        <tr>
+          <th>Auth and identity</th>
+          <td>Bring your own OAuth/OIDC provider. JWT validation at the Envoy data plane.</td>
+          <td>AgentCore Identity (Cognito or external OAuth). Federated identity for tool targets.</td>
+        </tr>
+        <tr>
+          <th>MCP discovery and inventory</th>
+          <td><span class="pill info">Roadmap</span> Federation across config files, endpoint inspection, egress logs, and source repos</td>
+          <td><span class="pill warn">Out of scope</span> AgentCore manages what customers register; does not discover shadow MCP</td>
+        </tr>
+        <tr>
+          <th>Observability</th>
+          <td>Standard Kubernetes telemetry: Prometheus, OpenTelemetry, your existing stack</td>
+          <td>AgentCore Observability via CloudWatch, OpenTelemetry exports, Datadog/Dynatrace integrations</td>
+        </tr>
+        <tr>
+          <th>Memory, code interpreter, browser as services</th>
+          <td><span class="pill warn">Out of scope</span></td>
+          <td><span class="pill good">Included</span> Managed Memory, Code Interpreter, Browser services</td>
+        </tr>
+        <tr>
+          <th>Multi-cloud or hybrid</th>
+          <td><span class="pill good">Yes</span> Same control plane across AWS, GCP, Azure, on-prem</td>
+          <td><span class="pill warn">AWS only</span></td>
+        </tr>
+        <tr>
+          <th>Maturity</th>
+          <td>Pre-1.0, active development by a small team</td>
+          <td>GA since October 2025, mature core with new features still shipping</td>
+        </tr>
+        <tr>
+          <th>Vendor</th>
+          <td>Magertron (independent startup)</td>
+          <td>Amazon Web Services</td>
+        </tr>
+      </tbody>
+    </table>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="container">
+    <div class="cta-box">
+      <h2>See where AI Orchestrator fits in your stack.</h2>
+      <p>
+        Talk through your environment, your existing infrastructure, and where MCP governance fits.
+        Or grab the Helm chart and try it yourself.
+      </p>
+      <div class="cta-actions">
+        <a href="/#schedule-demo" class="btn-primary">Try it now </a>
+        <a href="https://github.com/magertron/orchestrator" class="btn-secondary" target="_blank">View on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="/#features">AI Orchestrator</a></li>
+          <li><a href="/data-reach.html">AI Data Reach</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="/developers.html">Build an Agent</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="/security.html">Security</a></li>
+          <li><a href="/siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a></li>
+          <li><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="/trust.html">Trust</a></li>
+          <li><a href="/about.html">About</a></li>
+          <li><a href="/compliance.html">Compliance</a></li>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><a href="/#schedule-demo">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="/#schedule-demo">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/consent.js" defer></script>
+
+
+</body>
+</html>

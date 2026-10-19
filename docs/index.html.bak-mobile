@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Magertron: The Spend Control Plane for Enterprise AI Agents</title>
+<meta name="description" content="See and control what your AI agents cost. Magertron meters every MCP tool call, charges it back per user and team, and enforces hard budget limits at the gateway. OSS Free up to 20 servers — no signup, no credit card.">
+
+<!-- ─── SEO: canonical, Open Graph, Twitter Card, JSON-LD ─────────────────── -->
+<link rel="canonical" href="https://magertron.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/">
+<meta property="og:title" content="Magertron: The Spend Control Plane for Enterprise AI Agents">
+<meta property="og:description" content="See and control what your AI agents cost. Meter every MCP tool call, charge it back per user and team, enforce hard budget limits. OSS Free up to 20 servers — no signup, no credit card.">
+<meta property="og:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user, committed vs pay-as-you-go, with budget tracking">
+<meta property="og:site_name" content="Magertron">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://magertron.com/">
+<meta name="twitter:title" content="Magertron: The Spend Control Plane for Enterprise AI Agents">
+<meta name="twitter:description" content="See and control what your AI agents cost. Meter every tool call, charge it back per user, enforce budget limits at the gateway.">
+<meta name="twitter:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
+<meta name="twitter:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user">
+
+<meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
+<meta name="author" content="Magertron">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Magertron AI Orchestrator",
+  "alternateName": "Magertron",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Kubernetes Platform",
+  "operatingSystem": "Linux, Kubernetes",
+  "description": "The spend control plane for enterprise AI agents. Meter every MCP tool call, charge it back per user and team, and enforce hard budget limits at the gateway.",
+  "softwareVersion": "4.1.24",
+  "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
+  "url": "https://magertron.com",
+  "downloadUrl": "https://github.com/magertron/orchestrator",
+  "screenshot": "https://magertron.com/screenshots/dashboard-galaxy.png",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Open Source",
+      "description": "Free forever. Up to 20 MCP servers, live metrics, and LLM calls by name. CLI and portal require Pro.",
+      "price": "0",
+      "priceCurrency": "USD",
+      "category": "Free"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro",
+      "description": "Live metrics, history & rollback, webhooks, audit trail, custom RBAC, rug-pull protection. Up to 50 MCP servers.",
+      "price": "499",
+      "priceCurrency": "USD",
+      "category": "Subscription"
+    }
+  ],
+  "author": {
+    "@type": "Organization",
+    "name": "Magertron",
+    "url": "https://magertron.com",
+    "sameAs": [
+      "https://github.com/magertron/orchestrator",
+      "https://www.linkedin.com/company/magertronc"
+    ]
+  }
+}
+</script>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Magertron",
+  "url": "https://magertron.com",
+  "description": "The spend control plane for enterprise AI agents — metering, per-user chargeback, and budget enforcement for Model Context Protocol servers at scale.",
+  "foundingLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressRegion": "FL",
+      "addressCountry": "US"
+    }
+  },
+  "founder": {
+    "@type": "Person",
+    "name": "Curtis Mager"
+  },
+  "sameAs": [
+    "https://github.com/magertron/orchestrator",
+    "https://www.linkedin.com/company/magertronc"
+  ]
+}
+</script>
+<!-- ─── End SEO ─────────────────────────────────────────────────────────── -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* ── Nav ──────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero { padding: 88px 0 36px; text-align: center; position: relative; overflow: hidden; }
+/* Ghosted live-galaxy backdrop — bleeds in from the top-left, fades away from
+   the centered text so the headline stays crisp. Symbolizes agent-tracking
+   depth. Drops to near-invisible on mobile. Drop the screenshot at the url(). */
+.hero-galaxy {
+  position: absolute; top: 320px; left: 0;
+  width: 90%; max-width: 1000px; height: 680px;
+  background-image: url('screenshots/hero-galaxy.png');
+  background-size: cover; background-position: -70px -40px;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+  /* fade the image out toward the right and bottom so it dissolves into the bg
+     and never sits behind the headline as a hard rectangle */
+  -webkit-mask-image:
+    radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%),
+    linear-gradient(to right, transparent 0%, #000 12%),
+    linear-gradient(to bottom, transparent 0%, #000 12%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%),
+    linear-gradient(to right, transparent 0%, #000 12%),
+    linear-gradient(to bottom, transparent 0%, #000 12%);
+          mask-composite: intersect;
+  pointer-events: none; z-index: 0;
+  animation: galaxyDrift 26s ease-in-out infinite alternate;
+}
+/* scrim: a soft wash of the page bg over the galaxy near the text column,
+   guaranteeing contrast for the headline/subhead regardless of the image */
+.hero-scrim {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 70% 75% at 50% 46%,
+              var(--bg) 18%, rgba(0,0,0,0) 75%);
+}
+@keyframes galaxyDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(14px, 10px) scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-galaxy { animation: none; } }
+.hero .container { position: relative; z-index: 2; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 680px; height: 500px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px; border: 1px solid var(--border);
+  background: var(--bg-card); font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 26px; animation: fadeUp 0.6s ease-out;
+}
+.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s ease-in-out infinite; }
+.hero h1 {
+  font-family: var(--serif); font-weight: 700; font-style: normal;
+  font-size: clamp(42px, 6vw, 74px); line-height: 1.06; letter-spacing: -0.04em;
+  margin-bottom: 20px; animation: fadeUp 0.6s ease-out 0.1s both;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p {
+  font-size: 17px; color: var(--text-secondary); max-width: 680px;
+  margin: 0 auto 34px; line-height: 1.45; animation: fadeUp 0.6s ease-out 0.2s both;
+}
+.hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeUp 0.6s ease-out 0.3s both; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px;
+  font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; color: white; }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 14px 32px; border-radius: 8px;
+  font-weight: 500; font-size: 15px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Hero Screenshot ──────────────────────────────────────────────────── */
+.hero-screenshot {
+  max-width: 780px; margin: 36px auto 0; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border); background: var(--bg-card);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1);
+  animation: fadeUp 0.8s ease-out 0.4s both;
+  position: relative;
+}
+.hero-screenshot img {
+  width: 100%; height: auto; display: block;
+}
+/* ── Hero crossfade carousel: two stacked shots fade back and forth ── */
+.hero-carousel { position: relative; }
+.hero-carousel img {
+  width: 100%; height: auto; display: block;
+}
+/* First slide is in normal flow (sets the box height); others overlay it. */
+.hero-carousel img.slide-2 {
+  position: absolute; top: 0; left: 0;
+}
+.hero-carousel img.slide-1 { animation: heroFadeA 12s ease-in-out infinite; }
+.hero-carousel img.slide-2 { animation: heroFadeB 12s ease-in-out infinite; }
+@keyframes heroFadeA {
+  0%, 42% { opacity: 1; }
+  50%, 92% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes heroFadeB {
+  0%, 42% { opacity: 0; }
+  50%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel img.slide-1, .hero-carousel img.slide-2 { animation: none; }
+  .hero-carousel img.slide-2 { display: none; }
+}
+.hero-screenshot .placeholder {
+  width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700; font-style: normal; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 16px;
+}
+.section-desc {
+  font-size: 16px; color: var(--text-secondary); max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+}
+
+/* ── Showcase (screenshot sections) ───────────────────────────────────── */
+.showcase { padding: 80px 0; }
+.showcase-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+}
+.showcase-row.reverse { direction: rtl; }
+.showcase-row.reverse > * { direction: ltr; }
+.showcase-content { max-width: 460px; }
+.showcase-content h3 {
+  font-family: var(--serif); font-size: 32px; font-weight: 600; font-style: normal;
+  margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.02em;
+}
+.showcase-content p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+.showcase-content ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+}
+.showcase-content ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;
+}
+.showcase-content ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.showcase-image {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.showcase-image:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+.showcase-image img { width: 100%; height: auto; display: block; }
+.showcase-image .placeholder {
+  width: 100%; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Features ─────────────────────────────────────────────────────────── */
+.features { padding: 80px 0; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card {
+  padding: 32px; border-radius: 12px; background: var(--bg-card);
+  border: 1px solid var(--border); transition: all 0.3s;
+  position: relative;
+}
+/* Hover affordance: only the clickable variant gets the lift + accent
+   treatment, so the visual difference between "click me" and "informational"
+   is obvious to a reader scanning the grid. */
+.feature-card.clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.feature-card.clickable:hover { border-color: var(--border-accent); background: var(--bg-card-hover); transform: translateY(-2px); text-decoration: none; }
+.feature-card.clickable::after {
+  content: "→";
+  position: absolute;
+  top: 32px; right: 32px;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  transition: transform 0.2s, color 0.2s;
+}
+.feature-card.clickable:hover::after { color: var(--accent-text); transform: translateX(4px); }
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--accent-glow); border: 1px solid rgba(37, 99, 235, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 20px;
+}
+.feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+/* ── Architecture diagram (Governed Surfaces) ─────────────────────────── */
+.mag-arch-scroll { overflow-x: auto; margin: 0 0 40px; }
+.mag-arch-scroll svg { display: block; width: 100%; height: auto; min-width: 780px; }
+.mag-arch-card {
+  background: #080b10; border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; margin: 0 0 40px;
+}
+.mag-arch-card .mag-arch-scroll { margin: 0; }
+@media (max-width: 768px) { .mag-arch-card { padding: 16px; } }
+
+.mag-arch-caption {
+  max-width: 660px; margin: 0 auto 48px; text-align: center;
+  font-size: 15px; line-height: 1.7; color: var(--text-secondary);
+}
+.mag-arch-caption strong { color: var(--text); font-weight: 500; }
+.mag-arch-caption code { font-family: var(--mono); font-size: 13px; color: var(--accent-text); }
+
+.ma-frame  { fill: none;               stroke: var(--border); stroke-width: 1; }
+.ma-panel  { fill: var(--bg-card);     stroke: var(--border); stroke-width: 1; }
+.ma-hero   { fill: var(--accent-glow); stroke: var(--accent); stroke-width: 1.5; }
+.ma-rule   { stroke: var(--border); stroke-width: 1; }
+.ma-flow   { stroke: var(--text-tertiary); stroke-width: 1.5; fill: none; }
+.ma-head   { fill: var(--text-tertiary); }
+.ma-t      { fill: var(--text);           font-family: var(--sans); font-size: 14px; }
+.ma-t-sm   { fill: var(--text-secondary); font-family: var(--sans); font-size: 12px; }
+.ma-mono   { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 10.5px; }
+.ma-mono-c { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 11px; }
+.ma-label  { fill: var(--accent-text);    font-family: var(--mono); font-size: 11px;
+             letter-spacing: 0.1em; text-transform: uppercase; }
+.ma-acc    { fill: var(--accent-text); }
+
+/* ── CLI Section ──────────────────────────────────────────────────────── */
+.cli-section { padding: 80px 0; }
+.cli-section .container { max-width: 900px; }
+.terminal-preview {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: #0a0e14;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+.terminal-bar {
+  display: flex; gap: 6px; padding: 12px 16px; background: #111722;
+  border-bottom: 1px solid var(--border);
+}
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot:nth-child(1) { background: #ff5f57; }
+.terminal-dot:nth-child(2) { background: #febc2e; }
+.terminal-dot:nth-child(3) { background: #28c840; }
+.terminal-body {
+  padding: 20px 24px; font-family: var(--mono); font-size: 13px;
+  line-height: 1.8; color: var(--text-secondary);
+}
+.terminal-body .cmd { color: var(--text); }
+.terminal-body .accent { color: var(--accent-text); }
+.terminal-body .success { color: var(--success); }
+.terminal-body .dim { color: var(--text-tertiary); }
+
+/* ── Pricing ──────────────────────────────────────────────────────────── */
+.pricing { padding: 80px 0; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; max-width: 1240px; margin: 48px auto 0; }
+@media (max-width: 1100px) { .pricing-grid { grid-template-columns: 1fr 1fr; } }
+.pricing-card {
+  padding: 40px; border-radius: 16px; background: var(--bg-card);
+  border: 1px solid var(--border); position: relative; transition: all 0.3s;
+}
+.pricing-card:hover { border-color: var(--border-accent); }
+.pricing-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, var(--bg-card) 100%);
+}
+.pricing-card.featured::before {
+  content: 'RECOMMENDED'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: white; padding: 4px 16px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; font-family: var(--mono);
+}
+.pricing-tier {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 8px;
+}
+.pricing-name { font-family: var(--serif); font-size: 32px; font-style: normal; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+.pricing-price { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+.pricing-divider { height: 1px; background: var(--border); margin: 24px 0; }
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.pricing-features li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; }
+.pricing-features li::before { content: '✓'; color: var(--success); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.pricing-features li.disabled { color: var(--text-tertiary); }
+.pricing-features li.disabled::before { content: '—'; color: var(--text-tertiary); }
+.pricing-btn {
+  display: block; width: 100%; text-align: center; padding: 12px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none;
+}
+.pricing-btn.primary { background: var(--accent); color: white; border: none; }
+.pricing-btn.primary:hover { background: #1d4ed8; text-decoration: none; }
+.pricing-btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.pricing-btn.secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Demo Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px;
+  padding: 10px 14px; color: #0a0d12; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: #6b7280; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #b9bfca; color: #0a0d12; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+
+
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 72px 60px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700; font-style: normal; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; position: relative; }
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   Multi-column layout: brand block on the left (logo + tagline), navigation
+   columns on the right (Products / Resources / Company / Social). On mobile
+   the brand block stacks above the columns. The bottom strip carries the
+   copyright and a slim set of utility links. */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  color: var(--text-primary);
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p {
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 13px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--text-primary); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .showcase-row, .showcase-row.reverse { grid-template-columns: 1fr; }
+  .hero { padding: 104px 0 48px; }
+  .hero-galaxy { opacity: 0.12; width: 100%; max-width: none; height: 380px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .cta-box { padding: 48px 32px; }
+  footer .container { flex-direction: column; gap: 16px; }
+}
+  /* fixed nav is ~72px; keep anchored section headings visible below it */
+  #features, #governance, #install, #pricing, #server-management { scroll-margin-top: 88px; }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links">
+      <a href="#features">AI Orchestrator</a>
+      <a href="data-reach.html">AI Data Reach</a>
+      <a href="developers.html">Developers</a>
+      <a href="#pricing">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="demos.html">Watch</a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-galaxy" aria-hidden="true"></div>
+  <div class="hero-scrim" aria-hidden="true"></div>
+  <div class="container">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Now available — v4.1.24
+    </div>
+    <div class="hero-badge" style="margin-left: 8px; border-color: var(--border-accent); background: var(--accent-glow); color: var(--accent-text);">
+      <span style="font-weight: 600; letter-spacing: 0.04em;">NEW:</span>
+      OPA Support
+    </div>
+    <h1>The <em>AI spend</em> plane<br>for the token economy.</h1>
+    <p>Your agents call tools. Those tools touch data. Magertron governs both — and knows which tool touched which table, for whom, and what it cost. One gateway for model inference and tool calls across every vendor.</p>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-top: -8px;">OSS Free up to 20 servers — no signup, no credit card.</p>
+
+<!-- ══ Ask-your-platform typewriter showcase ═══════════════════════════════════
+     Rotating demo of the assistant answering live operational questions about a
+     governed AI platform. Styled to match Magertron: section-label/title/desc
+     framing, feature-card surface treatment, site CSS vars. Scoped .mag-ask-*.
+================================================================================ -->
+<div class="mag-ask" aria-label="The assistant answering live platform questions">
+  <div class="mag-ask-frame">
+    <div class="mag-ask-head">
+      <span class="mag-ask-spark">✦</span>
+      <span class="mag-ask-title">AI Orchestrator Assistant</span>
+      <span class="mag-ask-tag">Advisory · read-only · grounded in live platform state</span>
+    </div>
+
+    <div class="mag-ask-body">
+      <div class="mag-ask-row mag-ask-row-user">
+        <div class="mag-ask-bubble mag-ask-bubble-user"><span id="magAskQ"></span><span class="mag-ask-caret mag-ask-caret-q mag-hide" id="magAskQCaret">▋</span></div>
+      </div>
+      <div class="mag-ask-row mag-ask-row-bot">
+        <div class="mag-ask-bubble mag-ask-bubble-bot">
+          <span id="magAskA"></span><span class="mag-ask-caret" id="magAskCaret">▋</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mag-ask-dots" id="magAskDots" role="tablist" aria-label="Example questions"></div>
+  </div>
+</div>
+
+<style>
+.mag-ask{max-width:860px;margin:44px auto 0;text-align:center;}
+.mag-ask-label{
+  font-family:var(--mono);font-size:12px;text-transform:uppercase;
+  letter-spacing:0.1em;color:var(--accent-text);margin-bottom:16px;
+}
+.mag-ask-heading{
+  font-family:var(--serif);font-size:clamp(26px,3vw,36px);font-weight:700;
+  line-height:1.15;letter-spacing:-0.03em;margin:0 0 28px;color:var(--text-primary);
+}
+.mag-ask-frame{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;text-align:left;
+}
+.mag-ask-head{
+  display:flex;align-items:center;gap:10px;padding:16px 20px;
+  border-bottom:1px solid var(--border);
+}
+.mag-ask-spark{color:var(--accent-text);font-size:14px;}
+.mag-ask-title{font-weight:600;font-size:14px;color:var(--text-primary);}
+.mag-ask-tag{
+  margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;
+  color:var(--text-tertiary);text-transform:uppercase;
+}
+.mag-ask-body{padding:24px 20px 20px;min-height:210px;}
+.mag-ask-row{display:flex;margin-bottom:8px;}
+.mag-ask-row-user{justify-content:flex-end;}
+.mag-ask-row-bot{justify-content:flex-start;}
+.mag-ask-bubble{
+  max-width:86%;padding:12px 16px;border-radius:12px;font-size:14.5px;
+  line-height:1.7;white-space:pre-wrap;word-break:break-word;
+}
+.mag-ask-bubble-user{
+  background:var(--accent-glow);border:1px solid var(--border-accent);
+  color:var(--text-primary);border-bottom-right-radius:4px;font-weight:500;
+}
+.mag-ask-bubble-bot{
+  background:var(--bg-card-hover);border:1px solid var(--border);
+  color:var(--text-secondary);border-bottom-left-radius:4px;min-height:20px;
+}
+.mag-ask-bubble-bot .mag-tok{
+  color:var(--accent-text);font-family:var(--mono);font-size:13px;
+  padding:1px 5px;border-radius:6px;background:var(--accent-glow);
+}
+.mag-ask-bubble-bot .mag-flag{color:#ef4444;font-weight:600;}
+.mag-ask-bubble-bot strong{color:var(--text-primary);font-weight:600;}
+.mag-ask-caret{
+  color:var(--accent-text);font-weight:400;animation:magBlink 1s steps(1) infinite;
+  margin-left:1px;
+}
+@keyframes magBlink{50%{opacity:0;}}
+.mag-ask-caret.mag-hide{display:none;}
+.mag-ask-caret-q{color:var(--text-primary);}
+.mag-ask-dots{display:flex;gap:7px;justify-content:center;padding:4px 0 18px;}
+.mag-ask-dot{
+  width:7px;height:7px;border-radius:100px;background:var(--text-tertiary);
+  border:none;padding:0;cursor:pointer;transition:all .25s;opacity:.5;
+}
+.mag-ask-dot.active{background:var(--accent-text);opacity:1;width:22px;}
+@media (max-width:640px){
+  .mag-ask-tag{display:none;}
+  .mag-ask-bubble{max-width:92%;font-size:14px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .mag-ask-caret{animation:none;}
+}
+</style>
+
+<script>
+(function(){
+  // Each example: the question, and the answer as HTML (with .mag-tok server
+  // names and .mag-flag for the security callout). Invented enterprise data.
+  var EX = [
+    {
+      q: "What's my busiest server?",
+      a: 'Based on the live platform snapshot, your busiest server is '
+        +'<span class="mag-tok">claude-prod</span> in the '
+        +'<span class="mag-tok">ml-platform</span> tenant — '
+        +'<strong>1.24M calls</strong> over the last 24 hours, well ahead of anything else.'
+    },
+    {
+      q: "Any agents accessing tools without grants?",
+      a: 'Yes — <span class="mag-flag">a security red flag</span>. '
+        +'<span class="mag-tok">batch-etl-07</span>, <span class="mag-tok">notebook-sandbox</span>, '
+        +'and 3 more service accounts are calling '
+        +'<span class="mag-tok">snowflake-connector/run_query</span> with no entitlement granting it. '
+        +'5 principals, 1,880 ungranted calls in 24h. Review before it becomes an incident.'
+    },
+    {
+      q: "What's my most expensive server?",
+      a: 'Your most expensive server this billing period is '
+        +'<span class="mag-tok">openai-gpt4o</span> at <strong>$8,412.90</strong> — '
+        +'about 38% of total AI spend. <span class="mag-tok">claude-prod</span> is next at $5,240.15.'
+    },
+    {
+      q: "Anything over or near budget?",
+      a: 'Two servers need attention this period: '
+        +'<span class="mag-tok">openai-gpt4o</span> is <span class="mag-flag">OVER</span> — '
+        +'112% of its $7,500 ceiling — and <span class="mag-tok">exa-search</span> is near, at 86% of $2,000. '
+        +'Everything else is comfortably within budget.'
+    },
+    {
+      q: "What's my busiest tenant?",
+      a: 'Your busiest tenant is <span class="mag-tok">ml-platform</span> — '
+        +'<strong>2.1M operations</strong> in 24h, driven mostly by '
+        +'<span class="mag-tok">claude-prod</span> and <span class="mag-tok">openai-gpt4o</span>. '
+        +'<span class="mag-tok">payments-prod</span> is a distant second.'
+    }
+  ];
+
+  var qEl    = document.getElementById('magAskQ');
+  var aEl     = document.getElementById('magAskA');
+  var caret  = document.getElementById('magAskCaret');
+  var qCaret = document.getElementById('magAskQCaret');
+  var dotsEl = document.getElementById('magAskDots');
+  if(!qEl||!aEl){return;}
+
+  // build dots
+  EX.forEach(function(_,i){
+    var d=document.createElement('button');
+    d.className='mag-ask-dot'+(i===0?' active':'');
+    d.setAttribute('role','tab');
+    d.setAttribute('aria-label','Example '+(i+1));
+    d.addEventListener('click',function(){ go(i); });
+    dotsEl.appendChild(d);
+  });
+  var dots=Array.prototype.slice.call(dotsEl.children);
+
+  var idx=0, timers=[], reduced=false;
+  try{reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e){}
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+  function setActive(i){ dots.forEach(function(d,j){ d.classList.toggle('active',j===i); }); }
+
+  // Type HTML by walking it: reveal text nodes char-by-char, emit tags whole.
+  function typeHTML(html, el, done){
+    // tokenize into [{t:'text',v}, {t:'tag',v}]
+    var toks=[], re=/(<[^>]+>)/g, last=0, m;
+    while((m=re.exec(html))){
+      if(m.index>last) toks.push({t:'text',v:html.slice(last,m.index)});
+      toks.push({t:'tag',v:m[0]});
+      last=re.lastIndex;
+    }
+    if(last<html.length) toks.push({t:'text',v:html.slice(last)});
+
+    var out='', ti=0, ci=0;
+    function step(){
+      if(ti>=toks.length){ done&&done(); return; }
+      var tok=toks[ti];
+      if(tok.t==='tag'){ out+=tok.v; ti++; el.innerHTML=out; timers.push(setTimeout(step, 0)); return; }
+      if(ci<tok.v.length){
+        out+=tok.v[ci]; ci++; el.innerHTML=out;
+        var ch=tok.v[ci-1];
+        var d = reduced?0:(ch===' '?14: ch==='.'||ch===','?60: 18+Math.random()*22);
+        timers.push(setTimeout(step, d));
+      } else { ci=0; ti++; step(); }
+    }
+    step();
+  }
+
+  // Type plain text char-by-char into an element (for the question bubble).
+  function typeText(text, el, done){
+    var i=0;
+    function step(){
+      if(i>=text.length){ done&&done(); return; }
+      el.textContent = text.slice(0, i+1);
+      var ch=text[i]; i++;
+      var d = reduced?0:(ch===' '?26: ch==='?'||ch==='.'||ch===','?90: 34+Math.random()*30);
+      timers.push(setTimeout(step, d));
+    }
+    step();
+  }
+
+  function go(i){
+    clearTimers();
+    idx=i; setActive(i);
+    var ex=EX[i];
+    // reset both bubbles
+    qEl.textContent='';
+    aEl.innerHTML='';
+    caret.classList.add('mag-hide');          // answer caret hidden for now
+    qCaret.classList.remove('mag-hide');       // question caret blinking
+    // 1) type the question
+    timers.push(setTimeout(function(){
+      typeText(ex.q, qEl, function(){
+        // 2) question done → hide its caret, small beat, then type the answer
+        qCaret.classList.add('mag-hide');
+        timers.push(setTimeout(function(){
+          caret.classList.remove('mag-hide');
+          typeHTML(ex.a, aEl, function(){
+            caret.classList.add('mag-hide');    // answer done → hide caret while holding
+            var hold = reduced?2400:3800;
+            timers.push(setTimeout(function(){ go((idx+1)%EX.length); }, hold));
+          });
+        }, 520));
+      });
+    }, 300));
+  }
+
+  // Kick off when scrolled into view (don't burn the animation above the fold
+  // before the visitor sees it). Fallback: start immediately.
+  var started=false;
+  function start(){ if(started)return; started=true; go(0); }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ start(); io.disconnect(); } });
+    },{threshold:.35});
+    io.observe(document.querySelector('.mag-ask'));
+  } else { start(); }
+})();
+</script>
+<!-- ══ end ask-your-platform showcase ═════════════════════════════════════════ -->
+
+    <!-- Main screenshot: the AI Cost Dashboard — the spend story made concrete.
+         Leads with dollars (total spend, committed, remaining), per-vendor and
+         per-user breakdown, and the daily trend. This is the CFO-legible view. -->
+    <div class="hero-screenshot">
+      <div class="hero-carousel">
+        <img class="slide-1" src="screenshots/dashboard-galaxy.png" alt="Magertron dashboard with Agent Galaxy — live map of which principals and AI agents can reach and are actively calling which MCP tools, with entitlement-vs-usage edges">
+        <img class="slide-2" src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
+      </div>
+    </div>
+
+    <!-- Install snippet — visible above the fold for HN/listicle visitors
+         who want to see "can I try this in 5 minutes?" answered immediately. -->
+    <div style="border-top: 1px solid var(--border); margin-top: 56px; padding-top: 48px;">
+      <div id="install" style="max-width: 720px; margin: 0 auto; text-align: left;">
+      <div style="font-family: var(--serif); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 18px; text-align: center;">Install in 5 minutes</div>
+      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);"># Bare Ubuntu box — installs k3s, helm and Magertron</span>
+<span style="color: var(--text-secondary);">$</span> curl -fsSL https://magertron.com/bootstrap.sh | sudo bash -s -- \
+      --api-public-url https://mcp.example.com
+
+<span style="color: var(--text-secondary);"># Already have a Kubernetes cluster</span>
+<span style="color: var(--text-secondary);">$</span> git clone https://github.com/magertron/orchestrator.git
+<span style="color: var(--text-secondary);">$</span> cd orchestrator
+<span style="color: var(--text-secondary);">$</span> ./install.sh                                  <span style="color: var(--text-secondary);"># Free tier — no license needed</span>
+<span style="color: var(--text-secondary);">$</span> ./install.sh --license /path/to/license.json  <span style="color: var(--text-secondary);"># With a license</span></pre>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Showcase: Server Management -->
+<section style="padding:80px 0; border-top: 1px solid var(--border);">
+  <div class="container" style="max-width:1200px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;">
+      <div>
+        <div class="section-label">Enterprise Security</div>
+        <h2 class="section-title">Rogue MCP servers are already inside your network</h2>
+        <p class="section-desc">Developers are spinning up ungoverned MCP servers on laptops, in personal cloud accounts, and inside your perimeter — with no audit trail and no controls. AI agents talking to these servers can execute actions at scale.</p>
+        <p class="section-desc"><strong>Now you can find them.</strong> Magertron reads MCP client configs on every endpoint you manage, shows you every server in use — approved or not — and points them at the gateway with a single policy change. No resident agent on the laptop &mdash; a script and a timer, delivered by the MDM you already run.</p>
+        <a href="security.html" style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--accent-text);">
+          Read the security guide →
+        </a>
+      </div>
+
+      <!-- Tabbed threat model + fleet devices screenshot -->
+      <div>
+      <div class="threat-tabs">
+        <div class="threat-tab-buttons" role="tablist">
+          <button class="threat-tab-btn active" data-tab="tv01" role="tab" aria-selected="true">
+            <span class="threat-tab-num">01</span>
+            <span class="threat-tab-label">North-South</span>
+          </button>
+          <button class="threat-tab-btn" data-tab="tv02" role="tab" aria-selected="false">
+            <span class="threat-tab-num" style="color:#fca5a5;">02</span>
+            <span class="threat-tab-label">East-West</span>
+          </button>
+          <button class="threat-tab-btn" data-tab="tvresp" role="tab" aria-selected="false">
+            <span class="threat-tab-num" style="color:#86efac;">✓</span>
+            <span class="threat-tab-label">Response</span>
+          </button>
+        </div>
+
+        <div class="threat-tab-content active" id="tv01" role="tabpanel">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:8px;">THREAT VECTOR 01</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">External AI agents</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">AI agents outside your perimeter reaching ungoverned internal MCP servers. Perimeter firewalls catch these — but only if the agent actually crosses the perimeter, and only if the MCP server is registered as a public service.</div>
+        </div>
+
+        <div class="threat-tab-content" id="tv02" role="tabpanel" hidden>
+          <div style="font-size:12px;font-family:var(--mono);color:#fca5a5;margin-bottom:8px;">THREAT VECTOR 02 — HARDER</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">Internal AI agents</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">AI agents inside your perimeter bypassing the gateway entirely — talking to MCP servers pod-to-pod, laptop-to-laptop, namespace-to-namespace. Traditional perimeter defenses see none of it.</div>
+        </div>
+
+        <div class="threat-tab-content" id="tvresp" role="tabpanel" hidden>
+          <div style="font-size:12px;font-family:var(--mono);color:#86efac;margin-bottom:8px;">PLATFORM RESPONSE</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">Three enforcement layers</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">Perimeter firewall handles external agents. Internal network policy stops pod-to-pod lateral movement. Kubernetes NetworkPolicy isolates MCP server namespaces automatically. All three applied by default on every install.</div>
+        </div>
+      </div>
+      <div class="showcase-image" style="margin-top:20px;">
+        <img src="screenshots/inventory-scan.png" alt="Magertron fleet devices — one integration token, four endpoints across macOS, Linux and Windows reporting their MCP client configs, with delivery method and last check-in per device">
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Three deployment patterns -->
+<section style="padding:80px 0; border-top: 1px solid var(--border);">
+  <div class="container">
+
+    <div style="text-align:center; max-width:720px; margin:0 auto 48px;">
+      <div class="section-label">Governed Surfaces</div>
+      <h2 class="section-title">Every model, API and tool call. One policy plane.</h2>
+    </div>
+
+    <div class="mag-arch-card">
+      <div class="mag-arch-scroll">
+      <svg viewBox="0 0 1160 500" role="img"
+           aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, LLM providers, tools and catalog securables.">
+        <defs>
+          <marker id="maArrow" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="ma-head"/>
+          </marker>
+        </defs>
+
+        <text x="40" y="44" class="ma-label">Your stack</text>
+        <rect x="24" y="56" width="248" height="268" rx="10" class="ma-frame"/>
+
+        <rect x="40" y="76" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="103" class="ma-t">MCP clients</text>
+        <text x="56" y="124" class="ma-mono">Claude · Cursor · custom</text>
+
+        <rect x="40" y="154" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="181" class="ma-t">Models — BYOK</text>
+        <text x="56" y="202" class="ma-mono">Anthropic · OpenAI · Ollama</text>
+
+        <rect x="40" y="232" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="259" class="ma-t">Frameworks — BYOAF</text>
+        <text x="56" y="280" class="ma-mono">LangChain · CrewAI · yours</text>
+
+        <text x="306" y="178" class="ma-mono" text-anchor="middle">every call</text>
+        <line x1="280" y1="190" x2="332" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
+
+        <rect x="340" y="40" width="488" height="300" rx="12" class="ma-frame"/>
+        <text x="356" y="68" class="ma-label">Magertron control plane</text>
+
+        <rect x="356" y="82" width="456" height="36" rx="8" class="ma-panel"/>
+        <text x="372" y="105" class="ma-t-sm">Envoy v3 data plane</text>
+        <text x="796" y="105" class="ma-mono-c" text-anchor="end">ext_authz</text>
+
+        <rect x="356" y="130" width="456" height="44" rx="8" class="ma-panel"/>
+        <text x="372" y="149" class="ma-t">Identity resolution</text>
+        <text x="372" y="166" class="ma-mono-c">human subject + agent service account</text>
+
+        <rect x="356" y="184" width="456" height="44" rx="8" class="ma-hero"/>
+        <text x="372" y="203" class="ma-t ma-acc" style="font-weight:600">Dual-principal authorization</text>
+        <text x="372" y="220" class="ma-mono-c">agent grants ∩ human grants — never the union</text>
+
+        <rect x="356" y="238" width="456" height="44" rx="8" class="ma-panel"/>
+        <text x="372" y="257" class="ma-t">Securable resolution</text>
+        <text x="372" y="274" class="ma-mono-c">catalog → schema → table · explicit deny wins</text>
+
+        <rect x="356" y="292" width="456" height="36" rx="8" class="ma-panel"/>
+        <text x="372" y="315" class="ma-t-sm">Meter, rate &amp; budget-cap</text>
+        <text x="796" y="315" class="ma-mono-c" text-anchor="end">per call</text>
+
+        <text x="862" y="178" class="ma-mono" text-anchor="middle">allowed</text>
+        <line x1="836" y1="190" x2="888" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
+
+        <text x="912" y="44" class="ma-label">Governed surfaces</text>
+        <rect x="896" y="56" width="240" height="268" rx="10" class="ma-frame"/>
+
+        <rect x="912" y="76" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="100" class="ma-t">MCP servers</text>
+
+        <rect x="912" y="122" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="146" class="ma-t">REST APIs</text>
+
+        <rect x="912" y="168" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="192" class="ma-t">LLM providers</text>
+
+        <rect x="912" y="214" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="238" class="ma-t">Tools</text>
+
+        <rect x="912" y="260" width="208" height="52" rx="8" class="ma-panel"/>
+        <text x="928" y="283" class="ma-t">Catalog securables</text>
+        <text x="928" y="301" class="ma-mono">catalog / schema / table</text>
+
+        <line x1="584" y1="340" x2="584" y2="372" class="ma-rule"/>
+        <rect x="340" y="372" width="488" height="92" rx="12" class="ma-frame"/>
+        <text x="356" y="398" class="ma-label">On every decision</text>
+
+        <rect x="356" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="410" y="428" class="ma-t-sm" text-anchor="middle">Audit trail</text>
+        <text x="410" y="442" class="ma-mono" text-anchor="middle">immutable</text>
+
+        <rect x="472" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="526" y="428" class="ma-t-sm" text-anchor="middle">Chargeback</text>
+        <text x="526" y="442" class="ma-mono" text-anchor="middle">per dept / user</text>
+
+        <rect x="588" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="642" y="428" class="ma-t-sm" text-anchor="middle">Drift checks</text>
+        <text x="642" y="442" class="ma-mono" text-anchor="middle">tool definitions</text>
+
+        <rect x="704" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="758" y="428" class="ma-t-sm" text-anchor="middle">Policy as code</text>
+        <text x="758" y="442" class="ma-mono" text-anchor="middle">Terraform</text>
+      </svg>
+    </div>
+    </div>
+
+    <p class="mag-arch-caption">
+      Enforcement lives in the Envoy <code>ext_authz</code> path.
+      <strong>Every call crosses the same boundary</strong> — whether it lands on
+      an MCP tool, a REST endpoint or an inference provider.
+    </p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>Internal MCP servers</h3>
+        <p>MCP servers run as pods in your cluster. Traffic stays inside your network.</p>
+      </div>
+      <div class="feature-card">
+        <h3>LLM providers</h3>
+        <p>Anthropic, OpenAI, or your own model pods — registered as governed endpoints. Every inference call is metered, charged back, and budget-capped, with provider keys held by Magertron, never the agent.</p>
+      </div>
+      <div class="feature-card">
+        <h3>External MCP servers</h3>
+        <p>SaaS or cloud-hosted MCP servers, registered in Magertron and governed by the same policies as your internal servers.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="showcase" id="server-management">
+  <div class="container">
+    <div class="showcase-row">
+      <div class="showcase-content">
+        <div class="section-label">Server Management</div>
+        <h3>Full lifecycle control for every server you run</h3>
+        <p>Deploy MCP servers and LLM pods from any container image, monitor real-time CPU and memory metrics, and scale with a slider. Every action is audited.</p>
+        <ul>
+          <li>Live metrics charts polling every 5 seconds</li>
+          <li>Real pod logs from Kubernetes API</li>
+          <li>One-click rollback from deployment history</li>
+          <li>Rolling restart with zero downtime</li>
+        </ul>
+      </div>
+      <div class="showcase-image">
+        <!-- REPLACE: <img src="screenshots/server-detail.png" alt="Server Detail Panel"> -->
+        <img src="screenshots/server-detail.png" alt="Server Detail Panel">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Showcase: Governance -->
+<section class="showcase" id="governance">
+  <div class="container">
+    <div class="showcase-row reverse">
+      <div class="showcase-content">
+        <div class="section-label">Governance</div>
+        <h3>Enforce policy before anything reaches production</h3>
+        <p>Namespace-scoped governance policies evaluate every deployment at deploy time. Error-severity rules block non-compliant servers. Warnings flag for review.</p>
+        <ul>
+          <li>Different policies for prod vs dev environments</li>
+          <li>Resource limits, transport rules, naming standards</li>
+          <li>Dry-run evaluator for pre-flight checks</li>
+          <li>Export/import policies across clusters</li>
+        </ul>
+      </div>
+      <div class="showcase-image">
+        <!-- REPLACE: <img src="screenshots/governance.png" alt="Governance Policies"> -->
+        <img src="screenshots/governance.png" alt="Governance Policies">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Grid -->
+
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">Capabilities</div>
+    <div class="section-title">The full server lifecycle —<br>in your Kubernetes cluster</div>
+    <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Apache 2.0. Most platforms cover one or two of these. Magertron covers all five.</div>
+
+    <div class="feature-grid">
+      <a href="#server-management" class="feature-card clickable">
+        <div class="feature-icon">⬡</div>
+        <h3>Server Lifecycle</h3>
+        <p>Deploy, scale, restart, and roll back MCP servers and LLM pods from a single console.</p>
+      </a>
+      <a href="#server-management" class="feature-card clickable">
+        <div class="feature-icon">▦</div>
+        <h3>Server & Model Registry</h3>
+        <p>Central catalog of every MCP server and LLM provider in your organization. Most platforms don't have a registry — Magertron does, in your cluster.</p>
+      </a>
+      <a href="#governance" class="feature-card clickable">
+        <div class="feature-icon">◈</div>
+        <h3>Governance Engine</h3>
+        <p>Policies for resource limits, transport, naming, and security. Namespace-scoped for prod vs dev.</p>
+      </a>
+      <div class="feature-card">
+        <div class="feature-icon">⛊</div>
+        <h3>Multi-Tenant RBAC</h3>
+        <p>Role-based access with namespace isolation. Admins, deployers, operators, viewers.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚿</div>
+        <h3>Enterprise Identity</h3>
+        <p>OIDC and SAML SSO. SCIM 2.0 provisioning. Just-in-time accounts. Your IdP is the source of truth.</p>
+      </div>
+      <a href="siem-integration.html" class="feature-card clickable">
+        <div class="feature-icon">◷</div>
+        <h3>Audit & Compliance</h3>
+        <p>OCSF-aligned audit events. SIEM-ready, validated with Splunk Cloud. Built for regulated environments.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Security Teaser -->
+
+<style>
+  .threat-tabs {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .threat-tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.15);
+  }
+  .threat-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 16px 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .threat-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.02);
+  }
+  .threat-tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-text);
+    background: rgba(255,255,255,0.03);
+  }
+  .threat-tab-num {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.05em;
+  }
+  .threat-tab-btn.active .threat-tab-num {
+    color: var(--accent-text);
+  }
+  .threat-tab-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .threat-tab-content {
+    padding: 28px 28px 32px;
+  }
+  .threat-tab-content[hidden] {
+    display: none;
+  }
+  @media (max-width: 900px) {
+    .threat-tab-btn {
+      padding: 12px 8px;
+    }
+    .threat-tab-label {
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.threat-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.tab;
+      btn.parentElement.querySelectorAll('.threat-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const container = btn.closest('.threat-tabs');
+      container.querySelectorAll('.threat-tab-content').forEach(c => {
+        c.hidden = (c.id !== targetId);
+      });
+    });
+  });
+</script>
+
+<!-- CLI Section -->
+<section class="cli-section" id="cli">
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 48px;">
+      <div class="section-label">Developer Experience</div>
+      <div class="section-title">A CLI that gets out<br>of your way</div>
+      <div class="section-desc" style="margin-left: auto; margin-right: auto;">
+        Single binary, zero dependencies. Deploy, scale, and evaluate governance from your terminal. Ships for macOS and Linux.
+      </div>
+    </div>
+
+    <div class="terminal-preview">
+      <div class="terminal-bar">
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="dim">$</span> <span class="cmd">mcpctl login https://mcp.acme.internal admin</span></div>
+        <div><span class="success">✓</span> Logged in as admin (system:platform-admin)</div>
+        <br>
+        <div><span class="dim">$</span> <span class="cmd">mcpctl deploy code-assistant mcp-prod ghcr.io/acme/code-assistant --tag v2.1 --team platform</span></div>
+        <div>Deploying code-assistant to mcp-prod...</div>
+        <div><span class="success">✓</span> Server deployed (state: Running)</div>
+        <br>
+        <div><span class="dim">$</span> <span class="cmd">mcpctl governance evaluate spec.json --namespace mcp-prod</span></div>
+        <div><span class="success">✓</span> ALLOWED</div>
+        <div>  ⚠ Mutating tools detected — review required before production use</div>
+        <br>
+        <div><span class="dim">$</span> <span class="cmd">mcpctl servers</span></div>
+        <div>NAME              NAMESPACE    STATE     REPLICAS  IMAGE</div>
+        <div><span class="accent">code-assistant</span>    mcp-prod     Running   2/2       ghcr.io/acme/code-assistant:v2.1</div>
+        <div><span class="accent">search-tool</span>       mcp-prod     Running   3/3       ghcr.io/acme/search:latest</div>
+        <div><span class="accent">doc-retriever</span>     mcp-staging  Running   1/1       ghcr.io/acme/docs:v1.4</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px; color:var(--text-secondary); max-width:720px; margin:18px auto 0; text-align:center; line-height:1.6;">
+      <code>mcpctl</code> is a signed Go binary — install it below.
+      <strong>There are unrelated <code>mcpctl</code> packages on npm and PyPI; neither is ours.</strong>
+    </p>
+
+    <!-- Install options — four parallel paths, collapsed by default -->
+    <style>
+      .install-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .install-card summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        user-select: none;
+        transition: background 0.15s ease;
+      }
+      .install-card summary::-webkit-details-marker { display: none; }
+      .install-card summary:hover { background: rgba(255,255,255,0.02); }
+      .install-card summary .label { font-weight: 600; }
+      .install-card summary .tag {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-left: auto;
+      }
+      .install-card summary .caret {
+        color: var(--text-tertiary);
+        font-size: 12px;
+        transition: transform 0.2s ease;
+        margin-left: 8px;
+      }
+      .install-card[open] summary .caret { transform: rotate(90deg); }
+      .install-card .body {
+        padding: 0 20px 20px;
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+      }
+      .install-card .tagline {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+      .install-card .snippet {
+        background: var(--bg-terminal, #0d1117);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+        overflow-x: auto;
+        line-height: 1.5;
+      }
+    </style>
+    <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+      <!-- Homebrew -->
+      <details class="install-card">
+        <summary>
+          <span class="label">Homebrew</span>
+          <span class="tag">macOS · Linux</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline">Cleanest install if you have brew &mdash; and the only one that upgrades itself:</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">brew trust magertron/tap</span><br>
+            <span class="dim">$</span> <span class="cmd">brew install magertron/tap/mcpctl</span>
+          </div>
+          <div class="tagline" style="margin-top: 12px; font-size: 13px;">
+            Homebrew&nbsp;6 asks you to trust any tap outside its core before it will
+            load a formula, because a formula is code that runs on your machine.
+            One command, once. Afterwards <code>brew upgrade</code> keeps
+            <code>mcpctl</code> current.
+          </div>
+        </div>
+      </details>
+
+      <!-- curl one-liner -->
+      <details class="install-card">
+        <summary>
+          <span class="label">curl one-liner</span>
+          <span class="tag">macOS · Linux</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline">No package manager required:</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/install-mcpctl.sh | sh</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- Debian / Ubuntu -->
+      <details class="install-card">
+        <summary>
+          <span class="label">Debian / Ubuntu</span>
+          <span class="tag">apt · amd64 · arm64</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">One-time setup</div>
+          <div class="snippet" style="font-size: 12px; margin-bottom: 14px;">
+            <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/apt/magertron-archive-keyring.gpg | sudo tee /etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg &gt; /dev/null</span><br>
+            <span class="dim">$</span> <span class="cmd">echo "deb [signed-by=/etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg] https://magertron.com/apt stable main" | sudo tee /etc/apt/sources.list.d/magertron.list</span><br>
+            <span class="dim">$</span> <span class="cmd">sudo apt update</span>
+          </div>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Install</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">sudo apt install mcpctl</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- RHEL / Fedora -->
+      <details class="install-card">
+        <summary>
+          <span class="label">RHEL / Fedora / Rocky</span>
+          <span class="tag">dnf · x86_64</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">One-time setup</div>
+          <div class="snippet" style="font-size: 12px; margin-bottom: 14px;">
+            <span class="dim">$</span> <span class="cmd">sudo curl -fsSL https://magertron.com/yum/magertron.repo -o /etc/yum.repos.d/magertron.repo</span>
+          </div>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Install</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">sudo dnf install mcpctl</span>
+          </div>
+        </div>
+      </details>
+
+    </div>
+
+    <!-- Direct download fallback -->
+    <div style="margin-top: 20px; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div style="font-weight: 600; margin-bottom: 4px;">Or download a binary directly</div>
+        <div style="font-size: 12px; color: var(--text-tertiary);">macOS arm64 · macOS amd64 · Linux amd64 · Linux arm64</div>
+      </div>
+      <a href="https://github.com/magertron/orchestrator/releases/latest" target="_blank" style="color: var(--accent-text); text-decoration: none; font-weight: 500; white-space: nowrap;">View latest release →</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary);">
+      Apache 2.0 licensed. Source at
+      <a href="https://github.com/magertron/orchestrator/tree/main/mcpctl" target="_blank" style="color: var(--accent-text);">magertron/orchestrator/mcpctl</a>.
+      Free to download; connecting it to an orchestrator requires a Pro or Enterprise
+      license — <code>mcpctl login</code> is refused on the Free tier, and commands that
+      reach higher-tier features return a clear license error naming the
+      tier they need.
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-label" style="text-align: center;">Pricing</div>
+    <div class="section-title" style="text-align: center;">Choose your plan</div>
+    <div class="section-desc" style="text-align: center; margin-left: auto; margin-right: auto;">Start free with core server management. Pro for a single team. Business for an organization running agents in production. Enterprise for the whole estate. Servers are never metered on any tier.</div>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Open Source</div>
+        <div class="pricing-name">Free</div>
+        <div class="pricing-price">Free forever · Apache 2.0 licensed runtime</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 20 MCP servers · No signup · No credit card</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Deploy and manage MCP servers</li>
+          <li>Health monitoring &amp; metrics</li>
+          <li>Live metrics charts</li>
+          <li>Envoy gateway with xDS</li>
+          <li>Helm chart deployment</li>
+          <li>Basic RBAC (admin + viewer)</li>
+          <li>Call LLM models by name through the gateway</li>
+          <li>Developer portal — browse tools, mint scoped tokens</li>
+          <li>Community support via GitHub</li>
+          <li class="disabled">CLI tool (mcpctl)</li>
+          <li class="disabled">Model routing policy</li>
+          <li class="disabled">Cost metering &amp; chargeback</li>
+          <li class="disabled">Namespace isolation</li>
+          <li class="disabled">SSO &amp; SCIM provisioning</li>
+          <li class="disabled">Governance policies</li>
+          <li class="disabled">Webhooks &amp; audit trail</li>
+        </ul>
+        <a href="https://github.com/magertron/orchestrator" target="_blank" class="pricing-btn secondary">Get started on GitHub →</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Subscription</div>
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-price">$499/mo · billed annually</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 50 MCP servers · For a single team running their own servers</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Free, plus:</strong></li>
+          <li><strong>Model routing</strong> — policy decides which model a caller reaches</li>
+          <li>Cost metering, departments &amp; chargeback reports</li>
+          <li>Agent Galaxy — live entitlement graph</li>
+          <li>Rug-pull protection &amp; quarantine kill switch</li>
+          <li>SSO (OIDC &amp; SAML) — Okta, Azure AD, Google</li>
+          <li>SCIM 2.0 user provisioning</li>
+          <li>Governance policy engine</li>
+          <li>Multi-tenant namespace isolation</li>
+          <li>CLI tool (mcpctl) — scripting, CI, and automation</li>
+          <li>Deployment history &amp; rollback</li>
+          <li>Webhook notifications (Slack, email)</li>
+          <li>Audit trail</li>
+          <li>Custom RBAC roles</li>
+          <li>Priority email &amp; Slack support</li>
+          <li class="disabled">Model comparison</li>
+          <li class="disabled">AI Data Reach — govern the data agents can touch</li>
+          <li class="disabled">Delegated administration</li>
+        </ul>
+        <a href="#" class="pricing-btn primary" onclick="openDemoModal(event)">Try it now → </a>
+      </div>
+
+      <!-- Business -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Commercial</div>
+        <div class="pricing-name">Business</div>
+        <div class="pricing-price">$30,000/yr</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For an organization running agents in production</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Pro, plus:</strong></li>
+          <li><strong>Model comparison</strong> &mdash; one prompt across models, cost side by side</li>
+          <li>Delegated administration</li>
+          <li>Governance policy export</li>
+          <li>Endpoint fleet inventory via your MDM (Jamf, Intune, Ansible)</li>
+          <li>Unlimited servers</li>
+          <li>Priority support</li>
+          <li>Warm DR standby region</li>
+          <li class="disabled">AI Data Reach &amp; Catalog Universe</li>
+          <li class="disabled">Continuous SOC 2 control evidence</li>
+        </ul>
+        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Talk to us &rarr;</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Commercial</div>
+        <div class="pricing-name">Enterprise</div>
+        <div class="pricing-price">Contact us for pricing</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For the enterprise agent estate</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Business, plus:</strong></li>
+          <li><strong>AI Data Reach</strong> &mdash; govern the data agents can touch, not just the tools they reach</li>
+          <li><strong>Catalog Universe</strong> &mdash; across every source you configure (Databricks Unity Catalog, Snowflake, BigQuery)</li>
+          <li>Blast-radius analysis and grant simulation</li>
+          <li><strong>Continuous SOC&nbsp;2 control evidence</strong></li>
+          <li><strong>Multi-region</strong> &mdash; read-replica regions; multi-site in-country for data residency</li>
+          <li><strong>Bring your own policy engine</strong> &mdash; OPA or your own PDP adds business rules on every call</li>
+          <li>Agent capacity sized to your estate, expandable under contract</li>
+          <li>Contractual SLA and named support</li>
+          <li>Security and procurement review support</li>
+          <li>Custom license and payment terms</li>
+        </ul>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-subtle,#333);">
+          <div style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;">On the roadmap</div>
+          <ul class="pricing-features" style="opacity:.72;">
+            <li>Multi-cluster federation (bring your own fleet tool)</li>
+            <li>Governance policy import</li>
+            <li>Bulk approvals</li>
+            <li>Just-in-time provisioning</li>
+          </ul>
+        </div>
+        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Demo Request Modal -->
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="margin-bottom:14px;">
+      <strong style="color:var(--text-primary);">A private instance, today.</strong>
+      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      of your own, with servers, traffic and audit history already running in it.
+      Bring your own model key and the assistant works too.
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>What are you hoping to see?</label>
+      <select id="demo-tier">
+        <option value="Governing agents">Governing what my agents can reach</option>
+        <option value="Cost and spend">Cost attribution and spend control</option>
+        <option value="Audit and evidence">Audit trail and compliance evidence</option>
+        <option value="Data governance">Data access governance (Snowflake, Databricks, BigQuery)</option>
+        <option value="Just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything you want on it? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="A particular vendor, a warehouse, a scenario you want to try — or leave this blank."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Get a live instance';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Got it — your instance is on the way.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            You'll get a URL and a login by email today — a private instance with servers,
+            traffic and audit history already running in it. Nothing to install, no call to book.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+
+<script src="/consent.js" defer></script>
+
+
+</body>
+</html>

@@ -593,6 +593,46 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 }
   /* fixed nav is ~72px; keep anchored section headings visible below it */
   #features, #governance, #install, #pricing, #server-management { scroll-margin-top: 88px; }
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -601,7 +641,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <nav>
   <div class="container">
     <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
-    <div class="nav-links">
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
       <a href="#features">AI Orchestrator</a>
       <a href="data-reach.html">AI Data Reach</a>
       <a href="developers.html">Developers</a>
@@ -611,6 +651,8 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
       <a href="demos.html">Watch</a>
       <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
     </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
   </div>
 </nav>
 
@@ -905,7 +947,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <!-- Showcase: Server Management -->
 <section style="padding:80px 0; border-top: 1px solid var(--border);">
   <div class="container" style="max-width:1200px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;">
+    <div class="rogue-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;">
       <div>
         <div class="section-label">Enterprise Security</div>
         <h2 class="section-title">Rogue MCP servers are already inside your network</h2>
@@ -970,6 +1012,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     </div>
 
     <div class="mag-arch-card">
+      <p class="mag-arch-hint">Swipe to see the full diagram &rarr;</p>
       <div class="mag-arch-scroll">
       <svg viewBox="0 0 1160 500" role="img"
            aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, LLM providers, tools and catalog securables.">
@@ -1362,7 +1405,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         line-height: 1.5;
       }
     </style>
-    <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div class="install-grid" style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
 
       <!-- Homebrew -->
       <details class="install-card">
