@@ -1,0 +1,14 @@
+{
+  "_readme": "Monthly AI allowances in USD. Only people listed under allowances.people are capped. To cap everyone else too, rename \"_default_usd\" to \"default_usd\" (remove the underscore). Department budgets apply only to departments listed. Keys starting with _ are notes and are ignored.",
+  "allowances": {
+    "_default_usd": 29,
+    "people": {
+      "mags": 120,
+      "bob": 60
+    }
+  },
+  "department_budgets_usd": {
+    "Engineering": 5000,
+    "QA": 1500
+  }
+}

@@ -1337,8 +1337,26 @@ if [ -z "$API_PUBLIC_URL" ]; then
         printf "\n"
         printf "  ${C_DIM}(No scheme guess, no trailing slash — paste the full https:// URL.)${C_RESET}\n"
         printf "\n"
+        # Read the URL back before using it: it becomes the token issuer, and a
+        # typo makes every token fail ("claim value does not match").
+        confirm_public_url() {
+            local u="$1" host _ok
+            host="${u#*://}"; host="${host%%/*}"; host="${host%%:*}"
+            if [[ "$host" != *.* ]] && [ "$host" != "localhost" ]; then
+                warn "Host ${C_BOLD}${host}${C_RESET} has no dot - not a full domain name (e.g. app.example.com)."
+            elif command -v getent >/dev/null 2>&1 && ! getent hosts "$host" >/dev/null 2>&1; then
+                warn "Host ${C_BOLD}${host}${C_RESET} does not resolve from this machine - check the spelling (missing .com?)."
+            fi
+            printf "  Public URL will be ${C_BOLD}%s${C_RESET}\n" "$u"
+            read -r -p "  Correct? [y/N] " _ok
+            case "$_ok" in
+                y|Y|yes|YES|Yes) return 0 ;;
+                *) echo "  (OK - enter it again.)" >&2; return 1 ;;
+            esac
+        }
         while :; do
             read -r -p "  $(printf "${C_BOLD}Public HTTPS URL${C_RESET}"): " _apu
+            if [ -n "$_apu" ] && ! confirm_public_url "$_apu"; then continue; fi
             # Guard against a stray RETURN silently skipping this critical value.
             if [ -z "$_apu" ]; then
                 printf "\n"
@@ -1360,7 +1378,7 @@ if [ -z "$API_PUBLIC_URL" ]; then
                         ;;
                     *)
                         # They pasted a URL at the confirm prompt — validate it.
-                        if normalized=$(validate_public_url "$_confirm"); then
+                        if normalized=$(validate_public_url "$_confirm") && confirm_public_url "$normalized"; then
                             API_PUBLIC_URL="$normalized"
                             break
                         fi
@@ -1544,6 +1562,11 @@ if [ -n "${REGION_BUNDLE:-}" ]; then
         elif [ "$PDP_MODE" = "bundled" ] && [ -f "$RB_PDP_DIR/opa-policy.rego" ]; then
             ENABLE_OPA=1
             OPA_POLICY="$RB_PDP_DIR/opa-policy.rego"
+            # The primary's --opa-data caps, unless --opa-data was given here.
+            if [ -z "${OPA_DATA:-}" ] && [ -f "$RB_PDP_DIR/opa-data.json" ]; then
+                OPA_DATA="$RB_PDP_DIR/opa-data.json"
+                note "  external PDP: with the primary's data file"
+            fi
             PDP_URL=""
             note "  external PDP: bundled OPA with the primary's policy"
         elif [ "$PDP_MODE" = "external" ] && [ -n "$PDP_URL" ]; then
