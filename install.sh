@@ -578,6 +578,10 @@ Common options:
   --opa-policy <file.rego>    Your policy for the bundled OPA (implies
                               --enable-opa). Package magertron, rule
                               decision := {"allow": bool, "reason": string}.
+  --opa-data <file.json>      Data for the bundled OPA (implies --enable-opa),
+                              loaded at the root of `data`: a top-level key
+                              "allowances" is data.allowances in your policy.
+                              Swap the file to change caps without editing Rego.
   --pdp-url <url>             Use YOUR OWN PDP instead (OPA, Styra, ...), e.g.
                               http://opa.opa.svc:8181/v1/data/magertron/decision
                               Wins over --enable-opa.
@@ -684,6 +688,7 @@ while [ $# -gt 0 ]; do
         --journal-size)        JOURNAL_SIZE="$2"; shift 2 ;;
         --enable-opa)          ENABLE_OPA=1; shift ;;
         --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
+        --opa-data)            OPA_DATA="$2"; ENABLE_OPA=1; shift 2 ;;
         --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
         --pdp-namespaces)      PDP_NAMESPACES="$2"; PDP_NAMESPACES_FLAG="$2"; shift 2 ;;
         --pdp-fail)            PDP_FAIL="$2"; PDP_FAIL_FLAG="$2"; shift 2 ;;
@@ -1578,6 +1583,27 @@ if [ "${ENABLE_OPA:-0}" = "1" ]; then
         note "Bundled OPA with policy $OPA_POLICY"
     else
         note "Bundled OPA with the starter allow-all policy (add rules with --opa-policy)"
+    fi
+    if [ -n "${OPA_DATA:-}" ]; then
+        if [ ! -f "$OPA_DATA" ]; then
+            echo "ERROR: --opa-data file not found: $OPA_DATA" >&2
+            exit 1
+        fi
+        # A malformed file would leave OPA crash-looping and every in-scope call
+        # failing closed. Check it here when a JSON checker is available.
+        if command -v python3 >/dev/null 2>&1; then
+            if ! python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$OPA_DATA" 2>/dev/null; then
+                echo "ERROR: --opa-data is not valid JSON: $OPA_DATA" >&2
+                exit 1
+            fi
+        elif command -v jq >/dev/null 2>&1; then
+            if ! jq empty "$OPA_DATA" >/dev/null 2>&1; then
+                echo "ERROR: --opa-data is not valid JSON: $OPA_DATA" >&2
+                exit 1
+            fi
+        fi
+        HELM_VALUES+=( --set-file "opa.data=$OPA_DATA" )
+        note "  with data $OPA_DATA (data.<key> in the policy)"
     fi
 fi
 if [ -n "${PDP_URL:-}" ] || [ "${ENABLE_OPA:-0}" = "1" ]; then

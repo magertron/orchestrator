@@ -18,6 +18,12 @@ metadata:
 data:
   magertron.rego: |
 {{ .Values.opa.policy | indent 4 }}
+{{- if .Values.opa.data }}
+  # install.sh --opa-data: loaded at the ROOT of `data` (a top-level key
+  # "allowances" is data.allowances in Rego).
+  data.json: |
+{{ .Values.opa.data | indent 4 }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -40,7 +46,7 @@ spec:
         app.kubernetes.io/component: opa
       annotations:
         # A policy change rolls this pod — OPA loads the file at start.
-        checksum/policy: {{ .Values.opa.policy | sha256sum }}
+        checksum/policy: {{ printf "%s\n%s" .Values.opa.policy (.Values.opa.data | default "") | sha256sum }}
     spec:
       containers:
         - name: opa
@@ -48,7 +54,7 @@ spec:
           # ⚠ The FILE, not the directory: a ConfigMap mount also exposes
           # ..data/ and a timestamped copy, and OPA would load the rule 3 times.
           args: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=info",
-                 "/policies/magertron.rego"]
+                 "/policies/magertron.rego"{{ if .Values.opa.data }}, "/policies/data.json"{{ end }}]
           ports:
             - name: http
               containerPort: 8181
