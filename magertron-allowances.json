@@ -1,14 +1,8 @@
 {
-  "_readme": "Monthly AI allowances in USD. Only people listed under allowances.people are capped. To cap everyone else too, rename \"_default_usd\" to \"default_usd\" (remove the underscore). Department budgets apply only to departments listed. Keys starting with _ are notes and are ignored.",
+  "_readme": "Monthly AI allowances in USD. Easiest: leave this empty and set the numbers in the console (Governance > External Policy > Allowances), which offers only real users and departments. If you fill it here: people are Magertron USERNAMES (Users page) and departments are department NAMES (Departments page) - a name that matches nobody caps nobody. Only people listed under allowances.people are capped. To cap everyone else too, rename \"_default_usd\" to \"default_usd\" (remove the underscore). Keys starting with _ are notes and are ignored. Example: \"people\": {\"jsmith\": 120}, \"department_budgets_usd\": {\"Engineering\": 5000}.",
   "allowances": {
     "_default_usd": 29,
-    "people": {
-      "mags": 120,
-      "bob": 60
-    }
+    "people": {}
   },
-  "department_budgets_usd": {
-    "Engineering": 5000,
-    "QA": 1500
-  }
+  "department_budgets_usd": {}
 }
