@@ -83,6 +83,10 @@ nav .container { max-width: 1200px; display: flex; justify-content: space-betwee
 .dp-shot figcaption { font-family: var(--sans); font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
 .dp-cap-title { display: block; color: var(--text); font-weight: 600; margin-bottom: 4px; }
 
+.modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
 /* CTA */
 .cta { padding: 40px 0 80px; text-align: center; }
 .cta-box { padding: 56px 48px; border-radius: 20px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05)); border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden; }
@@ -174,7 +178,7 @@ body { overflow-x: clip; }
       <a href="/security.html">Security</a>
       <a href="https://blog.magertron.com">Blog</a>
       <a href="demos.html">Watch</a>
-      <a href="/#contact" class="nav-cta">Try it now </a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -188,9 +192,7 @@ body { overflow-x: clip; }
     <p>
       Magertron is the authoritative registry for the agentic estate. Developers,
       service accounts, and the agents they build discover what's vetted, see what
-      they're allowed to call, read the docs, and request a scoped token — all from
-      a read-only portal that resolves access against your own cluster, never an
-      external edge.
+      they're allowed to call, read the docs, and request a scoped token.
     </p>
   </div>
 </section>
@@ -256,7 +258,7 @@ body { overflow-x: clip; }
         discovery, access, cost, and credentials, all resolved where your governance lives.
       </p>
       <div class="cta-actions">
-        <a href="/#contact" class="btn-primary">Try it now </a>
+        <a href="#" class="btn-primary" onclick="openDemoModal(event)">Try it now → </a>
         <a href="https://github.com/magertron/orchestrator" class="btn-secondary" target="_blank">View on GitHub</a>
       </div>
     </div>
@@ -305,7 +307,7 @@ body { overflow-x: clip; }
           <li><a href="/compliance.html">Compliance</a></li>
           <li><a href="/privacy.html">Privacy</a></li>
           <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
-          <li><a href="/#contact">Contact</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -320,11 +322,119 @@ body { overflow-x: clip; }
     <div class="footer-bottom">
       <p>&copy; 2026 Magertron. All rights reserved.</p>
       <div class="links">
-        <a href="/#contact">Contact</a>
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
       </div>
     </div>
   </div>
 </footer>
+
+<!-- Demo Modal -->
+<div class="modal-overlay" id="demoModal" onclick="if(event.target===this)closeDemoModal()">
+  <div style="background:#0c1018;border:1px solid #1a2030;border-radius:16px;padding:40px;width:min(520px,95vw);max-height:90vh;overflow-y:auto;position:relative;animation:fadeUp 0.25s ease-out;">
+    <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#8694a8;font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
+    <h3 id="demo-modal-title" style="font-size:22px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="font-size:14px;color:#8694a8;margin-bottom:28px;">We'll send you a private Magertron instance today — a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Interested in</label>
+      <select id="demo-tier" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;">
+        <option value="Pro">Pro — $499/mo</option>
+        <option value="Enterprise">Enterprise — Custom pricing</option>
+        <option value="Just looking">Just exploring</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+      <label style="font-size:12px;font-weight:500;color:#8694a8;text-transform:uppercase;letter-spacing:0.05em;">Tell us about your use case</label>
+      <textarea id="demo-message" placeholder="How many MCP servers are you planning to deploy?" style="background:#06080c;border:1px solid #1a2030;border-radius:8px;padding:10px 14px;color:#e8ecf4;font-size:14px;outline:none;width:100%;min-height:80px;resize:vertical;font-family:inherit;"></textarea>
+    </div>
+    <button id="demo-submit" onclick="submitDemoForm()" style="width:100%;padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Send request →</button>
+  </div>
+</div>
+
+<script>
+// Demo modal — supports two entry-point modes. 'contact' from footer Contact
+// links shows "Contact us" framing; default shows "Schedule a Demo".
+function openDemoModal(e, mode) {
+  if(e) e.preventDefault();
+  const title=document.getElementById('demo-modal-title');
+  const subtitle=document.getElementById('demo-modal-subtitle');
+  if(mode==='contact'){
+    if(title)title.textContent='Contact us';
+    if(subtitle)subtitle.textContent='Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if(title)title.textContent='Get a live instance';
+    if(subtitle)subtitle.textContent='We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share.';
+  }
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDemoModal() { document.getElementById('demoModal').classList.remove('open'); document.body.style.overflow=''; }
+function submitDemoForm() {
+  const fname=document.getElementById('demo-fname').value.trim();
+  const lname=document.getElementById('demo-lname').value.trim();
+  const email=document.getElementById('demo-email').value.trim();
+  const company=document.getElementById('demo-company').value.trim();
+  const tier=document.getElementById('demo-tier').value;
+  const message=document.getElementById('demo-message').value.trim();
+  if(!fname||!email){alert('Please enter your name and email.');return;}
+
+  // Submit to Formspree (matches index.html). Replaces the previous mailto:
+  // approach which lost ~50% of leads on webmail-only browsers.
+  const btn=document.getElementById('demo-submit');
+  if(btn){btn.disabled=true;btn.textContent='Sending\u2026';}
+
+  fetch('https://formspree.io/f/mbdqeejk',{
+    method:'POST',
+    headers:{'Accept':'application/json','Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:`${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject:`Demo Request — ${company||fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r=>{
+    if(!r.ok)throw new Error('Submission failed');
+    const modal=document.getElementById('demoModal');
+    if(modal){
+      const card=modal.querySelector('div[style*="background:#0c1018"]');
+      if(card){
+        card.innerHTML=`
+          <button onclick="closeDemoModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;">\u2715</button>
+          <h3 style="font-family:var(--serif);font-weight:700;font-size:24px;margin-bottom:12px;">Got it — your instance is on the way.</h3>
+          <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">
+            Your message is on its way. Expect a reply within one business day. In the meantime, browse the source on <a href="https://github.com/magertron/orchestrator" target="_blank" style="color:var(--border-accent);">GitHub</a>.
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err=>{
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if(btn){btn.disabled=false;btn.textContent='Send request \u2192';}
+  });
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDemoModal(); });
+</script>
 
 <script src="/consent.js" defer></script>
 
