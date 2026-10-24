@@ -2519,3 +2519,4 @@ otel:
   endpoint: ""                      # e.g. otel-collector.observability.svc.cluster.local:4317
   serviceName: magertron-gateway    # service.name on the spans
   samplingPercent: 100              # share of requests traced, 0-100
+  identityTags: true                # put who called / on whose behalf on spans

@@ -408,6 +408,83 @@ data:
                         - tag: magertron.plane
                           literal:
                             value: gateway
+                        # Magertron's decision, from ext_authz dynamic metadata
+                        # (trace_tags.hpp). Both filter namespaces: internal and
+                        # external servers use different ext_authz filters.
+                        - tag: magertron.decision
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: decision } ]
+                        - tag: magertron.decision
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: decision } ]
+                        - tag: magertron.stage
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: stage } ]
+                        - tag: magertron.stage
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: stage } ]
+                        - tag: magertron.reason
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: reason } ]
+                        - tag: magertron.reason
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: reason } ]
+                        - tag: magertron.tool
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: tool } ]
+                        - tag: magertron.tool
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: tool } ]
+                        {{- if (ne (toString $otel.identityTags) "false") }}
+                        - tag: magertron.subject
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: subject } ]
+                        - tag: magertron.subject
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: subject } ]
+                        - tag: magertron.on_behalf_of
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: on_behalf_of } ]
+                        - tag: magertron.on_behalf_of
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: on_behalf_of } ]
+                        {{- end }}
                       provider:
                         name: envoy.tracers.opentelemetry
                         typed_config:
