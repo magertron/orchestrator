@@ -582,6 +582,10 @@ Common options:
                               loaded at the root of `data`: a top-level key
                               "allowances" is data.allowances in your policy.
                               Swap the file to change caps without editing Rego.
+  --otel-endpoint <host:port> Send gateway traces to your OpenTelemetry collector
+                              (OTLP/gRPC, e.g. otel-collector.observability:4317).
+                              Off unless given.
+  --otel-sampling <percent>   Share of requests traced, 0-100 (default 100).
   --pdp-url <url>             Use YOUR OWN PDP instead (OPA, Styra, ...), e.g.
                               http://opa.opa.svc:8181/v1/data/magertron/decision
                               Wins over --enable-opa.
@@ -689,6 +693,8 @@ while [ $# -gt 0 ]; do
         --enable-opa)          ENABLE_OPA=1; shift ;;
         --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
         --opa-data)            OPA_DATA="$2"; ENABLE_OPA=1; shift 2 ;;
+        --otel-endpoint)       OTEL_ENDPOINT="$2"; shift 2 ;;
+        --otel-sampling)       OTEL_SAMPLING="$2"; shift 2 ;;
         --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
         --pdp-namespaces)      PDP_NAMESPACES="$2"; PDP_NAMESPACES_FLAG="$2"; shift 2 ;;
         --pdp-fail)            PDP_FAIL="$2"; PDP_FAIL_FLAG="$2"; shift 2 ;;
@@ -1628,6 +1634,27 @@ if [ "${ENABLE_OPA:-0}" = "1" ]; then
         HELM_VALUES+=( --set-file "opa.data=$OPA_DATA" )
         note "  with data $OPA_DATA (data.<key> in the policy)"
     fi
+fi
+
+# ── OpenTelemetry (off unless --otel-endpoint) ───────────────────────────────
+if [ -n "${OTEL_ENDPOINT:-}" ]; then
+    # host:port, no scheme: Envoy dials it over gRPC.
+    case "$OTEL_ENDPOINT" in
+        *://*) echo "ERROR: --otel-endpoint takes host:port without a scheme (got $OTEL_ENDPOINT)" >&2; exit 1 ;;
+        *:[0-9]*) ;;
+        *) echo "ERROR: --otel-endpoint needs a port, e.g. otel-collector.observability:4317" >&2; exit 1 ;;
+    esac
+    HELM_VALUES+=( --set "otel.endpoint=$OTEL_ENDPOINT" )
+    if [ -n "${OTEL_SAMPLING:-}" ]; then
+        case "$OTEL_SAMPLING" in
+            ''|*[!0-9]*) echo "ERROR: --otel-sampling is a whole percent, 0-100" >&2; exit 1 ;;
+        esac
+        if [ "$OTEL_SAMPLING" -gt 100 ]; then
+            echo "ERROR: --otel-sampling is a whole percent, 0-100" >&2; exit 1
+        fi
+        HELM_VALUES+=( --set "otel.samplingPercent=$OTEL_SAMPLING" )
+    fi
+    note "OpenTelemetry: gateway traces to $OTEL_ENDPOINT (sampling ${OTEL_SAMPLING:-100}%)"
 fi
 if [ -n "${PDP_URL:-}" ] || [ "${ENABLE_OPA:-0}" = "1" ]; then
     [ -n "${PDP_NAMESPACES:-}" ] && HELM_VALUES+=( --set-string "orchestrator.pdp.namespaces=$PDP_NAMESPACES" )

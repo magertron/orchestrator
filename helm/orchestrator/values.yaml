@@ -2509,3 +2509,13 @@ opa:
     #       input.arguments.amount > 500
     #   }
     default decision := {"allow": true}
+
+# ─── OpenTelemetry (off by default) ──────────────────────────────────────────
+# Set endpoint to an OTLP/gRPC collector as host:port and the v3 Envoy sends a
+# span per request, continuing the caller's W3C trace (traceparent) and passing
+# it upstream. Empty = off: nothing is emitted and nothing else changes.
+# install.sh --otel-endpoint sets it.
+otel:
+  endpoint: ""                      # e.g. otel-collector.observability.svc.cluster.local:4317
+  serviceName: magertron-gateway    # service.name on the spans
+  samplingPercent: 100              # share of requests traced, 0-100

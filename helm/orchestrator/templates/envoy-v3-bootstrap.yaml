@@ -1,4 +1,5 @@
 {{- if .Values.envoy.v3.enabled }}
+{{- $otel := .Values.otel | default dict }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -332,6 +333,30 @@ data:
                           address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.orchestrator.alsPort | default 9094 }}
 
+        {{- if $otel.endpoint }}
+        # ── OpenTelemetry collector (install.sh --otel-endpoint) ─────────────
+        # OTLP/gRPC, so HTTP/2. Spans are best-effort: a slow or missing
+        # collector never delays or fails a request.
+        - name: otel_collector
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
+          load_assignment:
+            cluster_name: otel_collector
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ (split ":" $otel.endpoint)._0 }}
+                          port_value: {{ (split ":" $otel.endpoint)._1 }}
+        {{- end }}
+
       listeners:
         # ── HTTPS listener on 10444 — TLS-terminated, ext_authz-gated ────────
         # Mirrors legacy mcp_https_listener (10443). Same TLS, same
@@ -366,6 +391,29 @@ data:
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                     stat_prefix: mcp_ingress_v3
+                    {{- if $otel.endpoint }}
+                    # ── OpenTelemetry tracing (install.sh --otel-endpoint) ──────
+                    # Continues an incoming W3C traceparent (or starts a trace),
+                    # sends a span per request and one per upstream call, and
+                    # passes traceparent to the upstream server.
+                    tracing:
+                      random_sampling:
+                        value: {{ $otel.samplingPercent | default 100 }}
+                      spawn_upstream_span: true
+                      custom_tags:
+                        - tag: magertron.plane
+                          literal:
+                            value: gateway
+                      provider:
+                        name: envoy.tracers.opentelemetry
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: otel_collector
+                            timeout: 0.25s
+                          service_name: {{ $otel.serviceName | default "magertron-gateway" }}
+                    {{- end }}
                     codec_type: AUTO
                     http2_protocol_options:
                       max_concurrent_streams: {{ .Values.envoy.v3.http2.maxConcurrentStreams | default 16 }}
@@ -570,6 +618,9 @@ data:
                               duration_ms: "%DURATION%"
                               upstream: "%UPSTREAM_HOST%"
                               trace_id: "%REQ(X-REQUEST-ID)%"
+                              {{- if $otel.endpoint }}
+                              otel_trace_id: "%TRACE_ID%"
+                              {{- end }}
                               authz_flags: "%RESPONSE_FLAGS%"
                               authz_reason: "%RESP(x-mcp-authz-denied)%"
                               # v3 marker — lets log-aggregation systems
