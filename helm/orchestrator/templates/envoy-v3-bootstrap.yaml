@@ -400,6 +400,10 @@ data:
                       random_sampling:
                         value: {{ $otel.samplingPercent | default 100 }}
                       spawn_upstream_span: true
+                      # Span names: the request (method + path, as in the access log)
+                      # and the upstream cluster, instead of "ingress".
+                      operation: "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                      upstream_operation: "upstream %UPSTREAM_CLUSTER%"
                       custom_tags:
                         - tag: magertron.plane
                           literal:
