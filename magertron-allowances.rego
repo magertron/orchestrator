@@ -50,8 +50,7 @@ deny contains sprintf("%v's monthly AI budget of $%v is used up: $%.2f spent", [
 # who may call the Kafka tools; this decides who may use the command topic.
 # Only the operator role may read or write network.commands - so a diagnostic
 # agent can watch network.events but can never see, or forge, a fix.
-kafka_topic_tools := {"subscribe_topic", "consume_topic", "produce_to_topic"}
-
+kafka_topic_tools := {"subscribe_topic", "consume_topic", "produce_to_topic", "register_webhook"}
 deny contains sprintf("only netops-operator may use %v; %v is not an operator", [input.arguments.topic, input.subject]) if {
 	kafka_topic_tools[input.tool]
 	input.arguments.topic == "network.commands"
