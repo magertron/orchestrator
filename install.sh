@@ -1657,7 +1657,8 @@ if [ -n "${OTEL_ENDPOINT:-}" ]; then
     note "OpenTelemetry: gateway traces to $OTEL_ENDPOINT (sampling ${OTEL_SAMPLING:-100}%)"
 fi
 if [ -n "${PDP_URL:-}" ] || [ "${ENABLE_OPA:-0}" = "1" ]; then
-    [ -n "${PDP_NAMESPACES:-}" ] && HELM_VALUES+=( --set-string "orchestrator.pdp.namespaces=$PDP_NAMESPACES" )
+    # ⚠ helm splits --set-string on commas: "ns1,ns2" must be sent as "ns1\\,ns2".
+    [ -n "${PDP_NAMESPACES:-}" ] && HELM_VALUES+=( --set-string "orchestrator.pdp.namespaces=${PDP_NAMESPACES//,/\\,}" )
     [ -n "${PDP_FAIL:-}" ]       && HELM_VALUES+=( --set-string "orchestrator.pdp.fail=$PDP_FAIL" )
     note "  PDP namespaces: ${PDP_NAMESPACES:-*} · when unreachable: ${PDP_FAIL:-closed}"
 fi
