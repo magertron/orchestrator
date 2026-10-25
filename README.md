@@ -1,6 +1,6 @@
 # MCP Orchestrator — Helm Chart
 
-**Current release:** the 3.6.x family — Helm chart on [magertron.com/charts](https://magertron.com/charts).
+**Current release:** the 4.1.x family — Helm chart on [magertron.com/charts](https://magertron.com/charts).
 For the exact version being served: `helm repo update magertron && helm search repo magertron/mcp-orchestrator --versions | head -3`
 
 Install guide for the MCP Orchestrator Helm chart, focused on **on-prem and
@@ -709,6 +709,105 @@ Orchestrator's. They are standard Kubernetes hygiene.
 
 ---
 
+## Tracing (OpenTelemetry)
+
+Off by default. Point the gateway at your OpenTelemetry collector and every
+call it handles becomes a span in your own tracing tool (Jaeger, Tempo,
+Datadog, Honeycomb, ...), tagged with Magertron's decision and the reason.
+
+```
+./install.sh --mode upgrade <your usual options> \
+    --otel-endpoint otel-collector.observability.svc.cluster.local:4317 \
+    --otel-sampling 10
+```
+
+| install.sh option | Meaning | Default |
+|---|---|---|
+| `--otel-endpoint <host:port>` | Your collector's **OTLP/gRPC** address. Host and port only: no `http://`, port required. Port 4318 (OTLP/HTTP) will not work. | none (tracing off) |
+| `--otel-sampling <percent>` | Share of calls traced, whole number 0-100 | `100` |
+
+What you get:
+
+- **Trace continuity.** An incoming W3C `traceparent` is continued; the upstream
+  server receives a `traceparent` naming the gateway's span.
+- **Span names.** The call: `POST /mcp/mcp-prod/alpha-vantage/`. The upstream
+  call: `upstream mcp-prod_alpha-vantage`. Service name `magertron-gateway`.
+- **Decision tags** on the call's span:
+
+  | Tag | Contents |
+  |---|---|
+  | `magertron.decision` | `allow` or `deny` |
+  | `magertron.stage` | What decided: `rbac`, `tool-approval`, `pdp`, `budget`, `mute`, `load-shed`, or `policy` |
+  | `magertron.reason` | Deny only: the reason the caller got with its 403 (max 256 chars) |
+  | `magertron.tool` | The MCP tool, REST operation or model |
+  | `magertron.subject`, `magertron.on_behalf_of` | Who called, and for whom (identity tags) |
+  | `magertron.plane` | `gateway` |
+
+- **Logs to traces.** The gateway's JSON access log gains `otel_trace_id`.
+
+Identity tags put user and service account names (often emails) into your
+tracing system. To leave them off, set `otel.identityTags: false` in your
+values file.
+
+Tracing never changes a decision: spans are sent best-effort, off the request
+path, and a slow or missing collector never delays or fails a call. Only the
+gateway emits spans; the orchestrator's own work is not traced.
+
+No collector yet? For a lab, Jaeger's all-in-one image receives OTLP/gRPC on
+4317 and serves its UI on 16686 (in-memory; not for production).
+
+Details: Operator's Guide Vol. 2, Chapter 37.
+
+---
+
+## External policy (OPA)
+
+Off by default. Magertron decides every call on identity, roles, tool approval
+and budgets. Business rules on the call's *arguments* ("no deposit over
+$2,000", "only operators may use topic `network.commands`") belong in a policy
+engine you own. After Magertron allows a call, it asks that engine, and a deny
+becomes a 403 with the engine's reason, written to the audit log. The policy
+can only deny: it never allows a call Magertron refused.
+
+Bundled Open Policy Agent, with your policy and optional data file:
+
+```
+./install.sh --mode upgrade <your usual options> \
+    --opa-policy ./magertron-policy.rego \
+    --opa-data ./magertron-data.json \
+    --pdp-namespaces "mcp-prod,netops"
+```
+
+Or your own PDP (OPA, Styra, ...), plain HTTP, in-cluster:
+
+```
+./install.sh --mode upgrade <your usual options> \
+    --pdp-url http://opa.opa.svc.cluster.local:8181/v1/data/magertron/decision
+```
+
+| install.sh option | Meaning | Default |
+|---|---|---|
+| `--enable-opa` | Deploy the bundled OPA with an allow-all policy | off |
+| `--opa-policy <file.rego>` | Your policy for the bundled OPA (implies `--enable-opa`) | — |
+| `--opa-data <file.json>` | Data for the policy; top-level key `allowances` is `data.allowances` (implies `--enable-opa`) | — |
+| `--pdp-url <url>` | Use your own PDP instead; wins over `--enable-opa` | — |
+| `--pdp-namespaces <list>` | `*`, or a quoted list with no spaces: `"mcp-prod,netops"` | `*` |
+| `--pdp-fail <open\|closed>` | PDP unreachable: `closed` denies the call, `open` lets it through and audits `pdp:fail-open` | `closed` |
+
+> **Lists need 4.1.73 or later.** Earlier installers passed the comma in
+> `--pdp-namespaces` to Helm unescaped and the upgrade failed; use one
+> namespace there.
+
+> **Settings belong in the install command.** `kubectl set env MCP_PDP_*`
+> works for a test, but the next upgrade replaces it.
+
+Magertron asks for `data.magertron.decision` and expects
+`{"allow": false, "reason": "..."}` (or `"reasons": [...]`) or `true`.
+Writing policies, the input document, verification and audit: Operator's
+Guide Vol. 2, Chapter 35.
+
+---
+
 ## Multi-replica HA
 
 For deployments running more than one orchestrator replica — sizing
@@ -990,6 +1089,15 @@ knobs you'll commonly override:
 | `retention.auditEventsDays` | 90 | Daily prune threshold for `audit_events` |
 | `retention.runtimePolicyAuditDays` | 30 | Daily prune threshold for `runtime_policy_audit` |
 | `retention.cronExpression` | `"0 3 * * *"` | When the retention worker fires (UTC) |
+| `otel.endpoint` | `""` (off) | OTLP/gRPC collector as `host:port`. Set by `--otel-endpoint`. |
+| `otel.samplingPercent` | 100 | Share of calls traced, 0-100. Set by `--otel-sampling`. |
+| `otel.serviceName` | `magertron-gateway` | `service.name` on the gateway's spans |
+| `otel.identityTags` | `true` | Put `magertron.subject` / `magertron.on_behalf_of` on spans |
+| `opa.enabled` | `false` | Deploy the bundled OPA. Set by `--enable-opa`. |
+| `orchestrator.pdp.url` | `""` (off) | Policy decision point URL (plain HTTP). Set by `--pdp-url` or the bundled OPA. |
+| `orchestrator.pdp.namespaces` | `*` | Namespaces sent to the PDP: `*` or `ns1,ns2`. Set by `--pdp-namespaces`. |
+| `orchestrator.pdp.fail` | `closed` | PDP unreachable: `closed` denies, `open` allows and audits |
+| `orchestrator.pdp.timeoutMs` | 200 | Wait for the PDP per call, 20-5000 ms |
 
 ---
 
