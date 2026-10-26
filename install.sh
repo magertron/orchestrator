@@ -1587,6 +1587,20 @@ if [ -n "${REGION_BUNDLE:-}" ]; then
     unset REGION_BUNDLE_PASSPHRASE
 fi
 
+# ⚠ The bundled OPA's policy as it is live now, or nothing (fresh install).
+# helm upgrade sets opa.policy from THIS run only, so without this an upgrade
+# that forgets --opa-policy - or passes an older file - silently drops rules.
+# 2026-10-25: the netops Kafka topic rule vanished that way in the .81 install.
+live_opa_policy() {
+    local ns
+    ns="$(kubectl get configmap -A --field-selector metadata.name=mcp-orchestrator-opa-policy \
+          -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null || true)"
+    # None (fresh install), or more than one install on this cluster: don't guess.
+    [ -n "$ns" ] && [ "$(echo "$ns" | wc -w)" -eq 1 ] || return 1
+    kubectl get configmap mcp-orchestrator-opa-policy -n "$ns" \
+        -o jsonpath='{.data.magertron\.rego}' 2>/dev/null | sed -e '$a\'   # jsonpath drops the final newline
+}
+
 # ── External PDP (--enable-opa / --opa-policy / --pdp-url) ───────────────────
 # Maps to opa.* and orchestrator.pdp.* in the chart. No flag = PDP off.
 if [ -n "${PDP_FAIL:-}" ] && [ "$PDP_FAIL" != "open" ] && [ "$PDP_FAIL" != "closed" ]; then
@@ -1610,8 +1624,26 @@ if [ "${ENABLE_OPA:-0}" = "1" ]; then
         fi
         HELM_VALUES+=( --set-file "opa.policy=$OPA_POLICY" )
         note "Bundled OPA with policy $OPA_POLICY"
+        # Warn when the new file drops lines of the policy that is live now.
+        LIVE_OPA_POLICY="$(mktemp)"
+        if live_opa_policy > "$LIVE_OPA_POLICY" && [ -s "$LIVE_OPA_POLICY" ]; then
+            OPA_DROPPED="$( (diff -B "$LIVE_OPA_POLICY" "$OPA_POLICY" || true) | grep -c '^< ' || true)"
+            if [ "${OPA_DROPPED:-0}" -gt 0 ]; then
+                note "  ⚠ $OPA_POLICY drops $OPA_DROPPED line(s) of the policy live now:"
+                (diff -B "$LIVE_OPA_POLICY" "$OPA_POLICY" || true) | grep '^< ' | head -15 | sed 's/^/      /' || true
+                note "  (fine if intended; otherwise stop and pass the current file)"
+            fi
+        fi
     else
-        note "Bundled OPA with the starter allow-all policy (add rules with --opa-policy)"
+        # ⚠ An upgrade with no --opa-policy keeps the live policy; only a
+        # fresh install gets the starter allow-all.
+        LIVE_OPA_POLICY="$(mktemp)"
+        if live_opa_policy > "$LIVE_OPA_POLICY" && [ -s "$LIVE_OPA_POLICY" ]; then
+            HELM_VALUES+=( --set-file "opa.policy=$LIVE_OPA_POLICY" )
+            note "Bundled OPA: keeping the policy live now ($(wc -l < "$LIVE_OPA_POLICY" | tr -d ' ') lines; --opa-policy replaces it)"
+        else
+            note "Bundled OPA with the starter allow-all policy (add rules with --opa-policy)"
+        fi
     fi
     if [ -n "${OPA_DATA:-}" ]; then
         if [ ! -f "$OPA_DATA" ]; then
