@@ -56,3 +56,18 @@ deny contains sprintf("only netops-operator may use %v; %v is not an operator", 
 	input.arguments.topic == "network.commands"
 	not "custom:netops-operator" in input.roles
 }
+
+# PII on LLM prompts and replies: the action per person or agent, from the data
+# file (data.pii_actions[<person>] = "pass" | "redact" | "block"). Asked only
+# when the server's PII setting is Detect, Redact or Block and something was
+# found. Nobody listed -> the server's setting decides. A deny still wins.
+pii_action := data.pii_actions[person] if {
+	input.server_type == "llm"
+	input.arguments.pii
+	data.pii_actions[person] in {"pass", "redact", "block"}
+}
+
+decision := {"allow": true, "pii_action": pii_action} if {
+	count(deny) == 0
+	pii_action
+}
