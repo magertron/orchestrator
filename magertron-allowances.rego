@@ -57,6 +57,17 @@ deny contains sprintf("only netops-operator may use %v; %v is not an operator", 
 	not "custom:netops-operator" in input.roles
 }
 
+# ...and the PERSON: on a delegated call, the human the agent acts for must be an
+# operator too. Otherwise an operator agent could publish a fix for anyone, and
+# taking the role away from the person would change nothing.
+# input.on_behalf_of_roles = the person's current roles (Magertron 4.1.98+).
+deny contains sprintf("only netops-operator may use %v; %v is acting for %v, who is not an operator", [input.arguments.topic, input.subject, input.on_behalf_of]) if {
+	kafka_topic_tools[input.tool]
+	input.arguments.topic == "network.commands"
+	input.on_behalf_of != ""
+	not "custom:netops-operator" in object.get(input, "on_behalf_of_roles", [])
+}
+
 # PII on LLM prompts and replies: the action per person or agent, from the data
 # file (data.pii_actions[<person>] = "pass" | "redact" | "block"). Asked only
 # when the server's PII setting is Detect, Redact or Block and something was
