@@ -82,3 +82,37 @@ decision := {"allow": true, "pii_action": pii_action} if {
 	count(deny) == 0
 	pii_action
 }
+
+# ── Netops on ZeroMQ: the same network.commands rule as Kafka ─────────────────
+# ZeroMQ subscribers match on topic PREFIX, so a publish anywhere under
+# network.commands reaches its subscribers, and a read with a short prefix (or
+# none) returns it. Only netops-operator may do either - the agent AND, on a
+# delegated call, the person it acts for.
+zmq_reads_commands(p) if startswith("network.commands", p)
+zmq_reads_commands(p) if startswith(p, "network.commands")
+
+deny contains sprintf("only netops-operator may publish to %v on ZeroMQ; %v is not an operator", [input.arguments.topic, input.subject]) if {
+	input.tool == "publish_message"
+	startswith(input.arguments.topic, "network.commands")
+	not "custom:netops-operator" in input.roles
+}
+
+deny contains sprintf("only netops-operator may publish to %v on ZeroMQ; %v is acting for %v, who is not an operator", [input.arguments.topic, input.subject, input.on_behalf_of]) if {
+	input.tool == "publish_message"
+	startswith(input.arguments.topic, "network.commands")
+	input.on_behalf_of != ""
+	not "custom:netops-operator" in object.get(input, "on_behalf_of_roles", [])
+}
+
+deny contains sprintf("only netops-operator may read network.commands on ZeroMQ; %v is not an operator - pass a topic_prefix such as network.events", [input.subject]) if {
+	input.tool == "read_messages"
+	zmq_reads_commands(object.get(input.arguments, "topic_prefix", ""))
+	not "custom:netops-operator" in input.roles
+}
+
+deny contains sprintf("only netops-operator may read network.commands on ZeroMQ; %v is acting for %v, who is not an operator", [input.subject, input.on_behalf_of]) if {
+	input.tool == "read_messages"
+	zmq_reads_commands(object.get(input.arguments, "topic_prefix", ""))
+	input.on_behalf_of != ""
+	not "custom:netops-operator" in object.get(input, "on_behalf_of_roles", [])
+}
