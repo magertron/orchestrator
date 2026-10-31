@@ -1,0 +1,847 @@
+{{- if .Values.envoy.v3.enabled }}
+{{- $otel := .Values.otel | default dict }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp.fullname" . }}-envoy-v3-bootstrap
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: envoy-gateway-v3
+data:
+  bootstrap.yaml: |
+    # ─── V3 ENVOY BOOTSTRAP ───────────────────────────────────────────────────
+    # Experimental v3 xDS data plane. Architecturally identical to the legacy
+    # bootstrap (templates/envoy-bootstrap.yaml), with three key differences:
+    #
+    #   1. Connects to v3 ADS on port 18100 (not legacy xDS on 18000)
+    #   2. Listens on 10444 (not 10443) — distinct port avoids conflicts
+    #      when both Envoys run side-by-side in the same cluster
+    #   3. Distinct node id "mcp-gateway-v3" so orchestrator logs can tell
+    #      legacy and v3 streams apart
+    #
+    # Static listener + dynamic CDS/RDS via ADS (mirrors legacy: LDS not used).
+    # The v3 path will populate clusters and route configs from the slice 6a-d
+    # AdsSubscriber's stored resources for any server with routing_mode: v3.
+    # If no v3-marked servers exist, Envoy receives empty CDS/RDS responses
+    # and serves no routes — the listener is up but every request 404s.
+    node:
+      id: {{ .Values.envoy.v3.nodeId }}
+      cluster: {{ .Values.envoy.v3.clusterName }}
+
+    dynamic_resources:
+      ads_config:
+        api_type: GRPC
+        transport_api_version: V3
+        grpc_services:
+          - envoy_grpc:
+              cluster_name: mcp_orchestrator_v3_ads
+      cds_config:
+        resource_api_version: V3
+        ads: {}
+
+    # ── Overload manager (3.7.x) ───────────────────────────────────────────
+    # ⚠ WITHOUT THIS, ENVOY BUFFERS UNTIL THE KERNEL KILLS IT. Under overload
+    # it queues what it cannot deliver — legitimately, that is what a proxy
+    # does — but the memory is never released afterwards. A replica that went
+    # from 47 MB to 1.5 GB during a load test stayed there until restarted,
+    # and the container limit is 2 Gi.
+    #
+    # ⚠ Losing a replica DURING an overload is the worst possible moment: the
+    # survivors inherit its share, buffer harder, and the failure walks across
+    # the fleet. These actions fire first, in order of increasing severity.
+    #
+    # ⚠ max_heap_size_bytes must stay BELOW the container memory limit — it is
+    # the budget Envoy measures its own usage against, not a limit Kubernetes
+    # enforces. Set to 75% of resources.limits.memory. Change one, change both.
+    overload_manager:
+      refresh_interval: 0.25s
+      resource_monitors:
+        - name: "envoy.resource_monitors.fixed_heap"
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.resource_monitors.fixed_heap.v3.FixedHeapConfig
+            max_heap_size_bytes: {{ .Values.envoy.v3.overload.maxHeapBytes | default 1610612736 }}
+      actions:
+        # 85% — stop taking NEW connections. Work in flight completes.
+        - name: "envoy.overload_actions.stop_accepting_connections"
+          triggers:
+            - name: "envoy.resource_monitors.fixed_heap"
+              threshold:
+                value: 0.85
+        # 92% — reclaim what is already held before refusing anything.
+        - name: "envoy.overload_actions.shrink_heap"
+          triggers:
+            - name: "envoy.resource_monitors.fixed_heap"
+              threshold:
+                value: 0.92
+        # 95% — refuse. A 503 the caller can retry beats an OOM kill it cannot.
+        - name: "envoy.overload_actions.stop_accepting_requests"
+          triggers:
+            - name: "envoy.resource_monitors.fixed_heap"
+              threshold:
+                value: 0.95
+    static_resources:
+      clusters:
+        # ── v3 ADS cluster — connects to orchestrator's V3AdsServer ──────────
+        # Uses STRICT_DNS against the v3-ads-headless service so each
+        # orchestrator pod IP is independently reachable; HTTP/2 required
+        # for gRPC.
+        - name: mcp_orchestrator_v3_ads
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
+          load_assignment:
+            cluster_name: mcp_orchestrator_v3_ads
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.envoy.xds.port }}
+
+        # ── ext_authz cluster — copy verbatim from legacy bootstrap ──────────
+        # The orchestrator's PDP is the same; both Envoys call Check() against
+        # the same endpoint on port 9092. Tuning values match legacy (sized
+        # for the production target of 2000+ rps at 5000 rps headroom).
+        #
+        # ── Bug E fix (2026-05-09) ───────────────────────────────────────
+        # Switched from the ClusterIP service to the headless service —
+        # same fix as legacy bootstrap. With the ClusterIP, kube-proxy
+        # NAT'd new SYNs to backend pods, and under burst (cold connection
+        # pool, e.g. just after Envoy or orchestrator restart) ~37-55%
+        # got RST'd before the gRPC server could accept them. Reproduced
+        # cleanly via `kubectl rollout restart` of v3 envoy followed by
+        # 30-burst: 11/30 returned 403 with UAEX flag, upstream=null,
+        # cx_connect_fail=11 / cx_destroy_remote=11 in admin /stats.
+        # Headless service gives Envoy direct per-pod endpoints,
+        # membership_total goes from 1 → N, failure mode disappears.
+        - name: mcp_ext_authz
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          circuit_breakers:
+            thresholds:
+              - priority: DEFAULT
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+              - priority: HIGH
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              common_http_protocol_options:
+                # ── ext_authz reconnect fix (2026-07-16) ──────────────────
+                # WAS idle_timeout: 0s — never retire an idle connection.
+                # The premise was that the orchestrator side is permanent.
+                # It isn't: it's a Deployment that rolls on every upgrade,
+                # image bump, OOMKill, eviction and node drain. Envoy was
+                # left holding connection state for dead peers with no
+                # deadline that would ever clear it.
+                #
+                # Observed three times on peppy 2026-07-15: after an
+                # orchestrator restart, cx_active: 0, cx_destroy_remote:
+                # 40/40, rq_total frozen — while the endpoints resolved
+                # fine and reported healthy. Every Check then failed, and
+                # failure_mode_allow: false turned each into a 403 that
+                # RBAC never issued and no audit record contains. Only a
+                # rollout restart of Envoy cleared it. See the legacy
+                # bootstrap for the full write-up.
+                #
+                # 300s never fires on a connection carrying traffic, so
+                # this is a no-op at any real request rate. It only
+                # retires connections that have gone quiet — after a peer
+                # restart, exactly the dead ones.
+                idle_timeout: 300s
+                # Unlimited, deliberately: capping this forces reconnects
+                # on the authz hot path. idle_timeout handles staleness
+                # without paying a handshake per request budget.
+                max_requests_per_connection: 0
+              explicit_http_config:
+                http2_protocol_options:
+                  max_concurrent_streams: 1024
+                  initial_stream_window_size: 1048576
+                  initial_connection_window_size: 8388608
+          load_assignment:
+            cluster_name: mcp_ext_authz
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.orchestrator.extAuthzPort | default 9092 }}
+
+        # ── ext_authz_external cluster (Session 2.13, Step 6e) ────────────────
+        # Parallel ext_authz cluster pointing at the orchestrator's port-9093
+        # External-server handler. This cluster is defined but NOT YET USED by
+        # any route — Step 6d will configure the xDS-pushed routes for
+        # External MCP servers to reference this cluster via per-route
+        # ext_authz override (typed_per_filter_config).
+        #
+        # Operational characteristics identical to mcp_ext_authz: same
+        # connect timeout, same circuit breakers, same HTTP/2 tuning, same
+        # headless-service endpoint resolution (Bug E fix from 2026-05-09
+        # applies equally — bypass kube-proxy, get per-pod resolution).
+        #
+        # Until Step 6d ships, this cluster sits idle. Envoy loads it,
+        # resolves DNS, opens a probe connection or two (depending on
+        # Envoy's lazy-init behavior), and waits for routes to reference
+        # it. Zero behavior change for Internal/Hybrid traffic.
+        - name: mcp_ext_authz_external
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          circuit_breakers:
+            thresholds:
+              - priority: DEFAULT
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+              - priority: HIGH
+                max_connections: 256
+                max_pending_requests: 8192
+                max_requests: 8192
+                max_retries: 32
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              common_http_protocol_options:
+                # ── ext_authz reconnect fix (2026-07-16) ──────────────────
+                # WAS idle_timeout: 0s — never retire an idle connection.
+                # The premise was that the orchestrator side is permanent.
+                # It isn't: it's a Deployment that rolls on every upgrade,
+                # image bump, OOMKill, eviction and node drain. Envoy was
+                # left holding connection state for dead peers with no
+                # deadline that would ever clear it.
+                #
+                # Observed three times on peppy 2026-07-15: after an
+                # orchestrator restart, cx_active: 0, cx_destroy_remote:
+                # 40/40, rq_total frozen — while the endpoints resolved
+                # fine and reported healthy. Every Check then failed, and
+                # failure_mode_allow: false turned each into a 403 that
+                # RBAC never issued and no audit record contains. Only a
+                # rollout restart of Envoy cleared it. See the legacy
+                # bootstrap for the full write-up.
+                #
+                # 300s never fires on a connection carrying traffic, so
+                # this is a no-op at any real request rate. It only
+                # retires connections that have gone quiet — after a peer
+                # restart, exactly the dead ones.
+                idle_timeout: 300s
+                # Unlimited, deliberately: capping this forces reconnects
+                # on the authz hot path. idle_timeout handles staleness
+                # without paying a handshake per request budget.
+                max_requests_per_connection: 0
+              explicit_http_config:
+                http2_protocol_options:
+                  max_concurrent_streams: 1024
+                  initial_stream_window_size: 1048576
+                  initial_connection_window_size: 8388608
+          load_assignment:
+            cluster_name: mcp_ext_authz_external
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.orchestrator.extAuthzExternalPort | default 9093 }}
+
+        # ── Orchestrator REST/UI cluster ─────────────────────────────────────
+        # Mirrors the legacy bootstrap's mcp_orchestrator cluster. Points at
+        # the leader-only Service so admin mutations (POST/PUT/DELETE
+        # /api/v1/servers*) and all other /api/v1/* control-plane traffic
+        # land on whichever pod currently holds the Lease — eliminating the
+        # follower 503-bounce that plagued rapid registration in v2.
+        #
+        # Used by routes pushed via v3 ADS for non-MCP traffic — REST API,
+        # UI static assets, and the "/" catchall. MCP data-plane traffic
+        # (/mcp/<ns>/<server>/*) continues to use the per-server clusters
+        # built by AdsSubscriber from DeploymentEvents; this cluster handles
+        # everything else.
+        #
+        # Normal ClusterIP (NOT xds-headless) so STRICT_DNS resolves a stable
+        # VIP unchanged across failover; only the backing endpoint moves.
+        - name: mcp_orchestrator
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: mcp_orchestrator
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-leader.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.api.httpPort }}
+
+        # mcp-inventory REST cluster — Pass 3 (Option C, static bootstrap).
+        # Mirror of the legacy bootstrap's cluster of the same name. Both
+        # Envoys forward /inventory/v1/* to the same inventory plane;
+        # customers can hit either Envoy on its inventory listener port.
+        # See legacy bootstrap for the full rationale.
+        - name: mcp_inventory
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: mcp_inventory
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-inventory.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: 8090
+
+        # als_sink cluster — Brick 3 (ALS cost-meter true-up). Envoy's
+        # mcp_https_listener_v3 HCM streams per-request access logs here; the
+        # orchestrator's ALS sink (port 9094) flips meter_events.status
+        # success→error for calls that failed upstream. gRPC, so HTTP/2 via
+        # typed_extension_protocol_options (mirrors the v3 ADS cluster).
+        # Reaches the pod over the headless service exactly like ext_authz
+        # (9092/9093) — the port need not be enumerated on the Service.
+        - name: als_sink
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
+          load_assignment:
+            cluster_name: als_sink
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-xds-headless.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: {{ .Values.orchestrator.alsPort | default 9094 }}
+
+        {{- if $otel.endpoint }}
+        # ── OpenTelemetry collector (install.sh --otel-endpoint) ─────────────
+        # OTLP/gRPC, so HTTP/2. Spans are best-effort: a slow or missing
+        # collector never delays or fails a request.
+        - name: otel_collector
+          connect_timeout: 1s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
+          load_assignment:
+            cluster_name: otel_collector
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ (split ":" $otel.endpoint)._0 }}
+                          port_value: {{ (split ":" $otel.endpoint)._1 }}
+        {{- end }}
+
+      listeners:
+        # ── HTTPS listener on 10444 — TLS-terminated, ext_authz-gated ────────
+        # Mirrors legacy mcp_https_listener (10443). Same TLS, same
+        # ext_authz wiring, same access log shape. Only difference: the
+        # bind port and a distinct stat_prefix so metrics don't collide
+        # with legacy in shared dashboards.
+        - name: mcp_https_listener_v3
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: {{ .Values.envoy.v3.listenerPort }}
+          # Raised from the Envoy 1MB default to 10MB (2026-07-12) so the
+          # connection-level buffer doesn't cap document-bearing requests BELOW
+          # the ext_authz with_request_body limit (also 10MB). Both must clear
+          # the payload size or the smaller wins — this is the listener-side half
+          # of the base64-document fix (Nitro Sign create-document).
+          per_connection_buffer_limit_bytes: 10485760
+          filter_chains:
+            - transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  common_tls_context:
+                    alpn_protocols: ["h2", "http/1.1"]
+                    tls_certificates:
+                      - certificate_chain:
+                          filename: /etc/envoy/tls/tls.crt
+                        private_key:
+                          filename: /etc/envoy/tls/tls.key
+              filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: mcp_ingress_v3
+                    {{- if $otel.endpoint }}
+                    # ── OpenTelemetry tracing (install.sh --otel-endpoint) ──────
+                    # Continues an incoming W3C traceparent (or starts a trace),
+                    # sends a span per request and one per upstream call, and
+                    # passes traceparent to the upstream server.
+                    tracing:
+                      random_sampling:
+                        value: {{ $otel.samplingPercent | default 100 }}
+                      spawn_upstream_span: true
+                      # Span names: the request (method + path, as in the access log)
+                      # and the upstream cluster, instead of "ingress".
+                      operation: "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                      upstream_operation: "upstream %UPSTREAM_CLUSTER%"
+                      custom_tags:
+                        - tag: magertron.plane
+                          literal:
+                            value: gateway
+                        # Magertron's decision, from ext_authz dynamic metadata
+                        # (trace_tags.hpp). Both filter namespaces: internal and
+                        # external servers use different ext_authz filters.
+                        - tag: magertron.decision
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: decision } ]
+                        - tag: magertron.decision
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: decision } ]
+                        - tag: magertron.stage
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: stage } ]
+                        - tag: magertron.stage
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: stage } ]
+                        - tag: magertron.reason
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: reason } ]
+                        - tag: magertron.reason
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: reason } ]
+                        - tag: magertron.tool
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: tool } ]
+                        - tag: magertron.tool
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: tool } ]
+                        {{- if (ne (toString $otel.identityTags) "false") }}
+                        - tag: magertron.subject
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: subject } ]
+                        - tag: magertron.subject
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: subject } ]
+                        - tag: magertron.on_behalf_of
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: on_behalf_of } ]
+                        - tag: magertron.on_behalf_of
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: on_behalf_of } ]
+                        {{- end }}
+                      provider:
+                        name: envoy.tracers.opentelemetry
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: otel_collector
+                            timeout: 0.25s
+                          service_name: {{ $otel.serviceName | default "magertron-gateway" }}
+                    {{- end }}
+                    codec_type: AUTO
+                    http2_protocol_options:
+                      max_concurrent_streams: {{ .Values.envoy.v3.http2.maxConcurrentStreams | default 16 }}
+                    use_remote_address: true
+                    # ── Security headers on Envoy local replies (2026-06-29) ──────────
+                    # Decorates Envoy-GENERATED responses (route-miss 404s, ext_authz
+                    # 401/403 denials, 503s) — the responses that never reach a route
+                    # and therefore cannot be hardened via RDS-pushed
+                    # response_headers_to_add. A headers scan crawling an unknown path
+                    # hits exactly this local-reply 404; before this block it carried
+                    # only x-content-type-options (set in the orchestrator). The
+                    # status_code_filter GE 100 matches EVERY status, so denials are
+                    # hardened too. CSP is Report-Only (cannot break anything; the
+                    # enforced app-response CSP is a later, separate change on the
+                    # RDS route config). CORS wildcard is intentionally NOT touched
+                    # here — that is the separate public_base_url + desktop-scheme
+                    # design decision, not a header patch.
+                    local_reply_config:
+                      mappers:
+                        - filter:
+                            status_code_filter:
+                              comparison:
+                                op: GE
+                                value:
+                                  default_value: 100
+                                  runtime_key: local_reply_min_status
+                          headers_to_add:
+                            - header: { key: "X-Frame-Options", value: "DENY" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Cross-Origin-Resource-Policy", value: "same-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Content-Security-Policy-Report-Only", value: "default-src 'self'" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                    rds:
+                      route_config_name: mcp_route
+                      config_source:
+                        resource_api_version: V3
+                        ads: {}
+                    http_filters:
+                      # ⚠ CORS FIRST, AND IT MUST BE FIRST. A browser sends a
+                      # preflight OPTIONS before any cross-origin POST, and a
+                      # preflight carries no credentials by specification. If
+                      # ext_authz runs first it returns 401 with no CORS
+                      # headers, the browser gives up, and the client reports
+                      # the server as unreachable — which is what every
+                      # browser-based MCP client saw until 2026-09-13.
+                      #
+                      # The filter only ANSWERS preflights. Real requests fall
+                      # through to ext_authz exactly as before; nothing about
+                      # authorisation changes.
+                      - name: envoy.filters.http.cors
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+                      # ext_authz timeout 2s matches legacy (1.11.x tuning).
+                      # failure_mode_allow: false → fail-closed on PDP outage.
+                      #
+                      # ── Body-size foot-gun fix (2026-05-09) ──────────────
+                      # Same fix as legacy bootstrap. Previously
+                      # max_request_bytes=8192 + allow_partial_message=false
+                      # would synthesize a 403 with identical wire signature
+                      # to Bug E (UAEX, upstream=null, null reason) for any
+                      # request body > 8KB. Raised to 64KB and flipped to
+                      # truncate-and-Check() for bodies that still exceed
+                      # the cap. See legacy bootstrap for full rationale.
+                      - name: envoy.filters.http.ext_authz
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: mcp_ext_authz
+                            timeout: 2s
+                          transport_api_version: V3
+                          failure_mode_allow: false
+                          # Honest failure status — see the legacy bootstrap for the
+                          # full rationale. Check-call failures (timeout, dead PDP)
+                          # return 503, not a 403 that is indistinguishable from a
+                          # real RBAC denial. fail-closed is unchanged.
+                          status_on_error:
+                            code: ServiceUnavailable
+                          with_request_body:
+                            # Raised 65536 → 10485760 (10MB, 2026-07-12) to carry
+                            # base64 document payloads (e.g. Nitro Sign create-document)
+                            # through to the upstream. 10MB aligns with AWS API Gateway /
+                            # Apigee payload ceilings. NOTE: Envoy buffers the whole body
+                            # per request before Check(); ext_authz only needs params.name,
+                            # so this is a hot-path memory cost. Banked optimization: get
+                            # the tool name out of the buffered body (header/ordering) so
+                            # the authorizer can keep a small buffer.
+                            max_request_bytes: 65536
+                            allow_partial_message: true
+                            pack_as_bytes: false
+                          include_peer_certificate: false
+                          stat_prefix: mcp_ext_authz_v3
+                      # ── ext_authz.external filter (Session 2.13, Step 6d-i) ─────────────
+                      # Parallel ext_authz filter for External (vendor-hosted) MCP
+                      # server traffic. Points at the mcp_ext_authz_external upstream
+                      # cluster (port 9093, defined in Step 6e) which is served by
+                      # the orchestrator's ExternalAuthzServer (Step 6b-ii).
+                      #
+                      # DISABLED BY DEFAULT at listener level — only External routes
+                      # opt-IN via typed_per_filter_config (set by AdsSubscriber when
+                      # building the route entry for a server with server_type='external').
+                      #
+                      # Internal/Hybrid traffic NEVER hits this filter because routes
+                      # for those servers don't carry the enable override. This is
+                      # the parallel-isolation guarantee from external-mcp-servers-step6.md
+                      # (v2) Commit 3, now reflected in the data plane.
+                      #
+                      # Filter name 'envoy.filters.http.ext_authz.external' is the
+                      # KEY callers use in typed_per_filter_config to enable this
+                      # filter on a per-route basis. Envoy distinguishes filter
+                      # instances by this name within the chain.
+                      - name: envoy.filters.http.ext_authz.external
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: mcp_ext_authz_external
+                            timeout: 2s
+                          transport_api_version: V3
+                          failure_mode_allow: false
+                          # Honest failure status — see the legacy bootstrap for the
+                          # full rationale. Check-call failures (timeout, dead PDP)
+                          # return 503, not a 403 that is indistinguishable from a
+                          # real RBAC denial. fail-closed is unchanged.
+                          status_on_error:
+                            code: ServiceUnavailable
+                          # with_request_body RE-ADDED (per-tool RBAC + rating).
+                          # ── Provenance correction ────────────────────────────
+                          # Session 2.16 (2026-06-05) removed this block, citing
+                          # buffering-induced re-encode rejected by strict edge
+                          # WAFs (Cloudflare/Vercel) as malformed HTTP/1.1. On
+                          # review that rationale appears MISATTRIBUTED: the only
+                          # malformed-framing failure actually captured on the wire
+                          # that day (socat dump, slice-c6b-handoff.md) was Envoy's
+                          # ext_authz RESPONSE→upstream-HEADER translation emitting a
+                          # stray ": \r" empty header — the credential-injection
+                          # path, NOT the request body. That was fixed separately
+                          # via B17 (append_action OVERWRITE_IF_EXISTS_OR_ADD +
+                          # allowed_upstream_headers allow-list, both live in
+                          # external_service.cpp / the route config). The same-day
+                          # SESSION_HANDOFF_2026-06-05.md describes body access only
+                          # as a deferred "nice-to-have," with no mention of a body
+                          # framing failure — consistent with the body buffering
+                          # never having broken vendor traffic.
+                          #
+                          # Why the external plane now NEEDS the body: per-tool RBAC
+                          # (named-tool grants must match, not just server-wide "*")
+                          # AND per-tool cost attribution (meter_events.tool_id keyed
+                          # to the real tool; ALS true-up carries only request_id +
+                          # status and cannot recover the tool). Both data needs
+                          # converge on params.name in the JSON-RPC body — the same
+                          # datum, available only here.
+                          #
+                          # Config mirrors the internal ext_authz filter EXACTLY
+                          # (65536 / allow_partial_message:true / pack_as_bytes:false)
+                          # — the most-tested body-buffer config in the system,
+                          # proven on the internal path at multi-thousand rps. The
+                          # handler reads .body() (string field; pack_as_bytes:false),
+                          # matching service.cpp. allow_partial_message:true means a
+                          # body over the cap is truncated-and-forwarded (not 403'd —
+                          # avoids the >8KB foot-gun the internal filter hit at 8192);
+                          # parse_mcp_rpc_body tolerates truncation (returns
+                          # parse_error → handler denies 400).
+                          with_request_body:
+                            # Raised 65536 → 10485760 (10MB, 2026-07-12). This is the
+                            # filter External/vendor traffic hits (e.g. nitro-sign-server),
+                            # so document-bearing calls like sign-create-document need the
+                            # base64 payload to survive to the upstream rather than being
+                            # truncated at 64KB (which corrupted the JSON-RPC body and 400'd).
+                            # Mirrors the internal filter. Same hot-path buffering caveat.
+                            max_request_bytes: 65536
+                            allow_partial_message: true
+                            pack_as_bytes: false
+                          include_peer_certificate: false
+                          stat_prefix: mcp_ext_authz_external_v3
+                        # disabled: true at the filter-instance level is what makes
+                        # this filter SKIP all routes unless they explicitly
+                        # re-enable it via typed_per_filter_config. The Envoy
+                        # documentation for ExtAuthz refers to this idiom for
+                        # selective ext_authz; routes that DO want this filter
+                        # set typed_per_filter_config[envoy.filters.http.ext_authz.external]
+                        # to an ExtAuthzPerRoute with check_settings present.
+                        disabled: true
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                    access_log:
+                      - name: envoy.access_loggers.stdout
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                          log_format:
+                            json_format:
+                              ts: "%START_TIME%"
+                              method: "%REQ(:METHOD)%"
+                              path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                              status: "%RESPONSE_CODE%"
+                              duration_ms: "%DURATION%"
+                              upstream: "%UPSTREAM_HOST%"
+                              trace_id: "%REQ(X-REQUEST-ID)%"
+                              {{- if $otel.endpoint }}
+                              otel_trace_id: "%TRACE_ID%"
+                              {{- end }}
+                              authz_flags: "%RESPONSE_FLAGS%"
+                              authz_reason: "%RESP(x-mcp-authz-denied)%"
+                              # v3 marker — lets log-aggregation systems
+                              # filter v3 vs legacy traffic at a glance.
+                              path_version: "v3"
+                      # Brick 3: stream per-request access logs to the
+                      # orchestrator's ALS sink (als_sink cluster → :9094) for
+                      # cost-meter true-up. Sits beside stdout (both run); the
+                      # MeterUpdater flips meter_events.status on >=400. Only on
+                      # THIS listener (the metered tool-traffic path) — the
+                      # inventory listener below deliberately has no http_grpc.
+                      - name: envoy.access_loggers.http_grpc
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+                          common_config:
+                            log_name: mcp_meter_als
+                            grpc_service:
+                              envoy_grpc:
+                                cluster_name: als_sink
+                            transport_api_version: V3
+                          # ── Idempotency-Key -> ALS (cost-meter dedupe) ──────────────
+                          #
+                          # meter_events has a UNIQUE index on idempotency_key; that index
+                          # is what makes a merchant's retry bill once. The meter rows are
+                          # keyed on this header when the caller sends it, so the ALS —
+                          # which flips status on failure and emits the byte rows — has to
+                          # see the same value or it can no longer find the row it is
+                          # trying to true up.
+                          #
+                          # ⚠ LOWERCASE, deliberately. The ALS delivers headers under the
+                          # name configured here; "Idempotency-Key" would produce a map key
+                          # that never matches a lookup for the lowercase form, which reads
+                          # exactly like a caller that never sent the header.
+                          #
+                          # ⚠ Pairs with mcp-platform-private (als_server.cpp, db_client,
+                          # MeterOnDestruct). This side alone is inert — Envoy logs a header
+                          # nobody reads. The other side alone silently falls back to
+                          # request_id and the replay keeps double-billing.
+                          additional_request_headers_to_log:
+                            - idempotency-key
+                            - x-idempotency-key          # Everpay et al.; C++ reads it only when idempotency-key is absent
+
+        # ─── Inventory plane listener (Pass 3, Option C) ────────────────────────
+        # Mirror of legacy bootstrap's mcp_inventory_listener. Same port
+        # (10347) so customers can hit either Envoy on a single well-known
+        # port. See legacy bootstrap for the full rationale; differences
+        # from the v3 main listener:
+        #   - NO ext_authz filter (inventory verifies its own JWTs)
+        #   - INLINE static route_config (no rds)
+        #   - Catch-all "/" → mcp_inventory cluster
+        - name: mcp_inventory_listener_v3
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 10347
+          filter_chains:
+            - transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  common_tls_context:
+                    alpn_protocols: ["h2", "http/1.1"]
+                    tls_certificates:
+                      - certificate_chain:
+                          filename: /etc/envoy/tls/tls.crt
+                        private_key:
+                          filename: /etc/envoy/tls/tls.key
+              filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: mcp_inventory_ingress_v3
+                    codec_type: AUTO
+                    http2_protocol_options:
+                      max_concurrent_streams: {{ .Values.envoy.v3.http2.maxConcurrentStreams | default 16 }}
+                    use_remote_address: true
+                    # ── Security headers on Envoy local replies (2026-06-29) ──────────
+                    # Same block as the main listener (mcp_https_listener_v3). Kept in
+                    # sync so a scan against the inventory plane (10347) does not show
+                    # the header gap the main plane just closed. See main listener for
+                    # full rationale.
+                    local_reply_config:
+                      mappers:
+                        - filter:
+                            status_code_filter:
+                              comparison:
+                                op: GE
+                                value:
+                                  default_value: 100
+                                  runtime_key: local_reply_min_status
+                          headers_to_add:
+                            - header: { key: "X-Frame-Options", value: "DENY" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Cross-Origin-Resource-Policy", value: "same-origin" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                            - header: { key: "Content-Security-Policy-Report-Only", value: "default-src 'self'" }
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                    route_config:
+                      name: mcp_inventory_route
+                      virtual_hosts:
+                        - name: mcp_inventory_vhost
+                          domains: ["*"]
+                          routes:
+                            - match:
+                                prefix: "/"
+                              route:
+                                cluster: mcp_inventory
+                                timeout: 30s
+                    http_filters:
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                    access_log:
+                      - name: envoy.access_loggers.stdout
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                          log_format:
+                            json_format:
+                              plane: "inventory"
+                              path_version: "v3"
+                              method: "%REQ(:METHOD)%"
+                              path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                              status: "%RESPONSE_CODE%"
+                              duration_ms: "%DURATION%"
+                              upstream: "%UPSTREAM_HOST%"
+                              trace_id: "%REQ(X-REQUEST-ID)%"
+
+    # Envoy admin API on a distinct port so legacy and v3 admin
+    # interfaces don't collide if both are debugged via port-forward.
+    admin:
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 9902
+      access_log:
+        - name: envoy.access_loggers.stdout
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+{{- end }}

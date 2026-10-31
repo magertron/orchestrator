@@ -459,6 +459,19 @@ data:
                             metadata_key:
                               key: envoy.filters.http.ext_authz.external
                               path: [ { key: tool } ]
+                        # The bus topic a publish/read/subscribe names (2026-10-31).
+                        - tag: magertron.topic
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz
+                              path: [ { key: topic } ]
+                        - tag: magertron.topic
+                          metadata:
+                            kind: { request: {} }
+                            metadata_key:
+                              key: envoy.filters.http.ext_authz.external
+                              path: [ { key: topic } ]
                         {{- if (ne (toString $otel.identityTags) "false") }}
                         - tag: magertron.subject
                           metadata:
