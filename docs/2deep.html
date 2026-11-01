@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Magertron 2 Deep™: Agent-Ready Account Protection for Credit Unions</title>
+<meta name="description" content="Let members’ AI assistants bank for them without opening a new door for scams. Magertron 2 Deep sees who is acting for each member, refuses the scam rails, and holds the unusual payment for a trusted contact.">
+
+<link rel="canonical" href="https://magertron.com/2deep.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/2deep.html">
+<meta property="og:title" content="Magertron 2 Deep™: Nothing over the top. Nothing in the middle.">
+<meta property="og:description" content="Your fraud controls only see the customer. 2 Deep sees who’s acting for them.">
+<meta property="og:site_name" content="Magertron">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Magertron 2 Deep™: Nothing over the top. Nothing in the middle.">
+<meta name="twitter:description" content="Your fraud controls only see the customer. 2 Deep sees who’s acting for them.">
+<meta name="robots" content="index, follow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --allow: #34d399;
+  --refuse: #f87171;
+  --hold: #fbbf24;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: clip;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* ── Nav (as on the home page) ───────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.tm { font-size: 0.55em; vertical-align: super; line-height: 0; letter-spacing: 0; font-weight: 400; margin-left: 1px; }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.current { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+.nav-toggle { display: none; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero { padding: 152px 0 72px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 680px; height: 500px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero .container { position: relative; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px; border: 1px solid var(--border-accent);
+  background: var(--accent-glow); font-size: 13px; color: var(--accent-text);
+  margin-bottom: 26px; animation: fadeUp 0.6s ease-out;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 18px; animation: fadeUp 0.6s ease-out 0.05s both;
+}
+.hero-eyebrow strong { color: var(--text); font-family: var(--sans); font-size: 15px; font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+.hero h1 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(40px, 6vw, 72px); line-height: 1.06; letter-spacing: -0.04em;
+  margin-bottom: 22px; animation: fadeUp 0.6s ease-out 0.1s both;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-lead {
+  font-size: clamp(16px, 2.2vw, 19px); color: var(--text); max-width: none; white-space: nowrap;
+  margin: 0 auto 14px; line-height: 1.45; animation: fadeUp 0.6s ease-out 0.2s both;
+}
+.hero-sub {
+  font-size: 17px; color: var(--text-secondary); max-width: 640px;
+  margin: 0 auto 34px; line-height: 1.55; animation: fadeUp 0.6s ease-out 0.25s both;
+}
+.hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeUp 0.6s ease-out 0.3s both; }
+
+.btn-primary {
+  background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px;
+  font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.2s; display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; color: white; }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 14px 32px; border-radius: 8px;
+  font-weight: 500; font-size: 15px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.band { padding: 80px 0; border-top: 1px solid var(--border); }
+.section-label {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 16px;
+}
+.section-desc { font-size: 16px; color: var(--text-secondary); max-width: 620px; line-height: 1.7; margin-bottom: 40px; }
+.center { text-align: center; }
+.center .section-desc { margin-left: auto; margin-right: auto; }
+
+/* ── Cards ────────────────────────────────────────────────────────────── */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card {
+  padding: 32px; border-radius: 12px; background: var(--bg-card);
+  border: 1px solid var(--border); position: relative;
+}
+.card-kicker {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 12px;
+}
+.card h3 { font-size: 19px; font-weight: 600; line-height: 1.35; margin-bottom: 10px; }
+.card p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
+.card.warn { border-color: rgba(251, 191, 36, 0.45); }
+.card.warn .card-kicker { color: var(--hold); }
+.card.allow { border-top: 3px solid var(--allow); }
+.card.refuse { border-top: 3px solid var(--refuse); }
+.card.hold { border-top: 3px solid var(--hold); }
+.card.allow .card-kicker { color: var(--allow); }
+.card.refuse .card-kicker { color: var(--refuse); }
+.card.hold .card-kicker { color: var(--hold); }
+.statement {
+  font-family: var(--serif); font-size: clamp(22px, 2.6vw, 30px); font-weight: 600;
+  letter-spacing: -0.02em; line-height: 1.3; margin-top: 40px;
+}
+
+/* ── Diagram (home page style) ────────────────────────────────────────── */
+.mag-arch-card { background: #080b10; border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin: 0 0 32px; }
+.mag-arch-scroll { overflow-x: auto; }
+.mag-arch-scroll svg { display: block; width: 100%; height: auto; min-width: 780px; }
+.mag-arch-hint { display: none; }
+.mag-arch-caption { max-width: 680px; margin: 0 auto; text-align: center; font-size: 15px; line-height: 1.7; color: var(--text-secondary); }
+.mag-arch-caption strong { color: var(--text); font-weight: 500; }
+.ma-frame  { fill: none; stroke: var(--border); stroke-width: 1; }
+.ma-panel  { fill: var(--bg-card); stroke: var(--border); stroke-width: 1; }
+.ma-hero   { fill: var(--accent-glow); stroke: var(--accent); stroke-width: 1.5; }
+.ma-holdp  { fill: rgba(251, 191, 36, 0.08); stroke: var(--hold); stroke-width: 1.25; }
+.ma-flow   { stroke: var(--text-tertiary); stroke-width: 1.5; fill: none; }
+.ma-head   { fill: var(--text-tertiary); }
+.ma-t      { fill: var(--text); font-family: var(--sans); font-size: 14px; }
+.ma-t-b    { fill: var(--text); font-family: var(--sans); font-size: 15px; font-weight: 600; }
+.ma-t-sm   { fill: var(--text-secondary); font-family: var(--sans); font-size: 12.5px; }
+.ma-mono   { fill: var(--text-secondary); font-family: var(--mono); font-size: 11px; }
+.ma-label  { fill: var(--accent-text); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.ma-allow  { fill: var(--allow); font-family: var(--mono); font-size: 11px; }
+.ma-refuse { fill: var(--refuse); font-family: var(--mono); font-size: 11px; }
+.ma-hold   { fill: var(--hold); font-family: var(--mono); font-size: 11px; }
+
+/* ── Split: you keep / we add ─────────────────────────────────────────── */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.split .card ul { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.split .card li { font-size: 15px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
+.split .card li::before { content: '→'; color: var(--text-tertiary); flex-shrink: 0; }
+.split .card.ours { border-color: var(--accent); background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, var(--bg-card) 100%); }
+.split .card.ours li::before { color: var(--accent-text); }
+.split .card li strong { color: var(--text); font-weight: 500; }
+
+/* ── CTA ──────────────────────────────────────────────────────────────── */
+.cta { padding: 16px 0 80px; text-align: center; }
+.cta-box {
+  padding: 72px 60px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta h2 { font-family: var(--serif); font-size: clamp(30px, 4vw, 46px); font-weight: 700; margin-bottom: 16px; letter-spacing: -0.03em; }
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 32px; }
+.cta-note { font-size: 13px !important; margin: 20px auto 0 !important; }
+
+/* ── Footer (as on the home page) ─────────────────────────────────────── */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  color: var(--text-primary);
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p {
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 13px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--text-primary); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+
+/* ── Modal (as on the home page) ──────────────────────────────────────── */
+.modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #0c1018; border: 1px solid #1a2030; border-radius: 16px; padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto; position: relative; animation: fadeUp 0.25s ease-out; }
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 20px; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #8694a8; font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px; padding: 10px 14px;
+  color: #0a0d12; font-size: 14px; font-family: inherit; outline: none; width: 100%;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.modal-submit { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+.modal-submit:hover { background: #1d4ed8; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+#how { scroll-margin-top: 88px; }
+
+/* ── Mobile ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .split { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .container { padding-left: 20px; padding-right: 20px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border); padding: 4px 20px 20px;
+  }
+  nav.open .nav-links a:not(.nav-cta) { display: block; padding: 14px 2px; font-size: 16px; color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .hero { padding: 112px 0 48px; }
+  .hero-lead { font-size: 16px; white-space: normal; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .band, .cta { padding: 56px 0; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .cta-box { padding: 40px 20px; }
+  .form-row { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <a href="index.html" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <a href="index.html#features">AI Orchestrator</a>
+      <a href="data-reach.html">AI Data Reach</a>
+      <a href="2deep.html" class="current">2 Deep</a>
+      <a href="developers.html">Developers</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="security.html">Security</a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Request a briefing</a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">New · For credit unions</div>
+    <div class="hero-eyebrow"><strong>Magertron 2 Deep<sup class="tm">™</sup></strong> · Agent-ready account protection</div>
+    <h1>Nothing over the top.<br><em>Nothing in the middle.</em></h1>
+    <p class="hero-lead">Your fraud controls only see the customer.&#160; 2 Deep<sup class="tm">™</sup> sees who’s acting for them.</p>
+    <p class="hero-sub">Let your members’ AI assistants pay bills and move money without opening a new door for scams. Every agent call is checked for who is acting, for whom, and what they are trying to do, before it reaches your processing core.</p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary" onclick="openDemoModal(event)">Request a briefing</a>
+      <a href="#how" class="btn-secondary">How it works</a>
+    </div>
+  </div>
+</section>
+
+<!-- The gap -->
+<section class="band">
+  <div class="container">
+    <div class="section-label">The gap</div>
+    <h2 class="section-title">Agents are about to bank for your members</h2>
+    <p class="section-desc">AI assistants act with the member’s own privileges. To your fraud stack, everything the agent does looks like the member. Scammers already know it.</p>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-kicker">Today</div>
+        <h3>The member signs in and pays their electric bill</h3>
+        <p>Your fraud controls see the member.</p>
+      </div>
+      <div class="card">
+        <div class="card-kicker">The future</div>
+        <h3>The member’s AI assistant pays it for them</h3>
+        <p>Your fraud controls still see the member.</p>
+      </div>
+      <div class="card warn">
+        <div class="card-kicker">The problem</div>
+        <h3>Impostors with the member’s credentials use agents for fraud</h3>
+        <p>Your fraud controls see… the member.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="band" id="how">
+  <div class="container">
+    <div class="center">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">One governed path for every agent call</h2>
+      <p class="section-desc">2 Deep<sup class="tm">™</sup> sits in front of your core banking API. Your members, data, apps and approvals stay yours.</p>
+    </div>
+
+    <div class="mag-arch-card">
+      <p class="mag-arch-hint">Swipe to see the full diagram &rarr;</p>
+      <div class="mag-arch-scroll">
+      <svg viewBox="0 0 1160 430" role="img" aria-label="A member’s AI assistant calls through the Magertron gateway, which checks who is acting and for whom, what both may do, and what 2 Deep allows. Allowed calls reach the credit union’s core; refused calls stop at the gateway; held calls wait for the member’s trusted contact, whom the credit union’s app notifies.">
+        <defs>
+          <marker id="tdArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="ma-head"/>
+          </marker>
+        </defs>
+
+        <text x="40" y="44" class="ma-label">Your member</text>
+        <rect x="24" y="56" width="248" height="200" rx="10" class="ma-frame"/>
+        <rect x="40" y="76" width="216" height="72" rx="8" class="ma-panel"/>
+        <text x="56" y="105" class="ma-t-b">Member’s assistant</text>
+        <text x="56" y="128" class="ma-mono">any AI agent, any vendor</text>
+        <rect x="40" y="164" width="216" height="72" rx="8" class="ma-panel"/>
+        <text x="56" y="193" class="ma-t-b">Member</text>
+        <text x="56" y="216" class="ma-mono">delegates, signed</text>
+
+        <text x="306" y="146" class="ma-mono" text-anchor="middle">every call</text>
+        <line x1="280" y1="158" x2="332" y2="158" class="ma-flow" marker-end="url(#tdArrow)"/>
+
+        <rect x="340" y="40" width="488" height="232" rx="12" class="ma-frame"/>
+        <text x="356" y="68" class="ma-label">Magertron<tspan font-size="0.6em" baseline-shift="super">™</tspan> gateway</text>
+        <rect x="356" y="82" width="456" height="50" rx="8" class="ma-panel"/>
+        <text x="372" y="103" class="ma-t">Who is acting, and for whom</text>
+        <text x="372" y="121" class="ma-mono">the assistant and the member, bound together</text>
+        <rect x="356" y="142" width="456" height="50" rx="8" class="ma-panel"/>
+        <text x="372" y="163" class="ma-t">What both of them may do</text>
+        <text x="372" y="181" class="ma-mono">the narrower of the two wins</text>
+        <rect x="356" y="202" width="456" height="54" rx="8" class="ma-hero"/>
+        <text x="372" y="225" class="ma-t" style="font-weight:600; fill: var(--accent-text)">2 Deep decides</text>
+        <text x="372" y="244" class="ma-mono">allow · refuse · hold, using your member data</text>
+
+        <text x="862" y="94" class="ma-allow" text-anchor="middle">allow</text>
+        <line x1="836" y1="106" x2="888" y2="106" class="ma-flow" marker-end="url(#tdArrow)"/>
+        <text x="912" y="44" class="ma-label">Your credit union</text>
+        <rect x="896" y="56" width="240" height="340" rx="10" class="ma-frame"/>
+        <rect x="912" y="76" width="208" height="62" rx="8" class="ma-panel"/>
+        <text x="928" y="102" class="ma-t-b">Core banking API</text>
+        <text x="928" y="122" class="ma-mono">allowed calls only</text>
+
+        <rect x="912" y="158" width="208" height="62" rx="8" class="ma-panel"/>
+        <text x="928" y="184" class="ma-t-b">Member data</text>
+        <text x="928" y="204" class="ma-mono">contacts, payees, limits</text>
+        <line x1="904" y1="189" x2="836" y2="189" class="ma-flow" marker-end="url(#tdArrow)"/>
+
+        <rect x="912" y="318" width="208" height="62" rx="8" class="ma-panel"/>
+        <text x="928" y="344" class="ma-t-b">Your app</text>
+        <text x="928" y="364" class="ma-mono">trusted contact decides</text>
+
+        <text x="356" y="300" class="ma-refuse">refuse → stops here, with the reason</text>
+        <rect x="440" y="318" width="288" height="62" rx="8" class="ma-holdp"/>
+        <text x="456" y="344" class="ma-t-b">Held for a trusted contact</text>
+        <text x="456" y="364" class="ma-mono">this request only · released once</text>
+        <line x1="700" y1="272" x2="700" y2="312" class="ma-flow" marker-end="url(#tdArrow)"/>
+        <text x="710" y="296" class="ma-hold">hold</text>
+        <line x1="736" y1="349" x2="904" y2="349" class="ma-flow" marker-end="url(#tdArrow)"/>
+        <text x="820" y="340" class="ma-mono" text-anchor="middle">notify</text>
+      </svg>
+      </div>
+    </div>
+
+    <p class="mag-arch-caption">The assistant’s identity and the member it acts for are <strong>bound on every call</strong>, so 2 Deep<sup class="tm">™</sup> can infer the difference between a member paying their bill and a member being coerced into fraud.</p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container">
+    <div class="cta-box">
+      <h2>Let agents bank for your members, safely.</h2>
+      <p>We are working with a small number of credit unions as design partners. See the live demo.</p>
+      <a href="#" class="btn-primary" onclick="openDemoModal(event)">Request a briefing</a>
+      <p class="cta-note">Briefings are shared under NDA.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#features">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="2deep.html">2 Deep</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Briefing request modal (same form service as the home page) -->
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Request a 2 Deep briefing</h3>
+    <p id="demo-modal-subtitle">A live demo for your team, and the details under NDA. We’ll reply within one business day.</p>
+    <div class="form-row">
+      <div class="form-group"><label>First name</label><input type="text" id="demo-fname" placeholder="Jane" /></div>
+      <div class="form-group"><label>Last name</label><input type="text" id="demo-lname" placeholder="Smith" /></div>
+    </div>
+    <div class="form-group"><label>Work email</label><input type="email" id="demo-email" placeholder="jane@yourcu.org" /></div>
+    <div class="form-group"><label>Credit union</label><input type="text" id="demo-company" placeholder="Your credit union" /></div>
+    <div class="form-group">
+      <label>What would help most?</label>
+      <select id="demo-tier">
+        <option value="2 Deep briefing">A briefing for our team</option>
+        <option value="2 Deep design partner">Becoming a design partner</option>
+        <option value="2 Deep security review">Our security team’s questions</option>
+        <option value="2 Deep just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything we should know? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="Your core, your member app, or the scenario you most want to stop."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    title.textContent = 'Contact us';
+    subtitle.textContent = 'Send us a message and we’ll reply within one business day.';
+  } else {
+    title.textContent = 'Request a 2 Deep briefing';
+    subtitle.textContent = 'A live demo for your team, and the details under NDA. We’ll reply within one business day.';
+  }
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+  if (!fname || !email) { alert('Please enter your name and email.'); return; }
+  const btn = document.getElementById('demo-submit');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${fname} ${lname}`.trim(), email, company,
+      _subject: `2 Deep briefing request — ${company || fname} (${tier})`, tier, message }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    document.querySelector('#demoModal .modal').innerHTML = `
+      <button class="modal-close" onclick="closeDemoModal()">✕</button>
+      <h3>Got it, thank you.</h3>
+      <p style="margin-top: 12px; line-height: 1.6;">We’ll be in touch within one business day to set up a briefing for your team.</p>`;
+  })
+  .catch(() => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we’ll respond right away.');
+    btn.disabled = false; btn.textContent = 'Send it over →';
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+
+<script src="/consent.js" defer></script>
+</body>
+</html>
