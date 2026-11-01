@@ -512,7 +512,7 @@ body { overflow-x: clip; }
 </section>
 
 <footer>
-  <div class="container">
+  <div class="container" style="max-width: 1200px;">
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
@@ -521,37 +521,48 @@ body { overflow-x: clip; }
       <div class="footer-col">
         <h4>Product</h4>
         <ul>
-          <li><a href="/#features">AI Orchestrator</a></li>
-          <li><a href="/#pricing">Pricing</a></li>
-          <li><a href="/#install">Install</a></li>
+          <li><a href="index.html#features">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="2deep.html">2 Deep</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
           <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h4>Resources</h4>
         <ul>
-          <li><a href="/security.html">Security</a></li>
-          <li><a href="/siem-integration.html">SIEM Integration</a></li>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="/developers.html">Build an Agent</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a></li>
+          <li><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="/trust.html">Trust</a></li>
-          <li><a href="/about.html">About</a></li>
-          <li><a href="/compliance.html">Compliance</a></li>
-          <li><a href="/privacy.html">Privacy</a></li>
-          <li><a href="/#schedule-demo">Contact</a></li>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h4>Social</h4>
         <ul>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
           <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
         </ul>
       </div>
@@ -559,7 +570,7 @@ body { overflow-x: clip; }
     <div class="footer-bottom">
       <p>&copy; 2026 Magertron. All rights reserved.</p>
       <div class="links">
-        <a href="/#schedule-demo">Contact</a>
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
       </div>
     </div>
   </div>
