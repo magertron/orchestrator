@@ -2243,6 +2243,38 @@ data:
         updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    -- ── Platform holds (4.2.16, 2026-11-01) ───────────────────────────────────
+    -- A PDP decision may say "hold": the gateway records the exact request here
+    -- (fingerprint = sha256 of subject, on_behalf_of, namespace, server, tool,
+    -- arguments) and refuses it until an approver decides. An approved hold is
+    -- consumed exactly once (state -> 'consumed') by the retry that carries
+    -- x-magertron-hold-id. Same DDL as ensure_holds() in db_client.cpp, which
+    -- still creates it on first use for databases that predate this file.
+    CREATE TABLE IF NOT EXISTS magertron_holds (
+        id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        namespace           TEXT        NOT NULL,
+        server              TEXT        NOT NULL,
+        tool                TEXT        NOT NULL DEFAULT '',
+        subject             TEXT        NOT NULL,
+        on_behalf_of        TEXT        NOT NULL DEFAULT '',
+        fingerprint         TEXT        NOT NULL,
+        reason              TEXT        NOT NULL DEFAULT '',
+        approvers           JSONB       NOT NULL DEFAULT '[]',
+        arguments           JSONB,
+        state               TEXT        NOT NULL DEFAULT 'pending',
+        created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+        expires_at          TIMESTAMPTZ NOT NULL,
+        decided_by          TEXT        NOT NULL DEFAULT '',
+        decided_at          TIMESTAMPTZ,
+        decision_note       TEXT        NOT NULL DEFAULT '',
+        request_id          TEXT        NOT NULL DEFAULT '',
+        turn_id             TEXT        NOT NULL DEFAULT '',
+        consumed_at         TIMESTAMPTZ,
+        consumed_request_id TEXT        NOT NULL DEFAULT ''
+    );
+    CREATE INDEX IF NOT EXISTS magertron_holds_fp ON magertron_holds (fingerprint, state);
+    CREATE INDEX IF NOT EXISTS magertron_holds_ns ON magertron_holds (namespace, created_at DESC);
+
   02-cost-metering.sql: |
     -- ════════════════════════════════════════════════════════════════════════
     -- Magertron Cost Metering & Contract Rating (v1)
