@@ -14,13 +14,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
 <title>Trust &amp; Security — Magertron</title>
-<meta name="description" content="How Magertron handles access, change, and operations controls — mapped to the SOC 2 Common Criteria. Controls designed and documented; SOC 2 readiness in progress.">
+<meta name="description" content="Magertron has a SOC 2 Type 2 report (Security) from Zero Day CPA, PC, available under NDA. How Magertron handles access, change and operations controls, mapped to the SOC 2 Common Criteria.">
 
 <link rel="canonical" href="https://magertron.com/trust.html">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://magertron.com/trust.html">
 <meta property="og:title" content="Trust &amp; Security — Magertron">
-<meta property="og:description" content="Access, change, and operations controls mapped to the SOC 2 Common Criteria. Designed and documented; readiness in progress.">
+<meta property="og:description" content="SOC 2 Type 2 report (Security), available under NDA. Access, change and operations controls mapped to the SOC 2 Common Criteria.">
 <meta property="og:site_name" content="Magertron">
 <meta property="og:locale" content="en_US">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
@@ -124,6 +124,9 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   font-family: var(--mono); font-size: 18px; color: var(--amber);
 }
 .status-banner h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.status-banner.ok { background: linear-gradient(135deg, var(--success-glow), transparent 80%); border-color: rgba(34, 197, 94, 0.3); }
+.status-banner.ok .ring { border-color: var(--success); color: var(--success); }
+.status-banner .req { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 600; }
 .status-banner p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
 
 /* ── Section scaffolding ──────────────────────────────────────────────── */
@@ -313,11 +316,12 @@ body { overflow-x: clip; }
     <h1>Processes you can <em>verify</em></h1>
     <p class="lede">Magertron's job is to control what AI agents can do and what they spend. The same discipline runs through how the product itself is built: access, change, and operations controls are structural, technical, and live in the code — mapped here against the nine SOC 2 Common Criteria families.</p>
 
-    <div class="status-banner">
-      <div class="ring">◐</div>
+    <div class="status-banner ok">
+      <div class="ring">✓</div>
       <div>
-        <h3>SOC 2 readiness in progress — this is a map, not an attestation</h3>
-        <p>All nine Common Criteria families are authored, with five fully covered by strong, written controls. The status below reflects how thoroughly each family is addressed in product and documentation today — not independent auditor verification. We state where we are honestly, including where the work is still maturing.</p>
+        <h3>SOC 2 Type 2 report — Security</h3>
+        <p>Zero Day CPA, PC examined Magertron's controls for the period July 1 to September 30, 2026 and issued an unqualified opinion on November 3, 2026. The report is available to customers and prospects under NDA.</p>
+        <a class="req" href="mailto:security@magertron.com?subject=SOC%202%20Type%202%20report%20request">Request the report →</a>
       </div>
     </div>
   </div>
@@ -328,43 +332,33 @@ body { overflow-x: clip; }
   <div class="container narrow">
     <div class="section-label">SOC 2 Common Criteria</div>
     <h2 class="section-title">Coverage across CC1–CC9</h2>
-    <p class="section-desc">Each family below names what Magertron does — in product or in a written control narrative — that bears on that criterion. Green means a strong, often end-to-end-verified control exists. Amber means the technical pieces are in place while the organizational or evidence layer matures.</p>
-
-    <div class="coverage-summary">
-      <span class="chip"><span class="swatch green"></span><strong>5</strong>&nbsp;families fully covered</span>
-      <span class="chip"><span class="swatch green"></span><strong>2</strong>&nbsp;substantially covered</span>
-      <span class="chip"><span class="swatch amber"></span><strong>2</strong>&nbsp;maturing</span>
-      <span class="chip"><strong>0</strong>&nbsp;unaddressed</span>
-    </div>
+    <p class="section-desc">Each family below names what Magertron does, in product or in written policy, that bears on that criterion. The auditor's tests and results are in the SOC 2 report.</p>
 
     <div class="cc-list">
       <details class="cc-row" open>
         <summary>
           <span class="cc-id">CC6</span>
           <span class="cc-name">Logical &amp; Physical Access</span>
-          <span class="cc-status green">Strong</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
-          <p>The deepest area. BYOK credentials are referenced, never held — proxy-injected, per-namespace tenant isolation, never logged. OIDC id_token verification against a live IdP, SCIM provisioning with deny-by-construction isolation, and per-tool RBAC. Physical access inherited from the cloud provider.</p>
+          <p>The deepest area. BYOK credentials are referenced, never held — proxy-injected, per-namespace tenant isolation, never logged. OIDC id_token verification against a live IdP, SCIM provisioning with deny-by-construction isolation, and per-tool RBAC. Magertron's own hardware is in a locked, camera-covered server room with a monitored alarm; customer deployments run in each customer's own environment.</p>
         </div>
       </details>
       <details class="cc-row">
         <summary>
           <span class="cc-id">CC8</span>
           <span class="cc-name">Change Management</span>
-          <span class="cc-status green">Strong</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
-          <p>An eight-stage gated release pipeline with dev/prod channel separation, a mandatory peer-review merge gate, build provenance pinned to the commit SHA, and a per-release receipt. A build can no longer ship itself to customers.</p>
+          <p>An eight-stage gated release pipeline with dev/prod channel separation, an independent-review merge gate (enforced by branch protection since October 2026), build provenance pinned to the commit SHA, and a per-release receipt. A build can no longer ship itself to customers.</p>
         </div>
       </details>
       <details class="cc-row">
         <summary>
           <span class="cc-id">CC4</span>
           <span class="cc-name">Monitoring of Controls</span>
-          <span class="cc-status green">Strong</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
@@ -375,7 +369,6 @@ body { overflow-x: clip; }
         <summary>
           <span class="cc-id">CC5</span>
           <span class="cc-name">Control Activities</span>
-          <span class="cc-status green">Strong</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
@@ -386,18 +379,16 @@ body { overflow-x: clip; }
         <summary>
           <span class="cc-id">CC7</span>
           <span class="cc-name">System Operations</span>
-          <span class="cc-status green">Strong</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
-          <p>Scoped to build-and-release, since customers run Magertron themselves. Content-hash drift / rug-pull detection, an audit trail integrated to Splunk, a written supply-chain incident-response and disclosure procedure, and offsite backups with verified restore.</p>
+          <p>Customers run Magertron in their own clusters; Magertron runs its own instance on company-owned hardware. Content-hash drift / rug-pull detection, an audit trail integrated to Splunk, a written supply-chain incident-response and disclosure procedure, and offsite backups with verified restore.</p>
         </div>
       </details>
       <details class="cc-row">
         <summary>
           <span class="cc-id">CC2</span>
           <span class="cc-name">Communication &amp; Information</span>
-          <span class="cc-status green">Covered</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
@@ -408,7 +399,6 @@ body { overflow-x: clip; }
         <summary>
           <span class="cc-id">CC3</span>
           <span class="cc-name">Risk Assessment</span>
-          <span class="cc-status green">Covered</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
@@ -419,7 +409,6 @@ body { overflow-x: clip; }
         <summary>
           <span class="cc-id">CC9</span>
           <span class="cc-name">Risk Mitigation</span>
-          <span class="cc-status amber">Maturing</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
@@ -430,7 +419,6 @@ body { overflow-x: clip; }
         <summary>
           <span class="cc-id">CC1</span>
           <span class="cc-name">Control Environment</span>
-          <span class="cc-status amber">Maturing</span>
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
@@ -471,7 +459,7 @@ body { overflow-x: clip; }
           <span class="cc-chevron">›</span>
         </summary>
         <div class="cc-detail">
-          <p>Every release passes an eight-stage gated pipeline with a mandatory peer-review merge gate and dev/prod channel separation, with provenance pinned to the commit SHA.</p>
+          <p>Every release passes an eight-stage gated pipeline with an independent-review merge gate and dev/prod channel separation, with provenance pinned to the commit SHA.</p>
           <ul>
             <li>Per-release receipt for traceability</li>
             <li>Fix-through-the-pipeline incident response</li>
@@ -535,7 +523,7 @@ body { overflow-x: clip; }
       </div>
     </div>
 
-    <p class="disclaimer">This page is a navigational summary of Magertron's control posture, offered for security and compliance reviewers. It is not a SOC 2 attestation, a readiness assessment, or a statement of compliance — those require a qualified auditor, defined Trust Services Criteria scoping, and evidence collected over a defined period. The status shown reflects documentation and product coverage as of today. Magertron is licensed software that customers deploy on their own infrastructure; the system in scope for these criteria is Magertron's build-and-release operation, not a hosted service.</p>
+    <p class="disclaimer">This page summarizes Magertron's controls for security and compliance reviewers. It is not the SOC 2 report. The report (Zero Day CPA, PC's examination of the Magertron MCP Orchestrator against the Security criteria, July 1 to September 30, 2026) is the authoritative description, including the controls customers are responsible for, and is available under NDA. Magertron is software that customers deploy in their own Kubernetes environments; Magertron has no access to customer-deployed instances.</p>
   </div>
 </section>
 

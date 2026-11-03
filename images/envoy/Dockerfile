@@ -1,14 +1,14 @@
-# Magertron(TM) Envoy: Wolfi's envoy package on wolfi-base. Every file is a
-# tracked apk package, so scanners see all of it. Replaces envoyproxy/envoy
-# distroless (Debian 12), whose glibc Mediums have no Debian fix.
-# Chainguard's own Envoy image is not on their free tier; Wolfi packages are.
-FROM cgr.dev/chainguard/wolfi-base
-# ⚠ apk upgrade (2026-10-25): packages inherited from wolfi-base are refreshed
-# too. 1.38.1 froze brotli 1.2.0-r5 and ca-certificates r2 -> 4 HIGH, grade D.
+# Magertron(TM) Envoy: Chainguard's envoy image, pinned to 1.38.9.
+# 2026-11-03: the free Wolfi repo stops at envoy 1.38.1 (graded F:
+# CVE-2026-111497 critical, CVE-2026-111943 high, both fixed in 1.38.9-r1).
+# This image is one of magertron.com's Chainguard Catalog Select images; it is
+# 14 tracked apk packages, so scanners see all of it.
+# ⚠ Pulling it needs `docker login cgr.dev` with the magertron.com pull token.
+# ⚠ Stay on 1.38 (same xDS as before) until a regression run on a newer minor.
+#   1.38 end of life: 2027-04-23.
 # Rebuild with --pull --no-cache under a new tag whenever Artifact Hub drops a grade.
-RUN apk upgrade --no-cache \
-    && apk add --no-cache envoy-1.38=1.38.1-r0 ca-certificates-bundle \
-    && test -x /usr/bin/envoy && /usr/bin/envoy --version
-# 65532 = the user envoyproxy/envoy distroless runs as; nothing else changes.
+FROM cgr.dev/magertron.com/envoy:1.38.9
+# 65532 = the user envoyproxy/envoy distroless runs as (also this image's default).
 USER 65532
+# Chainguard's default entrypoint is an init script; start Envoy directly, as before.
 ENTRYPOINT ["/usr/bin/envoy"]
