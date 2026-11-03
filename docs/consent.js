@@ -58,6 +58,15 @@
     s.setAttribute('data-pid', 'az6D5saf0GDIfc01');
     s.setAttribute('data-version', '062024');
     document.head.appendChild(s);
+
+    // RB2B visitor identification - same consent rule as the tag above.
+    if (!window.reb2b) {
+      window.reb2b = { loaded: true };
+      var r = document.createElement('script');
+      r.async = true;
+      r.src = 'https://ddwl4m2hdecbv.cloudfront.net/b/46DJ4HVZ8861/46DJ4HVZ8861.js.gz';
+      document.head.appendChild(r);
+    }
   }
 
   function store(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
@@ -88,8 +97,8 @@
   var HTML =
     '<div class="mag-consent-inner">' +
       '<div class="mag-consent-text">' +
-        'We use a first-party and third-party analytics tag to understand site ' +
-        'traffic and improve Magertron. It loads only if you accept. See our ' +
+        'We use third-party analytics and visitor-identification tags to understand ' +
+        'site traffic and improve Magertron. They load only if you accept. See our ' +
         '<a href="/privacy.html">Privacy Policy</a> for details.' +
       '</div>' +
       '<div class="mag-consent-actions">' +
