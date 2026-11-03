@@ -13,19 +13,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>AI Orchestrator vs AWS Bedrock AgentCore | Magertron</title>
-<meta name="description" content="A side-by-side comparison of Magertron's AI Orchestrator and Amazon Bedrock AgentCore. Hosting and governance are different problems — here is what each is built for, and where each one fits.">
+<title>AI Orchestrator — Governance for Every Agent Call | Magertron</title>
+<meta name="description" content="Magertron&#x27;s AI Orchestrator is the governance layer underneath your AI agents: identity, per-tool permissions, policy, spend limits and audit for every MCP, model and API call, in your own Kubernetes cluster.">
 
-<link rel="canonical" href="https://magertron.com/agentcore-comparison.html">
+<link rel="canonical" href="https://magertron.com/ai-orchestrator.html">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://magertron.com/agentcore-comparison.html">
-<meta property="og:title" content="AI Orchestrator vs AWS Bedrock AgentCore">
-<meta property="og:description" content="Hosting MCP servers and governing MCP servers are different problems. Side-by-side comparison of Magertron's AI Orchestrator and AgentCore.">
+<meta property="og:url" content="https://magertron.com/ai-orchestrator.html">
+<meta property="og:title" content="Magertron AI Orchestrator: governance for every agent call">
+<meta property="og:description" content="Magertron&#x27;s AI Orchestrator is the governance layer underneath your AI agents: identity, per-tool permissions, policy, spend limits and audit for every MCP, model and API call, in your own Kubernetes cluster.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
+html { scrollbar-gutter: stable; }
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
@@ -341,220 +342,171 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
   .nav-links a:not(.nav-cta) { display: none; }
 }
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
 </style>
+<script>!function(key) {if (window.reb2b) return;window.reb2b = {loaded: true};var s = document.createElement("script");s.async = true;s.src = "https://ddwl4m2hdecbv.cloudfront.net/b/" + key + "/" + key + ".js.gz";document.getElementsByTagName("script")[0].parentNode.insertBefore(s, document.getElementsByTagName("script")[0]);}("46DJ4HVZ8861");</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Magertron's AI Orchestrator?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A Kubernetes-native governance platform for AI agents. Every MCP tool call, model call and API call your agents make passes through it, where it is identified, authorized, priced, limited and audited."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is the AI Orchestrator an agent framework?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It does not build or run your agents' reasoning loop. It sits underneath whatever framework or harness you use, as the layer the agents call through."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it a model router?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It does not choose models on your behalf. It governs the models and tools you decide to use."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does it run?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "In your own Kubernetes cluster, on any cloud, on-premises or air-gapped, with a free tier up to 20 servers."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who is it for?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Platform, security and finance teams that need to let agents work in production while keeping control of what they can reach, what they spend, and who approved it."
+      }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
 <nav>
   <div class="container">
     <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
-    <div class="nav-links">
-      <a href="/#features">AI Orchestrator</a>
-      <a href="/data-reach.html">AI Data Reach</a>
-      <a href="/#pricing">Pricing</a>
-      <a href="/security.html">Security</a>
-      <a href="https://blog.magertron.com">Blog</a>
-      <a href="demos.html">Watch</a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <a href="index.html#features">AI Orchestrator</a>
+      <a href="data-reach.html">AI Data Reach</a>
+      <a href="agentczar.html">AgentCzar</a>
+      <a href="developers.html">Developers</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
       <a href="/#schedule-demo" class="nav-cta">Try it now </a>
     </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
   </div>
 </nav>
 
 <section class="hero">
   <div class="container">
-    <div class="hero-eyebrow">Comparison</div>
-    <h1>AI Orchestrator vs <em>AWS Bedrock AgentCore</em></h1>
-    <p>
-      Both products run MCP servers. They are not the same product. AgentCore is a managed runtime
-      for the MCP servers AWS hosts. Magertron's AI Orchestrator is a Kubernetes-native governance
-      plane for the MCP servers across your enterprise, wherever they run.
-    </p>
+    <div class="hero-eyebrow">AI Orchestrator</div>
+    <h1>The governance layer <em>underneath</em> your agents</h1>
+    <p>"AI orchestration" can mean many things. Magertron<sup style="font-size:0.5em">™</sup> AI Orchestrator means one: every call your agents make, to an MCP tool, a model or an API, goes through a single place where it is identified, authorized, priced, limited and recorded.</p>
   </div>
 </section>
-
-<section class="glance">
-  <div class="container">
-    <div class="glance-row">
-      <div class="glance-card mcp-orch">
-        <div class="glance-card-label">AI Orchestrator</div>
-        <h3>The Kubernetes-native MCP control plane</h3>
-        <p>
-          Self-hosted in your cluster. Deploys MCP servers as pods, routes through Envoy with JWT
-          authentication, and is being built to federate inventory and governance across managed,
-          self-managed, and shadow MCP servers in your environment.
-        </p>
-        <ul>
-          <li>Runs in your Kubernetes cluster — any cloud, on-prem, air-gapped</li>
-          <li>OSS Free up to 20 servers, no signup, no credit card</li>
-          <li>Your data and credentials never leave your network</li>
-          <li>Fixed-capacity pricing, predictable at any scale</li>
-        </ul>
-      </div>
-      <div class="glance-card agentcore">
-        <div class="glance-card-label">AWS Bedrock AgentCore</div>
-        <h3>Managed runtime substrate for AI agents</h3>
-        <p>
-          A serverless AWS platform for hosting agents and MCP servers in per-session microVMs.
-          Twelve modular components — Runtime, Gateway, Memory, Identity, Browser, Code Interpreter,
-          Observability, and more — billed independently on consumption.
-        </p>
-        <ul>
-          <li>Fully managed by AWS, available in fourteen regions</li>
-          <li>Per-session microVM isolation, up to 8-hour sessions</li>
-          <li>Native integration with Bedrock models and the AWS ecosystem</li>
-          <li>Consumption-based pricing, idle wait time not charged</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="content">
-  <div class="container">
-    <div class="section-eyebrow">The framing</div>
-    <h2>Hosting MCP servers and governing MCP servers are different problems.</h2>
-    <p>
-      When AgentCore launched in October 2025, the obvious question for anyone building MCP
-      infrastructure was: is this the end of the category? It is a serious product from a serious
-      company. AWS shipped microVM-per-session isolation, up to 8-hour session limits,
-      consumption-based pricing that does not charge for I/O wait, and a Gateway service that
-      centralizes MCP tool routing across MCP servers, REST APIs, and AWS Lambda functions.
-      It is good work.
-    </p>
-    <p>
-      It is also not the answer to the enterprise MCP problem, because AgentCore solves
-      <em>hosting</em>, and the enterprise problem is <em>governance</em>.
-    </p>
-  </div>
-</section>
-
 <section class="comparison">
   <div class="container">
-    <div class="section-eyebrow" style="text-align:center; margin-bottom: 32px;">Side by side</div>
-    <details class="cmp-toggle">
-      <summary>
-        <span class="cmp-chevron">&#9656;</span>
-        <span class="cmp-label"><span class="when-closed">Show the full comparison</span><span class="when-open">Hide the full comparison</span></span>
-        <span class="cmp-count">18 dimensions</span>
-      </summary>
-      <div class="cmp-body">
+    <div class="section-eyebrow" style="text-align:center; margin-bottom: 32px;">What it is, and what it is not</div>
     <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th class="col-mag">AI Orchestrator</th>
-          <th class="col-aws">AWS AgentCore</th>
-        </tr>
-      </thead>
+      <thead><tr><th></th><th class="col-mag">Magertron AI Orchestrator</th></tr></thead>
       <tbody>
-        <tr>
-          <th>Deployment model</th>
-          <td>Self-hosted on Kubernetes (any cloud, on-prem, air-gapped)</td>
-          <td>AWS-managed PaaS, 14 regions</td>
-        </tr>
-        <tr>
-          <th>Where MCP servers run</th>
-          <td>Kubernetes pods in your cluster</td>
-          <td>microVMs in AWS infrastructure</td>
-        </tr>
-        <tr>
-          <th>Cloud lock-in</th>
-          <td><span class="pill good">None</span> Runs anywhere k8s runs</td>
-          <td><span class="pill warn">AWS-native</span> Tightly coupled to Bedrock and AWS services</td>
-        </tr>
-        <tr>
-          <th>Pricing model</th>
-          <td>Software licensing. OSS Free up to 20 servers. Tiered pricing above. Fixed capacity.</td>
-          <td>Consumption-based per service. Runtime at $0.0895/vCPU-hr + $0.00945/GB-hr. Twelve components billed independently.</td>
-        </tr>
-        <tr>
-          <th>Predictable at scale</th>
-          <td><span class="pill good">Yes</span> Cost scales with cluster capacity, not request volume</td>
-          <td><span class="pill warn">Conditional</span> Favorable at low/moderate volume; crossover point exists for high-traffic workloads</td>
-        </tr>
-        <tr>
-          <th>Data sovereignty</th>
-          <td><span class="pill good">Full</span> Servers, credentials, and traffic stay in your network</td>
-          <td><span class="pill info">Regional</span> Data resides in selected AWS regions, subject to AWS compliance posture</td>
-        </tr>
-        <tr>
-          <th>Air-gapped deployment</th>
-          <td><span class="pill good">Supported</span></td>
-          <td><span class="pill warn">Not applicable</span> AgentCore is a managed cloud service</td>
-        </tr>
-        <tr>
-          <th>Time to first MCP server</th>
-          <td>Hours. Install k3s, deploy Helm chart, register server.</td>
-          <td>Minutes. Push a container, deploy.</td>
-        </tr>
-        <tr>
-          <th>Session isolation</th>
-          <td>Pod-level isolation, namespace policy</td>
-          <td><span class="pill good">microVM per session</span> Strong tenant isolation</td>
-        </tr>
-        <tr>
-          <th>Session length limit</th>
-          <td>No fixed limit — runs as long as the pod runs</td>
-          <td>Up to 8 hours per session</td>
-        </tr>
-        <tr>
-          <th>Auto-scale to zero</th>
-          <td><span class="pill warn">Not built-in</span> HPA scales replicas, minimums are configurable</td>
-          <td><span class="pill good">Yes</span> Native to AgentCore Runtime</td>
-        </tr>
-        <tr>
-          <th>Auth and identity</th>
-          <td>Bring your own OAuth/OIDC provider. JWT validation at the Envoy data plane.</td>
-          <td>AgentCore Identity (Cognito or external OAuth). Federated identity for tool targets.</td>
-        </tr>
-        <tr>
-          <th>MCP discovery and inventory</th>
-          <td><span class="pill info">Roadmap</span> Federation across config files, endpoint inspection, egress logs, and source repos</td>
-          <td><span class="pill warn">Out of scope</span> AgentCore manages what customers register; does not discover shadow MCP</td>
-        </tr>
-        <tr>
-          <th>Observability</th>
-          <td>Standard Kubernetes telemetry: Prometheus, OpenTelemetry, your existing stack</td>
-          <td>AgentCore Observability via CloudWatch, OpenTelemetry exports, Datadog/Dynatrace integrations</td>
-        </tr>
-        <tr>
-          <th>Memory, code interpreter, browser as services</th>
-          <td><span class="pill warn">Out of scope</span></td>
-          <td><span class="pill good">Included</span> Managed Memory, Code Interpreter, Browser services</td>
-        </tr>
-        <tr>
-          <th>Multi-cloud or hybrid</th>
-          <td><span class="pill good">Yes</span> Same control plane across AWS, GCP, Azure, on-prem</td>
-          <td><span class="pill warn">AWS only</span></td>
-        </tr>
-        <tr>
-          <th>Maturity</th>
-          <td>Pre-1.0, active development by a small team</td>
-          <td>GA since October 2025, mature core with new features still shipping</td>
-        </tr>
-        <tr>
-          <th>Vendor</th>
-          <td>Magertron (independent startup)</td>
-          <td>Amazon Web Services</td>
-        </tr>
+        <tr><th>Agent framework</th><td>No. Use any framework or harness; agents call through it</td></tr>
+        <tr><th>Model router</th><td>No. You choose the models; it governs them</td></tr>
+        <tr><th>MCP control plane</th><td>Yes. Inventory, identity, per-tool permissions, policy, audit</td></tr>
+        <tr><th>AI spend control</th><td>Yes. Metering, chargeback and caps per person and department</td></tr>
+        <tr><th>Human approval</th><td>Yes. Risky calls held for a named approver, released once</td></tr>
+        <tr><th>Where it runs</th><td>Your Kubernetes cluster: any cloud, on-premises, air-gapped</td></tr>
       </tbody>
     </table>
-      </div>
-    </details>
   </div>
 </section>
-
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">Why a separate layer</div>
+    <h2>Agents change every month. Governance shouldn't.</h2>
+    <p>Frameworks, models and agent tools will keep changing. The rules for what an agent may do, for whom, and at what cost belong in one layer that outlives them. That is why Magertron governs the calls rather than the agents. See the <a href="mcp-control-plane.html">MCP control plane</a> and <a href="ai-spend-control.html">AI spend control</a> in detail, or <a href="developers.html">build an agent on it</a>.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">Questions</div>
+    <h2>Frequently asked</h2>
+    <h3 style="margin-top:28px">What is Magertron's AI Orchestrator?</h3>
+    <p>A Kubernetes-native governance platform for AI agents. Every MCP tool call, model call and API call your agents make passes through it, where it is identified, authorized, priced, limited and audited.</p>
+    <h3 style="margin-top:28px">Is the AI Orchestrator an agent framework?</h3>
+    <p>No. It does not build or run your agents' reasoning loop. It sits underneath whatever framework or harness you use, as the layer the agents call through.</p>
+    <h3 style="margin-top:28px">Is it a model router?</h3>
+    <p>No. It does not choose models on your behalf. It governs the models and tools you decide to use.</p>
+    <h3 style="margin-top:28px">Where does it run?</h3>
+    <p>In your own Kubernetes cluster, on any cloud, on-premises or air-gapped, with a free tier up to 20 servers.</p>
+    <h3 style="margin-top:28px">Who is it for?</h3>
+    <p>Platform, security and finance teams that need to let agents work in production while keeping control of what they can reach, what they spend, and who approved it.</p>
+  </div>
+</section>
 <section class="cta">
   <div class="container">
     <div class="cta-box">
-      <h2>See where AI Orchestrator fits in your stack.</h2>
-      <p>
-        Talk through your environment, your existing infrastructure, and where MCP governance fits.
-        Or grab the Helm chart and try it yourself.
-      </p>
+      <h2>Run your agents through one governed layer.</h2>
+      <p>Free up to 20 servers, no signup. Or schedule a walkthrough.</p>
       <div class="cta-actions">
-        <a href="/#schedule-demo" class="btn-primary">Try it now </a>
-        <a href="https://github.com/magertron/orchestrator" class="btn-secondary" target="_blank">View on GitHub</a>
+        <a href="/#schedule-demo" class="btn-primary">Schedule a Demo</a>
+        <a href="index.html#pricing" class="btn-secondary">See pricing</a>
       </div>
     </div>
   </div>
@@ -565,45 +517,52 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
-        <p>The Kubernetes-native MCP control plane. Deploy, govern, and observe MCP servers in your own cluster.</p>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
       </div>
+
       <div class="footer-col">
         <h4>Product</h4>
         <ul>
-          <li><a href="/#features">AI Orchestrator</a></li>
-          <li><a href="/data-reach.html">AI Data Reach</a></li>
-          <li><a href="/#pricing">Pricing</a></li>
-          <li><a href="/#install">Install</a></li>
+          <li><a href="index.html#features">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="agentczar.html">AgentCzar</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
-          <li><a href="/developers.html">Build an Agent</a></li>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
           <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
           <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
         </ul>
       </div>
+
       <div class="footer-col">
         <h4>Resources</h4>
         <ul>
           <li><a href="rfp/">AI Governance RFP Template</a></li>
           <li><a href="demos.html">Watch</a></li>
-          <li><a href="/security.html">Security</a></li>
-          <li><a href="/siem-integration.html">SIEM Integration</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
-          <li><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a></li>
-          <li><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
         </ul>
       </div>
+
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="/trust.html">Trust</a></li>
-          <li><a href="/about.html">About</a></li>
-          <li><a href="/compliance.html">Compliance</a></li>
-          <li><a href="/privacy.html">Privacy</a></li>
-          <li><a href="/#schedule-demo">Contact</a></li>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
         </ul>
       </div>
+
       <div class="footer-col">
         <h4>Social</h4>
         <ul>
@@ -613,10 +572,11 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
         </ul>
       </div>
     </div>
+
     <div class="footer-bottom">
       <p>&copy; 2026 Magertron. All rights reserved.</p>
       <div class="links">
-        <a href="/#schedule-demo">Contact</a>
+        <a href="mailto:sales@magertron.com">Contact</a>
       </div>
     </div>
   </div>
