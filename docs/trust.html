@@ -127,6 +127,10 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .status-banner.ok { background: linear-gradient(135deg, var(--success-glow), transparent 80%); border-color: rgba(34, 197, 94, 0.3); }
 .status-banner.ok .ring { border-color: var(--success); color: var(--success); }
 .status-banner .req { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 600; }
+.status-banner .seal { flex-shrink: 0; display: block; width: 84px; height: 84px; border-radius: 50%;
+  background: #fff; padding: 6px; }
+.status-banner .seal img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.status-banner .seal:hover { text-decoration: none; }
 .status-banner p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
 
 /* ── Section scaffolding ──────────────────────────────────────────────── */
@@ -317,7 +321,9 @@ body { overflow-x: clip; }
     <p class="lede">Magertron's job is to control what AI agents can do and what they spend. The same discipline runs through how the product itself is built: access, change, and operations controls are structural, technical, and live in the code — mapped here against the nine SOC 2 Common Criteria families.</p>
 
     <div class="status-banner ok">
-      <div class="ring">✓</div>
+      <!-- AICPA SOC 2 seal: must link to aicpa.org/soc4so; unaltered except size.
+           Remove by 2027-11-03 unless a new report is issued and re-registered. -->
+      <a class="seal" href="https://www.aicpa.org/soc4so" target="_blank" rel="noopener" title="AICPA SOC 2"><img src="img/aicpa-soc2-seal.png" alt="AICPA SOC 2" width="72" height="72"></a>
       <div>
         <h3>SOC 2 Type 2 report — Security</h3>
         <p>Zero Day CPA, PC examined Magertron's controls for the period July 1 to September 30, 2026 and issued an unqualified opinion on November 3, 2026. The report is available to customers and prospects under NDA.</p>
