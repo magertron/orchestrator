@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>AI Orchestrator vs Gravitee — AI Agent and MCP Governance Compared | Magertron</title>
+<meta name="description" content="A side-by-side comparison of Magertron&#x27;s AI Orchestrator and Gravitee&#x27;s AI Agent Management (MCP Proxy, LLM Proxy, Gravitee Gamma). An API platform that added agents, and a platform built for agent governance and spend: what each is for, and where each fits.">
+
+<link rel="canonical" href="https://magertron.com/gravitee-comparison.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/gravitee-comparison.html">
+<meta property="og:title" content="AI Orchestrator vs Gravitee: AI agent and MCP governance compared">
+<meta property="og:description" content="A side-by-side comparison of Magertron&#x27;s AI Orchestrator and Gravitee&#x27;s AI Agent Management (MCP Proxy, LLM Proxy, Gravitee Gamma). An API platform that added agents, and a platform built for agent governance and spend: what each is for, and where each fits.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+html { scrollbar-gutter: stable; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav (matches index.html) */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* Hero */
+.hero { padding: 110px 0 36px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 520px; height: 340px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.6; pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
+}
+.hero h1 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(28px, 3.6vw, 40px); line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 16px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto 16px; line-height: 1.65;
+}
+.hero .meta {
+  font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+  margin-top: 32px;
+}
+
+/* Section structure */
+section.content { padding: 60px 0; }
+section.content .container { max-width: 920px; }
+.section-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 12px;
+}
+section.content h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 20px;
+}
+section.content h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em; margin: 32px 0 12px;
+}
+section.content p {
+  font-size: 17px; color: var(--text-secondary); line-height: 1.8;
+  margin-bottom: 16px;
+}
+section.content strong { color: var(--text); font-weight: 600; }
+section.content em { color: var(--text); font-style: italic; }
+
+/* Two-column "at a glance" cards */
+.glance { padding: 40px 0 60px; }
+.glance .container { max-width: 1100px; }
+.glance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.glance-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px;
+}
+.glance-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.glance-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.glance-card-label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 8px;
+}
+.glance-card.mcp-orch .glance-card-label { color: var(--accent-text); }
+.glance-card.agentcore .glance-card-label { color: #ff9900; }
+.glance-card h3 {
+  font-family: var(--serif); font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 16px;
+}
+.glance-card p {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px;
+}
+.glance-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+}
+.glance-card ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start;
+}
+.glance-card ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.glance-card.agentcore ul li::before { color: #ff9900; }
+
+/* Comparison table */
+.comparison { padding: 40px 0 60px; }
+.comparison .container { max-width: 1100px; }
+.comparison table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.comparison th, .comparison td {
+  padding: 18px 24px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comparison thead th {
+  background: rgba(255, 255, 255, 0.02);
+  font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-tertiary); font-weight: 500;
+}
+.comparison thead th.col-mag { color: var(--accent-text); }
+.comparison thead th.col-aws { color: #ff9900; }
+.comparison tbody tr:last-child th,
+.comparison tbody tr:last-child td { border-bottom: none; }
+.comparison tbody th {
+  font-family: var(--sans); font-weight: 600; font-size: 14px;
+  color: var(--text); width: 24%;
+}
+.comparison tbody td {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* Collapsible wrapper for the comparison table */
+.cmp-toggle { margin: 0; }
+.cmp-toggle > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 24px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  transition: border-color 0.2s, background 0.2s;
+}
+.cmp-toggle > summary::-webkit-details-marker { display: none; }
+.cmp-toggle > summary:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+.cmp-toggle > summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.cmp-chevron {
+  flex-shrink: 0; color: var(--text-tertiary); font-size: 13px;
+  transition: transform 0.2s, color 0.2s;
+}
+.cmp-toggle[open] > summary .cmp-chevron { transform: rotate(90deg); color: var(--accent-text); }
+.cmp-label { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--text); }
+.cmp-count {
+  margin-left: auto; flex-shrink: 0;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary);
+}
+.cmp-toggle .when-open { display: none; }
+.cmp-toggle[open] .when-open { display: inline; }
+.cmp-toggle[open] .when-closed { display: none; }
+.cmp-body { margin-top: 16px; }
+
+/* Pills inside table cells */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-right: 6px; margin-bottom: 4px;
+}
+.pill.good { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+.pill.warn { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.3); }
+.pill.info { background: rgba(96, 165, 250, 0.1); color: var(--accent-text); border: 1px solid rgba(96, 165, 250, 0.3); }
+.pill.neutral { background: rgba(134, 148, 168, 0.1); color: var(--text-secondary); border: 1px solid rgba(134, 148, 168, 0.3); }
+
+/* "Pick X when..." section */
+.pick { padding: 60px 0; }
+.pick .container { max-width: 1100px; }
+.pick h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 48px; text-align: center;
+}
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.pick-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px;
+}
+.pick-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.pick-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.pick-card .label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 12px;
+}
+.pick-card.mcp-orch .label { color: var(--accent-text); }
+.pick-card.agentcore .label { color: #ff9900; }
+.pick-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  margin-bottom: 24px; letter-spacing: -0.02em;
+}
+.pick-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 14px;
+}
+.pick-card ul li {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pick-card ul li::before {
+  content: '✓'; color: var(--success); flex-shrink: 0; font-weight: 700;
+}
+.pick-card ul li strong { color: var(--text); font-weight: 600; }
+
+/* Closing CTA */
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 60px 48px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 700; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 32px; position: relative; }
+.cta-actions { display: flex; gap: 16px; justify-content: center; position: relative; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; color: white; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px;
+  font-weight: 500; font-size: 14px; border: 1px solid var(--border); text-decoration: none;
+  transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; color: var(--text); }
+
+/* Footer */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .glance-row, .pick-row { grid-template-columns: 1fr; }
+  .comparison table { font-size: 13px; }
+  .comparison th, .comparison td { padding: 14px 16px; }
+  .comparison tbody th { width: 30%; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the difference between Magertron and Gravitee?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both are API management platforms that govern AI agents. They started from opposite ends. Gravitee started with REST APIs, event streams and access management, then added an MCP Proxy, an LLM Proxy and, in Gravitee Gamma, agent catalogs and authorization policies. Magertron started with agents, and manages REST APIs, MCP tools, models and event streams through one gateway: OpenAPI import, a developer portal, per-consumer keys and metering. Every call is checked for the agent and the person it acts for, judged by your own policy engine if you want, rated on your contracts with chargeback, and held for a named approver when it is risky."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I use Gravitee or Magertron?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "If you already run Gravitee API Management and want to extend it to agents, Gravitee's agent features build on what you have. If you want APIs, MCP tools, models and event streams managed and metered the same way, with chargeback, delegation and approvals inside your own cluster, Magertron is built for that."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Magertron and Gravitee be used together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. A Gravitee-managed API can be registered in Magertron like any other REST API, so agents reach it through Magertron's per-tool permissions, policy and metering."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does each one run?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Magertron runs in your own Kubernetes cluster: any cloud, on-premises or air-gapped. Gravitee Enterprise Edition offers self-hosted, hybrid (Gravitee hosts the control plane) and fully Gravitee-managed deployments; its Community Edition is self-hosted."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Gravitee's AI agent management included in its open-source edition?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Gravitee's documentation lists AI Agent Management as an Enterprise Edition feature."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <a href="index.html#features">AI Orchestrator</a>
+      <a href="data-reach.html">AI Data Reach</a>
+      <a href="agentczar.html">AgentCzar</a>
+      <a href="developers.html">Developers</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Comparison</div>
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">AI Orchestrator vs <em>Gravitee</em></h1>
+    <p style="line-height: 1.5;">Both govern AI agents and MCP servers, from different starting points. Gravitee is an API management platform that added agent management afterward. Magertron<sup style="font-size:0.5em">™</sup> AI Orchestrator was built for APIs, MCPs, LLMs, streaming events and agents from day one.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">The framing</div>
+    <h2>An API platform that added agents versus an orchestration platform native to agents.</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Gravitee has recently added an MCP Proxy, an LLM Proxy and, in Gravitee Gamma, an agent catalog.</p>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Every API, model message, event stream or tool call is checked for the agent <em>and</em> the person it acts for. It is priced on your vendor contracts and charged back to its rightful business owner. Streams are a first class citizen just like tool calls.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">The honest take</div>
+    <h2>Which one fits</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;"><strong>Choose Gravitee</strong> when you already run Gravitee API Management and you want to add agent management.</p>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;"><strong>Choose Magertron</strong> when you want APIs, MCP tools, models and event streams managed in one place, with chargeback, approvals and your own policy engine, inside your cluster.</p>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;"><strong>Or use both.</strong> A Gravitee-managed API can be registered in Magertron like any REST API, so your agents reach it through Magertron's permissions, policy and metering.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">Questions</div>
+    <h2>Frequently asked</h2>
+    <style>
+      .faq-item { border-top: 1px solid var(--border); }
+      .faq-item:last-of-type { border-bottom: 1px solid var(--border); }
+      .faq-item summary { list-style: none; cursor: pointer; padding: 14px 0; display: flex;
+        align-items: center; gap: 12px; font-size: 17px; font-weight: 600; color: var(--text); }
+      .faq-item summary::-webkit-details-marker { display: none; }
+      .faq-item summary .faq-chev { color: var(--text-tertiary); font-size: 12px;
+        transition: transform .15s; }
+      .faq-item[open] summary .faq-chev { transform: rotate(90deg); color: var(--accent-text); }
+      .faq-item p { margin: 0 0 14px 24px; }
+    </style>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>What is the difference between Magertron and Gravitee?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Both are API management platforms that govern AI agents. They started from opposite ends. Gravitee started with REST APIs, event streams and access management, then added an MCP Proxy, an LLM Proxy and, in Gravitee Gamma, agent catalogs and authorization policies. Magertron started with agents, and manages REST APIs, MCP tools, models and event streams through one gateway: OpenAPI import, a developer portal, per-consumer keys and metering. Every call is checked for the agent and the person it acts for, judged by your own policy engine if you want, rated on your contracts with chargeback, and held for a named approver when it is risky.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Should I use Gravitee or Magertron?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">If you already run Gravitee API Management and want to extend it to agents, Gravitee's agent features build on what you have. If you want APIs, MCP tools, models and event streams managed and metered the same way, with chargeback, delegation and approvals inside your own cluster, Magertron is built for that.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Can Magertron and Gravitee be used together?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Yes. A Gravitee-managed API can be registered in Magertron like any other REST API, so agents reach it through Magertron's per-tool permissions, policy and metering.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Where does each one run?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Magertron runs in your own Kubernetes cluster: any cloud, on-premises or air-gapped. Gravitee Enterprise Edition offers self-hosted, hybrid (Gravitee hosts the control plane) and fully Gravitee-managed deployments; its Community Edition is self-hosted.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Is Gravitee's AI agent management included in its open-source edition?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Gravitee's documentation lists AI Agent Management as an Enterprise Edition feature.</p>
+    </details>
+    <h3 style="margin-top:36px; font-size: 17px;">Sources</h3>
+    <ul style="font-size: 16px; line-height: 1.6;">
+      <li><a href="https://www.gravitee.io/blog/mcp-proxy-unified-governance-for-agents-tools" target="_blank" rel="noopener">Gravitee blog: MCP Proxy, unified governance for agents and tools (Jan 2026)</a></li>
+      <li><a href="https://www.gravitee.io/blog/llm-proxy-one-front-door-to-multiple-llm-providers" target="_blank" rel="noopener">Gravitee blog: LLM Proxy, one front door to multiple LLM providers (Jan 2026)</a></li>
+      <li><a href="https://documentation.gravitee.io/gravitee-gamma/platform-management/gamma-release-notes" target="_blank" rel="noopener">Gravitee Gamma release notes (June 2026)</a></li>
+      <li><a href="https://documentation.gravitee.io/apim/4.11/readme/enterprise-edition" target="_blank" rel="noopener">Gravitee APIM Enterprise Edition (docs, 4.11)</a></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#features">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="agentczar.html">AgentCzar</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="mailto:sales@magertron.com">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/consent.js" defer></script>
+
+
+</body>
+</html>
