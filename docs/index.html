@@ -37,7 +37,7 @@
 <meta name="twitter:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
 <meta name="twitter:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user">
 
-<meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
+<meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, AI control plane, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
 <meta name="author" content="Magertron">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 
@@ -1193,7 +1193,7 @@ body { overflow-x: clip; }
   <div class="container">
     <div class="section-label">Capabilities</div>
     <div class="section-title">The full server lifecycle —<br>in your Kubernetes cluster</div>
-    <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Most platforms cover one or two of these. Magertron covers all five. <a href="ai-orchestrator.html" style="color: var(--accent-text); text-decoration: none; white-space: nowrap;">What an AI Orchestrator is, and isn't &rarr;</a></div>
+    <div class="section-desc">Deploy, registry, gateway, governance, observability. One Helm chart. Most platforms cover one or two of these. Magertron covers all five.</div>
 
     <div class="feature-grid">
       <a href="#server-management" class="feature-card clickable">
@@ -1641,6 +1641,20 @@ body { overflow-x: clip; }
 <!-- CTA -->
 
 <!-- Footer -->
+<!-- mag-faq -->
+<section style="padding:72px 0;border-top:1px solid var(--border)">
+  <style>.mag-faq-item{border-top:1px solid var(--border)}.mag-faq-item:last-of-type{border-bottom:1px solid var(--border)}.mag-faq-item summary{list-style:none;cursor:pointer;padding:14px 0;display:flex;align-items:center;gap:12px;font-size:17px;font-weight:600;color:var(--text)}.mag-faq-item summary::-webkit-details-marker{display:none}.mag-faq-item .chev{color:var(--text-tertiary,#5c6a80);font-size:12px;transition:transform .15s}.mag-faq-item[open] .chev{transform:rotate(90deg);color:var(--accent-text)}.mag-faq-item p{margin:0 0 14px 24px;font-size:16px;line-height:1.6;color:var(--text-secondary)}</style>
+  <div class="container" style="max-width:860px">
+    <div class="section-label">Questions</div>
+    <div class="section-title" style="margin-bottom:20px">Frequently asked</div>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>What is an AI control plane?</summary><p>The layer that decides which AI agents may call which MCP tools, models, APIs and event streams, under whose identity and within what limits, and records every decision. Magertron's AI Orchestrator is an AI control plane.</p></details>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>What is Magertron's AI Orchestrator?</summary><p>A Kubernetes-native platform that governs every call your AI agents make, to MCP tools, models, APIs and event streams: identity, permissions, policy, spend limits, approvals and audit, in one gateway.</p></details>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>Is it an agent framework or a model router?</summary><p>Neither. It sits underneath whatever agent framework or harness you use, and governs the models and tools you choose. It does not build agents or pick models for you.</p></details>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>Where does it run?</summary><p>In your own Kubernetes cluster, on any cloud, on-premises or air-gapped. Free up to 20 servers.</p></details>
+  </div>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is an AI control plane?", "acceptedAnswer": {"@type": "Answer", "text": "The layer that decides which AI agents may call which MCP tools, models, APIs and event streams, under whose identity and within what limits, and records every decision. Magertron's AI Orchestrator is an AI control plane."}}, {"@type": "Question", "name": "What is Magertron's AI Orchestrator?", "acceptedAnswer": {"@type": "Answer", "text": "A Kubernetes-native platform that governs every call your AI agents make, to MCP tools, models, APIs and event streams: identity, permissions, policy, spend limits, approvals and audit, in one gateway."}}, {"@type": "Question", "name": "Is it an agent framework or a model router?", "acceptedAnswer": {"@type": "Answer", "text": "Neither. It sits underneath whatever agent framework or harness you use, and governs the models and tools you choose. It does not build agents or pick models for you."}}, {"@type": "Question", "name": "Where does it run?", "acceptedAnswer": {"@type": "Answer", "text": "In your own Kubernetes cluster, on any cloud, on-premises or air-gapped. Free up to 20 servers."}}]}</script>
+</section>
+
 <footer>
   <div class="container">
     <div class="footer-grid">
@@ -1671,10 +1685,10 @@ body { overflow-x: clip; }
           <li><a href="demos.html">Watch</a></li>
           <li><a href="developers.html">Build an Agent</a></li>
           <li><a href="cost.html">Cost &amp; Reporting</a></li>
-          <li><a href="security.html">Security</a></li>
           <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
           <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
         </ul>
       </div>
@@ -1683,6 +1697,7 @@ body { overflow-x: clip; }
         <h4>Company</h4>
         <ul>
           <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
           <li><a href="about.html">About</a></li>
           <li><a href="compliance.html">Compliance</a></li>
           <li><a href="privacy.html">Privacy</a></li>

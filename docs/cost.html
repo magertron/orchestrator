@@ -514,7 +514,7 @@ body { overflow-x: clip; }
   <div class="container">
     <div class="hero-badge"><span class="dot"></span> For the office of the CFO</div>
     <h1>Govern the spend.<br><em>Not just the traffic.</em></h1>
-    <p class="lede">Tens of thousands of AI agents are transacting through metered MCP servers — and no one owns the budget line. Magertron gives finance a real-time lever on agent spend: per-tool budgets, chargeback by team, and a throttle at the gateway. <a href="ai-spend-control.html" style="color: var(--accent-text); text-decoration: none; white-space: nowrap;">How an AI spend control plane works &rarr;</a></p>
+    <p class="lede">Tens of thousands of AI agents are transacting through metered MCP servers — and no one owns the budget line. Magertron gives finance a real-time lever on agent spend: per-tool budgets, chargeback by team, and a throttle at the gateway.</p>
     <div class="hero-actions">
       <a href="#" class="btn-primary" onclick="openDemoModal(event)">Try it now → </a>
       <a href="#dashboard" class="btn-secondary">See the reporting →</a>
@@ -644,6 +644,20 @@ body { overflow-x: clip; }
   </div>
 </section>
 
+<!-- mag-faq -->
+<section style="padding:72px 0;border-top:1px solid var(--border)">
+  <style>.mag-faq-item{border-top:1px solid var(--border)}.mag-faq-item:last-of-type{border-bottom:1px solid var(--border)}.mag-faq-item summary{list-style:none;cursor:pointer;padding:14px 0;display:flex;align-items:center;gap:12px;font-size:17px;font-weight:600;color:var(--text)}.mag-faq-item summary::-webkit-details-marker{display:none}.mag-faq-item .chev{color:var(--text-tertiary,#5c6a80);font-size:12px;transition:transform .15s}.mag-faq-item[open] .chev{transform:rotate(90deg);color:var(--accent-text)}.mag-faq-item p{margin:0 0 14px 24px;font-size:16px;line-height:1.6;color:var(--text-secondary)}</style>
+  <div class="container" style="max-width:860px">
+    <div class="section-label">Questions</div>
+    <div class="section-title" style="margin-bottom:20px">Frequently asked</div>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>What is AI spend control?</summary><p>Measuring what every AI agent costs, model tokens and tool calls alike, giving that cost an owner, and enforcing limits before money is spent rather than after the invoice arrives.</p></details>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>Can Magertron cap spend per person or department?</summary><p>Yes. Allowances per person and per department are set in your policy and enforced at the gateway on every call. When a cap is reached, the next call is refused before it is made.</p></details>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>What happens when an agent acts on someone's behalf?</summary><p>The call is charged to the person the agent works for, and both identities are recorded, so spend lands with the right owner.</p></details>
+      <details class="mag-faq-item"><summary><span class="chev">&#9656;</span>Does Magertron see my prompts?</summary><p>Cost reporting works on metered calls and turn identifiers. Reading a prompt's text is a separate, audited step.</p></details>
+  </div>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is AI spend control?", "acceptedAnswer": {"@type": "Answer", "text": "Measuring what every AI agent costs, model tokens and tool calls alike, giving that cost an owner, and enforcing limits before money is spent rather than after the invoice arrives."}}, {"@type": "Question", "name": "Can Magertron cap spend per person or department?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Allowances per person and per department are set in your policy and enforced at the gateway on every call. When a cap is reached, the next call is refused before it is made."}}, {"@type": "Question", "name": "What happens when an agent acts on someone's behalf?", "acceptedAnswer": {"@type": "Answer", "text": "The call is charged to the person the agent works for, and both identities are recorded, so spend lands with the right owner."}}, {"@type": "Question", "name": "Does Magertron see my prompts?", "acceptedAnswer": {"@type": "Answer", "text": "Cost reporting works on metered calls and turn identifiers. Reading a prompt's text is a separate, audited step."}}]}</script>
+</section>
+
 <footer>
   <div class="container">
     <div class="footer-grid">
@@ -674,10 +688,10 @@ body { overflow-x: clip; }
           <li><a href="demos.html">Watch</a></li>
           <li><a href="developers.html">Build an Agent</a></li>
           <li><a href="cost.html">Cost &amp; Reporting</a></li>
-          <li><a href="security.html">Security</a></li>
           <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
           <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
         </ul>
       </div>
@@ -686,6 +700,7 @@ body { overflow-x: clip; }
         <h4>Company</h4>
         <ul>
           <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
           <li><a href="about.html">About</a></li>
           <li><a href="compliance.html">Compliance</a></li>
           <li><a href="privacy.html">Privacy</a></li>
