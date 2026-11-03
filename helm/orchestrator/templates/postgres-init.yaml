@@ -121,6 +121,10 @@ data:
         -- deployments, role changes) from events emitted by ext_authz (caller
         -- plane: per-tool-invocation decisions). Two pipelines write to this
         -- one table; SIEM filtering happens by 'plane'.
+    -- Merchant portfolio refused count (4.2.20, 2026-11-02): refused caller rows
+    -- only, so the portfolio counts them from the index instead of the table.
+    CREATE INDEX IF NOT EXISTS audit_events_caller_refused_idx ON audit_events (ts)
+        INCLUDE (actor, on_behalf_of_subject) WHERE plane = 'caller' AND status_id = 2;
         plane             VARCHAR(8)   NOT NULL DEFAULT 'admin'
                                        CHECK (plane IN ('admin', 'caller')),
 
