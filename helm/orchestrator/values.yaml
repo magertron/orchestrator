@@ -2478,6 +2478,22 @@ journal:
 # Everpay: x-everpay-api-key
 merchantKeyHeaders: ""
 
+# ── Audit retention (2026-11-03) ────────────────────────────────────────────
+# Rendered into the orchestrator's config.yaml (templates/configmap.yaml).
+# A policy listed here REPLACES the code default for that table; one left out
+# keeps its default (audit_events 90d, runtime_policy_audit 30d).
+# 180 days on audit_events: SOC 2 evidence must outlive the audit period.
+# The worker refuses anything under 7 days. Changes need a restart.
+retention:
+  enabled: true
+  policies:
+    audit_events:
+      enabled: true
+      retentionDays: 180
+    runtime_policy_audit:
+      enabled: true
+      retentionDays: 30
+
 # ── Billing retention ───────────────────────────────────────────────────────
 # Deleting a server never destroys its billed usage by default: a DELETE on a
 # server with billing records returns 409. allowPurgeOnDelete=true lets

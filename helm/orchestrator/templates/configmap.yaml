@@ -38,6 +38,11 @@ data:
       node_id: {{ .Values.envoy.xds.nodeId | quote }}
       cluster_name: {{ .Values.envoy.xds.clusterName | quote }}
 
+    {{- with .Values.retention }}
+    retention:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
     observability:
       log_level: {{ .Values.observability.logLevel | quote }}
       log_format: {{ .Values.observability.logFormat | quote }}
