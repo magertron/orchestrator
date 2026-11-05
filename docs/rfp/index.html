@@ -154,6 +154,30 @@ body { overflow-x: clip; }
   pre, table { max-width: 100%; }
 }
 </style>
+<style id="mag-solutions-nav">
+.nav-drop { position: relative; }
+.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+  color: var(--text-secondary); transition: color 0.2s; }
+.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
+.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
+.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
+  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
+.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
+.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
+@media (max-width: 1180px) { .nav-links { gap: 22px; } }
+@media (max-width: 768px) {
+  .nav-links .nav-drop { display: none; }
+  nav.open .nav-links .nav-drop { display: block; }
+  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
+    color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
+    box-shadow: none; padding: 0 0 0 14px; background: none; }
+  nav.open .nav-drop-menu::before { display: none; }
+}
+</style>
 </head>
 <body>
 
@@ -164,6 +188,15 @@ body { overflow-x: clip; }
       <a href="../index.html#features">AI Orchestrator</a>
       <a href="../data-reach.html">AI Data Reach</a>
       <a href="../agentczar.html">AgentCzar</a>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="this.parentNode.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="../solutions-banking.html">Banking</a>
+          <a href="../solutions-accounts-payable.html">Accounts payable</a>
+          <a href="../solutions-crm.html">Sales &amp; CRM</a>
+          <a href="../solutions-network-operations.html">Network operations</a>
+        </div>
+      </div>
       <a href="../developers.html">Developers</a>
       <a href="../index.html#pricing">Pricing</a>
       <a href="../cost.html">Cost &amp; Reporting</a>
