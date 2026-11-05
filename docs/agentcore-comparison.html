@@ -431,7 +431,21 @@ body { overflow-x: clip; }
           <a href="solutions-network-operations.html">Network operations</a>
         </div>
       </div>
-      <a href="developers.html">Developers</a>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="developers.html">Overview</a>
+          <a href="index.html#install">Install</a>
+          <a href="developer-portal.html">Developer Portal</a>
+          <a href="api/v1/">API Documentation</a>
+          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/magertron/agent-examples" target="_blank" rel="noopener">Build an agent</a>
+          <a href="vscode/">VS Code</a>
+          <a href="devin/">Devin</a>
+          <a href="cursor/">Cursor</a>
+          <a href="claude-code/">Claude Code</a>
+        </div>
+      </div>
       <a href="index.html#pricing">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
