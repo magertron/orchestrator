@@ -521,7 +521,7 @@ body { overflow-x: clip; }
       <a href="index.html#pricing">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+      <a href="#" onclick="openDemoModal(event)" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -545,8 +545,6 @@ body { overflow-x: clip; }
 </section>
 <section class="content">
   <div class="container">
-    <div class="section-eyebrow">How it plays out</div>
-    <h2>One fibre cut, step by step</h2>
     <style>
       .sol-steps { margin: 8px 0 0; padding-left: 22px; }
       .sol-steps li { font-size: 16px; line-height: 1.6; margin-bottom: 10px; padding-left: 4px; }
@@ -566,15 +564,9 @@ body { overflow-x: clip; }
       .faq-item[open] summary .faq-chev { transform: rotate(90deg); color: var(--accent-text); }
       .faq-item p { margin: 0 0 14px 24px; }
     </style>
-    <ol class="sol-steps">
-      <li>A fibre is cut. The network raises an alarm on the bus.</li>
-      <li><span class="sol-tag sol-allow">Allowed</span>The diagnosis agent reads the alarm and checks the network, read-only.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>It tries to fix the fault itself. Diagnosis agents can't change the network.</li>
-      <li><span class="sol-tag sol-allow">Allowed</span>It publishes its diagnosis.</li>
-      <li><span class="sol-tag sol-allow">Allowed</span>The operator agent, acting for the on-call engineer, publishes the fix to the commands topic. Only operators may.</li>
-      <li>The executor, on another host, reroutes traffic. The network is back.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>Remove the engineer's operator role and cut the fibre again. The operator's fix is refused, naming the engineer, and the network waits for a person.</li>
-    </ol>
+    <figure class="sol-shot" style="margin: 0;">
+      <a href="img/solutions/solutions-network-operations.webp" target="_blank" rel="noopener" title="Open full size"><img src="img/solutions/solutions-network-operations.webp" alt="Network incident, guided demo: a fibre cut, the alarm on Kafka, and the diagnosis agent refused twice when it tries to fix the network itself, before it publishes its finding" width="1400" height="1501" loading="lazy" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.45);"></a>
+    </figure>
   </div>
 </section>
 <section class="content">

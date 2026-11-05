@@ -521,7 +521,7 @@ body { overflow-x: clip; }
       <a href="index.html#pricing">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+      <a href="#" onclick="openDemoModal(event)" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -545,8 +545,6 @@ body { overflow-x: clip; }
 </section>
 <section class="content">
   <div class="container">
-    <div class="section-eyebrow">How it plays out</div>
-    <h2>One invoice run, step by step</h2>
     <style>
       .sol-steps { margin: 8px 0 0; padding-left: 22px; }
       .sol-steps li { font-size: 16px; line-height: 1.6; margin-bottom: 10px; padding-left: 4px; }
@@ -566,14 +564,9 @@ body { overflow-x: clip; }
       .faq-item[open] summary .faq-chev { transform: rotate(90deg); color: var(--accent-text); }
       .faq-item p { margin: 0 0 14px 24px; }
     </style>
-    <ol class="sol-steps">
-      <li><span class="sol-tag sol-allow">Allowed</span>The agent pays a routine $4,820 invoice to an approved vendor.</li>
-      <li><span class="sol-tag sol-allow">Allowed</span>An email "from Northwind Logistics" says they changed banks. The agent records the new account. Recording a vendor moves no money.</li>
-      <li><span class="sol-tag sol-held">Held</span>The agent pays invoice NW-7731, $48,750, to the new account. It waits for Sue, the AP supervisor: the account is not an approved payee, and the amount is over the $25,000 limit.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>Joe, the AP manager the agent works for, tries to approve it.</li>
-      <li>Sue calls Northwind on the number already on file. They never changed banks. She declines, and the agent's retry is refused.</li>
-      <li>The run is one trace, every payment tagged with who the agent acted for.</li>
-    </ol>
+    <figure class="sol-shot" style="margin: 0;">
+      <a href="img/solutions/solutions-accounts-payable.webp" target="_blank" rel="noopener" title="Open full size"><img src="img/solutions/solutions-accounts-payable.webp" alt="Joe's AP agent, guided demo: a routine invoice paid, a 'we changed banks' email, $48,750 to the new account held for Sue, and Joe refused when he tries to approve it" width="1600" height="1081" loading="lazy" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.45);"></a>
+    </figure>
   </div>
 </section>
 <section class="content">

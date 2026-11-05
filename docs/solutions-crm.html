@@ -521,7 +521,7 @@ body { overflow-x: clip; }
       <a href="index.html#pricing">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+      <a href="#" onclick="openDemoModal(event)" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -545,8 +545,6 @@ body { overflow-x: clip; }
 </section>
 <section class="content">
   <div class="container">
-    <div class="section-eyebrow">How it plays out</div>
-    <h2>One renewal, step by step</h2>
     <style>
       .sol-steps { margin: 8px 0 0; padding-left: 22px; }
       .sol-steps li { font-size: 16px; line-height: 1.6; margin-bottom: 10px; padding-left: 4px; }
@@ -566,15 +564,9 @@ body { overflow-x: clip; }
       .faq-item[open] summary .faq-chev { transform: rotate(90deg); color: var(--accent-text); }
       .faq-item p { margin: 0 0 14px 24px; }
     </style>
-    <ol class="sol-steps">
-      <li><span class="sol-tag sol-allow">Allowed</span>The agent logs Lisa's call notes on her Acme account.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>It tries to update Raj's Globex deal by mistake. Not Lisa's account.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>An email "from Acme IT" asks for the contact list, sent to an outside address. Refused before it reaches the CRM.</li>
-      <li><span class="sol-tag sol-allow">Allowed</span>An $8,000 discount for a three-year term, inside Lisa's limit.</li>
-      <li><span class="sol-tag sol-held">Held</span>Another $45,000 off to match a competitor. It waits for Dana, the sales director: over $10,000.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>Lisa tries to approve it herself.</li>
-      <li>Dana approves. The discount is applied once. A second identical call is held again.</li>
-    </ol>
+    <figure class="sol-shot" style="margin: 0;">
+      <a href="img/solutions/solutions-crm.webp" target="_blank" rel="noopener" title="Open full size"><img src="img/solutions/solutions-crm.webp" alt="Lisa's sales agent, guided demo: the wrong account and a contact export refused, an $8,000 discount allowed, $45,000 more held for Dana, and Lisa refused when she tries to approve it" width="1600" height="1138" loading="lazy" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.45);"></a>
+    </figure>
   </div>
 </section>
 <section class="content">

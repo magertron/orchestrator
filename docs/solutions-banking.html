@@ -521,7 +521,7 @@ body { overflow-x: clip; }
       <a href="index.html#pricing">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="/#schedule-demo" class="nav-cta">Try it now </a>
+      <a href="#" onclick="openDemoModal(event)" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -537,8 +537,6 @@ body { overflow-x: clip; }
 </section>
 <section class="content">
   <div class="container">
-    <div class="section-eyebrow">How it plays out</div>
-    <h2>One impersonation call, step by step</h2>
     <style>
       .sol-steps { margin: 8px 0 0; padding-left: 22px; }
       .sol-steps li { font-size: 16px; line-height: 1.6; margin-bottom: 10px; padding-left: 4px; }
@@ -558,14 +556,9 @@ body { overflow-x: clip; }
       .faq-item[open] summary .faq-chev { transform: rotate(90deg); color: var(--accent-text); }
       .faq-item p { margin: 0 0 14px 24px; }
     </style>
-    <ol class="sol-steps">
-      <li><span class="sol-tag sol-allow">Allowed</span>The assistant pays Mary's electric bill, a saved payee.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>A caller posing as the IRS demands payment in gift cards. Gift cards are blocked on the account.</li>
-      <li><span class="sol-tag sol-held">Held</span>The caller has a new payee saved and $1,800 sent today. It waits for Ann, Mary's daughter and trusted contact.</li>
-      <li><span class="sol-tag sol-deny">Refused</span>The caller pushes Mary to approve the payment herself. The person an assistant acts for cannot approve its held payment.</li>
-      <li>Ann calls her mother and declines. The assistant's retry is refused and no money moves. Had she approved, the payment would go through once, and only once.</li>
-      <li>The whole call is one trace, every step tagged with who the assistant acted for.</li>
-    </ol>
+    <figure class="sol-shot" style="margin: 0;">
+      <a href="img/solutions/solutions-banking.webp" target="_blank" rel="noopener" title="Open full size"><img src="img/solutions/solutions-banking.webp" alt="Mary's AI assistant, guided demo: the electric bill paid, gift cards for the 'IRS' refused, a new $1,800 payee held for Ann, her trusted contact" width="1600" height="1081" loading="lazy" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.45);"></a>
+    </figure>
   </div>
 </section>
 <section class="content">
