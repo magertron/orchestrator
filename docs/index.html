@@ -1069,14 +1069,14 @@ body { overflow-x: clip; }
 
     <div style="text-align:center; max-width:720px; margin:0 auto 48px;">
       <div class="section-label">Governed Surfaces</div>
-      <h2 class="section-title">Every model, API and tool call. One policy plane.</h2>
+      <h2 class="section-title">Every model, API, stream and tool call. One policy plane.</h2>
     </div>
 
     <div class="mag-arch-card">
       <p class="mag-arch-hint">Swipe to see the full diagram &rarr;</p>
       <div class="mag-arch-scroll">
       <svg viewBox="0 0 1160 500" role="img"
-           aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, LLM providers, tools and catalog securables.">
+           aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, event streams, LLM providers, tools and catalog securables.">
         <defs>
           <marker id="maArrow" viewBox="0 0 10 10" refX="9" refY="5"
                   markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -1129,7 +1129,7 @@ body { overflow-x: clip; }
         <line x1="836" y1="190" x2="888" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
 
         <text x="912" y="44" class="ma-label">Governed surfaces</text>
-        <rect x="896" y="56" width="240" height="268" rx="10" class="ma-frame"/>
+        <rect x="896" y="56" width="240" height="336" rx="10" class="ma-frame"/>
 
         <rect x="912" y="76" width="208" height="38" rx="8" class="ma-panel"/>
         <text x="928" y="100" class="ma-t">MCP servers</text>
@@ -1137,15 +1137,19 @@ body { overflow-x: clip; }
         <rect x="912" y="122" width="208" height="38" rx="8" class="ma-panel"/>
         <text x="928" y="146" class="ma-t">REST APIs</text>
 
-        <rect x="912" y="168" width="208" height="38" rx="8" class="ma-panel"/>
-        <text x="928" y="192" class="ma-t">LLM providers</text>
+        <rect x="912" y="168" width="208" height="52" rx="8" class="ma-panel"/>
+        <text x="928" y="191" class="ma-t">Event streams</text>
+        <text x="928" y="209" class="ma-mono">Kafka · ZeroMQ</text>
 
-        <rect x="912" y="214" width="208" height="38" rx="8" class="ma-panel"/>
-        <text x="928" y="238" class="ma-t">Tools</text>
+        <rect x="912" y="228" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="252" class="ma-t">LLM providers</text>
 
-        <rect x="912" y="260" width="208" height="52" rx="8" class="ma-panel"/>
-        <text x="928" y="283" class="ma-t">Catalog securables</text>
-        <text x="928" y="301" class="ma-mono">catalog / schema / table</text>
+        <rect x="912" y="274" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="298" class="ma-t">Tools</text>
+
+        <rect x="912" y="320" width="208" height="52" rx="8" class="ma-panel"/>
+        <text x="928" y="343" class="ma-t">Catalog securables</text>
+        <text x="928" y="361" class="ma-mono">catalog / schema / table</text>
 
         <line x1="584" y1="340" x2="584" y2="372" class="ma-rule"/>
         <rect x="340" y="372" width="488" height="92" rx="12" class="ma-frame"/>
