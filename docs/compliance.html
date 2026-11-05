@@ -343,6 +343,46 @@ body { overflow-x: clip; }
   nav.open .nav-drop-menu::before { display: none; }
 }
 </style>
+<style id="mag-demo-form">
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px;
+  padding: 10px 14px; color: #0a0d12; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: #6b7280; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #b9bfca; color: #0a0d12; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+</style>
 </head>
 <body>
 
@@ -388,7 +428,7 @@ body { overflow-x: clip; }
       <a href="index.html#pricing">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="index.html#try" class="nav-cta">Try it now </a>
+      <a href="#" onclick="openDemoModal(event)" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -505,7 +545,7 @@ body { overflow-x: clip; }
     <div class="cta-band">
       <h2>Ready to close the evidence gap?</h2>
       <p>Tell us which frameworks your customers are asking for and where you are today. We'll scope an engagement that gets you audit-ready — and keeps you there.</p>
-      <a href="index.html#" class="btn-primary">Try it now → </a>
+      <a href="#" onclick="openDemoModal(event)" class="btn-primary">Try it now → </a>
     </div>
     <p style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:20px;line-height:1.6;max-width:680px;margin-left:auto;margin-right:auto;">
       An enablement service, not an audit. Magertron is not a licensed CPA firm and does not perform SOC 2 examinations or issue HIPAA certifications. This engagement prepares your evidence base; your chosen assessor performs the independent examination. We help you map controls to the HIPAA Security Rule and to the SOC 2 Trust Services Criteria — "mapped to the HIPAA Security Rule" and "SOC 2 Type 2 in progress" describe control-mapping work, not a certification or attestation.
@@ -589,5 +629,139 @@ body { overflow-x: clip; }
 <script src="/consent.js" defer></script>
 
 
+<!-- mag-demo-form: copied from index.html -->
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="margin-bottom:14px;">
+      <strong style="color:var(--text-primary);">A private instance, today.</strong>
+      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      of your own, with servers, traffic and audit history already running in it.
+      Bring your own model key and the assistant works too.
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>What are you hoping to see?</label>
+      <select id="demo-tier">
+        <option value="Governing agents">Governing what my agents can reach</option>
+        <option value="Cost and spend">Cost attribution and spend control</option>
+        <option value="Audit and evidence">Audit trail and compliance evidence</option>
+        <option value="Data governance">Data access governance (Snowflake, Databricks, BigQuery)</option>
+        <option value="Just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything you want on it? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="A particular vendor, a warehouse, a scenario you want to try — or leave this blank."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Get a live instance';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Got it — your instance is on the way.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            You'll get a URL and a login by email today — a private instance with servers,
+            traffic and audit history already running in it. Nothing to install, no call to book.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+<!-- /mag-demo-form -->
 </body>
 </html>
