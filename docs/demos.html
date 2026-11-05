@@ -218,11 +218,16 @@ body { overflow-x: clip; }
   <div class="container">
     <a href="index.html" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
     <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
-      <a href="index.html#features">AI Orchestrator</a>
-      <a href="data-reach.html">AI Data Reach</a>
-      <a href="agentczar.html">AgentCzar</a>
       <div class="nav-drop">
-        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="this.parentNode.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="index.html#features">AI Orchestrator</a>
+          <a href="data-reach.html">AI Data Reach</a>
+          <a href="agentczar.html">AgentCzar</a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
         <div class="nav-drop-menu">
           <a href="solutions-banking.html">Banking</a>
           <a href="solutions-accounts-payable.html">Accounts payable</a>
