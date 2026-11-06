@@ -1,0 +1,46 @@
+# Magertron™ AI Orchestrator
+
+> Magertron is a self-hosted, Kubernetes-native control plane for enterprise AI: the governance and spend layer between AI agents and the MCP tools, LLMs, APIs and event streams they call. Every call carries the agent and the person it acts for, is checked against policy inline, metered against real vendor contracts, and written to an append-only audit log.
+
+Key facts:
+- Governs four kinds of traffic in one policy plane: MCP tool calls, LLM inference, REST APIs, and event streams (Kafka, ZeroMQ).
+- Identity: per-call agent + user identity, SSO, SCIM, revocable service accounts, RFC 8693 token exchange.
+- Policy: per-tool grants by role and namespace, human approval holds with no self-approval, tool drift detection, optional external policy decision point (OPA).
+- Cost: per-call, per-token and per-value rating against vendor contracts, budgets, and chargeback by department, user or agent.
+- Audit: append-only record of every decision, refusals included; OpenTelemetry traces.
+- Runs in the customer's own cluster, including air-gapped. Installed with a Helm chart; CLI and Terraform provider available.
+- Pricing is a flat platform fee, not a tax on usage: Free ($0, up to 20 MCP servers), Pro ($499/month billed annually), Business ($30,000/year), Enterprise (contact us).
+- Commercial software, not open source; the installer, chart, CLI and client libraries are Apache-2.0.
+- Made by Magertron, LLC, South Florida. Contact: curtis@magertron.com
+
+## Platform
+
+- [AI Orchestrator](https://magertron.com/): Overview: governed surfaces, how it works, install
+- [AI Data Reach](https://magertron.com/data-reach.html): Which agents can reach which data, Unity Catalog-compatible
+- [AgentCzar](https://magertron.com/agentczar.html): Policy pack protecting bank customers' accounts from agent-driven fraud
+- [Pricing](https://magertron.com/pricing.html): Free, Pro, Business and Enterprise tiers
+- [Cost & Reporting](https://magertron.com/cost.html): Spend dashboards, contracts, budgets and chargeback
+- [Security](https://magertron.com/security.html): Securing API, streaming, MCP and LLM traffic inside the enterprise
+- [Compliance](https://magertron.com/compliance.html): Audit evidence and compliance posture
+
+## Solutions
+
+- [Banking](https://magertron.com/solutions-banking.html): Agents acting on bank accounts, with approvals and limits
+- [Accounts payable](https://magertron.com/solutions-accounts-payable.html): Maker-checker when the maker is an AI agent
+- [Sales & CRM](https://magertron.com/solutions-crm.html): Agents that abide by the deal desk
+- [Network operations](https://magertron.com/solutions-network-operations.html): Network agents with an operator on every change
+
+## Developers
+
+- [Developers](https://magertron.com/developers.html): Overview for agent and MCP server developers
+- [Developer Portal](https://magertron.com/developer-portal.html): Discover approved tools, try them, request a token
+- [API documentation](https://magertron.com/api/v1/): REST API reference
+- [VS Code](https://magertron.com/vscode/): Using Magertron from VS Code
+- [Cursor](https://magertron.com/cursor/): Using Magertron from Cursor
+- [Claude Code](https://magertron.com/claude-code/): Using Magertron from Claude Code
+- [Devin](https://magertron.com/devin/): Using Magertron from Devin
+
+## Optional
+
+- [GitHub: orchestrator](https://github.com/magertron/orchestrator): Helm chart, installer and docs
+- [GitHub: agent examples](https://github.com/magertron/agent-examples): Example agents calling through Magertron
