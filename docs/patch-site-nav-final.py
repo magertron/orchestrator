@@ -3,7 +3,7 @@
 
   Platform ▾ (AI Orchestrator · AI Data Reach · AgentCzar)
   Solutions ▾ (Banking · Accounts payable · Sales & CRM · Network operations)
-  Developers ▾ (Overview · Install · Developer Portal · API Documentation · GitHub · Build an agent ·
+  Developers ▾ (Overview · Install · CLI · Developer Portal · API Documentation · GitHub · Build an agent ·
                 VS Code · Devin · Cursor · Claude Code)
   Pricing · Cost & Reporting · Security · [the page's own Try it now]
 
@@ -33,12 +33,12 @@ PLATFORM = [("AI Orchestrator", "index.html#governed-surfaces"), ("AI Data Reach
             ("AgentCzar", "agentczar.html")]
 SOLUTIONS = [("Banking", "solutions-banking.html"), ("Accounts payable", "solutions-accounts-payable.html"),
              ("Sales &amp; CRM", "solutions-crm.html"), ("Network operations", "solutions-network-operations.html")]
-DEVELOPERS = [("Overview", "developers.html"), ("Install", "index.html#install"),
+DEVELOPERS = [("Overview", "developers.html"), ("Install", "index.html#install"), ("CLI", "index.html#cli"),
               ("Developer Portal", "developer-portal.html"), ("API Documentation", "api/v1/"),
               ("GitHub", "https://github.com/magertron/orchestrator"),
               ("Build an agent", "developers.html"),
               ("VS Code", "vscode/"), ("Devin", "devin/"), ("Cursor", "cursor/"), ("Claude Code", "claude-code/")]
-PLAIN = [("Pricing", "index.html#pricing"),
+PLAIN = [("Pricing", "pricing.html"),
          ("Cost &amp; Reporting", "cost.html"), ("Security", "security.html")]
 ONCLICK = ("onclick=\"var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach("
            "function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')\"")

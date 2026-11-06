@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Pricing - Magertron™ AI Orchestrator</title>
+<meta name="description" content="Kubernetes-native control plane for AI agents: who may call which MCP tool, model or API, under your own OPA policy, metered and charged back per team, with a signed audit trail. Free up to 20 servers.">
+
+<!-- ─── SEO: canonical, Open Graph, Twitter Card, JSON-LD ─────────────────── -->
+<link rel="canonical" href="https://magertron.com/pricing.html">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/">
+<meta property="og:title" content="Magertron™: Governance and Spend Control for Enterprise AI Agents">
+<meta property="og:description" content="Govern what your AI agents may call - MCP tools, models and APIs - under your own policy, with spend limits, chargeback and a signed audit trail. Free up to 20 servers.">
+<meta property="og:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user, committed vs pay-as-you-go, with budget tracking">
+<meta property="og:site_name" content="Magertron">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://magertron.com/">
+<meta name="twitter:title" content="Magertron™: Governance and Spend Control for Enterprise AI Agents">
+<meta name="twitter:description" content="Govern what your AI agents may call - MCP tools, models and APIs - under your own policy, with spend limits, chargeback and a signed audit trail. Free up to 20 servers.">
+<meta name="twitter:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
+<meta name="twitter:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user">
+
+<meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, AI control plane, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
+<meta name="author" content="Magertron">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Magertron AI Orchestrator",
+  "alternateName": "Magertron",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Kubernetes Platform",
+  "operatingSystem": "Linux, Kubernetes",
+  "description": "The spend control plane for enterprise AI agents. Meter every MCP tool call, charge it back per user and team, and enforce hard budget limits at the gateway.",
+  "softwareVersion": "4.2.35",
+  "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
+  "url": "https://magertron.com",
+  "downloadUrl": "https://github.com/magertron/orchestrator",
+  "screenshot": "https://magertron.com/screenshots/dashboard-galaxy.png",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free",
+      "description": "Free forever. Up to 20 MCP servers, live metrics, and LLM calls by name. CLI and portal require Pro.",
+      "price": "0",
+      "priceCurrency": "USD",
+      "category": "Free"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro",
+      "description": "Live metrics, history & rollback, webhooks, audit trail, custom RBAC, rug-pull protection. Up to 50 MCP servers.",
+      "price": "499",
+      "priceCurrency": "USD",
+      "category": "Subscription"
+    }
+  ],
+  "author": {
+    "@type": "Organization",
+    "name": "Magertron",
+    "url": "https://magertron.com",
+    "sameAs": [
+      "https://github.com/magertron/orchestrator",
+      "https://www.linkedin.com/company/magertronc",
+      "https://www.linkedin.com/company/114304646",
+      "https://www.crunchbase.com/organization/magertron",
+      "https://artifacthub.io/packages/helm/magertron/mcp-orchestrator"
+    ]
+  }
+}
+</script>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Magertron",
+  "url": "https://magertron.com",
+  "description": "The spend control plane for enterprise AI agents — metering, per-user chargeback, and budget enforcement for Model Context Protocol servers at scale.",
+  "foundingLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressRegion": "FL",
+      "addressCountry": "US"
+    }
+  },
+  "founder": {
+    "@type": "Person",
+    "name": "Curtis Mager"
+  },
+  "sameAs": [
+    "https://github.com/magertron/orchestrator",
+    "https://www.linkedin.com/company/magertronc",
+    "https://www.linkedin.com/company/114304646",
+    "https://www.crunchbase.com/organization/magertron",
+    "https://artifacthub.io/packages/helm/magertron/mcp-orchestrator"
+  ],
+  "legalName": "Magertron, LLC",
+  "alternateName": "Magertron™",
+  "logo": "https://magertron.com/logo.svg"
+}
+</script>
+<!-- ─── End SEO ─────────────────────────────────────────────────────────── -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html { scrollbar-gutter: stable; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* ── Nav ──────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero { padding: 88px 0 36px; text-align: center; position: relative; overflow: hidden; }
+/* Ghosted live-galaxy backdrop — bleeds in from the top-left, fades away from
+   the centered text so the headline stays crisp. Symbolizes agent-tracking
+   depth. Drops to near-invisible on mobile. Drop the screenshot at the url(). */
+.hero-galaxy {
+  position: absolute; top: 320px; left: 0;
+  width: 90%; max-width: 1000px; height: 680px;
+  background-image: url('screenshots/hero-galaxy.png');
+  background-size: cover; background-position: -70px -40px;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+  /* fade the image out toward the right and bottom so it dissolves into the bg
+     and never sits behind the headline as a hard rectangle */
+  -webkit-mask-image:
+    radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%),
+    linear-gradient(to right, transparent 0%, #000 12%),
+    linear-gradient(to bottom, transparent 0%, #000 12%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    radial-gradient(ellipse 105% 108% at 13% 17%, #000 0%, rgba(0,0,0,0.6) 50%, transparent 85%),
+    linear-gradient(to right, transparent 0%, #000 12%),
+    linear-gradient(to bottom, transparent 0%, #000 12%);
+          mask-composite: intersect;
+  pointer-events: none; z-index: 0;
+  animation: galaxyDrift 26s ease-in-out infinite alternate;
+}
+/* scrim: a soft wash of the page bg over the galaxy near the text column,
+   guaranteeing contrast for the headline/subhead regardless of the image */
+.hero-scrim {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 70% 75% at 50% 46%,
+              var(--bg) 18%, rgba(0,0,0,0) 75%);
+}
+@keyframes galaxyDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(14px, 10px) scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-galaxy { animation: none; } }
+.hero .container { position: relative; z-index: 2; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 680px; height: 500px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px; border: 1px solid var(--border);
+  background: var(--bg-card); font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 26px; animation: fadeUp 0.6s ease-out;
+}
+.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s ease-in-out infinite; }
+.hero h1 {
+  font-family: var(--serif); font-weight: 700; font-style: normal;
+  font-size: clamp(42px, 6vw, 74px); line-height: 1.06; letter-spacing: -0.04em;
+  margin-bottom: 20px; animation: fadeUp 0.6s ease-out 0.1s both;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p {
+  font-size: 17px; color: var(--text-secondary); max-width: 680px;
+  margin: 0 auto 34px; line-height: 1.45; animation: fadeUp 0.6s ease-out 0.2s both;
+}
+.hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeUp 0.6s ease-out 0.3s both; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px;
+  font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; color: white; }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 14px 32px; border-radius: 8px;
+  font-weight: 500; font-size: 15px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Hero Screenshot ──────────────────────────────────────────────────── */
+.hero-screenshot {
+  max-width: 780px; margin: 36px auto 0; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border); background: var(--bg-card);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1);
+  animation: fadeUp 0.8s ease-out 0.4s both;
+  position: relative;
+}
+.hero-screenshot img {
+  width: 100%; height: auto; display: block;
+}
+/* ── Hero crossfade carousel: two stacked shots fade back and forth ── */
+.hero-carousel { position: relative; }
+.hero-carousel img {
+  width: 100%; height: auto; display: block;
+}
+/* First slide is in normal flow (sets the box height); others overlay it. */
+.hero-carousel img.slide-2, .hero-carousel img.slide-3 {
+  position: absolute; top: 0; left: 0;
+}
+.hero-carousel img.slide-1 { animation: heroFade3 18s ease-in-out infinite; }
+.hero-carousel img.slide-2 { animation: heroFade3 18s ease-in-out -12s infinite; }
+.hero-carousel img.slide-3 { animation: heroFade3 18s ease-in-out -6s infinite; }
+/* each shot: on for a third of the cycle, ~1s crossfade at each end */
+@keyframes heroFade3 {
+  0%, 28% { opacity: 1; }
+  33.4%, 94.5% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel img.slide-1, .hero-carousel img.slide-2, .hero-carousel img.slide-3 { animation: none; }
+  .hero-carousel img.slide-2, .hero-carousel img.slide-3 { display: none; }
+}
+.hero-screenshot .placeholder {
+  width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700; font-style: normal; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 16px;
+}
+.section-desc {
+  font-size: 16px; color: var(--text-secondary); max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+}
+
+/* ── Showcase (screenshot sections) ───────────────────────────────────── */
+.showcase { padding: 80px 0; }
+.showcase-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+}
+.showcase-row.reverse { direction: rtl; }
+.showcase-row.reverse > * { direction: ltr; }
+.showcase-content { max-width: 460px; }
+.showcase-content h3 {
+  font-family: var(--serif); font-size: 32px; font-weight: 600; font-style: normal;
+  margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.02em;
+}
+.showcase-content p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+.showcase-content ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+}
+.showcase-content ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;
+}
+.showcase-content ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.showcase-image {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.showcase-image:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+.showcase-image img { width: 100%; height: auto; display: block; }
+.showcase-image .placeholder {
+  width: 100%; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Features ─────────────────────────────────────────────────────────── */
+.features { padding: 80px 0; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card {
+  padding: 32px; border-radius: 12px; background: var(--bg-card);
+  border: 1px solid var(--border); transition: all 0.3s;
+  position: relative;
+}
+/* Hover affordance: only the clickable variant gets the lift + accent
+   treatment, so the visual difference between "click me" and "informational"
+   is obvious to a reader scanning the grid. */
+.feature-card.clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.feature-card.clickable:hover { border-color: var(--border-accent); background: var(--bg-card-hover); transform: translateY(-2px); text-decoration: none; }
+.feature-card.clickable::after {
+  content: "→";
+  position: absolute;
+  top: 32px; right: 32px;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  transition: transform 0.2s, color 0.2s;
+}
+.feature-card.clickable:hover::after { color: var(--accent-text); transform: translateX(4px); }
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--accent-glow); border: 1px solid rgba(37, 99, 235, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 20px;
+}
+.feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+/* ── Architecture diagram (Governed Surfaces) ─────────────────────────── */
+.mag-arch-scroll { overflow-x: auto; margin: 0 0 40px; }
+.mag-arch-scroll svg { display: block; width: 100%; height: auto; min-width: 780px; }
+.mag-arch-card {
+  background: #080b10; border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; margin: 0 0 40px;
+}
+.mag-arch-card .mag-arch-scroll { margin: 0; }
+@media (max-width: 768px) { .mag-arch-card { padding: 16px; } }
+
+.mag-arch-caption {
+  max-width: 660px; margin: 0 auto 48px; text-align: center;
+  font-size: 15px; line-height: 1.7; color: var(--text-secondary);
+}
+.mag-arch-caption strong { color: var(--text); font-weight: 500; }
+.mag-arch-caption code { font-family: var(--mono); font-size: 13px; color: var(--accent-text); }
+
+.ma-frame  { fill: none;               stroke: var(--border); stroke-width: 1; }
+.ma-panel  { fill: var(--bg-card);     stroke: var(--border); stroke-width: 1; }
+.ma-hero   { fill: var(--accent-glow); stroke: var(--accent); stroke-width: 1.5; }
+.ma-rule   { stroke: var(--border); stroke-width: 1; }
+.ma-flow   { stroke: var(--text-tertiary); stroke-width: 1.5; fill: none; }
+.ma-head   { fill: var(--text-tertiary); }
+.ma-t      { fill: var(--text);           font-family: var(--sans); font-size: 14px; }
+.ma-t-sm   { fill: var(--text-secondary); font-family: var(--sans); font-size: 12px; }
+.ma-mono   { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 10.5px; }
+.ma-mono-c { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 11px; }
+.ma-label  { fill: var(--accent-text);    font-family: var(--mono); font-size: 11px;
+             letter-spacing: 0.1em; text-transform: uppercase; }
+.ma-acc    { fill: var(--accent-text); }
+
+/* ── CLI Section ──────────────────────────────────────────────────────── */
+.cli-section { padding: 80px 0; }
+.cli-section .container { max-width: 900px; }
+.terminal-preview {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: #0a0e14;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+.terminal-bar {
+  display: flex; gap: 6px; padding: 12px 16px; background: #111722;
+  border-bottom: 1px solid var(--border);
+}
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot:nth-child(1) { background: #ff5f57; }
+.terminal-dot:nth-child(2) { background: #febc2e; }
+.terminal-dot:nth-child(3) { background: #28c840; }
+.terminal-body {
+  padding: 20px 24px; font-family: var(--mono); font-size: 13px;
+  line-height: 1.8; color: var(--text-secondary);
+}
+.terminal-body .cmd { color: var(--text); }
+.terminal-body .accent { color: var(--accent-text); }
+.terminal-body .success { color: var(--success); }
+.terminal-body .dim { color: var(--text-tertiary); }
+
+/* ── Pricing ──────────────────────────────────────────────────────────── */
+.pricing { padding: 80px 0; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; max-width: 1240px; margin: 48px auto 0; }
+@media (max-width: 1100px) { .pricing-grid { grid-template-columns: 1fr 1fr; } }
+.pricing-card {
+  padding: 40px; border-radius: 16px; background: var(--bg-card);
+  border: 1px solid var(--border); position: relative; transition: all 0.3s;
+}
+.pricing-card:hover { border-color: var(--border-accent); }
+.pricing-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, var(--bg-card) 100%);
+}
+.pricing-card.featured::before {
+  content: 'RECOMMENDED'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: white; padding: 4px 16px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; font-family: var(--mono);
+}
+.pricing-tier {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 8px;
+}
+.pricing-name { font-family: var(--serif); font-size: 32px; font-style: normal; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+.pricing-price { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+.pricing-divider { height: 1px; background: var(--border); margin: 24px 0; }
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.pricing-features li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; }
+.pricing-features li::before { content: '✓'; color: var(--success); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.pricing-features li.disabled { color: var(--text-tertiary); }
+.pricing-features li.disabled::before { content: '—'; color: var(--text-tertiary); }
+.pricing-btn {
+  display: block; width: 100%; text-align: center; padding: 12px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none;
+}
+.pricing-btn.primary { background: var(--accent); color: white; border: none; }
+.pricing-btn.primary:hover { background: #1d4ed8; text-decoration: none; }
+.pricing-btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.pricing-btn.secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Demo Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px;
+  padding: 10px 14px; color: #0a0d12; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: #6b7280; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #b9bfca; color: #0a0d12; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+
+
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 72px 60px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700; font-style: normal; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; position: relative; }
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   Multi-column layout: brand block on the left (logo + tagline), navigation
+   columns on the right (Products / Resources / Company / Social). On mobile
+   the brand block stacks above the columns. The bottom strip carries the
+   copyright and a slim set of utility links. */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  color: var(--text-primary);
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p {
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 13px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--text-primary); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .showcase-row, .showcase-row.reverse { grid-template-columns: 1fr; }
+  .hero { padding: 104px 0 48px; }
+  .hero-galaxy { opacity: 0.12; width: 100%; max-width: none; height: 380px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .cta-box { padding: 48px 32px; }
+  footer .container { flex-direction: column; gap: 16px; }
+}
+  /* fixed nav is ~72px; keep anchored section headings visible below it */
+  #features, #governance, #install, #pricing, #server-management { scroll-margin-top: 88px; }
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
+</style>
+<style id="mag-solutions-nav">
+.nav-drop { position: relative; }
+.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+  color: var(--text-secondary); transition: color 0.2s; }
+.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
+.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
+.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
+  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
+.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
+.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
+@media (max-width: 1180px) { .nav-links { gap: 22px; } }
+@media (max-width: 768px) {
+  .nav-links .nav-drop { display: none; }
+  nav.open .nav-links .nav-drop { display: block; }
+  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
+    color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
+    box-shadow: none; padding: 0 0 0 14px; background: none; }
+  nav.open .nav-drop-menu::before { display: none; }
+}
+</style>
+<style id="mag-nav-center">
+@media (min-width: 769px) {
+  nav .nav-links { flex: 1; }
+  nav .nav-links > :first-child { margin-left: auto; }
+  nav .nav-links > .nav-cta { margin-left: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="index.html#governed-surfaces">AI Orchestrator</a>
+          <a href="data-reach.html">AI Data Reach</a>
+          <a href="agentczar.html">AgentCzar</a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="solutions-banking.html">Banking</a>
+          <a href="solutions-accounts-payable.html">Accounts payable</a>
+          <a href="solutions-crm.html">Sales &amp; CRM</a>
+          <a href="solutions-network-operations.html">Network operations</a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="developers.html">Overview</a>
+          <a href="index.html#install">Install</a>
+          <a href="index.html#cli">CLI</a>
+          <a href="developer-portal.html">Developer Portal</a>
+          <a href="api/v1/">API Documentation</a>
+          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
+          <a href="developers.html">Build an agent</a>
+          <a href="vscode/">VS Code</a>
+          <a href="devin/">Devin</a>
+          <a href="cursor/">Cursor</a>
+          <a href="claude-code/">Claude Code</a>
+        </div>
+      </div>
+      <a href="pricing.html" style="color: var(--text);">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
+
+<main style="padding-top: 24px;">
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-label" style="text-align: center;">Pricing</div>
+    <div class="section-title" style="text-align: center;">Choose your plan</div>
+    <div class="section-desc" style="text-align: center; margin-left: auto; margin-right: auto;">Start free with core server management. Pro for a single team. Business for an organization running agents in production. Enterprise for the whole estate. Servers are never metered on any tier.</div>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Self-serve</div>
+        <div class="pricing-name">Free</div>
+        <div class="pricing-price">Free forever · no license fee</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 20 MCP servers · No signup · No credit card</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Deploy and manage MCP servers</li>
+          <li>Health monitoring &amp; metrics</li>
+          <li>Live metrics charts</li>
+          <li>Envoy gateway with xDS</li>
+          <li>Helm chart deployment</li>
+          <li>Basic RBAC (admin + viewer)</li>
+          <li>Call LLM models by name through the gateway</li>
+          <li>Developer portal — browse tools, mint scoped tokens</li>
+          <li>Community support via GitHub</li>
+          <li class="disabled">CLI tool (mcpctl)</li>
+          <li class="disabled">Model routing policy</li>
+          <li class="disabled">Cost metering &amp; chargeback</li>
+          <li class="disabled">Namespace isolation</li>
+          <li class="disabled">SSO &amp; SCIM provisioning</li>
+          <li class="disabled">Governance policies</li>
+          <li class="disabled">Webhooks &amp; audit trail</li>
+        </ul>
+        <a href="https://github.com/magertron/orchestrator" target="_blank" class="pricing-btn secondary">Get started on GitHub →</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Subscription</div>
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-price">$499/mo · billed annually</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Up to 50 MCP servers · For a single team running their own servers</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Free, plus:</strong></li>
+          <li><strong>Model routing</strong> — policy decides which model a caller reaches</li>
+          <li>Cost metering, departments &amp; chargeback reports</li>
+          <li>Agent Galaxy — live entitlement graph</li>
+          <li>Rug-pull protection &amp; quarantine kill switch</li>
+          <li>SSO (OIDC &amp; SAML) — Okta, Azure AD, Google</li>
+          <li>SCIM 2.0 user provisioning</li>
+          <li>Governance policy engine</li>
+          <li>Multi-tenant namespace isolation</li>
+          <li>CLI tool (mcpctl) — scripting, CI, and automation</li>
+          <li>Deployment history &amp; rollback</li>
+          <li>Webhook notifications (Slack, email)</li>
+          <li>Audit trail</li>
+          <li>Custom RBAC roles</li>
+          <li>Priority email &amp; Slack support</li>
+          <li class="disabled">Model comparison</li>
+          <li class="disabled">AI Data Reach — govern the data agents can touch</li>
+          <li class="disabled">Delegated administration</li>
+        </ul>
+        <a href="#" class="pricing-btn primary" onclick="openDemoModal(event)">Try it now → </a>
+      </div>
+
+      <!-- Business -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Commercial</div>
+        <div class="pricing-name">Business</div>
+        <div class="pricing-price">$30,000/yr</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For an organization running agents in production</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Pro, plus:</strong></li>
+          <li><strong>Model comparison</strong> &mdash; one prompt across models, cost side by side</li>
+          <li>Delegated administration</li>
+          <li>Governance policy export</li>
+          <li>Endpoint fleet inventory via your MDM (Jamf, Intune, Ansible)</li>
+          <li>Unlimited servers</li>
+          <li>Priority support</li>
+          <li>Warm DR standby region</li>
+          <li class="disabled">AI Data Reach &amp; Catalog Universe</li>
+          <li class="disabled">Continuous SOC 2 control evidence</li>
+        </ul>
+        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Talk to us &rarr;</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Commercial</div>
+        <div class="pricing-name">Enterprise</div>
+        <div class="pricing-price">Contact us for pricing</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unlimited servers · For the enterprise agent estate</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><strong>Everything in Business, plus:</strong></li>
+          <li><strong>AI Data Reach</strong> &mdash; govern the data agents can touch, not just the tools they reach</li>
+          <li><strong>Catalog Universe</strong> &mdash; across every source you configure (Databricks Unity Catalog, Snowflake, BigQuery)</li>
+          <li>Blast-radius analysis and grant simulation</li>
+          <li><strong>Continuous SOC&nbsp;2 control evidence</strong></li>
+          <li><strong>Multi-region</strong> &mdash; read-replica regions; multi-site in-country for data residency</li>
+          <li><strong>Bring your own policy engine</strong> &mdash; OPA or your own PDP adds business rules on every call</li>
+          <li>Agent capacity sized to your estate, expandable under contract</li>
+          <li>Contractual SLA and named support</li>
+          <li>Security and procurement review support</li>
+          <li>Custom license and payment terms</li>
+        </ul>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-subtle,#333);">
+          <div style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;">On the roadmap</div>
+          <ul class="pricing-features" style="opacity:.72;">
+            <li>Multi-cluster federation (bring your own fleet tool)</li>
+            <li>Governance policy import</li>
+            <li>Bulk approvals</li>
+            <li>Just-in-time provisioning</li>
+          </ul>
+        </div>
+        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="agentczar.html">AgentCzar</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
+          <li><a href="kong-comparison.html">AI Orchestrator vs. Kong</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="margin-bottom:14px;">
+      <strong style="color:var(--text-primary);">A private instance, today.</strong>
+      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      of your own, with servers, traffic and audit history already running in it.
+      Bring your own model key and the assistant works too.
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>What are you hoping to see?</label>
+      <select id="demo-tier">
+        <option value="Governing agents">Governing what my agents can reach</option>
+        <option value="Cost and spend">Cost attribution and spend control</option>
+        <option value="Audit and evidence">Audit trail and compliance evidence</option>
+        <option value="Data governance">Data access governance (Snowflake, Databricks, BigQuery)</option>
+        <option value="Just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything you want on it? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="A particular vendor, a warehouse, a scenario you want to try — or leave this blank."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Each example: the question, and the answer as HTML (with .mag-tok server
+  // names and .mag-flag for the security callout). Invented enterprise data.
+  var EX = [
+    {
+      q: "What's my busiest server?",
+      a: 'Based on the live platform snapshot, your busiest server is '
+        +'<span class="mag-tok">claude-prod</span> in the '
+        +'<span class="mag-tok">ml-platform</span> tenant — '
+        +'<strong>1.24M calls</strong> over the last 24 hours, well ahead of anything else.'
+    },
+    {
+      q: "Any agents accessing tools without grants?",
+      a: 'Yes — <span class="mag-flag">a security red flag</span>. '
+        +'<span class="mag-tok">batch-etl-07</span>, <span class="mag-tok">notebook-sandbox</span>, '
+        +'and 3 more service accounts are calling '
+        +'<span class="mag-tok">snowflake-connector/run_query</span> with no entitlement granting it. '
+        +'5 principals, 1,880 ungranted calls in 24h. Review before it becomes an incident.'
+    },
+    {
+      q: "What's my most expensive server?",
+      a: 'Your most expensive server this billing period is '
+        +'<span class="mag-tok">openai-gpt4o</span> at <strong>$8,412.90</strong> — '
+        +'about 38% of total AI spend. <span class="mag-tok">claude-prod</span> is next at $5,240.15.'
+    },
+    {
+      q: "Anything over or near budget?",
+      a: 'Two servers need attention this period: '
+        +'<span class="mag-tok">openai-gpt4o</span> is <span class="mag-flag">OVER</span> — '
+        +'112% of its $7,500 ceiling — and <span class="mag-tok">exa-search</span> is near, at 86% of $2,000. '
+        +'Everything else is comfortably within budget.'
+    },
+    {
+      q: "What's my busiest tenant?",
+      a: 'Your busiest tenant is <span class="mag-tok">ml-platform</span> — '
+        +'<strong>2.1M operations</strong> in 24h, driven mostly by '
+        +'<span class="mag-tok">claude-prod</span> and <span class="mag-tok">openai-gpt4o</span>. '
+        +'<span class="mag-tok">payments-prod</span> is a distant second.'
+    }
+  ];
+
+  var qEl    = document.getElementById('magAskQ');
+  var aEl     = document.getElementById('magAskA');
+  var caret  = document.getElementById('magAskCaret');
+  var qCaret = document.getElementById('magAskQCaret');
+  var dotsEl = document.getElementById('magAskDots');
+  if(!qEl||!aEl){return;}
+
+  // build dots
+  EX.forEach(function(_,i){
+    var d=document.createElement('button');
+    d.className='mag-ask-dot'+(i===0?' active':'');
+    d.setAttribute('role','tab');
+    d.setAttribute('aria-label','Example '+(i+1));
+    d.addEventListener('click',function(){ go(i); });
+    dotsEl.appendChild(d);
+  });
+  var dots=Array.prototype.slice.call(dotsEl.children);
+
+  var idx=0, timers=[], reduced=false;
+  try{reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e){}
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+  function setActive(i){ dots.forEach(function(d,j){ d.classList.toggle('active',j===i); }); }
+
+  // Type HTML by walking it: reveal text nodes char-by-char, emit tags whole.
+  function typeHTML(html, el, done){
+    // tokenize into [{t:'text',v}, {t:'tag',v}]
+    var toks=[], re=/(<[^>]+>)/g, last=0, m;
+    while((m=re.exec(html))){
+      if(m.index>last) toks.push({t:'text',v:html.slice(last,m.index)});
+      toks.push({t:'tag',v:m[0]});
+      last=re.lastIndex;
+    }
+    if(last<html.length) toks.push({t:'text',v:html.slice(last)});
+
+    var out='', ti=0, ci=0;
+    function step(){
+      if(ti>=toks.length){ done&&done(); return; }
+      var tok=toks[ti];
+      if(tok.t==='tag'){ out+=tok.v; ti++; el.innerHTML=out; timers.push(setTimeout(step, 0)); return; }
+      if(ci<tok.v.length){
+        out+=tok.v[ci]; ci++; el.innerHTML=out;
+        var ch=tok.v[ci-1];
+        var d = reduced?0:(ch===' '?14: ch==='.'||ch===','?60: 18+Math.random()*22);
+        timers.push(setTimeout(step, d));
+      } else { ci=0; ti++; step(); }
+    }
+    step();
+  }
+
+  // Type plain text char-by-char into an element (for the question bubble).
+  function typeText(text, el, done){
+    var i=0;
+    function step(){
+      if(i>=text.length){ done&&done(); return; }
+      el.textContent = text.slice(0, i+1);
+      var ch=text[i]; i++;
+      var d = reduced?0:(ch===' '?26: ch==='?'||ch==='.'||ch===','?90: 34+Math.random()*30);
+      timers.push(setTimeout(step, d));
+    }
+    step();
+  }
+
+  function go(i){
+    clearTimers();
+    idx=i; setActive(i);
+    var ex=EX[i];
+    // reset both bubbles
+    qEl.textContent='';
+    aEl.innerHTML='';
+    caret.classList.add('mag-hide');          // answer caret hidden for now
+    qCaret.classList.remove('mag-hide');       // question caret blinking
+    // 1) type the question
+    timers.push(setTimeout(function(){
+      typeText(ex.q, qEl, function(){
+        // 2) question done → hide its caret, small beat, then type the answer
+        qCaret.classList.add('mag-hide');
+        timers.push(setTimeout(function(){
+          caret.classList.remove('mag-hide');
+          typeHTML(ex.a, aEl, function(){
+            caret.classList.add('mag-hide');    // answer done → hide caret while holding
+            var hold = reduced?2400:3800;
+            timers.push(setTimeout(function(){ go((idx+1)%EX.length); }, hold));
+          });
+        }, 520));
+      });
+    }, 300));
+  }
+
+  // Kick off when scrolled into view (don't burn the animation above the fold
+  // before the visitor sees it). Fallback: start immediately.
+  var started=false;
+  function start(){ if(started)return; started=true; go(0); }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ start(); io.disconnect(); } });
+    },{threshold:.35});
+    io.observe(document.querySelector('.mag-ask'));
+  } else { start(); }
+})();
+</script>
+<script>
+  document.querySelectorAll('.threat-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.tab;
+      btn.parentElement.querySelectorAll('.threat-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const container = btn.closest('.threat-tabs');
+      container.querySelectorAll('.threat-tab-content').forEach(c => {
+        c.hidden = (c.id !== targetId);
+      });
+    });
+  });
+</script>
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Get a live instance';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Got it — your instance is on the way.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            You'll get a URL and a login by email today — a private instance with servers,
+            traffic and audit history already running in it. Nothing to install, no call to book.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+<script src="/consent.js" defer></script>
+<script id="mag-try-hash">
+if (location.hash === '#try') window.addEventListener('load', function () {
+  if (typeof openDemoModal === 'function') openDemoModal();
+  history.replaceState(null, '', location.pathname + location.search);
+});
+</script>
+</body>
+</html>
