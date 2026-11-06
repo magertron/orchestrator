@@ -724,9 +724,7 @@ body { overflow-x: clip; }
 
 <!-- Hero -->
 <section class="hero">
-  <div class="hero-galaxy" aria-hidden="true"></div>
-  <div class="hero-scrim" aria-hidden="true"></div>
-  <div class="container">
+      <div class="container">
     <div class="hero-badge">
       <span class="dot"></span>
       Now available — v4.2.35
@@ -763,8 +761,7 @@ body { overflow-x: clip; }
       </div>
     </div>
 
-    <div class="mag-ask-dots" id="magAskDots" role="tablist" aria-label="Example questions"></div>
-  </div>
+      </div>
 </div>
 
 <style>
@@ -1186,21 +1183,7 @@ body { overflow-x: clip; }
       an MCP tool, a REST endpoint or an inference provider.
     </p>
 
-    <div class="feature-grid">
-      <div class="feature-card">
-        <h3>Internal MCP servers</h3>
-        <p>MCP servers run as pods in your cluster. Traffic stays inside your network.</p>
-      </div>
-      <div class="feature-card">
-        <h3>LLM providers</h3>
-        <p>Anthropic, OpenAI, or your own model pods — registered as governed endpoints. Every inference call is metered, charged back, and budget-capped, with provider keys held by Magertron, never the agent.</p>
-      </div>
-      <div class="feature-card">
-        <h3>External MCP servers</h3>
-        <p>SaaS or cloud-hosted MCP servers, registered in Magertron and governed by the same policies as your internal servers.</p>
-      </div>
-    </div>
-
+    
   </div>
 </section>
 
@@ -1390,12 +1373,7 @@ body { overflow-x: clip; }
     </div>
 
     <div class="terminal-preview">
-      <div class="terminal-bar">
-        <div class="terminal-dot"></div>
-        <div class="terminal-dot"></div>
-        <div class="terminal-dot"></div>
-      </div>
-      <div class="terminal-body">
+            <div class="terminal-body">
         <div><span class="dim">$</span> <span class="cmd">mcpctl login https://mcp.acme.internal admin</span></div>
         <div><span class="success">✓</span> Logged in as admin (system:platform-admin)</div>
         <br>
