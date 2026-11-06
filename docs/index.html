@@ -275,24 +275,21 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   width: 100%; height: auto; display: block;
 }
 /* First slide is in normal flow (sets the box height); others overlay it. */
-.hero-carousel img.slide-2 {
+.hero-carousel img.slide-2, .hero-carousel img.slide-3 {
   position: absolute; top: 0; left: 0;
 }
-.hero-carousel img.slide-1 { animation: heroFadeA 12s ease-in-out infinite; }
-.hero-carousel img.slide-2 { animation: heroFadeB 12s ease-in-out infinite; }
-@keyframes heroFadeA {
-  0%, 42% { opacity: 1; }
-  50%, 92% { opacity: 0; }
+.hero-carousel img.slide-1 { animation: heroFade3 18s ease-in-out infinite; }
+.hero-carousel img.slide-2 { animation: heroFade3 18s ease-in-out -12s infinite; }
+.hero-carousel img.slide-3 { animation: heroFade3 18s ease-in-out -6s infinite; }
+/* each shot: on for a third of the cycle, ~1s crossfade at each end */
+@keyframes heroFade3 {
+  0%, 28% { opacity: 1; }
+  33.4%, 94.5% { opacity: 0; }
   100% { opacity: 1; }
 }
-@keyframes heroFadeB {
-  0%, 42% { opacity: 0; }
-  50%, 92% { opacity: 1; }
-  100% { opacity: 0; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .hero-carousel img.slide-1, .hero-carousel img.slide-2 { animation: none; }
-  .hero-carousel img.slide-2 { display: none; }
+  .hero-carousel img.slide-1, .hero-carousel img.slide-2, .hero-carousel img.slide-3 { animation: none; }
+  .hero-carousel img.slide-2, .hero-carousel img.slide-3 { display: none; }
 }
 .hero-screenshot .placeholder {
   width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
@@ -667,6 +664,13 @@ body { overflow-x: clip; }
   nav.open .nav-drop-menu::before { display: none; }
 }
 </style>
+<style id="mag-nav-center">
+@media (min-width: 769px) {
+  nav .nav-links { flex: 1; }
+  nav .nav-links > :first-child { margin-left: auto; }
+  nav .nav-links > .nav-cta { margin-left: auto; }
+}
+</style>
 </head>
 <body>
 
@@ -980,8 +984,9 @@ body { overflow-x: clip; }
          per-user breakdown, and the daily trend. This is the CFO-legible view. -->
     <div class="hero-screenshot">
       <div class="hero-carousel">
-        <img class="slide-1" src="screenshots/dashboard-galaxy.png" alt="Magertron dashboard with Agent Galaxy — live map of which principals and AI agents can reach and are actively calling which MCP tools, with entitlement-vs-usage edges">
+        <img class="slide-1" src="screenshots/agent-galaxy.png" alt="Magertron Agent Galaxy - which people and AI agents can reach which tools and models, entitlements versus observed usage, with unused grants and ungranted access flagged">
         <img class="slide-2" src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
+        <img class="slide-3" src="screenshots/dashboard-overview.png" alt="Magertron dashboard - servers, tools, routes, users and policies at a glance, LLM tokens and cost by model, budget vs actual, server health and audit activity">
       </div>
     </div>
 
