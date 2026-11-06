@@ -6,7 +6,7 @@
 
 Finds the <section> that holds the page's risk headline (or, if there is none, the
 smallest <div> holding both "The risk" and that line) and adds margin-top to its style.
-Re-running adds nothing more.
+Re-running adds nothing more; re-run with --px N to change the amount.
 
   --site PATH   the site folder (default ~/GetHub/orchestrator/docs)
   --px N        how much space (default 48)
@@ -60,15 +60,17 @@ if not hit:
 a, open_end, _ = hit
 tag = s[a:open_end]
 if MARK in tag:
-    sys.exit("already moved down - to change the amount, restore the .bak and re-run with --px")
-
-if re.search(r'\bstyle="', tag):
+    if "--px" not in sys.argv:
+        sys.exit("already moved down - add --px N to change the amount")
+    new = re.sub(r"margin-top:\s*\d+px", f"margin-top: {PX}px", tag, count=1)
+elif re.search(r'\bstyle="', tag):
     new = re.sub(r'\bstyle="([^"]*)"',
                  lambda m: f'style="{m.group(1).rstrip("; ")}{"; " if m.group(1).strip() else ""}margin-top: {PX}px;"',
                  tag, count=1)
 else:
     new = tag[:-1] + f' style="margin-top: {PX}px;"' + ">"
-new = new[:-1] + f" {MARK}>"
+if MARK not in new:
+    new = new[:-1] + f" {MARK}>"
 
 print("- " + tag + "\n+ " + new)
 if APPLY:
