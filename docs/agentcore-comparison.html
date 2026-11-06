@@ -914,5 +914,32 @@ function submitDemoForm() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
 </script>
 <!-- /mag-demo-form -->
+<script id="mag-nav-close">
+(function () {
+  function closeAll(except) {
+    document.querySelectorAll('.nav-drop.open').forEach(function (d) {
+      if (d !== except) d.classList.remove('open');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var drop = e.target.closest('.nav-drop');
+    if (!drop) {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+      return;
+    }
+    if (e.target.closest('.nav-drop-menu a')) {
+      closeAll(null);
+      e.target.closest('.nav-drop-menu a').blur();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+    }
+  });
+})();
+</script>
 </body>
 </html>
