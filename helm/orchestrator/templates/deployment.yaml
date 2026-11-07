@@ -230,6 +230,12 @@ spec:
               value: {{ .Values.orchestrator.env.ratingIntervalSeconds | quote }}
             - name: MCP_RATING_SETTLE_SECONDS
               value: {{ .Values.orchestrator.env.ratingSettleSeconds | quote }}
+            # Where the seeded servers (mcp-docs, mcp-evidence) are pulled from.
+            # Empty = Docker Hub (curtismager20/...). Set for private / Marketplace registries.
+            {{- with .Values.orchestrator.env.seedImagePrefix }}
+            - name: MCP_SEED_IMAGE_PREFIX
+              value: {{ . | quote }}
+            {{- end }}
             # ── Delegated-token refresh sweeper ───────────────────────────
             # ⚠ Keeps delegated OAuth grants alive. Without it an IDLE grant
             # drifts past the window where the authorisation server still

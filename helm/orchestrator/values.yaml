@@ -3,6 +3,9 @@
 # Global settings
 global:
   imageRegistry: docker.io
+  # Image for the small startup (init) containers (inventory, probod). Point it at
+  # your own registry's copy for private, air-gapped or AWS Marketplace installs.
+  initContainerImage: busybox:1.37
 
 # ─── Orchestrator ─────────────────────────────────────────────────────────────
 orchestrator:
@@ -285,6 +288,11 @@ orchestrator:
     #   --set orchestrator.env.ratingIntervalSeconds=5
     ratingIntervalSeconds: "60"   # was 600: a 10-minute gap kept calls out of the chargeback (design partner, 2026-10-05)
     ratingSettleSeconds: 60       # only rate events >60s old   (>= 0)
+    # Registry path for the servers the orchestrator seeds itself (mcp-docs,
+    # mcp-evidence). Empty = Docker Hub (curtismager20/...). For a private mirror,
+    # air-gapped registry or AWS Marketplace, e.g.
+    #   123456789012.dkr.ecr.us-east-1.amazonaws.com/magertron
+    seedImagePrefix: ""
 
     # Delegated-token refresh sweeper. Leader-only.
     #
