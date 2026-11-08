@@ -30,8 +30,8 @@ DESC = ("Magertron™ AgentSaaS. For enterprises that need to govern AI calls ac
 
 HERO = """<section class="hero">
   <div class="container">
-    <div style="font-size: 14px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-bottom: 14px;">Magertron™ AgentSaaS</div>
-    <h1 style="font-size: clamp(34px, 5vw, 56px);">The SaaS control plane for AI<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>No vendor governs the others</em></span></h1>
+    <div style="font-size: 14px; font-weight: 700; letter-spacing: .06em; opacity: .75; margin-bottom: 14px;">Magertron™ AgentSaaS</div>
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">The SaaS control plane for AI<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>Govern agents across your SaaS estate in one place</em></span></h1>
     <p class="lede" style="max-width: 640px; margin: 18px auto 0;">Magertron™ AI Orchestrator runs in your cluster, between your agents and ServiceNow, Salesforce, Workday and your own systems. One policy, one audit trail, every vendor’s usage metered.</p>
   </div>
 </section>
