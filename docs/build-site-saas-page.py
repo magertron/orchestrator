@@ -24,14 +24,14 @@ if OUT.exists() and "--force" not in sys.argv:
     sys.exit("solutions-saas.html already exists - add --force to rebuild it")
 s = SRC.read_text(encoding="utf-8")
 
-TITLE = "Across SaaS Platforms - Magertron™ AI Orchestrator"
+TITLE = "The SaaS Control Plane for AI - Magertron™ AI Orchestrator"
 DESC = ("For enterprises that need to govern AI calls across their SaaS estate and won't let one "
         "vendor's control plane police the others: one neutral control plane, in your cluster.")
 
 HERO = """<section class="hero">
   <div class="container">
-    <h1 style="font-size: clamp(34px, 5vw, 56px);">One control plane over every SaaS agent<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>For enterprises that won't let one vendor police the others</em></span></h1>
-    <p class="lede" style="max-width: 760px; margin: 18px auto 0;">Magertron™ AI Orchestrator is the neutral layer between your agents and every platform they use. It runs in your own cluster and sits in the path of every agent call into ServiceNow, Salesforce, Workday and your internal systems: one set of your rules, one identity for the agent and the person it acts for, one audit trail, and every vendor's usage metered against its contract.</p>
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">The SaaS control plane for AI<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>For enterprises that won't let one vendor police the others</em></span></h1>
+    <p class="lede" style="max-width: 640px; margin: 18px auto 0;">Magertron™ AI Orchestrator runs in your cluster, between your agents and ServiceNow, Salesforce, Workday and your own systems. One policy, one audit trail, every vendor’s usage metered.</p>
   </div>
 </section>
 """
@@ -95,8 +95,8 @@ CSS = r""".xs{--bg:#0e1422;--paper:#121a2c;--ink:#e7ebf3;--muted:#9aa4b8;--line:
 .xs .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 .xs .pack{border-top:3px solid var(--accent);background:var(--paper);border-radius:0 0 12px 12px;padding:14px 18px;min-width:0;
   border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-.xs .pack ul{margin:6px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:14.5px}
-.xs .pack li{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}
+.xs .pack ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--muted)}
+.xs 
 .xs .why{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
 .xs .why div{border-left:2px solid var(--accent);padding-left:14px}
 .xs .why p{color:var(--muted);font-size:14.5px}
@@ -239,7 +239,7 @@ BODY = r"""<div class="xs"><div class="xs-wrap">
 </figure>
 
 <section>
-  <h2>Four kinds of call</h2>
+  <h2>Three kinds of call</h2>
   <p class="sub" style="margin-bottom:16px">What happens depends on who is calling and where the call goes.</p>
   <div class="paths">
     <div class="path">
@@ -250,7 +250,6 @@ BODY = r"""<div class="xs"><div class="xs-wrap">
         <li>Your rules apply on top of ServiceNow's: <b>closing a P1 waits for the on-call engineer</b>.</li>
         <li>No lock-in to Agent Studio: the same agent also works on Salesforce and Workday.</li>
       </ul>
-      <p><span class="out o-ok">ALLOW</span><span class="out o-hold">HOLD</span><span class="out o-stop">DENY</span></p>
     </div>
     <div class="path">
       <span class="tag">your agent → Salesforce</span>
@@ -260,7 +259,6 @@ BODY = r"""<div class="xs"><div class="xs-wrap">
         <li><b>Caps by team, user or agent</b> stop a looping agent before the invoice does.</li>
         <li>Deal-desk rules: discounts over a limit wait for the manager.</li>
       </ul>
-      <p><span class="out o-ok">ALLOW</span><span class="out o-hold">HOLD</span><span class="out o-stop">CAP</span></p>
     </div>
     <div class="path">
       <span class="tag">SaaS agent → your systems</span>
@@ -269,16 +267,6 @@ BODY = r"""<div class="xs"><div class="xs-wrap">
         <li>Your ERP, billing and data are registered in Magertron as MCP or REST servers.</li>
         <li>An Agentforce or Now Assist agent calling them gets the <b>same identity, policy and audit</b> as your own agents.</li>
       </ul>
-      <p><span class="out o-ok">ALLOW</span><span class="out o-hold">HOLD</span><span class="out o-stop">DENY</span></p>
-    </div>
-    <div class="path">
-      <span class="tag">vendor agent → same vendor</span>
-      <h3>Entirely inside one platform</h3>
-      <ul>
-        <li>An Agent Studio agent working only on ServiceNow data never leaves ServiceNow.</li>
-        <li>That is the vendor's control tower's job. Magertron is not in that path, and doesn't claim to be.</li>
-      </ul>
-      <p><span class="out o-none">VENDOR-GOVERNED</span></p>
     </div>
   </div>
 </section>
@@ -304,19 +292,19 @@ BODY = r"""<div class="xs"><div class="xs-wrap">
   <p class="sub" style="margin-bottom:16px">Like the Factory and AgentCzar packs: the customer supplies the facts as data, the pack supplies the rules. Examples of what each would hold.</p>
   <div class="packs">
     <div class="pack"><h3>ServiceNow pack</h3><ul>
-      <li><span class="out o-hold">HOLD</span><span>Closing or downgrading a P1 incident, for the on-call engineer</span></li>
-      <li><span class="out o-hold">HOLD</span><span>A change request outside its change window, for the CAB</span></li>
-      <li><span class="out o-stop">DENY</span><span>Bulk reassignment of more than 50 tickets in one call</span></li>
+      <li>Closing or downgrading a P1 incident waits for the on-call engineer.</li>
+      <li>A change outside its change window waits for the CAB.</li>
+      <li>Reassigning more than 50 tickets in one call is refused.</li>
     </ul></div>
     <div class="pack"><h3>Salesforce pack</h3><ul>
-      <li><span class="out o-hold">HOLD</span><span>A discount beyond the rep's authority, for the deal desk</span></li>
-      <li><span class="out o-stop">DENY</span><span>Exporting more than 1,000 contacts in one call</span></li>
-      <li><span class="out o-stop">CAP</span><span>A team's monthly Agentforce and API spend</span></li>
+      <li>A discount beyond the rep's authority waits for the deal desk.</li>
+      <li>Exporting more than 1,000 contacts in one call is refused.</li>
+      <li>Each team's monthly Agentforce and API spend is capped.</li>
     </ul></div>
     <div class="pack"><h3>Workday pack</h3><ul>
-      <li><span class="out o-hold">HOLD</span><span>Any compensation change, for the HR business partner</span></li>
-      <li><span class="out o-stop">DENY</span><span>Reading salary data for anyone outside the manager's org</span></li>
-      <li><span class="out o-ok">ALLOW</span><span>Time-off balances and org charts</span></li>
+      <li>Any compensation change waits for the HR business partner.</li>
+      <li>Salary data outside the manager's own org is refused.</li>
+      <li>Time-off balances and org charts are allowed.</li>
     </ul></div>
   </div>
 </section>
