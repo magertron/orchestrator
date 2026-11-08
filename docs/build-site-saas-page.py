@@ -24,12 +24,13 @@ if OUT.exists() and "--force" not in sys.argv:
     sys.exit("solutions-saas.html already exists - add --force to rebuild it")
 s = SRC.read_text(encoding="utf-8")
 
-TITLE = "The SaaS Control Plane for AI - Magertron™ AI Orchestrator"
-DESC = ("For enterprises that need to govern AI calls across their SaaS estate and won't let one "
+TITLE = "Magertron™ AgentSaaS - The SaaS control plane for AI"
+DESC = ("Magertron™ AgentSaaS. For enterprises that need to govern AI calls across their SaaS estate and won't let one "
         "vendor's control plane police the others: one neutral control plane, in your cluster.")
 
 HERO = """<section class="hero">
   <div class="container">
+    <div style="font-size: 14px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-bottom: 14px;">Magertron™ AgentSaaS</div>
     <h1 style="font-size: clamp(34px, 5vw, 56px);">The SaaS control plane for AI<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>No vendor governs the others</em></span></h1>
     <p class="lede" style="max-width: 640px; margin: 18px auto 0;">Magertron™ AI Orchestrator runs in your cluster, between your agents and ServiceNow, Salesforce, Workday and your own systems. One policy, one audit trail, every vendor’s usage metered.</p>
   </div>
