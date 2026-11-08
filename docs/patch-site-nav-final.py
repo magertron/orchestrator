@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Website headers: exactly the same top bar on every page.
 
-  Platform ▾ (AI Orchestrator · AI Data Reach · AgentCzar)
-  Solutions ▾ (Banking · Accounts payable · Sales & CRM · Network operations)
+  Platform ▾ (AI Orchestrator · AI Data Reach · AgentCzar · AgentSaaS)
+  Solutions ▾ (Banking · Accounts payable · Sales & CRM · Network operations · Across SaaS platforms)
   Developers ▾ (Overview · Install · CLI · Developer Portal · API Documentation · GitHub · Build an agent ·
                 VS Code · Devin · Cursor · Claude Code)
   Pricing · Cost & Reporting · Security · [the page's own Try it now]
@@ -30,7 +30,7 @@ SITE = pathlib.Path(sys.argv[sys.argv.index("--site") + 1] if "--site" in sys.ar
                     else "~/GetHub/orchestrator/docs").expanduser()
 
 PLATFORM = [("AI Orchestrator", "index.html#governed-surfaces"), ("AI Data Reach", "data-reach.html"),
-            ("AgentCzar", "agentczar.html")]
+            ("AgentCzar", "agentczar.html"), ("AgentSaaS", "solutions-saas.html")]
 SOLUTIONS = [("Banking", "solutions-banking.html"), ("Accounts payable", "solutions-accounts-payable.html"),
              ("Sales &amp; CRM", "solutions-crm.html"), ("Network operations", "solutions-network-operations.html"),
              ("Across SaaS platforms", "solutions-saas.html")]

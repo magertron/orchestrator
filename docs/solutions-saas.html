@@ -565,12 +565,13 @@ body { overflow-x: clip; }
   <div class="container">
     <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
     <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
-      <div class="nav-drop">
+      <div class="nav-drop on">
         <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
         <div class="nav-drop-menu">
           <a href="index.html#governed-surfaces">AI Orchestrator</a>
           <a href="data-reach.html">AI Data Reach</a>
           <a href="agentczar.html">AgentCzar</a>
+          <a href="solutions-saas.html" style="color: var(--text);">AgentSaaS</a>
         </div>
       </div>
       <div class="nav-drop on">
