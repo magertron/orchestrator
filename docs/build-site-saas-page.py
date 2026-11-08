@@ -30,7 +30,7 @@ DESC = ("For enterprises that need to govern AI calls across their SaaS estate a
 
 HERO = """<section class="hero">
   <div class="container">
-    <h1 style="font-size: clamp(34px, 5vw, 56px);">The SaaS control plane for AI<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>For enterprises that won't let one vendor police the others</em></span></h1>
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">The SaaS control plane for AI<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>No vendor governs the others</em></span></h1>
     <p class="lede" style="max-width: 640px; margin: 18px auto 0;">Magertron™ AI Orchestrator runs in your cluster, between your agents and ServiceNow, Salesforce, Workday and your own systems. One policy, one audit trail, every vendor’s usage metered.</p>
   </div>
 </section>
@@ -268,44 +268,6 @@ BODY = r"""<div class="xs"><div class="xs-wrap">
         <li>An Agentforce or Now Assist agent calling them gets the <b>same identity, policy and audit</b> as your own agents.</li>
       </ul>
     </div>
-  </div>
-</section>
-
-<section>
-  <h2>Who does what</h2>
-  <p class="sub" style="margin-bottom:16px">Magertron doesn't replace the vendors' governance. It covers what no single vendor can see.</p>
-  <div class="tbl"><table>
-    <thead><tr><th></th><th>Inside one vendor (Control Tower, Agentforce controls)</th><th>Across vendors (Magertron)</th></tr></thead>
-    <tbody>
-      <tr><td>Scope</td><td>That vendor's platform, and what it chooses to connect to</td><td>Every agent call that crosses a boundary, to any vendor or internal system</td></tr>
-      <tr><td>Where it runs</td><td>The vendor's cloud</td><td>Your cluster, including air-gapped</td></tr>
-      <tr><td>Whose rules</td><td>Configured in that vendor's console</td><td>One set of policies, kept in your git, applied to all of them</td></tr>
-      <tr><td>Identity</td><td>The vendor's user model</td><td>Your IdP: the agent plus the person it acts for, the same everywhere</td></tr>
-      <tr><td>Cost</td><td>The vendor's own usage reports</td><td>Every vendor's usage side by side, rated against contracts, with caps</td></tr>
-      <tr><td>Audit</td><td>Per platform</td><td>One trail across platforms, exported to the vendors' consoles too</td></tr>
-    </tbody>
-  </table></div>
-</section>
-
-<section>
-  <h2>Policy packs per system</h2>
-  <p class="sub" style="margin-bottom:16px">Like the Factory and AgentCzar packs: the customer supplies the facts as data, the pack supplies the rules. Examples of what each would hold.</p>
-  <div class="packs">
-    <div class="pack"><h3>ServiceNow pack</h3><ul>
-      <li>Closing or downgrading a P1 incident waits for the on-call engineer.</li>
-      <li>A change outside its change window waits for the CAB.</li>
-      <li>Reassigning more than 50 tickets in one call is refused.</li>
-    </ul></div>
-    <div class="pack"><h3>Salesforce pack</h3><ul>
-      <li>A discount beyond the rep's authority waits for the deal desk.</li>
-      <li>Exporting more than 1,000 contacts in one call is refused.</li>
-      <li>Each team's monthly Agentforce and API spend is capped.</li>
-    </ul></div>
-    <div class="pack"><h3>Workday pack</h3><ul>
-      <li>Any compensation change waits for the HR business partner.</li>
-      <li>Salary data outside the manager's own org is refused.</li>
-      <li>Time-off balances and org charts are allowed.</li>
-    </ul></div>
   </div>
 </section>
 
