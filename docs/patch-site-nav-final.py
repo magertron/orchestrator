@@ -32,7 +32,8 @@ SITE = pathlib.Path(sys.argv[sys.argv.index("--site") + 1] if "--site" in sys.ar
 PLATFORM = [("AI Orchestrator", "index.html#governed-surfaces"), ("AI Data Reach", "data-reach.html"),
             ("AgentCzar", "agentczar.html")]
 SOLUTIONS = [("Banking", "solutions-banking.html"), ("Accounts payable", "solutions-accounts-payable.html"),
-             ("Sales &amp; CRM", "solutions-crm.html"), ("Network operations", "solutions-network-operations.html")]
+             ("Sales &amp; CRM", "solutions-crm.html"), ("Network operations", "solutions-network-operations.html"),
+             ("Across SaaS platforms", "solutions-saas.html")]
 DEVELOPERS = [("Overview", "developers.html"), ("Install", "index.html#install"), ("CLI", "index.html#cli"),
               ("Developer Portal", "developer-portal.html"), ("API Documentation", "api/v1/"),
               ("GitHub", "https://github.com/magertron/orchestrator"),

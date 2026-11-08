@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Across SaaS Platforms - Magertron™ AI Orchestrator</title>
+<meta name="description" content="For enterprises that need to govern AI calls across their SaaS estate and won't let one vendor's control plane police the others: one neutral control plane, in your cluster.">
+
+<link rel="canonical" href="https://magertron.com/solutions-saas.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/solutions-saas.html">
+<meta property="og:title" content="Across SaaS Platforms - Magertron™ AI Orchestrator">
+<meta property="og:description" content="For enterprises that need to govern AI calls across their SaaS estate and won't let one vendor's control plane police the others: one neutral control plane, in your cluster.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+html { scrollbar-gutter: stable; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav (matches index.html) */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* Hero */
+.hero { padding: 110px 0 36px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 520px; height: 340px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.6; pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
+}
+.hero h1 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(28px, 3.6vw, 40px); line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 16px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto 16px; line-height: 1.65;
+}
+.hero .meta {
+  font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+  margin-top: 32px;
+}
+
+/* Section structure */
+section.content { padding: 60px 0; }
+section.content .container { max-width: 920px; }
+.section-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 12px;
+}
+section.content h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 20px;
+}
+section.content h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em; margin: 32px 0 12px;
+}
+section.content p {
+  font-size: 17px; color: var(--text-secondary); line-height: 1.8;
+  margin-bottom: 16px;
+}
+section.content strong { color: var(--text); font-weight: 600; }
+section.content em { color: var(--text); font-style: italic; }
+
+/* Two-column "at a glance" cards */
+.glance { padding: 40px 0 60px; }
+.glance .container { max-width: 1100px; }
+.glance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.glance-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px;
+}
+.glance-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.glance-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.glance-card-label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 8px;
+}
+.glance-card.mcp-orch .glance-card-label { color: var(--accent-text); }
+.glance-card.agentcore .glance-card-label { color: #ff9900; }
+.glance-card h3 {
+  font-family: var(--serif); font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 16px;
+}
+.glance-card p {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px;
+}
+.glance-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+}
+.glance-card ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start;
+}
+.glance-card ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.glance-card.agentcore ul li::before { color: #ff9900; }
+
+/* Comparison table */
+.comparison { padding: 40px 0 60px; }
+.comparison .container { max-width: 1100px; }
+.comparison table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.comparison th, .comparison td {
+  padding: 18px 24px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comparison thead th {
+  background: rgba(255, 255, 255, 0.02);
+  font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-tertiary); font-weight: 500;
+}
+.comparison thead th.col-mag { color: var(--accent-text); }
+.comparison thead th.col-aws { color: #ff9900; }
+.comparison tbody tr:last-child th,
+.comparison tbody tr:last-child td { border-bottom: none; }
+.comparison tbody th {
+  font-family: var(--sans); font-weight: 600; font-size: 14px;
+  color: var(--text); width: 24%;
+}
+.comparison tbody td {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* Collapsible wrapper for the comparison table */
+.cmp-toggle { margin: 0; }
+.cmp-toggle > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 24px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  transition: border-color 0.2s, background 0.2s;
+}
+.cmp-toggle > summary::-webkit-details-marker { display: none; }
+.cmp-toggle > summary:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+.cmp-toggle > summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.cmp-chevron {
+  flex-shrink: 0; color: var(--text-tertiary); font-size: 13px;
+  transition: transform 0.2s, color 0.2s;
+}
+.cmp-toggle[open] > summary .cmp-chevron { transform: rotate(90deg); color: var(--accent-text); }
+.cmp-label { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--text); }
+.cmp-count {
+  margin-left: auto; flex-shrink: 0;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary);
+}
+.cmp-toggle .when-open { display: none; }
+.cmp-toggle[open] .when-open { display: inline; }
+.cmp-toggle[open] .when-closed { display: none; }
+.cmp-body { margin-top: 16px; }
+
+/* Pills inside table cells */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-right: 6px; margin-bottom: 4px;
+}
+.pill.good { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+.pill.warn { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.3); }
+.pill.info { background: rgba(96, 165, 250, 0.1); color: var(--accent-text); border: 1px solid rgba(96, 165, 250, 0.3); }
+.pill.neutral { background: rgba(134, 148, 168, 0.1); color: var(--text-secondary); border: 1px solid rgba(134, 148, 168, 0.3); }
+
+/* "Pick X when..." section */
+.pick { padding: 60px 0; }
+.pick .container { max-width: 1100px; }
+.pick h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 48px; text-align: center;
+}
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.pick-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px;
+}
+.pick-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.pick-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.pick-card .label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 12px;
+}
+.pick-card.mcp-orch .label { color: var(--accent-text); }
+.pick-card.agentcore .label { color: #ff9900; }
+.pick-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  margin-bottom: 24px; letter-spacing: -0.02em;
+}
+.pick-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 14px;
+}
+.pick-card ul li {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pick-card ul li::before {
+  content: '✓'; color: var(--success); flex-shrink: 0; font-weight: 700;
+}
+.pick-card ul li strong { color: var(--text); font-weight: 600; }
+
+/* Closing CTA */
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 60px 48px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 700; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 32px; position: relative; }
+.cta-actions { display: flex; gap: 16px; justify-content: center; position: relative; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; color: white; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px;
+  font-weight: 500; font-size: 14px; border: 1px solid var(--border); text-decoration: none;
+  transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; color: var(--text); }
+
+/* Footer */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .glance-row, .pick-row { grid-template-columns: 1fr; }
+  .comparison table { font-size: 13px; }
+  .comparison th, .comparison td { padding: 14px 16px; }
+  .comparison tbody th { width: 30%; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does this need a particular CRM?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Any CRM with an API your agents call can sit behind Magertron. The rules are written against the calls, not the product."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can an agent run on its own overnight?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only if you allow it. Magertron can require a person behind every agent call in a namespace. An agent calling alone is refused, and the refusal is audited."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where do the discount limits live?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "In policy data, read by the policy engine you run. Changing a limit doesn't need a new release of the CRM or the agent."
+      }
+    }
+  ]
+}
+</script>
+<style id="mag-solutions-nav">
+.nav-drop { position: relative; }
+.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+  color: var(--text-secondary); transition: color 0.2s; }
+.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
+.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
+.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
+  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
+.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
+.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
+@media (max-width: 1180px) { .nav-links { gap: 22px; } }
+@media (max-width: 768px) {
+  .nav-links .nav-drop { display: none; }
+  nav.open .nav-links .nav-drop { display: block; }
+  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
+    color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
+    box-shadow: none; padding: 0 0 0 14px; background: none; }
+  nav.open .nav-drop-menu::before { display: none; }
+}
+</style>
+<style id="mag-demo-form">
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px;
+  padding: 10px 14px; color: #0a0d12; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: #6b7280; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #b9bfca; color: #0a0d12; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+</style>
+<style id="mag-nav-center">
+@media (min-width: 769px) {
+  nav .nav-links { flex: 1; }
+  nav .nav-links > :first-child { margin-left: auto; }
+  nav .nav-links > .nav-cta { margin-left: auto; }
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style id="xsaas">
+.xs{--bg:#0e1422;--paper:#121a2c;--ink:#e7ebf3;--muted:#9aa4b8;--line:#26314b;
+  --navy:#1a2440;--navy-2:#24314f;--on-navy:#eef1f6;--on-navy-muted:#a9b3c6;
+  --accent:#f29a4a;--accent-soft:#3a2617;--ok:#4cc98a;--hold:#f2b84b;--stop:#ff7a7a;
+  --vendor:#182136;--vendor-line:#3a4664;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color:var(--ink);font:15.5px/1.6 var(--body)}
+.xs .xs-wrap{max-width:1180px;margin:0 auto;padding:8px 24px 64px;display:flex;flex-direction:column;gap:44px}
+.xs *{box-sizing:border-box}
+@media (max-width:640px){.xs .xs-wrap{padding:8px 16px 48px}}
+.xs h2{font:700 26px/1.15 var(--display);margin:0 0 6px;text-wrap:balance}
+.xs h3{font:600 17px/1.3 var(--body);margin:0 0 4px}
+.xs p{margin:0}
+.xs .sub{color:var(--muted);max-width:68ch}
+.xs .figure{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 18px 10px}
+.xs .scroll{overflow-x:auto}
+.xs svg.arch{display:block;min-width:980px;width:100%;height:auto}
+.xs .figure figcaption{font-size:13px;color:var(--muted);padding:8px 4px 4px;display:flex;flex-wrap:wrap;gap:6px 18px}
+.xs .key{display:inline-flex;align-items:center;gap:6px}
+.xs .key i{display:inline-block;width:22px;height:0;border-top:2px solid var(--accent)}
+.xs .key i.dash{border-top:2px dashed var(--vendor-line)}
+.xs .t-col{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;fill:var(--muted)}
+.xs .box{fill:var(--paper);stroke:var(--line);stroke-width:1.2}
+.xs .box-v{fill:var(--vendor);stroke:var(--vendor-line);stroke-width:1.2}
+.xs .mag{fill:var(--navy)}
+.xs .tile{fill:var(--navy-2)}
+.xs .gw{fill:var(--accent)}
+.xs .t-h{font:600 14px var(--body);fill:var(--ink)}
+.xs .t-s{font:400 12px var(--body);fill:var(--muted)}
+.xs .t-mh{font:700 17px var(--display);fill:var(--on-navy)}
+.xs .t-mt{font:600 13px var(--body);fill:var(--on-navy)}
+.xs .t-ms{font:400 11.5px var(--body);fill:var(--on-navy-muted)}
+.xs .t-gw{font:600 12px var(--mono);fill:#1a0f06}
+.xs .flow{stroke:var(--accent);stroke-width:2;fill:none}
+.xs .flow-in{stroke:var(--accent);stroke-width:2;fill:none;stroke-dasharray:7 5}
+.xs .vend{stroke:var(--vendor-line);stroke-width:1.6;fill:none;stroke-dasharray:4 4}
+.xs .arrow{fill:var(--accent)}
+.xs .arrow-v{fill:var(--vendor-line)}
+.xs .paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.xs .path{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.xs .path .tag{font:500 12px var(--mono);color:var(--muted)}
+.xs .path ul{margin:0;padding-left:18px;color:var(--muted);font-size:14.5px}
+.xs .path li{margin:2px 0}
+.xs .path li b{color:var(--ink);font-weight:600}
+.xs .out{display:inline-block;font:600 11px var(--mono);padding:2px 8px;border-radius:999px;margin-right:4px;border:1px solid}
+.xs .o-ok{color:var(--ok);border-color:currentColor}
+.xs .o-hold{color:var(--hold);border-color:currentColor}
+.xs .o-stop{color:var(--stop);border-color:currentColor}
+.xs .o-none{color:var(--muted);border-color:currentColor}
+.xs .tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.xs table{border-collapse:collapse;width:100%;min-width:640px;font-size:14.5px}
+.xs th, .xs td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+.xs th{font:600 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+.xs tr:last-child td{border-bottom:0}
+.xs td:first-child{font-weight:600;white-space:nowrap}
+.xs .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.xs .pack{border-top:3px solid var(--accent);background:var(--paper);border-radius:0 0 12px 12px;padding:14px 18px;min-width:0;
+  border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.xs .pack ul{margin:6px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:14.5px}
+.xs .pack li{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}
+.xs .why{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.xs .why div{border-left:2px solid var(--accent);padding-left:14px}
+.xs .why p{color:var(--muted);font-size:14.5px}
+.xs .note{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+.xs .cta-a{display:inline-block;padding:11px 20px;border-radius:10px;font:600 15px var(--body);text-decoration:none;border:1px solid var(--accent)}
+.xs .cta-a.primary{background:var(--accent);color:#1a0f06}
+.xs .cta-a.ghost{color:var(--accent);background:transparent}
+.xs .cta-a:focus-visible{outline:2px solid var(--on-navy);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="index.html#governed-surfaces">AI Orchestrator</a>
+          <a href="data-reach.html">AI Data Reach</a>
+          <a href="agentczar.html">AgentCzar</a>
+        </div>
+      </div>
+      <div class="nav-drop on">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="solutions-banking.html">Banking</a>
+          <a href="solutions-accounts-payable.html">Accounts payable</a>
+          <a href="solutions-crm.html">Sales &amp; CRM</a>
+          <a href="solutions-network-operations.html">Network operations</a>
+          <a href="solutions-saas.html" style="color: var(--text);">Across SaaS platforms</a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="developers.html">Overview</a>
+          <a href="index.html#install">Install</a>
+          <a href="index.html#cli">CLI</a>
+          <a href="developer-portal.html">Developer Portal</a>
+          <a href="api/v1/">API Documentation</a>
+          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
+          <a href="developers.html">Build an agent</a>
+          <a href="vscode/">VS Code</a>
+          <a href="devin/">Devin</a>
+          <a href="cursor/">Cursor</a>
+          <a href="claude-code/">Claude Code</a>
+        </div>
+      </div>
+      <a href="pricing.html">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="#" onclick="openDemoModal(event)" class="nav-cta">Try it now </a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">One control plane over every SaaS agent<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>For enterprises that won't let one vendor police the others</em></span></h1>
+    <p class="lede" style="max-width: 760px; margin: 18px auto 0;">Magertron™ AI Orchestrator is the neutral layer between your agents and every platform they use. It runs in your own cluster and sits in the path of every agent call into ServiceNow, Salesforce, Workday and your internal systems: one set of your rules, one identity for the agent and the person it acts for, one audit trail, and every vendor's usage metered against its contract.</p>
+  </div>
+</section>
+<div class="xs"><div class="xs-wrap">
+<figure class="figure" style="margin:0">
+<div class="scroll">
+<svg class="arch" viewBox="0 0 1120 640" role="img" aria-labelledby="archTitle archDesc">
+  <title id="archTitle">Magertron in front of ServiceNow, Salesforce and other systems</title>
+  <desc id="archDesc">People and agents on the left call through Magertron in the middle, which checks identity, policy, holds and cost, then reaches ServiceNow's MCP server, Salesforce, other SaaS, internal systems, LLMs and event streams on the right. Each vendor's own governance tool governs inside its platform and receives Magertron's traces.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrow"/></marker>
+    <marker id="ahv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrow-v"/></marker>
+  </defs>
+
+  <!-- column labels -->
+  <text x="20" y="24" class="t-col">Who acts</text>
+  <text x="330" y="24" class="t-col">In your cluster</text>
+  <text x="830" y="24" class="t-col">What they reach</text>
+
+  <!-- left: who acts -->
+  <rect x="20" y="40" width="240" height="66" rx="10" class="box"/>
+  <text x="36" y="66" class="t-h">People</text>
+  <text x="36" y="86" class="t-s">sign in with your IdP (Okta, Entra)</text>
+
+  <rect x="20" y="122" width="240" height="84" rx="10" class="box"/>
+  <text x="36" y="148" class="t-h">Your own agents</text>
+  <text x="36" y="168" class="t-s">Agent SDK, LangGraph, in-house</text>
+  <text x="36" y="186" class="t-s">copilots: Claude, Cursor, Codex</text>
+
+  <rect x="20" y="222" width="240" height="66" rx="10" class="box"/>
+  <text x="36" y="248" class="t-h">Partner-built agents</text>
+  <text x="36" y="268" class="t-s">from your SIs and software vendors</text>
+
+  <rect x="20" y="304" width="240" height="84" rx="10" class="box-v"/>
+  <text x="36" y="330" class="t-h">SaaS agents calling out</text>
+  <text x="36" y="350" class="t-s">Agentforce, Now Assist reaching</text>
+  <text x="36" y="368" class="t-s">your internal systems</text>
+
+  <!-- middle: Magertron -->
+  <rect x="330" y="40" width="430" height="420" rx="14" class="mag"/>
+  <text x="352" y="72" class="t-mh">Magertron™ AI Orchestrator</text>
+  <text x="352" y="92" class="t-ms">self-hosted · one install per enterprise · namespaces per team</text>
+
+  <rect x="352" y="108" width="386" height="40" rx="8" class="gw"/>
+  <text x="545" y="133" text-anchor="middle" class="t-gw">gateway: every call checked inline</text>
+
+  <rect x="352" y="160" width="188" height="86" rx="8" class="tile"/>
+  <text x="366" y="184" class="t-mt">Identity</text>
+  <text x="366" y="204" class="t-ms">the agent and the person</text>
+  <text x="366" y="220" class="t-ms">it acts for, on every call</text>
+  <text x="366" y="236" class="t-ms">(token exchange, SCIM)</text>
+
+  <rect x="550" y="160" width="188" height="86" rx="8" class="tile"/>
+  <text x="564" y="184" class="t-mt">Policy</text>
+  <text x="564" y="204" class="t-ms">grants per tool and role,</text>
+  <text x="564" y="220" class="t-ms">plus policy packs per system</text>
+  <text x="564" y="236" class="t-ms">(OPA, yours or bundled)</text>
+
+  <rect x="352" y="256" width="188" height="86" rx="8" class="tile"/>
+  <text x="366" y="280" class="t-mt">Holds</text>
+  <text x="366" y="300" class="t-ms">risky calls wait for a</text>
+  <text x="366" y="316" class="t-ms">named approver; no</text>
+  <text x="366" y="332" class="t-ms">self-approval</text>
+
+  <rect x="550" y="256" width="188" height="86" rx="8" class="tile"/>
+  <text x="564" y="280" class="t-mt">Cost</text>
+  <text x="564" y="300" class="t-ms">every call rated against</text>
+  <text x="564" y="316" class="t-ms">the vendor's contract;</text>
+  <text x="564" y="332" class="t-ms">caps by team and agent</text>
+
+  <rect x="352" y="352" width="386" height="86" rx="8" class="tile"/>
+  <text x="366" y="376" class="t-mt">Audit and traces</text>
+  <text x="366" y="396" class="t-ms">every decision, refusals included, with who acted for whom.</text>
+  <text x="366" y="412" class="t-ms">One trace per agent session (OpenTelemetry), exported to your</text>
+  <text x="366" y="428" class="t-ms">SIEM, observability stack and the vendors' own consoles.</text>
+
+  <!-- right: what they reach -->
+  <rect x="830" y="40" width="270" height="70" rx="10" class="box"/>
+  <text x="846" y="66" class="t-h">ServiceNow MCP server</text>
+  <text x="846" y="86" class="t-s">Action Fabric: incidents, changes,</text>
+  <text x="846" y="102" class="t-s">approvals, catalog requests</text>
+
+  <rect x="830" y="122" width="270" height="70" rx="10" class="box"/>
+  <text x="846" y="148" class="t-h">Salesforce MCP and APIs</text>
+  <text x="846" y="168" class="t-s">accounts, opportunities, quotes;</text>
+  <text x="846" y="184" class="t-s">Agentforce actions billed per use</text>
+
+  <rect x="830" y="204" width="270" height="56" rx="10" class="box"/>
+  <text x="846" y="228" class="t-h">Workday · SAP · M365 · Slack</text>
+  <text x="846" y="246" class="t-s">and any other SaaS with MCP or REST</text>
+
+  <rect x="830" y="272" width="270" height="56" rx="10" class="box"/>
+  <text x="846" y="296" class="t-h">Your internal APIs and MCP servers</text>
+  <text x="846" y="314" class="t-s">ERP, billing, data warehouse</text>
+
+  <rect x="830" y="340" width="270" height="56" rx="10" class="box"/>
+  <text x="846" y="364" class="t-h">LLM providers</text>
+  <text x="846" y="382" class="t-s">Anthropic, OpenAI, your own models</text>
+
+  <rect x="830" y="408" width="270" height="52" rx="10" class="box"/>
+  <text x="846" y="431" class="t-h">Event streams</text>
+  <text x="846" y="448" class="t-s">Kafka, ZeroMQ topics</text>
+
+  <!-- flows in -->
+  <path d="M260 73 C 295 73, 300 128, 350 128" class="flow" marker-end="url(#ah)"/>
+  <path d="M260 164 C 300 164, 305 128, 350 128" class="flow" marker-end="url(#ah)"/>
+  <path d="M260 255 C 305 255, 305 128, 350 128" class="flow" marker-end="url(#ah)"/>
+  <path d="M260 346 C 310 346, 305 128, 350 128" class="flow-in" marker-end="url(#ah)"/>
+
+  <!-- flows out -->
+  <path d="M740 128 C 790 128, 790 75, 828 75" class="flow" marker-end="url(#ah)"/>
+  <path d="M740 128 C 790 128, 790 157, 828 157" class="flow" marker-end="url(#ah)"/>
+  <path d="M740 128 C 795 128, 790 232, 828 232" class="flow" marker-end="url(#ah)"/>
+  <path d="M740 128 C 800 128, 790 300, 828 300" class="flow" marker-end="url(#ah)"/>
+  <path d="M740 128 C 805 128, 790 368, 828 368" class="flow" marker-end="url(#ah)"/>
+  <path d="M740 128 C 810 128, 790 434, 828 434" class="flow" marker-end="url(#ah)"/>
+
+  <!-- vendor governance band -->
+  <rect x="330" y="512" width="770" height="104" rx="12" class="box-v"/>
+  <text x="352" y="540" class="t-h">Inside each platform: the vendor's own governance</text>
+  <text x="352" y="562" class="t-s">ServiceNow AI Control Tower governs what happens inside ServiceNow; Salesforce's trust and Agentforce</text>
+  <text x="352" y="580" class="t-s">controls govern inside Salesforce. Agents built and run entirely inside a vendor never cross Magertron.</text>
+  <text x="352" y="598" class="t-s">Magertron governs the calls between platforms, and sends its traces and audit to those consoles.</text>
+
+  <path d="M1105 75 C 1112 75, 1112 300, 1112 505" class="vend" marker-end="url(#ahv)"/>
+  <path d="M545 440 L545 505" class="vend" marker-end="url(#ahv)"/>
+  <text x="556" y="482" class="t-s">traces and audit out</text>
+</svg>
+</div>
+<figcaption>
+  <span class="key"><i></i> governed call through Magertron</span>
+  <span class="key"><i style="border-top-style:dashed"></i> a SaaS agent calling your systems, governed on the way in</span>
+  <span class="key"><i class="dash"></i> vendor governance and exported traces</span>
+</figcaption>
+</figure>
+
+<section>
+  <h2>Four kinds of call</h2>
+  <p class="sub" style="margin-bottom:16px">What happens depends on who is calling and where the call goes.</p>
+  <div class="paths">
+    <div class="path">
+      <span class="tag">your agent → ServiceNow</span>
+      <h3>Agents you built, on ServiceNow's MCP server</h3>
+      <ul>
+        <li>Every call carries <b>the agent and the person</b> it acts for.</li>
+        <li>Your rules apply on top of ServiceNow's: <b>closing a P1 waits for the on-call engineer</b>.</li>
+        <li>No lock-in to Agent Studio: the same agent also works on Salesforce and Workday.</li>
+      </ul>
+      <p><span class="out o-ok">ALLOW</span><span class="out o-hold">HOLD</span><span class="out o-stop">DENY</span></p>
+    </div>
+    <div class="path">
+      <span class="tag">your agent → Salesforce</span>
+      <h3>Agents on a platform that bills per action</h3>
+      <ul>
+        <li>Every call into Salesforce is <b>counted and priced</b> against your contract.</li>
+        <li><b>Caps by team, user or agent</b> stop a looping agent before the invoice does.</li>
+        <li>Deal-desk rules: discounts over a limit wait for the manager.</li>
+      </ul>
+      <p><span class="out o-ok">ALLOW</span><span class="out o-hold">HOLD</span><span class="out o-stop">CAP</span></p>
+    </div>
+    <div class="path">
+      <span class="tag">SaaS agent → your systems</span>
+      <h3>Vendor agents reaching inside</h3>
+      <ul>
+        <li>Your ERP, billing and data are registered in Magertron as MCP or REST servers.</li>
+        <li>An Agentforce or Now Assist agent calling them gets the <b>same identity, policy and audit</b> as your own agents.</li>
+      </ul>
+      <p><span class="out o-ok">ALLOW</span><span class="out o-hold">HOLD</span><span class="out o-stop">DENY</span></p>
+    </div>
+    <div class="path">
+      <span class="tag">vendor agent → same vendor</span>
+      <h3>Entirely inside one platform</h3>
+      <ul>
+        <li>An Agent Studio agent working only on ServiceNow data never leaves ServiceNow.</li>
+        <li>That is the vendor's control tower's job. Magertron is not in that path, and doesn't claim to be.</li>
+      </ul>
+      <p><span class="out o-none">VENDOR-GOVERNED</span></p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Who does what</h2>
+  <p class="sub" style="margin-bottom:16px">Magertron doesn't replace the vendors' governance. It covers what no single vendor can see.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Inside one vendor (Control Tower, Agentforce controls)</th><th>Across vendors (Magertron)</th></tr></thead>
+    <tbody>
+      <tr><td>Scope</td><td>That vendor's platform, and what it chooses to connect to</td><td>Every agent call that crosses a boundary, to any vendor or internal system</td></tr>
+      <tr><td>Where it runs</td><td>The vendor's cloud</td><td>Your cluster, including air-gapped</td></tr>
+      <tr><td>Whose rules</td><td>Configured in that vendor's console</td><td>One set of policies, kept in your git, applied to all of them</td></tr>
+      <tr><td>Identity</td><td>The vendor's user model</td><td>Your IdP: the agent plus the person it acts for, the same everywhere</td></tr>
+      <tr><td>Cost</td><td>The vendor's own usage reports</td><td>Every vendor's usage side by side, rated against contracts, with caps</td></tr>
+      <tr><td>Audit</td><td>Per platform</td><td>One trail across platforms, exported to the vendors' consoles too</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Policy packs per system</h2>
+  <p class="sub" style="margin-bottom:16px">Like the Factory and AgentCzar packs: the customer supplies the facts as data, the pack supplies the rules. Examples of what each would hold.</p>
+  <div class="packs">
+    <div class="pack"><h3>ServiceNow pack</h3><ul>
+      <li><span class="out o-hold">HOLD</span><span>Closing or downgrading a P1 incident, for the on-call engineer</span></li>
+      <li><span class="out o-hold">HOLD</span><span>A change request outside its change window, for the CAB</span></li>
+      <li><span class="out o-stop">DENY</span><span>Bulk reassignment of more than 50 tickets in one call</span></li>
+    </ul></div>
+    <div class="pack"><h3>Salesforce pack</h3><ul>
+      <li><span class="out o-hold">HOLD</span><span>A discount beyond the rep's authority, for the deal desk</span></li>
+      <li><span class="out o-stop">DENY</span><span>Exporting more than 1,000 contacts in one call</span></li>
+      <li><span class="out o-stop">CAP</span><span>A team's monthly Agentforce and API spend</span></li>
+    </ul></div>
+    <div class="pack"><h3>Workday pack</h3><ul>
+      <li><span class="out o-hold">HOLD</span><span>Any compensation change, for the HR business partner</span></li>
+      <li><span class="out o-stop">DENY</span><span>Reading salary data for anyone outside the manager's org</span></li>
+      <li><span class="out o-ok">ALLOW</span><span>Time-off balances and org charts</span></li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>Why neutral matters</h2>
+  <div class="why" style="margin-top:12px">
+    <div><h3>The referee isn't a player</h3><p>A company doesn't want ServiceNow deciding what agents may do in Salesforce, or the reverse. One neutral layer applies the company's own rules to both.</p></div>
+    <div><h3>Agents stay portable</h3><p>Built against Magertron, an agent reaches ServiceNow, Salesforce and internal systems the same way. Switching or adding a vendor doesn't mean rebuilding governance.</p></div>
+    <div><h3>Metered platforms need a meter</h3><p>When SaaS bills per agent action, finance needs every vendor's usage in one place, rated against contracts and capped before month-end.</p></div>
+  </div>
+</section>
+
+<section class="xs-cta" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+  <a href="#" onclick="openDemoModal(event)" class="cta-a primary">Try it now</a>
+  <a href="developers.html" class="cta-a ghost">For developers</a>
+</section>
+<p class="note">ServiceNow's MCP server, Action Fabric and the expanded AI Control Tower were announced at Knowledge 2026; Salesforce prices Agentforce per action. Pack rules shown are examples of what a policy pack holds.</p>
+</div></div>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="agentczar.html">AgentCzar</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
+          <li><a href="kong-comparison.html">AI Orchestrator vs. Kong</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="mailto:sales@magertron.com">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/consent.js" defer></script>
+
+
+<!-- mag-demo-form: copied from index.html -->
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="margin-bottom:14px;">
+      <strong style="color:var(--text-primary);">A private instance, today.</strong>
+      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      of your own, with servers, traffic and audit history already running in it.
+      Bring your own model key and the assistant works too.
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>What are you hoping to see?</label>
+      <select id="demo-tier">
+        <option value="Governing agents">Governing what my agents can reach</option>
+        <option value="Cost and spend">Cost attribution and spend control</option>
+        <option value="Audit and evidence">Audit trail and compliance evidence</option>
+        <option value="Data governance">Data access governance (Snowflake, Databricks, BigQuery)</option>
+        <option value="Just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything you want on it? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="A particular vendor, a warehouse, a scenario you want to try — or leave this blank."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Get a live instance';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Got it — your instance is on the way.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            You'll get a URL and a login by email today — a private instance with servers,
+            traffic and audit history already running in it. Nothing to install, no call to book.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+<!-- /mag-demo-form -->
+<script id="mag-nav-close">
+(function () {
+  function closeAll(except) {
+    document.querySelectorAll('.nav-drop.open').forEach(function (d) {
+      if (d !== except) d.classList.remove('open');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var drop = e.target.closest('.nav-drop');
+    if (!drop) {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+      return;
+    }
+    if (e.target.closest('.nav-drop-menu a')) {
+      closeAll(null);
+      e.target.closest('.nav-drop-menu a').blur();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+    }
+  });
+})();
+</script>
+</body>
+</html>
