@@ -582,6 +582,10 @@ Common options:
                               loaded at the root of `data`: a top-level key
                               "allowances" is data.allowances in your policy.
                               Swap the file to change caps without editing Rego.
+  --enable-presidio           Deploy Microsoft Presidio in the cluster and use it
+                              as the PII detector: names, places and ID numbers on
+                              LLM prompts and replies. Needs ~2 GB of memory. Can
+                              also be deployed later from Governance -> PII.
   --otel-endpoint <host:port> Send gateway traces to your OpenTelemetry collector
                               (OTLP/gRPC, e.g. otel-collector.observability:4317).
                               Off unless given.
@@ -693,6 +697,7 @@ while [ $# -gt 0 ]; do
         --enable-opa)          ENABLE_OPA=1; shift ;;
         --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
         --opa-data)            OPA_DATA="$2"; ENABLE_OPA=1; shift 2 ;;
+        --enable-presidio)     ENABLE_PRESIDIO=1; shift ;;
         --otel-endpoint)       OTEL_ENDPOINT="$2"; shift 2 ;;
         --otel-sampling)       OTEL_SAMPLING="$2"; shift 2 ;;
         --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
@@ -1600,6 +1605,14 @@ live_opa_policy() {
     kubectl get configmap mcp-orchestrator-opa-policy -n "$ns" \
         -o jsonpath='{.data.magertron\.rego}' 2>/dev/null | sed -e '$a\'   # jsonpath drops the final newline
 }
+
+# ── Bundled Presidio (--enable-presidio) ─────────────────────────────────────
+# ⚠ Like --enable-opa: an upgrade without the flag removes a chart-installed
+# Presidio (a console-deployed one is not the chart's and stays).
+if [ "${ENABLE_PRESIDIO:-0}" = "1" ]; then
+    HELM_VALUES+=( --set "presidio.enabled=true" )
+    note "Bundled Presidio: PII detection for names, places and ID numbers (~2 GB memory)"
+fi
 
 # ── External PDP (--enable-opa / --opa-policy / --pdp-url) ───────────────────
 # Maps to opa.* and orchestrator.pdp.* in the chart. No flag = PDP off.

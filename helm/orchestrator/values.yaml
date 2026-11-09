@@ -2545,3 +2545,17 @@ otel:
   serviceName: magertron-gateway    # service.name on the spans
   samplingPercent: 100              # share of requests traced, 0-100
   identityTags: true                # put who called / on whose behalf on spans
+
+# ── Bundled Presidio (2026-11-09) ────────────────────────────────────────────
+# Microsoft Presidio Analyzer: PII detection for names, places and ID numbers on
+# LLM prompts and replies (the built-in regex keeps running first). Enable with
+# install.sh --enable-presidio, or deploy it later from Governance -> PII in the
+# console - which uses this same pinned image. Needs ~2 GB of memory.
+presidio:
+  enabled: false
+  image:
+    repository: mcr.microsoft.com/presidio-analyzer
+    digest: "sha256:286e3fa7f3a7426e775e8564fe1870f1ba8f999d3ab8bbb8cc46a44355d9d6e9"
+  resources:
+    requests: {cpu: 250m, memory: 1536Mi}
+    limits: {memory: 2560Mi}

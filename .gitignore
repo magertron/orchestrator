@@ -25,3 +25,4 @@ docs/charts-dev/
 *.bak
 *.bak[0-9]*
 docs/*.py
+docs/img/logos/
