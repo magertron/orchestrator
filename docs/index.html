@@ -726,7 +726,9 @@ body { overflow-x: clip; }
 
 <!-- Hero -->
 <section class="hero">
-      <div class="container">
+  <div class="hero-galaxy" aria-hidden="true"></div>
+  <div class="hero-scrim" aria-hidden="true"></div>
+  <div class="container">
     <div class="hero-badge">
       <span class="dot"></span>
       Now available — v4.2.35
@@ -763,7 +765,8 @@ body { overflow-x: clip; }
       </div>
     </div>
 
-      </div>
+    <div class="mag-ask-dots" id="magAskDots" role="tablist" aria-label="Example questions"></div>
+  </div>
 </div>
 
 <style>
@@ -1375,7 +1378,12 @@ body { overflow-x: clip; }
     </div>
 
     <div class="terminal-preview">
-            <div class="terminal-body">
+      <div class="terminal-bar">
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+      </div>
+      <div class="terminal-body">
         <div><span class="dim">$</span> <span class="cmd">mcpctl login https://mcp.acme.internal admin</span></div>
         <div><span class="success">✓</span> Logged in as admin (system:platform-admin)</div>
         <br>
