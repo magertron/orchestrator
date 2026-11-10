@@ -527,6 +527,14 @@ body { overflow-x: clip; }
 .mag-pm small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400;
                 color: var(--text-secondary, #94a3b8); }
 </style>
+<style id="mag-solution-marks">
+/* Solutions menu: outlined marks + one-liners (2026-11-10) */
+.nav-drop-menu:has(.mag-pm) { min-width: 300px; }
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; line-height: 1.25; }
+.mag-pm svg { width: 24px; height: 24px; flex: none; }
+.mag-pm small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400;
+                color: var(--text-secondary, #94a3b8); }
+</style>
 </head>
 <body>
 
@@ -546,11 +554,11 @@ body { overflow-x: clip; }
       <div class="nav-drop">
         <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
         <div class="nav-drop-menu">
-          <a href="solutions-banking.html">Banking</a>
-          <a href="solutions-accounts-payable.html">Accounts payable</a>
-          <a href="solutions-crm.html">Sales &amp; CRM</a>
-          <a href="solutions-network-operations.html">Network operations</a>
-          <a href="solutions-saas.html">Across SaaS platforms</a>
+          <a href="solutions-banking.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5 12 5.5l7 4"/><path d="M5.5 9.5h13"/><path d="M7.5 11.5v5M12 11.5v5M16.5 11.5v5"/><path d="M5 18.5h14"/></g></svg><span>Banking<small>Members' AI assistants, protected from fraud</small></span></a>
+          <a href="solutions-accounts-payable.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h7l3.5 3.5v11.5H7z"/><path d="M14 4.5V8h3.5"/><path d="M9.5 11h5"/><path d="m9.5 15 1.8 1.8 3.4-3.4"/></g></svg><span>Accounts payable<small>No one approves an invoice on their own</small></span></a>
+          <a href="solutions-crm.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5h14"/><path d="M7.5 15.5v-3M11.5 15.5v-5.5M15.5 15.5v-8"/><path d="m6.5 9 3.5-2.5 3 1.5 4.5-3"/></g></svg><span>Sales &amp; CRM<small>Agents that abide by the Deal Desk</small></span></a>
+          <a href="solutions-network-operations.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2"/><circle cx="6.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/><path d="m11 7.8-3.6 7.4M13 7.8l3.6 7.4M8.5 17h7"/></g></svg><span>Network operations<small>Agents that change the network, safely</small></span></a>
+          <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17.5h8.5a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 7.3 9.8 3.9 3.9 0 0 0 8 17.5z"/></g></svg><span>Across SaaS platforms<small>Govern agents across your SaaS estate</small></span></a>
         </div>
       </div>
       <div class="nav-drop">
