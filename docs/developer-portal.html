@@ -197,6 +197,14 @@ body { overflow-x: clip; }
   nav .nav-links > .nav-cta { margin-left: auto; }
 }
 </style>
+<style id="mag-product-marks">
+/* Platform menu: product marks + one-liners (2026-11-10) */
+.nav-drop-menu:has(.mag-pm) { min-width: 300px; }
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; line-height: 1.25; }
+.mag-pm svg { width: 24px; height: 24px; flex: none; }
+.mag-pm small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400;
+                color: var(--text-secondary, #94a3b8); }
+</style>
 </head>
 <body>
 
@@ -207,10 +215,10 @@ body { overflow-x: clip; }
       <div class="nav-drop">
         <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
         <div class="nav-drop-menu">
-          <a href="index.html#governed-surfaces">AI Orchestrator</a>
-          <a href="data-reach.html">AI Data Reach</a>
-          <a href="agentczar.html">AgentCzar</a>
-          <a href="solutions-saas.html">AgentSaaS</a>
+          <a href="index.html#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator<small>One policy plane for every call</small></span></a>
+          <a href="data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach<small>What agents can read, table by table</small></span></a>
+          <a href="agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar<small>Agents acting on bank accounts</small></span></a>
+          <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS<small>The control plane for AI SaaS</small></span></a>
         </div>
       </div>
       <div class="nav-drop">
