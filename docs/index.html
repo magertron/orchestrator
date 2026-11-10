@@ -1038,6 +1038,33 @@ body { overflow-x: clip; }
     }, 300));
   }
 
+  // mag-ask-steady (2026-11-10): fix the body's height to the TALLEST example, measured
+  // with every answer fully written, so typing never moves the content below the box.
+  function lockHeight(){
+    var body = document.querySelector('.mag-ask-body');
+    if(!body) return;
+    var probe = body.cloneNode(true);
+    probe.style.cssText += ';position:absolute;visibility:hidden;pointer-events:none;'
+                         + 'left:0;top:0;min-height:0;width:' + body.clientWidth + 'px';
+    Array.prototype.forEach.call(probe.querySelectorAll('[id]'), function(n){ n.removeAttribute('id'); });
+    Array.prototype.forEach.call(probe.querySelectorAll('.mag-hide'), function(n){ n.classList.remove('mag-hide'); });
+    var spans = probe.querySelectorAll('.mag-ask-bubble-user > span:first-child, .mag-ask-bubble-bot > span:first-child');
+    body.parentNode.style.position = body.parentNode.style.position || 'relative';
+    body.parentNode.appendChild(probe);
+    var tallest = 0;
+    EX.forEach(function(ex){
+      if(spans[0]) spans[0].textContent = ex.q;
+      if(spans[1]) spans[1].innerHTML  = ex.a;
+      tallest = Math.max(tallest, probe.offsetHeight);
+    });
+    probe.parentNode.removeChild(probe);
+    if(tallest > 0) body.style.minHeight = tallest + 'px';
+  }
+  lockHeight();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(lockHeight);
+  var lockT;
+  window.addEventListener('resize', function(){ clearTimeout(lockT); lockT = setTimeout(lockHeight, 150); });
+
   // Kick off when scrolled into view (don't burn the animation above the fold
   // before the visitor sees it). Fallback: start immediately.
   var started=false;
