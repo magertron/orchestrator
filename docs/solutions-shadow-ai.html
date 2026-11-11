@@ -630,7 +630,7 @@ body { overflow-x: clip; }
 <div class="xs"><div class="xs-wrap">
 <figure class="figure" style="margin:0">
 <div class="scroll">
-<svg class="arch" viewBox="0 0 1120 400" role="img" aria-labelledby="shTitle shDesc">
+<svg class="arch" viewBox="0 0 860 540" role="img" aria-labelledby="shTitle shDesc" style="min-width:760px">
   <title id="shTitle">From the laptop to the gateway: how Magertron finds and governs MCP servers</title>
   <desc id="shDesc">AI clients on managed laptops hold MCP server configs. The company's MDM delivers a small script that reads them on a timer and reports to Magertron's fleet inventory. Approved servers are governed at the Magertron gateway; unknown ones go to an admin for review.</desc>
   <defs>
@@ -641,7 +641,6 @@ body { overflow-x: clip; }
   <text x="20" y="24" class="t-col">On every laptop</text>
   <text x="300" y="24" class="t-col">Your MDM</text>
   <text x="560" y="24" class="t-col">In your cluster</text>
-  <text x="890" y="24" class="t-col">What happens next</text>
 
   <rect x="20" y="44" width="230" height="300" rx="10" class="box"/>
   <text x="36" y="72" class="t-h">AI clients and agents</text>
@@ -654,8 +653,8 @@ body { overflow-x: clip; }
   <text x="50" y="219" class="t-h">Cursor</text>
   <rect x="36" y="240" width="198" height="36" rx="8" class="box-v"/>
   <text x="50" y="263" class="t-h">VS Code</text>
-  <text x="36" y="296" class="t-s">macOS, Windows, Linux</text>
-  <text x="36" y="316" class="t-s">no resident agent installed</text>
+  <text x="36" y="306" class="t-s">macOS, Windows, Linux</text>
+  <text x="36" y="326" class="t-s">no resident agent installed</text>
 
   <rect x="300" y="120" width="210" height="124" rx="10" class="box"/>
   <text x="316" y="148" class="t-h">Jamf · Intune · Ansible</text>
@@ -674,23 +673,23 @@ body { overflow-x: clip; }
   <text x="594" y="234" class="t-mt">Per server</text>
   <text x="594" y="252" class="t-ms">approved or unknown, who uses it</text>
 
-  <rect x="890" y="60" width="210" height="110" rx="10" class="box"/>
-  <text x="906" y="88" class="t-h">Approved servers</text>
-  <text x="906" y="110" class="t-s">pointed at the gateway by</text>
-  <text x="906" y="128" class="t-s">policy: identity, rules,</text>
-  <text x="906" y="146" class="t-s">metering and audit per call</text>
+  <text x="300" y="384" class="t-col">What happens next</text>
+  <rect x="300" y="400" width="250" height="100" rx="10" class="box"/>
+  <text x="316" y="428" class="t-h">Approved servers</text>
+  <text x="316" y="450" class="t-s">pointed at the gateway by policy:</text>
+  <text x="316" y="468" class="t-s">identity, rules, metering and</text>
+  <text x="316" y="486" class="t-s">audit on every call</text>
 
-  <rect x="890" y="196" width="210" height="110" rx="10" class="box-v"/>
-  <text x="906" y="224" class="t-h">Unknown servers</text>
-  <text x="906" y="246" class="t-s">flagged for an admin, with</text>
-  <text x="906" y="264" class="t-s">the devices and people</text>
-  <text x="906" y="282" class="t-s">using them</text>
+  <rect x="590" y="400" width="250" height="100" rx="10" class="box-v"/>
+  <text x="606" y="428" class="t-h">Unknown servers</text>
+  <text x="606" y="450" class="t-s">flagged for an admin, with the</text>
+  <text x="606" y="468" class="t-s">devices and people using them</text>
 
   <path d="M250 182 L298 182" class="flow" marker-end="url(#sh-ah)"/>
   <path d="M510 182 L558 182" class="flow" marker-end="url(#sh-ah)"/>
-  <path d="M840 150 C 865 150, 865 115, 888 115" class="flow" marker-end="url(#sh-ah)"/>
-  <path d="M840 214 C 865 214, 865 251, 888 251" class="vend" marker-end="url(#sh-ahv)"/>
-  <text x="560" y="320" class="t-s">One integration token for the whole fleet. Revoke it and reporting stops.</text>
+  <path d="M640 284 C 640 340, 510 340, 510 398" class="flow" marker-end="url(#sh-ah)"/>
+  <path d="M760 284 C 760 340, 715 340, 715 398" class="vend" marker-end="url(#sh-ahv)"/>
+  <text x="20" y="530" class="t-s">One integration token for the whole fleet. Revoke it and reporting stops.</text>
 </svg>
 </div>
 <figcaption>
@@ -699,44 +698,10 @@ body { overflow-x: clip; }
 </figcaption>
 </figure>
 
+<h2 style="margin:24px 0 -28px;font-size:18px;font-weight:600">Every MCP server your MDM finds, waiting for your review</h2>
 <figure class="figure" style="margin:0">
   <img src="screenshots/submitted-servers.png" alt="Magertron's Submitted Servers view: MCP servers reported by MDM and awaiting review, with transport, endpoint, who reported them, sightings and last seen. Known, not governed until onboarded." style="display:block;width:100%;height:auto;border-radius:8px">
-  <figcaption>Servers your MDM found, waiting for review: known, but not governed until you onboard them.</figcaption>
 </figure>
-
-<section>
-  <h2>How it works</h2>
-  <p class="sub" style="margin-bottom:16px">Three steps, using tools you already run.</p>
-  <div class="paths">
-    <div class="path">
-      <span class="tag">1 · collect</span>
-      <h3>Read what's configured, on every laptop</h3>
-      <ul>
-        <li>Your MDM delivers a <b>script and a timer</b>: no resident agent to install or patch.</li>
-        <li>It reads the <b>MCP client configs</b> of Claude, Cursor and VS Code.</li>
-        <li>It reports with a <b>write-only token</b>: it can add observations, nothing else.</li>
-      </ul>
-    </div>
-    <div class="path">
-      <span class="tag">2 · review</span>
-      <h3>See every server, approved or not</h3>
-      <ul>
-        <li>One list: <b>every MCP server in use</b>, on which devices, by whom.</li>
-        <li>Unknown servers stand out; an admin <b>approves or rejects</b> each one.</li>
-        <li>Answers the audit question: <b>which AI tools can reach our data?</b></li>
-      </ul>
-    </div>
-    <div class="path">
-      <span class="tag">3 · govern</span>
-      <h3>Every call through the gateway</h3>
-      <ul>
-        <li>Approved servers are <b>pointed at the Magertron gateway</b> with a policy change.</li>
-        <li>From then on, every call carries <b>the agent and the person</b>, under your rules.</li>
-        <li>Metered per team, and <b>audited</b>, refusals included.</li>
-      </ul>
-    </div>
-  </div>
-</section>
 
 <section class="xs-cta" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
   <a href="#" onclick="openDemoModal(event)" class="cta-a primary">Try it now</a>
