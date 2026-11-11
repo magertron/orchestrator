@@ -625,11 +625,11 @@ body { overflow-x: clip; }
   <div class="container">
     <div style="font-size: 14px; font-weight: 700; letter-spacing: .06em; opacity: .75; margin-bottom: 14px;">Magertron™ ToolScout</div>
     <h1 style="font-size: clamp(34px, 5vw, 56px);">Find every MCP server in your network<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>Then govern their tools</em></span></h1>
-    <p class="lede" style="max-width: 660px; margin: 18px auto 0;">Developers add MCP servers to Claude, Cursor and VS Code every day, and nobody approves them. Magertron™ reads the MCP configs on every laptop you manage, through the MDM you already run, and shows you every server in use, approved or not.</p>
+    <p class="lede" style="max-width: 660px; margin: 18px auto 0;">Developers add MCP servers to Claude, Cursor, VS Code and Devin every day, and nobody approves them. Magertron™ reads the MCP configs on every laptop you manage, through the MDM you already run, and shows you every server in use, approved or not.</p>
   </div>
 </section>
 <div class="xs"><div class="xs-wrap">
-<figure class="figure" style="margin:0">
+<figure class="figure" style="margin:0 auto;max-width:800px;width:100%">
 <div class="scroll">
 <svg class="arch" viewBox="0 0 860 540" role="img" aria-labelledby="shTitle shDesc" style="min-width:760px">
   <title id="shTitle">From the laptop to the gateway: how Magertron finds and governs MCP servers</title>
@@ -643,7 +643,7 @@ body { overflow-x: clip; }
   <text x="300" y="24" class="t-col">Your MDM</text>
   <text x="560" y="24" class="t-col">In your cluster</text>
 
-  <rect x="20" y="44" width="230" height="300" rx="10" class="box"/>
+  <rect x="20" y="44" width="230" height="344" rx="10" class="box"/>
   <text x="36" y="72" class="t-h">AI clients and agents</text>
   <text x="36" y="92" class="t-s">each holds a list of MCP servers</text>
   <rect x="36" y="108" width="198" height="36" rx="8" class="box-v"/>
@@ -654,8 +654,10 @@ body { overflow-x: clip; }
   <text x="50" y="219" class="t-h">Cursor</text>
   <rect x="36" y="240" width="198" height="36" rx="8" class="box-v"/>
   <text x="50" y="263" class="t-h">VS Code</text>
-  <text x="36" y="306" class="t-s">macOS, Windows, Linux</text>
-  <text x="36" y="326" class="t-s">no resident agent installed</text>
+  <rect x="36" y="284" width="198" height="36" rx="8" class="box-v"/>
+  <text x="50" y="307" class="t-h">Devin</text>
+  <text x="36" y="350" class="t-s">macOS, Windows, Linux</text>
+  <text x="36" y="370" class="t-s">no resident agent installed</text>
 
   <rect x="300" y="120" width="210" height="124" rx="10" class="box"/>
   <text x="316" y="148" class="t-h">Jamf · Intune · Ansible</text>
@@ -699,8 +701,8 @@ body { overflow-x: clip; }
 </figcaption>
 </figure>
 
-<h2 style="margin:24px 0 -28px;font-size:18px;font-weight:600;color:var(--text-secondary)">Every MCP server your MDM finds, waiting for your review</h2>
-<figure class="figure" style="margin:0">
+<h2 style="margin:24px auto -28px;max-width:800px;width:100%;font-size:18px;font-weight:600;color:var(--text-secondary)">Every MCP server your MDM finds, waiting for your review</h2>
+<figure class="figure" style="margin:0 auto;max-width:800px;width:100%">
   <img src="screenshots/submitted-servers.png" alt="Magertron's Submitted Servers view: MCP servers reported by MDM and awaiting review, with transport, endpoint, who reported them, sightings and last seen. Known, not governed until onboarded." style="display:block;width:100%;height:auto;border-radius:8px">
 </figure>
 
