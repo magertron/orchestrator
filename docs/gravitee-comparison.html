@@ -581,6 +581,26 @@ body { overflow-x: clip; }
     <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Every API, model message, event stream or tool call is checked for the agent <em>and</em> the person it acts for. It is priced on your vendor contracts and charged back to its rightful business owner. Streams are a first class citizen just like tool calls.</p>
   </div>
 </section>
+<!-- compare-discovery 2026-11-10 -->
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">MCP servers</div>
+    <h2>A catalog lists the servers you know about. ToolScout&#8482; finds the ones you don't.</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Developers add MCP servers to Claude, Cursor and VS Code on their own laptops. Most run locally, so they never pass through a gateway or get registered anywhere.</p>
+    <style>.cmp-t{width:100%;border-collapse:collapse;margin:18px 0 8px;font-size:15px;line-height:1.5}.cmp-t th,.cmp-t td{border-top:1px solid var(--border);padding:12px 14px;text-align:left;vertical-align:top}.cmp-t thead th{border-top:none;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-tertiary)}.cmp-t td:first-child{color:var(--text);font-weight:600;width:34%}.cmp-t td{color:var(--text-secondary)}.cmp-t .win td{background:var(--bg-card)}@media(max-width:640px){.cmp-t{font-size:14px}.cmp-t th,.cmp-t td{padding:10px 8px}}</style>
+    <div style="overflow-x:auto">
+    <table class="cmp-t">
+      <thead><tr><th></th><th>Magertron&#8482;</th><th>Gravitee</th></tr></thead>
+      <tbody>
+        <tr><td>Catalog of approved MCP servers</td><td>&#10003; Inventory with review and approval</td><td>&#10003; AI Catalog (registered, imported, or seen in gateway traffic)</td></tr>
+        <tr><td>Agent acts for a named person</td><td>&#10003; RFC 8693 token exchange; both on every audit row</td><td>&#10003; on-behalf-of agent delegation in 4.11 (RFC 8693)</td></tr>
+        <tr class="win"><td>Finds MCP servers on employee laptops</td><td>&#10003; ToolScout&#8482; reads MCP configs through the MDM you already run</td><td>Not advertised: the catalog fills from registration, imports and gateway traffic</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size: 14px; color: var(--text-tertiary); margin-top: 6px;">Based on Gravitee's public documentation as of November 2026. <a href="solutions-shadow-ai.html">How ToolScout&#8482; works</a></p>
+  </div>
+</section>
 <section class="content">
   <div class="container">
     <div class="section-eyebrow">The honest take</div>
@@ -627,6 +647,8 @@ body { overflow-x: clip; }
     </details>
     <h3 style="margin-top:36px; font-size: 17px;">Sources</h3>
     <ul style="font-size: 16px; line-height: 1.6;">
+      <li><a href="https://www.gravitee.io/platform/ai-catalog" target="_blank" rel="noopener">Gravitee: AI Catalog</a></li>
+      <li><a href="https://www.gravitee.io/blog/trusted-on-behalf-of-agent-delegation-in-gravitee-4.11" target="_blank" rel="noopener">Gravitee blog: Trusted on-behalf-of agent delegation in Gravitee 4.11</a></li>
       <li><a href="https://www.gravitee.io/blog/mcp-proxy-unified-governance-for-agents-tools" target="_blank" rel="noopener">Gravitee blog: MCP Proxy, unified governance for agents and tools (Jan 2026)</a></li>
       <li><a href="https://www.gravitee.io/blog/llm-proxy-one-front-door-to-multiple-llm-providers" target="_blank" rel="noopener">Gravitee blog: LLM Proxy, one front door to multiple LLM providers (Jan 2026)</a></li>
       <li><a href="https://documentation.gravitee.io/gravitee-gamma/platform-management/gamma-release-notes" target="_blank" rel="noopener">Gravitee Gamma release notes (June 2026)</a></li>

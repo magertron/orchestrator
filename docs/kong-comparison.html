@@ -581,6 +581,26 @@ body { overflow-x: clip; }
     <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Every API, model message, event stream or tool call is checked for the agent <em>and</em> the person it acts for. It is priced on your vendor contracts and charged back to its rightful business owner. Streams are a first class citizen just like tool calls.</p>
   </div>
 </section>
+<!-- compare-discovery 2026-11-10 -->
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">MCP servers</div>
+    <h2>A catalog lists the servers you know about. ToolScout&#8482; finds the ones you don't.</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Developers add MCP servers to Claude, Cursor and VS Code on their own laptops. Most run locally, so they never pass through a gateway or get registered anywhere.</p>
+    <style>.cmp-t{width:100%;border-collapse:collapse;margin:18px 0 8px;font-size:15px;line-height:1.5}.cmp-t th,.cmp-t td{border-top:1px solid var(--border);padding:12px 14px;text-align:left;vertical-align:top}.cmp-t thead th{border-top:none;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-tertiary)}.cmp-t td:first-child{color:var(--text);font-weight:600;width:34%}.cmp-t td{color:var(--text-secondary)}.cmp-t .win td{background:var(--bg-card)}@media(max-width:640px){.cmp-t{font-size:14px}.cmp-t th,.cmp-t td{padding:10px 8px}}</style>
+    <div style="overflow-x:auto">
+    <table class="cmp-t">
+      <thead><tr><th></th><th>Magertron&#8482;</th><th>Kong</th></tr></thead>
+      <tbody>
+        <tr><td>Catalog of approved MCP servers</td><td>&#10003; Inventory with review and approval</td><td>&#10003; MCP Registry in Konnect (tech preview Feb 2026)</td></tr>
+        <tr><td>Agent acts for a named person</td><td>&#10003; RFC 8693 token exchange; both on every audit row</td><td>&#10003; token exchange in the AI MCP OAuth2 plugin (3.14+, tech preview)</td></tr>
+        <tr class="win"><td>Finds MCP servers on employee laptops</td><td>&#10003; ToolScout&#8482; reads MCP configs through the MDM you already run</td><td>Not advertised: servers are registered in the catalog, or seen at the gateway</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size: 14px; color: var(--text-tertiary); margin-top: 6px;">Based on Kong's public documentation as of November 2026. <a href="solutions-shadow-ai.html">How ToolScout&#8482; works</a></p>
+  </div>
+</section>
 <section class="content">
   <div class="container">
     <div class="section-eyebrow">The honest take</div>
@@ -627,6 +647,8 @@ body { overflow-x: clip; }
     </details>
     <h3 style="margin-top:36px; font-size: 17px;">Sources</h3>
     <ul style="font-size: 16px; line-height: 1.6;">
+      <li><a href="https://www.konghq.com/company/press-room/press-release/kong-introduces-mcp-registry" target="_blank" rel="noopener">Kong press release: Kong introduces MCP Registry in Konnect (Feb 2026)</a></li>
+      <li><a href="https://developer.konghq.com/plugins/ai-mcp-oauth2/examples/token-exchange/" target="_blank" rel="noopener">Kong docs: AI MCP OAuth2 plugin, token exchange (v3.14+)</a></li>
       <li><a href="https://konghq.com/blog/product-releases/enterprise-mcp-gateway" target="_blank" rel="noopener">Kong blog: Introducing Kong's Enterprise MCP Gateway (Oct 2025)</a></li>
       <li><a href="https://developer.konghq.com/mcp/use-access-controls-for-mcp-tools/" target="_blank" rel="noopener">Kong docs: Control MCP tool access with Consumer and Consumer Group ACLs</a></li>
       <li><a href="https://konghq.com/blog/product-releases/kong-agent-gateway" target="_blank" rel="noopener">Kong blog: Kong Agent Gateway (Apr 2026)</a></li>
