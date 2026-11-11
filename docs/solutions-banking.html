@@ -496,6 +496,34 @@ body { overflow-x: clip; }
 .nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
 .mag-pm svg { width: 22px; height: 22px; flex: none; }
 </style>
+<style id="mag-logos-css">
+.mag-logos { max-width: 1100px; margin: 0 auto; padding: 56px 24px 40px; text-align: center; }
+.mag-logos-label { margin: 0 0 28px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-secondary, #8b93a7); }
+.mag-logos-window { display: flex; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.mag-logos-track { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; flex: none;
+  gap: 72px; padding-right: 72px; animation: magLogos 28s linear infinite; }
+.mag-logos-window:hover .mag-logos-track { animation-play-state: paused; }
+@keyframes magLogos { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.mag-logo { display: flex; align-items: center; height: 52px; padding: 0 16px; border-radius: 10px;
+  transition: background-color .2s; }
+/* every logo as a white silhouette, so dark and light logos read the same on the dark site */
+.mag-logo img { height: 36px; width: auto; max-width: 180px; object-fit: contain;
+  filter: brightness(0) invert(1); opacity: .9; transition: opacity .2s; }
+/* hover: the logo in its real colours, on a light card so dark logos still show */
+.mag-logo:hover { background: #f5f3ee; }
+.mag-logo:hover img { filter: none; opacity: 1; }
+.mag-logo-ph { height: 36px; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 600;
+  font-size: 15px; white-space: nowrap; color: var(--text-secondary, #8b93a7);
+  border: 1px dashed var(--border, #2a3348); border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .mag-logos-window { justify-content: center; -webkit-mask-image: none; mask-image: none; }
+  .mag-logos-track { animation: none; flex-wrap: wrap; justify-content: center; padding-right: 0; }
+  .mag-logos-track[aria-hidden="true"] { display: none; }
+}
+</style>
 </head>
 <body>
 
@@ -615,6 +643,36 @@ body { overflow-x: clip; }
       <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">No. The same policy pack works for any bank or fintech whose API agents call. The accounts payable solution uses it unchanged.</p>
     </details>
     <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Other solutions: <a href="solutions-accounts-payable.html">Accounts payable</a> · <a href="solutions-crm.html">Sales &amp; CRM</a> · <a href="solutions-network-operations.html">Network operations</a></p>
+  </div>
+</section>
+
+<section id="mag-logos" class="mag-logos" aria-label="Trusted by">
+  <p class="mag-logos-label">Trusted by</p>
+  <div class="mag-logos-window">
+    <ul class="mag-logos-track">
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+    </ul>
+    <ul class="mag-logos-track" aria-hidden="true">
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+    </ul>
   </div>
 </section>
 
