@@ -761,38 +761,6 @@ body { overflow-x: clip; }
 </figcaption>
 </figure>
 
-<section>
-  <h2>Three kinds of call</h2>
-  <p class="sub" style="margin-bottom:16px">What happens depends on who is calling and where the call goes.</p>
-  <div class="paths">
-    <div class="path">
-      <span class="tag">your agent → ServiceNow</span>
-      <h3>Agents you built, on ServiceNow's MCP server</h3>
-      <ul>
-        <li>Every call carries <b>the agent and the person</b> it acts for.</li>
-        <li>Your rules apply on top of ServiceNow's: <b>closing a P1 waits for the on-call engineer</b>.</li>
-        <li>No lock-in to Agent Studio: the same agent also works on Salesforce and Workday.</li>
-      </ul>
-    </div>
-    <div class="path">
-      <span class="tag">your agent → Salesforce</span>
-      <h3>Agents on a platform that bills per action</h3>
-      <ul>
-        <li>Every call into Salesforce is <b>counted and priced</b> against your contract.</li>
-        <li><b>Caps by team, user or agent</b> stop a looping agent before the invoice does.</li>
-        <li>Deal-desk rules: discounts over a limit wait for the manager.</li>
-      </ul>
-    </div>
-    <div class="path">
-      <span class="tag">SaaS agent → your systems</span>
-      <h3>Vendor agents reaching inside</h3>
-      <ul>
-        <li>Your ERP, billing and data are registered in Magertron as MCP or REST servers.</li>
-        <li>An Agentforce or Now Assist agent calling them gets the <b>same identity, policy and audit</b> as your own agents.</li>
-      </ul>
-    </div>
-  </div>
-</section>
 
 <section>
   <h2>Why neutral matters</h2>
