@@ -788,20 +788,37 @@ body { overflow-x: clip; }
       </div>
     </div>
 <script>
+/* mag-demo-reset: live console <-> poster */
 (function(){
   var box=document.getElementById('live-demo'); if(!box) return;
-  var frame=box.querySelector('.live-demo-frame'), btn=box.querySelector('.live-demo-start');
-  var W=1440, H=900, ifr=null;
+  var frame=box.querySelector('.live-demo-frame');
+  var poster=frame.innerHTML, W=1440, H=900, ifr=null;
   function fit(){ if(!ifr) return; var s=frame.clientWidth/W; ifr.style.transform='scale('+s+')'; frame.style.height=(H*s)+'px'; }
-  btn.addEventListener('click',function(){
+  function start(){
     if(window.innerWidth<760){ window.location.href='explore/'; return; }
     ifr=document.createElement('iframe');
-    ifr.src='explore/'; ifr.title='Magertron live console (simulated data)';
-    ifr.setAttribute('loading','eager');
+    ifr.src='explore/?embed=1'; ifr.title='Magertron live console (simulated data)';
     ifr.style.cssText='position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;border:0;transform-origin:0 0;background:#0b1020';
     frame.innerHTML=''; frame.appendChild(ifr); frame.classList.add('is-live'); fit();
-  });
+  }
+  function reset(){
+    if(!ifr) return;
+    ifr=null; frame.classList.remove('is-live'); frame.style.height=''; frame.innerHTML=poster; bind();
+  }
+  function bind(){ var b=frame.querySelector('.live-demo-start'); if(b) b.addEventListener('click',start); }
+  bind();
   window.addEventListener('resize',fit);
+  // the tour inside the console says when it's finished
+  window.addEventListener('message',function(e){
+    if(e.origin!==location.origin||!e.data||e.data.type!=='mag-demo') return;
+    if(e.data.event==='tour-finished') setTimeout(reset,500);
+  });
+  // scrolled fully away -> back to the poster
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){ es.forEach(function(en){ if(!en.isIntersecting) reset(); }); },{threshold:0}).observe(box);
+  }
+  // returned with Back/Forward (page restored from cache) -> back to the poster
+  window.addEventListener('pageshow',function(e){ if(e.persisted) reset(); });
 })();
 </script>
 
