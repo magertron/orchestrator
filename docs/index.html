@@ -732,6 +732,7 @@ body { overflow-x: clip; }
         <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
         <div class="nav-drop-menu">
           <a href="#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
+          <a href="ai-assistant.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.7 4.3 4.3 1.7-4.3 1.7L12 16.5l-1.7-4.3-4.3-1.7 4.3-1.7z"/><path d="M17.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fff"/></g></svg><span>AI Assistant</span></a>
           <a href="data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
           <a href="agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
           <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS™</span></a>
@@ -792,304 +793,6 @@ body { overflow-x: clip; }
     <p>Your agents call tools. Those tools touch data. Magertron governs both — and knows which tool touched which table, for whom, and what it cost. One gateway for model inference and tool calls across every vendor.</p>
     <p style="font-size: 13px; color: var(--text-secondary); margin-top: -8px;">Free up to 20 servers — no signup, no credit card.</p>
 
-<!-- ══ Ask-your-platform typewriter showcase ═══════════════════════════════════
-     Rotating demo of the assistant answering live operational questions about a
-     governed AI platform. Styled to match Magertron: section-label/title/desc
-     framing, feature-card surface treatment, site CSS vars. Scoped .mag-ask-*.
-================================================================================ -->
-<div class="mag-ask" aria-label="The assistant answering live platform questions">
-  <div class="mag-ask-frame">
-    <div class="mag-ask-head">
-      <span class="mag-ask-spark">✦</span>
-      <span class="mag-ask-title">AI Orchestrator Assistant</span>
-      <span class="mag-ask-tag">Advisory · read-only · grounded in live platform state</span>
-    </div>
-
-    <div class="mag-ask-body">
-      <div class="mag-ask-row mag-ask-row-user">
-        <div class="mag-ask-bubble mag-ask-bubble-user"><span id="magAskQ"></span><span class="mag-ask-caret mag-ask-caret-q mag-hide" id="magAskQCaret">▋</span></div>
-      </div>
-      <div class="mag-ask-row mag-ask-row-bot">
-        <div class="mag-ask-bubble mag-ask-bubble-bot">
-          <span id="magAskA"></span><span class="mag-ask-caret" id="magAskCaret">▋</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="mag-ask-dots" id="magAskDots" role="tablist" aria-label="Example questions"></div>
-  </div>
-</div>
-<section id="mag-logos" class="mag-logos" aria-label="Trusted by">
-  <p class="mag-logos-label">Trusted by</p>
-  <div class="mag-logos-window">
-    <ul class="mag-logos-track">
-      <li class="mag-logo"><img src="img/logos/genboot.png" alt="Genboot" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/everpay.png" alt="Everpay" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/tenir.png" alt="TENIR" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/ocp.png" alt="Open Compute Project" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="Zero Day" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
-    </ul>
-    <ul class="mag-logos-track" aria-hidden="true">
-      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="" data-alt="" data-alt="Genboot" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="" data-alt="" data-alt="Everpay" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="" data-alt="" data-alt="TENIR" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="" data-alt="" data-alt="Open Compute Project" loading="lazy"></li>
-      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="" data-alt="" data-alt="Zero Day" loading="lazy"></li>
-    </ul>
-  </div>
-</section>
-
-
-<style>
-.mag-ask{max-width:860px;margin:44px auto 0;text-align:center;}
-.mag-ask-label{
-  font-family:var(--mono);font-size:12px;text-transform:uppercase;
-  letter-spacing:0.1em;color:var(--accent-text);margin-bottom:16px;
-}
-.mag-ask-heading{
-  font-family:var(--serif);font-size:clamp(26px,3vw,36px);font-weight:700;
-  line-height:1.15;letter-spacing:-0.03em;margin:0 0 28px;color:var(--text-primary);
-}
-.mag-ask-frame{
-  background:var(--bg-card);border:1px solid var(--border);border-radius:12px;
-  overflow:hidden;text-align:left;
-}
-.mag-ask-head{
-  display:flex;align-items:center;gap:10px;padding:16px 20px;
-  border-bottom:1px solid var(--border);
-}
-.mag-ask-spark{color:var(--accent-text);font-size:14px;}
-.mag-ask-title{font-weight:600;font-size:14px;color:var(--text-primary);}
-.mag-ask-tag{
-  margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;
-  color:var(--text-tertiary);text-transform:uppercase;
-}
-.mag-ask-body{padding:24px 20px 20px;min-height:210px;}
-.mag-ask-row{display:flex;margin-bottom:8px;}
-.mag-ask-row-user{justify-content:flex-end;}
-.mag-ask-row-bot{justify-content:flex-start;}
-.mag-ask-bubble{
-  max-width:86%;padding:12px 16px;border-radius:12px;font-size:14.5px;
-  line-height:1.7;white-space:pre-wrap;word-break:break-word;
-}
-.mag-ask-bubble-user{
-  background:var(--accent-glow);border:1px solid var(--border-accent);
-  color:var(--text-primary);border-bottom-right-radius:4px;font-weight:500;
-}
-.mag-ask-bubble-bot{
-  background:var(--bg-card-hover);border:1px solid var(--border);
-  color:var(--text-secondary);border-bottom-left-radius:4px;min-height:20px;
-}
-.mag-ask-bubble-bot .mag-tok{
-  color:var(--accent-text);font-family:var(--mono);font-size:13px;
-  padding:1px 5px;border-radius:6px;background:var(--accent-glow);
-}
-.mag-ask-bubble-bot .mag-flag{color:#ef4444;font-weight:600;}
-.mag-ask-bubble-bot strong{color:var(--text-primary);font-weight:600;}
-.mag-ask-caret{
-  color:var(--accent-text);font-weight:400;animation:magBlink 1s steps(1) infinite;
-  margin-left:1px;
-}
-@keyframes magBlink{50%{opacity:0;}}
-.mag-ask-caret.mag-hide{display:none;}
-.mag-ask-caret-q{color:var(--text-primary);}
-.mag-ask-dots{display:flex;gap:7px;justify-content:center;padding:4px 0 18px;}
-.mag-ask-dot{
-  width:7px;height:7px;border-radius:100px;background:var(--text-tertiary);
-  border:none;padding:0;cursor:pointer;transition:all .25s;opacity:.5;
-}
-.mag-ask-dot.active{background:var(--accent-text);opacity:1;width:22px;}
-@media (max-width:640px){
-  .mag-ask-tag{display:none;}
-  .mag-ask-bubble{max-width:92%;font-size:14px;}
-}
-@media (prefers-reduced-motion:reduce){
-  .mag-ask-caret{animation:none;}
-}
-</style>
-
-<script>
-(function(){
-  // Each example: the question, and the answer as HTML (with .mag-tok server
-  // names and .mag-flag for the security callout). Invented enterprise data.
-  var EX = [
-    {
-      q: "What's my busiest server?",
-      a: 'Based on the live platform snapshot, your busiest server is '
-        +'<span class="mag-tok">claude-prod</span> in the '
-        +'<span class="mag-tok">ml-platform</span> tenant — '
-        +'<strong>1.24M calls</strong> over the last 24 hours, well ahead of anything else.'
-    },
-    {
-      q: "Any agents accessing tools without grants?",
-      a: 'Yes — <span class="mag-flag">a security red flag</span>. '
-        +'<span class="mag-tok">batch-etl-07</span>, <span class="mag-tok">notebook-sandbox</span>, '
-        +'and 3 more service accounts are calling '
-        +'<span class="mag-tok">snowflake-connector/run_query</span> with no entitlement granting it. '
-        +'5 principals, 1,880 ungranted calls in 24h. Review before it becomes an incident.'
-    },
-    {
-      q: "What's my most expensive server?",
-      a: 'Your most expensive server this billing period is '
-        +'<span class="mag-tok">openai-gpt4o</span> at <strong>$8,412.90</strong> — '
-        +'about 38% of total AI spend. <span class="mag-tok">claude-prod</span> is next at $5,240.15.'
-    },
-    {
-      q: "Anything over or near budget?",
-      a: 'Two servers need attention this period: '
-        +'<span class="mag-tok">openai-gpt4o</span> is <span class="mag-flag">OVER</span> — '
-        +'112% of its $7,500 ceiling — and <span class="mag-tok">exa-search</span> is near, at 86% of $2,000. '
-        +'Everything else is comfortably within budget.'
-    },
-    {
-      q: "What's my busiest tenant?",
-      a: 'Your busiest tenant is <span class="mag-tok">ml-platform</span> — '
-        +'<strong>2.1M operations</strong> in 24h, driven mostly by '
-        +'<span class="mag-tok">claude-prod</span> and <span class="mag-tok">openai-gpt4o</span>. '
-        +'<span class="mag-tok">payments-prod</span> is a distant second.'
-    }
-  ];
-
-  var qEl    = document.getElementById('magAskQ');
-  var aEl     = document.getElementById('magAskA');
-  var caret  = document.getElementById('magAskCaret');
-  var qCaret = document.getElementById('magAskQCaret');
-  var dotsEl = document.getElementById('magAskDots');
-  if(!qEl||!aEl){return;}
-
-  // build dots
-  EX.forEach(function(_,i){
-    var d=document.createElement('button');
-    d.className='mag-ask-dot'+(i===0?' active':'');
-    d.setAttribute('role','tab');
-    d.setAttribute('aria-label','Example '+(i+1));
-    d.addEventListener('click',function(){ go(i); });
-    dotsEl.appendChild(d);
-  });
-  var dots=Array.prototype.slice.call(dotsEl.children);
-
-  var idx=0, timers=[], reduced=false;
-  try{reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e){}
-
-  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
-  function setActive(i){ dots.forEach(function(d,j){ d.classList.toggle('active',j===i); }); }
-
-  // Type HTML by walking it: reveal text nodes char-by-char, emit tags whole.
-  function typeHTML(html, el, done){
-    // tokenize into [{t:'text',v}, {t:'tag',v}]
-    var toks=[], re=/(<[^>]+>)/g, last=0, m;
-    while((m=re.exec(html))){
-      if(m.index>last) toks.push({t:'text',v:html.slice(last,m.index)});
-      toks.push({t:'tag',v:m[0]});
-      last=re.lastIndex;
-    }
-    if(last<html.length) toks.push({t:'text',v:html.slice(last)});
-
-    var out='', ti=0, ci=0;
-    function step(){
-      if(ti>=toks.length){ done&&done(); return; }
-      var tok=toks[ti];
-      if(tok.t==='tag'){ out+=tok.v; ti++; el.innerHTML=out; timers.push(setTimeout(step, 0)); return; }
-      if(ci<tok.v.length){
-        out+=tok.v[ci]; ci++; el.innerHTML=out;
-        var ch=tok.v[ci-1];
-        var d = reduced?0:(ch===' '?14: ch==='.'||ch===','?60: 18+Math.random()*22);
-        timers.push(setTimeout(step, d));
-      } else { ci=0; ti++; step(); }
-    }
-    step();
-  }
-
-  // Type plain text char-by-char into an element (for the question bubble).
-  function typeText(text, el, done){
-    var i=0;
-    function step(){
-      if(i>=text.length){ done&&done(); return; }
-      el.textContent = text.slice(0, i+1);
-      var ch=text[i]; i++;
-      var d = reduced?0:(ch===' '?26: ch==='?'||ch==='.'||ch===','?90: 34+Math.random()*30);
-      timers.push(setTimeout(step, d));
-    }
-    step();
-  }
-
-  function go(i){
-    clearTimers();
-    idx=i; setActive(i);
-    var ex=EX[i];
-    // reset both bubbles
-    qEl.textContent='';
-    aEl.innerHTML='';
-    caret.classList.add('mag-hide');          // answer caret hidden for now
-    qCaret.classList.remove('mag-hide');       // question caret blinking
-    // 1) type the question
-    timers.push(setTimeout(function(){
-      typeText(ex.q, qEl, function(){
-        // 2) question done → hide its caret, small beat, then type the answer
-        qCaret.classList.add('mag-hide');
-        timers.push(setTimeout(function(){
-          caret.classList.remove('mag-hide');
-          typeHTML(ex.a, aEl, function(){
-            caret.classList.add('mag-hide');    // answer done → hide caret while holding
-            var hold = reduced?2400:3800;
-            timers.push(setTimeout(function(){ go((idx+1)%EX.length); }, hold));
-          });
-        }, 520));
-      });
-    }, 300));
-  }
-
-  // mag-ask-steady (2026-11-10): fix the body's height to the TALLEST example, measured
-  // with every answer fully written, so typing never moves the content below the box.
-  function lockHeight(){
-    var body = document.querySelector('.mag-ask-body');
-    if(!body) return;
-    var probe = body.cloneNode(true);
-    probe.style.cssText += ';position:absolute;visibility:hidden;pointer-events:none;'
-                         + 'left:0;top:0;min-height:0;width:' + body.clientWidth + 'px';
-    Array.prototype.forEach.call(probe.querySelectorAll('[id]'), function(n){ n.removeAttribute('id'); });
-    Array.prototype.forEach.call(probe.querySelectorAll('.mag-hide'), function(n){ n.classList.remove('mag-hide'); });
-    var spans = probe.querySelectorAll('.mag-ask-bubble-user > span:first-child, .mag-ask-bubble-bot > span:first-child');
-    body.parentNode.style.position = body.parentNode.style.position || 'relative';
-    body.parentNode.appendChild(probe);
-    var tallest = 0;
-    EX.forEach(function(ex){
-      if(spans[0]) spans[0].textContent = ex.q;
-      if(spans[1]) spans[1].innerHTML  = ex.a;
-      tallest = Math.max(tallest, probe.offsetHeight);
-    });
-    probe.parentNode.removeChild(probe);
-    if(tallest > 0) body.style.minHeight = tallest + 'px';
-  }
-  lockHeight();
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(lockHeight);
-  var lockT;
-  window.addEventListener('resize', function(){ clearTimeout(lockT); lockT = setTimeout(lockHeight, 150); });
-
-  // Kick off when scrolled into view (don't burn the animation above the fold
-  // before the visitor sees it). Fallback: start immediately.
-  var started=false;
-  function start(){ if(started)return; started=true; go(0); }
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){
-      es.forEach(function(e){ if(e.isIntersecting){ start(); io.disconnect(); } });
-    },{threshold:.35});
-    io.observe(document.querySelector('.mag-ask'));
-  } else { start(); }
-})();
-</script>
-<!-- ══ end ask-your-platform showcase ═════════════════════════════════════════ -->
-
     <!-- Live console: the real Magertron UI on a simulated company (/explore/).
          Poster first (no heavy load above the fold); a click loads the console
          in place, scaled to fit. Phones open it full screen. -->
@@ -1124,6 +827,37 @@ body { overflow-x: clip; }
   window.addEventListener('resize',fit);
 })();
 </script>
+
+<section id="mag-logos" class="mag-logos" aria-label="Trusted by">
+  <p class="mag-logos-label">Trusted by</p>
+  <div class="mag-logos-window">
+    <ul class="mag-logos-track">
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+    </ul>
+    <ul class="mag-logos-track" aria-hidden="true">
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="" data-alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="" data-alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="" data-alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="" data-alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="" data-alt="" data-alt="Zero Day" loading="lazy"></li>
+    </ul>
+  </div>
+</section>
+
 
     <!-- Install snippet — visible above the fold for HN/listicle visitors
          who want to see "can I try this in 5 minutes?" answered immediately. -->
@@ -1714,6 +1448,7 @@ body { overflow-x: clip; }
         <h4>Product</h4>
         <ul>
           <li><a href="#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="ai-assistant.html">AI Assistant</a></li>
           <li><a href="data-reach.html">AI Data Reach</a></li>
           <li><a href="agentczar.html">AgentCzar</a></li>
           <li><a href="solutions-saas.html">AgentSaaS</a></li>
