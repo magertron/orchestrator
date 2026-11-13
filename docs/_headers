@@ -14,3 +14,9 @@
 /cursor/*.vsix
   Content-Type: application/octet-stream
   Content-Disposition: attachment
+
+/explore/*
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://r2.leadsy.ai; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://r2.leadsy.ai; connect-src 'self' https://formspree.io https://r2.leadsy.ai; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
+  X-Frame-Options: SAMEORIGIN

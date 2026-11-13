@@ -269,27 +269,36 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .hero-screenshot img {
   width: 100%; height: auto; display: block;
 }
-/* ── Hero crossfade carousel: two stacked shots fade back and forth ── */
-.hero-carousel { position: relative; }
-.hero-carousel img {
-  width: 100%; height: auto; display: block;
+/* ── Live console (replaces the hero carousel) ────────────────────────── */
+.live-demo { max-width: 1180px; margin: 36px auto 0; animation: fadeUp 0.8s ease-out 0.4s both; }
+.live-demo-frame {
+  position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--bg-card); aspect-ratio: 16 / 10;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1);
 }
-/* First slide is in normal flow (sets the box height); others overlay it. */
-.hero-carousel img.slide-2, .hero-carousel img.slide-3 {
-  position: absolute; top: 0; left: 0;
+.live-demo-frame.is-live { aspect-ratio: auto; }
+.live-demo-poster { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; filter: brightness(.55); }
+.live-demo-start {
+  position: absolute; inset: 0; margin: auto; width: max-content; height: max-content;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: rgba(11, 16, 32, .82); border: 1px solid rgba(34, 197, 94, .55); border-radius: 14px;
+  padding: 22px 34px; color: var(--text-primary, #fff); cursor: pointer; font: inherit;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .5); transition: transform .15s, border-color .15s;
 }
-.hero-carousel img.slide-1 { animation: heroFade3 18s ease-in-out infinite; }
-.hero-carousel img.slide-2 { animation: heroFade3 18s ease-in-out -12s infinite; }
-.hero-carousel img.slide-3 { animation: heroFade3 18s ease-in-out -6s infinite; }
-/* each shot: on for a third of the cycle, ~1s crossfade at each end */
-@keyframes heroFade3 {
-  0%, 28% { opacity: 1; }
-  33.4%, 94.5% { opacity: 0; }
-  100% { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-carousel img.slide-1, .hero-carousel img.slide-2, .hero-carousel img.slide-3 { animation: none; }
-  .hero-carousel img.slide-2, .hero-carousel img.slide-3 { display: none; }
+.live-demo-start:hover { transform: translateY(-2px); border-color: #22c55e; }
+.live-demo-play { width: 54px; height: 54px; border-radius: 50%; background: #22c55e; color: #06210f;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; padding-left: 4px; }
+.live-demo-cta { font-size: 19px; font-weight: 700; }
+.live-demo-sub { font-size: 13px; color: var(--text-secondary); }
+.live-demo-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
+.live-demo-foot a { color: var(--text-secondary); }
+.live-demo-foot a:hover { color: var(--text-primary); }
+@media (max-width: 600px) {
+  .live-demo-start { padding: 12px 18px; gap: 6px; }
+  .live-demo-play { width: 40px; height: 40px; font-size: 16px; }
+  .live-demo-cta { font-size: 16px; }
+  .live-demo-sub { font-size: 11px; }
 }
 .hero-screenshot .placeholder {
   width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
@@ -1081,16 +1090,40 @@ body { overflow-x: clip; }
 </script>
 <!-- ══ end ask-your-platform showcase ═════════════════════════════════════════ -->
 
-    <!-- Main screenshot: the AI Cost Dashboard — the spend story made concrete.
-         Leads with dollars (total spend, committed, remaining), per-vendor and
-         per-user breakdown, and the daily trend. This is the CFO-legible view. -->
-    <div class="hero-screenshot">
-      <div class="hero-carousel">
-        <img class="slide-1" src="screenshots/agent-galaxy.png" alt="Magertron Agent Galaxy - which people and AI agents can reach which tools and models, entitlements versus observed usage, with unused grants and ungranted access flagged">
-        <img class="slide-2" src="screenshots/ai-cost-dashboard.png" alt="Magertron AI Cost Dashboard — total agent spend, committed vs pay-as-you-go, per-vendor and per-user cost breakdown with budget tracking">
-        <img class="slide-3" src="screenshots/dashboard-overview.png" alt="Magertron dashboard - servers, tools, routes, users and policies at a glance, LLM tokens and cost by model, budget vs actual, server health and audit activity">
+    <!-- Live console: the real Magertron UI on a simulated company (/explore/).
+         Poster first (no heavy load above the fold); a click loads the console
+         in place, scaled to fit. Phones open it full screen. -->
+    <div class="live-demo" id="live-demo">
+      <div class="live-demo-frame">
+        <img class="live-demo-poster" src="screenshots/agent-galaxy.png" alt="Magertron console - Agent Galaxy: which people and AI agents can reach which tools and models">
+        <button type="button" class="live-demo-start" aria-label="Explore the live Magertron console">
+          <span class="live-demo-play">&#9654;</span>
+          <span class="live-demo-cta">Explore the live console</span>
+          <span class="live-demo-sub">Guided tour &middot; fictional data &middot; nothing to install</span>
+        </button>
+      </div>
+      <div class="live-demo-foot">
+        <span>The real Magertron&trade; console, running on a simulated company.</span>
+        <a href="explore/" target="_blank" rel="noopener">Open full screen &#8599;</a>
       </div>
     </div>
+<script>
+(function(){
+  var box=document.getElementById('live-demo'); if(!box) return;
+  var frame=box.querySelector('.live-demo-frame'), btn=box.querySelector('.live-demo-start');
+  var W=1440, H=900, ifr=null;
+  function fit(){ if(!ifr) return; var s=frame.clientWidth/W; ifr.style.transform='scale('+s+')'; frame.style.height=(H*s)+'px'; }
+  btn.addEventListener('click',function(){
+    if(window.innerWidth<760){ window.location.href='explore/'; return; }
+    ifr=document.createElement('iframe');
+    ifr.src='explore/'; ifr.title='Magertron live console (simulated data)';
+    ifr.setAttribute('loading','eager');
+    ifr.style.cssText='position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;border:0;transform-origin:0 0;background:#0b1020';
+    frame.innerHTML=''; frame.appendChild(ifr); frame.classList.add('is-live'); fit();
+  });
+  window.addEventListener('resize',fit);
+})();
+</script>
 
     <!-- Install snippet — visible above the fold for HN/listicle visitors
          who want to see "can I try this in 5 minutes?" answered immediately. -->
