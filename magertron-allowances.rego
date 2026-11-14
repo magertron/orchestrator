@@ -20,6 +20,49 @@ deny contains sprintf("quotes for %v are not permitted by company policy", [inpu
 	input.arguments.symbol == "TSLA"
 }
 
+# Trading (etrade): no single order over N shares. N comes from the data file
+# (data.trading.max_shares) and is 10 when the file doesn't set it. Only
+# place_order is checked: preview_order moves no money.
+default trading_max_shares := 10
+
+trading_max_shares := data.trading.max_shares
+
+deny contains sprintf("orders over %v shares are not permitted by company policy (%v %v %v)", [trading_max_shares, input.arguments.action, input.arguments.quantity, input.arguments.symbol]) if {
+	input.server == "etrade"
+	input.tool == "place_order"
+	is_number(input.arguments.quantity)
+	input.arguments.quantity > trading_max_shares
+}
+
+# Fail closed: a quantity that isn't a plain number can't be checked against the limit.
+deny contains "order quantity must be a number" if {
+	input.server == "etrade"
+	input.tool == "place_order"
+	not is_number(input.arguments.quantity)
+}
+
+# Order actions refused outright (e.g. SELL_SHORT), and tickers no order may name.
+# Both from the data file / the console's Trading limits section.
+default trading_blocked_actions := []
+
+trading_blocked_actions := data.trading.blocked_actions
+
+default trading_blocked_symbols := []
+
+trading_blocked_symbols := data.trading.blocked_symbols
+
+deny contains sprintf("%v orders are not permitted by company policy", [input.arguments.action]) if {
+	input.server == "etrade"
+	input.tool == "place_order"
+	input.arguments.action in trading_blocked_actions
+}
+
+deny contains sprintf("trading %v is not permitted by company policy", [upper(input.arguments.symbol)]) if {
+	input.server == "etrade"
+	input.tool == "place_order"
+	upper(input.arguments.symbol) in trading_blocked_symbols
+}
+
 # Who the spend belongs to: the human on a delegated call, otherwise the caller.
 person := input.on_behalf_of if input.on_behalf_of != ""
 person := input.subject if input.on_behalf_of == ""
