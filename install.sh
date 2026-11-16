@@ -582,6 +582,15 @@ Common options:
                               loaded at the root of `data`: a top-level key
                               "allowances" is data.allowances in your policy.
                               Swap the file to change caps without editing Rego.
+  --enable-czartup            Serve Czartup(TM) at <your address>/czartup/: declare a
+                              governed agent or app, configure it, hand it to a coding
+                              assistant. Runs as whoever is signed in to the console.
+                              Needs the Secret czartup-vault (key "token") in the
+                              install namespace for its Vault.
+  --czartup-vault <url>       Vault Czartup uses (implies --enable-czartup).
+  --czartup-vault-skip-verify Vault has a self-signed certificate.
+  --czartup-gitea <url>       Gitea for Czartup's "Push to Gitea".
+  --czartup-tag <tag>         Czartup image tag (default: the chart's).
   --enable-presidio           Deploy Microsoft Presidio in the cluster and use it
                               as the PII detector: names, places and ID numbers on
                               LLM prompts and replies. Needs ~2 GB of memory. Can
@@ -698,6 +707,11 @@ while [ $# -gt 0 ]; do
         --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
         --opa-data)            OPA_DATA="$2"; ENABLE_OPA=1; shift 2 ;;
         --enable-presidio)     ENABLE_PRESIDIO=1; shift ;;
+        --enable-czartup)      ENABLE_CZARTUP=1; shift ;;
+        --czartup-vault)       CZARTUP_VAULT="$2"; ENABLE_CZARTUP=1; shift 2 ;;
+        --czartup-vault-skip-verify) CZARTUP_VAULT_SKIP_VERIFY=1; shift ;;
+        --czartup-gitea)       CZARTUP_GITEA="$2"; shift 2 ;;
+        --czartup-tag)         CZARTUP_TAG="$2"; shift 2 ;;
         --otel-endpoint)       OTEL_ENDPOINT="$2"; shift 2 ;;
         --otel-sampling)       OTEL_SAMPLING="$2"; shift 2 ;;
         --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
@@ -1679,6 +1693,25 @@ if [ "${ENABLE_OPA:-0}" = "1" ]; then
         HELM_VALUES+=( --set-file "opa.data=$OPA_DATA" )
         note "  with data $OPA_DATA (data.<key> in the policy)"
     fi
+fi
+
+# ── Czartup(TM) at /czartup/ (--enable-czartup) ─────────────────────────────
+# ⚠ Like --enable-opa: an upgrade without the flag turns it off. Its volume (the
+# Czarters and run logs) is a PVC and is kept, so turning it back on loses nothing.
+if [ "${ENABLE_CZARTUP:-0}" = "1" ]; then
+    HELM_VALUES+=( --set "czartup.enabled=true" )
+    if [ -n "${CZARTUP_VAULT:-}" ]; then
+        HELM_VALUES+=( --set-string "czartup.vault.addr=$CZARTUP_VAULT"
+                       --set-string "czartup.vault.tokenSecret=czartup-vault" )
+        [ "${CZARTUP_VAULT_SKIP_VERIFY:-0}" = "1" ] && HELM_VALUES+=( --set "czartup.vault.skipVerify=true" )
+        if ! kubectl get secret czartup-vault -n "$NAMESPACE" >/dev/null 2>&1; then
+            note "  ⚠ Secret czartup-vault not found in $NAMESPACE - Czartup cannot read Vault until it exists:"
+            note "      kubectl create secret generic czartup-vault -n $NAMESPACE --from-file=token=<file with a Vault token>"
+        fi
+    fi
+    [ -n "${CZARTUP_GITEA:-}" ] && HELM_VALUES+=( --set-string "czartup.gitea.url=$CZARTUP_GITEA" )
+    [ -n "${CZARTUP_TAG:-}" ]   && HELM_VALUES+=( --set-string "czartup.image.tag=$CZARTUP_TAG" )
+    note "Czartup at /czartup/${CZARTUP_VAULT:+ · Vault $CZARTUP_VAULT}${CZARTUP_GITEA:+ · Gitea $CZARTUP_GITEA}${CZARTUP_TAG:+ · image $CZARTUP_TAG}"
 fi
 
 # ── OpenTelemetry (off unless --otel-endpoint) ───────────────────────────────
