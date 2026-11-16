@@ -154,6 +154,9 @@ html { scrollbar-gutter: stable; }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
   .gate-step{flex:1 1 110px}
+  .shot{margin:22px 0 0}
+  .shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:var(--radius)}
+  .shot figcaption{font-size:13px;color:var(--dim);margin-top:8px}
   .pill{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--accent);border:1px solid var(--accent-dim);border-radius:100px;padding:2px 9px;
     margin-left:10px;vertical-align:middle;font-weight:600}
@@ -214,6 +217,11 @@ html { scrollbar-gutter: stable; }
       <div class="card"><b>Connections</b><span>The MCP servers, APIs and models it reaches &mdash; and exactly which tools.</span></div>
       <div class="card"><b>Controls</b><span>Limits that refuse a call and holds that wait for a person's approval.</span></div>
     </div>
+    <figure class="shot" style="margin-left:0;margin-right:0">
+      <img src="czartup-review-run.png" width="1200" height="975" loading="lazy"
+           alt="Czartup's Review and run screen: each step from creating the sign-in app to Verify and the hand-over, with its result">
+      <figcaption>Review &amp; run: every step applied one at a time, with its result.</figcaption>
+    </figure>
   </section>
 
   <section>
