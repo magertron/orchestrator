@@ -215,7 +215,7 @@ html { scrollbar-gutter: stable; }
       <div class="card"><b>Connections</b><span>The MCP servers, APIs and models it reaches &mdash; and exactly which tools.</span></div>
       <div class="card"><b>Controls</b><span>Limits that refuse a call and holds that wait for a person's approval.</span></div>
     </div>
-<pre style="margin-top:16px"><code><span class="cmt"># from the Czarter for Bet Big Predictions</span>
+<pre style="margin-top:16px"><code><span class="cmt"># from a Czarter</span>
 controls:
   limits:
     - id: max-stake
@@ -233,18 +233,6 @@ controls:
   </section>
 
   <section>
-    <h2>Czartup sets up the platform</h2>
-    <p class="sub">Every step shows a dry run first, and every result is logged against the Czarter.</p>
-    <ol>
-      <li><b>Sign-in</b> &mdash; creates the app in the identity provider (Auth0 today), with MFA for this app only</li>
-      <li><b>Role and agent</b> &mdash; the app's role and the agent's service account, with its external identity</li>
-      <li><b>Grants</b> &mdash; the agent may call exactly the listed tools, and nothing else</li>
-      <li><b>Policy</b> &mdash; limits and holds generated as policy, scoped to the app's namespace</li>
-      <li><b>Verify</b> &mdash; re-checks all of it against the live platform, step by step</li>
-    </ol>
-  </section>
-
-  <section>
     <h2>Hand it over in formats coding agents already read</h2>
     <p class="sub">No new format to learn. Open it in an editor, download a versioned zip, or push it to your Git server.</p>
     <table>
@@ -255,45 +243,6 @@ controls:
       <tr><td><code>RUNBOOK.md</code></td><td>What is already live on the platform, and what is still open.</td></tr>
       <tr><td><code>czarter.yaml</code></td><td>The source of truth.</td></tr>
     </table>
-  </section>
-
-  <section>
-    <h2>Say &ldquo;Build&rdquo;</h2>
-    <p class="sub">The coding agent works in a set order and stops where a person decides.</p>
-    <p>
-      It builds any servers first, then the app, against gateway addresses only.
-      Where a step belongs to the platform &mdash; registering a server, approving
-      its tools, granting access &mdash; it stops and says exactly what the admin
-      must do. It never scripts those steps: the agent writing the code is the
-      party being governed, and it does not get to set its own limits.
-    </p>
-    <div class="note">
-      <b>Limits and holds are not in the code.</b> The pack tells the coding agent
-      to leave them out of the server. A refusal is the gateway's HTTP 403, and a
-      hold is a 403 with an approval to wait for &mdash; so the checks prove
-      Magertron&trade; enforced them, not the app.
-    </div>
-  </section>
-
-  <section>
-    <h2>Bet Big Predictions</h2>
-    <p class="sub">A play-money sports predictions app for a fictional customer, built in Cursor from a Czartup pack.</p>
-    <p>
-      Three screens, a wallet MCP server and a Settler agent that runs on a
-      schedule. Cursor built the wallet and the app from the pack; the platform
-      steps were Czartup's and the admin's. The Czarter's checks, run as live
-      calls through the gateway:
-    </p>
-    <table>
-      <tr><th>Check</th><th>Call</th><th>Result</th></tr>
-      <tr><td>Sign-in</td><td>Password and MFA, then a token exchange at the STS</td><td class="ok">passed</td></tr>
-      <tr><td>Agent</td><td>The exchanged token acts as the Settler's service account</td><td class="ok">passed</td></tr>
-      <tr><td>Limit</td><td><code>place_bet</code> with a stake of 1500 &rarr; 403 <em>Largest single bet</em></td><td class="ok">passed</td></tr>
-      <tr><td>Hold</td><td><code>place_bet</code> on a game in progress &rarr; 403, held for approval</td><td class="ok">passed</td></tr>
-    </table>
-    <p style="margin-top:14px;color:var(--muted);font-size:14px">
-      The wallet itself has no stake limit and no hold. Both are Magertron&trade;'s.
-    </p>
   </section>
 
   <section>
