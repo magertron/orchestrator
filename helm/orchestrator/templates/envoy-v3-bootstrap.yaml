@@ -288,6 +288,24 @@ data:
                           address: {{ include "mcp.fullname" . }}-leader.{{ include "mcp.namespace" . }}.svc.cluster.local
                           port_value: {{ .Values.api.httpPort }}
 
+        {{- if .Values.czartup.enabled }}
+        # Czartup(TM) at /czartup/ — the route is pushed by the orchestrator over ADS
+        # (ads_subscriber.cpp); this is where it goes. Same shape as mcp_inventory.
+        - name: czartup
+          connect_timeout: 5s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: czartup
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ include "mcp.fullname" . }}-czartup.{{ include "mcp.namespace" . }}.svc.cluster.local
+                          port_value: 8791
+        {{- end }}
+
         # mcp-inventory REST cluster — Pass 3 (Option C, static bootstrap).
         # Mirror of the legacy bootstrap's cluster of the same name. Both
         # Envoys forward /inventory/v1/* to the same inventory plane;

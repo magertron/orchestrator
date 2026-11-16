@@ -2559,3 +2559,30 @@ presidio:
   resources:
     requests: {cpu: 250m, memory: 1536Mi}
     limits: {memory: 2560Mi}
+
+# ─── Czartup(TM) ─────────────────────────────────────────────────────────────
+# Served at <magertron>/czartup/, next to the console, like /portal. It acts as
+# the person signed in to the console - no Magertron credential in the pod.
+czartup:
+  enabled: false
+  image:
+    repository: curtismager20/mcp-czartup
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  # Public address for the page and for the hand-over pack. Empty = orchestrator.env.apiPublicUrl.
+  publicUrl: ""
+  storage:
+    size: 1Gi
+    storageClassName: ""
+  # Auth0 management credentials, new apps' client secrets and the Gitea token live in Vault.
+  vault:
+    addr: ""                 # e.g. https://192.168.1.162:8200
+    skipVerify: false
+    tokenSecret: ""          # Secret holding a Vault token Czartup may use
+    tokenKey: token
+  gitea:
+    url: ""                  # e.g. http://192.168.1.162:3000 (Push to Gitea)
+  nodeSelector: {}
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: "1", memory: 512Mi }

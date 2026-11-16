@@ -1,0 +1,139 @@
+{{- if .Values.czartup.enabled }}
+# ─────────────────────────────────────────────────────────────────────────────
+# Magertron Czartup(TM) — served at <magertron>/czartup/ (like /portal)
+# ─────────────────────────────────────────────────────────────────────────────
+# Envoy routes /czartup/* here with the prefix stripped (ads_subscriber.cpp,
+# static cluster `czartup` in envoy-v3-bootstrap.yaml).
+#
+# ⚠ NO MAGERTRON CREDENTIAL IN THIS POD. The page reads the console's session
+# token (same site, sessionStorage "mcp.auth.token") and sends it with every
+# call; Czartup checks it against the orchestrator and then acts AS THAT PERSON.
+# Every change it makes is audited to whoever clicked.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mcp.fullname" . }}-czartup
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.czartup.storage.storageClassName }}
+  storageClassName: {{ .Values.czartup.storage.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.czartup.storage.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp.fullname" . }}-czartup
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ include "mcp.fullname" . }}-czartup
+  ports:
+    - name: http
+      port: 8791
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp.fullname" . }}-czartup
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+spec:
+  # One replica: Czarters and run logs live on a ReadWriteOnce volume.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ include "mcp.fullname" . }}-czartup
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp.fullname" . }}-czartup
+        component: czartup
+    spec:
+      {{- with .Values.czartup.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: czartup
+          image: "{{ .Values.czartup.image.repository }}:{{ .Values.czartup.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.czartup.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8791
+              protocol: TCP
+          env:
+            - name: CZARTUP_HOSTED
+              value: "1"
+            - name: CZARTUP_STORE
+              value: /data
+            # In-cluster: straight to the leader, like Envoy's mcp_orchestrator cluster.
+            - name: CZARTER_API
+              value: "http://{{ include "mcp.fullname" . }}-leader.{{ include "mcp.namespace" . }}.svc.cluster.local:{{ .Values.api.httpPort }}"
+            # What the page shows and what the hand-over pack tells builders to call.
+            - name: CZARTUP_PUBLIC_API
+              value: {{ .Values.czartup.publicUrl | default .Values.orchestrator.env.apiPublicUrl | quote }}
+            # Verify reads the installed allowances policy from the bundled OPA's ConfigMap.
+            - name: CZARTUP_POLICY
+              value: /policy/magertron.rego
+            {{- with .Values.czartup.gitea.url }}
+            - name: CZARTUP_GITEA
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.czartup.vault.addr }}
+            - name: VAULT_ADDR
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.czartup.vault.skipVerify }}
+            - name: VAULT_SKIP_VERIFY
+              value: "true"
+            {{- end }}
+            {{- if .Values.czartup.vault.tokenSecret }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.czartup.vault.tokenSecret }}
+                  key: {{ .Values.czartup.vault.tokenKey }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: policy
+              mountPath: /policy
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.czartup.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "mcp.fullname" . }}-czartup
+        - name: policy
+          configMap:
+            name: {{ include "mcp.fullname" . }}-opa-policy
+            optional: true
+{{- end }}
