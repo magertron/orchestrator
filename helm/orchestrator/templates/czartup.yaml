@@ -14,6 +14,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "mcp.fullname" . }}-czartup
   namespace: {{ include "mcp.namespace" . }}
+  # ⚠ The Czarters live here. Without this a fresh install (uninstall + install)
+  # deletes the volume with the release and every Czarter on it.
+  annotations:
+    helm.sh/resource-policy: keep
   labels:
     {{- include "mcp.labels" . | nindent 4 }}
     component: czartup
