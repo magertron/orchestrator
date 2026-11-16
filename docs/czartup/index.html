@@ -171,12 +171,11 @@ html { scrollbar-gutter: stable; }
   <div class="wrap">
     <a class="back" href="/developers.html"><span class="arr" aria-hidden="true">&larr;</span> Back to Build an agent</a>
     <p class="eyebrow">Czartup <span class="pill">Preview</span></p>
-    <h1>Magertron<span class="tm">&#8482;</span> Czartup</h1>
+    <h1>Magertron Czartup<span class="tm">&#8482;</span></h1>
     <div class="rule"></div>
     <p class="lede" style="margin-top:18px">
-      Describe a governed app once. Czartup sets up Magertron&trade; for it and
-      hands your coding agent everything it needs to build it &mdash; the
-      <em>what</em> and the <em>how</em>.
+      Declare a governed agent or app once. Czartup&trade; configures everything
+      and delivers to your coding assistant to build and maintain.
     </p>
 
     <div class="gate">
@@ -215,25 +214,10 @@ html { scrollbar-gutter: stable; }
       <div class="card"><b>Connections</b><span>The MCP servers, APIs and models it reaches &mdash; and exactly which tools.</span></div>
       <div class="card"><b>Controls</b><span>Limits that refuse a call and holds that wait for a person's approval.</span></div>
     </div>
-<pre style="margin-top:16px"><code><span class="cmt"># from a Czarter</span>
-controls:
-  limits:
-    - id: max-stake
-      description: Largest single bet
-      server: playbook-wallet
-      tool: place_bet
-      field: stake
-      op: "&lt;="
-      value: 1000
-  holds:
-    - id: live-bet
-      reason: Bets on games in progress need approval
-      when: { argEquals: { live: true } }
-      ttlSeconds: 300</code></pre>
   </section>
 
   <section>
-    <h2>Hand it over in formats coding agents already read</h2>
+    <h2>Deliver to coding agents</h2>
     <p class="sub">No new format to learn. Open it in an editor, download a versioned zip, or push it to your Git server.</p>
     <table>
       <tr><th>File</th><th>What it is for</th></tr>
