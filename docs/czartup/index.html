@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magertron Czartup — hand your coding agent a governed app</title>
+<meta name="description" content="Describe a governed app once. Czartup sets up Magertron and hands Cursor, Claude Code, Devin or VS Code a build pack in standard formats. Limits and holds are enforced at the gateway, not in the code.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Magertron">
+<meta property="og:url" content="https://magertron.com/czartup/">
+<meta property="og:title" content="Magertron Czartup">
+<meta property="og:description" content="Describe a governed app once. Czartup sets up the platform and hands your coding agent the build.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Magertron Czartup">
+<meta name="twitter:description" content="Describe a governed app once. Czartup sets up the platform and hands your coding agent the build.">
+<style>
+html { scrollbar-gutter: stable; }
+  :root{
+    --ink:#0B1220;          /* page */
+    --panel:#111A2B;        /* raised */
+    --panel-2:#0E1626;      /* code */
+    --line:#1E2B42;
+    --text:#DCE5F2;
+    --muted:#8A9BB4;
+    --dim:#5F718C;
+    --accent:#4A90E2;
+    --accent-dim:#2B5C96;
+    --ok:#4ADE80;
+    --radius:6px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  a:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+
+  /* back link ------------------------------------------------------- */
+  .back{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:13px;color:var(--muted);margin:0 0 22px;
+    transition:color .15s;
+  }
+  .back:hover{color:var(--text);text-decoration:none}
+  .back .arr{font-size:15px;line-height:1;transition:transform .15s}
+  .back:hover .arr{transform:translateX(-2px)}
+
+  /* header ---------------------------------------------------------- */
+  .top{
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(160deg,#0A1526 0%,#132540 100%);
+  }
+  .top .wrap{padding-top:32px;padding-bottom:44px}
+  .eyebrow{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;margin:0 0 14px;
+  }
+  h1{
+    font-size:34px;line-height:1.15;font-weight:700;margin:0 0 6px;
+    letter-spacing:-.01em;
+  }
+  h1 .tm{font-size:.45em;vertical-align:super;font-weight:600}
+  .lede{color:var(--muted);font-size:17px;margin:0;max-width:60ch}
+  .rule{width:52px;height:3px;background:var(--accent);margin:18px 0 0;border-radius:2px}
+
+  /* the gate: signature element ------------------------------------- */
+  .gate{
+    display:flex;flex-wrap:wrap;align-items:stretch;gap:0;
+    border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--panel);margin:34px 0 0;overflow:hidden;
+  }
+  .gate-step{flex:1 1 150px;padding:14px 16px;border-right:1px solid var(--line)}
+  .gate-step:last-child{border-right:0}
+  .gate-step b{display:block;font-size:13px;margin-bottom:2px}
+  .gate-step span{display:block;font-size:12px;color:var(--dim);line-height:1.45}
+  .gate-step.now b{color:var(--ok)}
+  .gate-step.later b{color:var(--dim)}
+  .gate-step.now{background:rgba(74,222,128,.05)}
+
+  /* sections -------------------------------------------------------- */
+  section{padding:40px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:0}
+  h2{font-size:20px;font-weight:650;margin:0 0 4px;letter-spacing:-.005em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  h3{font-size:13px;font-weight:600;margin:22px 0 8px;color:var(--text)}
+  p{margin:0 0 12px}
+  ol{margin:0 0 4px;padding-left:20px;color:var(--muted)}
+  ol li{margin-bottom:6px}
+  ol li b{color:var(--text);font-weight:600}
+
+  pre{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-left:3px solid var(--accent-dim);
+    border-radius:var(--radius);
+    padding:12px 14px;margin:0 0 12px;overflow-x:auto;
+  }
+  code{
+    font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+    color:#BFD4EE;
+  }
+  p code,li code,td code{
+    background:var(--panel-2);border:1px solid var(--line);
+    padding:1px 5px;border-radius:3px;font-size:12.5px;
+  }
+  .cmt{color:var(--dim)}
+
+  .btn{
+    display:inline-block;padding:10px 18px;border-radius:var(--radius);
+    background:var(--accent);color:#08111F;font-weight:650;font-size:14px;
+  }
+  .btn:hover{background:#5C9DE8;text-decoration:none}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--accent);background:rgba(74,144,226,.07)}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
+
+  .note{
+    background:rgba(74,144,226,.06);border-left:3px solid var(--accent);
+    border-radius:0 var(--radius) var(--radius) 0;
+    padding:12px 15px;margin:18px 0 0;font-size:14px;color:var(--muted);
+  }
+  .note b{color:var(--text)}
+
+  table{width:100%;border-collapse:collapse;margin:6px 0 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  td:first-child{white-space:nowrap;color:var(--text);font-weight:600}
+  td{color:var(--muted)}
+
+  footer{padding:30px 0 50px;color:var(--dim);font-size:13px}
+  footer a{color:var(--muted)}
+  .soon{color:var(--dim);font-size:13px;margin:14px 0 0}
+
+  @media (max-width:600px){
+    h1{font-size:27px}
+    .top .wrap{padding-top:24px;padding-bottom:34px}
+    .gate-step{flex:1 1 100%;border-right:0;border-bottom:1px solid var(--line)}
+    .gate-step:last-child{border-bottom:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  .gate-step{flex:1 1 110px}
+  .pill{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--accent-dim);border-radius:100px;padding:2px 9px;
+    margin-left:10px;vertical-align:middle;font-weight:600}
+  td.ok{color:var(--ok);white-space:nowrap}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+  .card b{display:block;font-size:13px;margin-bottom:4px}
+  .card span{display:block;font-size:13px;color:var(--muted);line-height:1.5}
+  @media (max-width:600px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="back" href="/developers.html"><span class="arr" aria-hidden="true">&larr;</span> Back to Build an agent</a>
+    <p class="eyebrow">Czartup <span class="pill">Preview</span></p>
+    <h1>Magertron<span class="tm">&#8482;</span> Czartup</h1>
+    <div class="rule"></div>
+    <p class="lede" style="margin-top:18px">
+      Describe a governed app once. Czartup sets up Magertron&trade; for it and
+      hands your coding agent everything it needs to build it &mdash; the
+      <em>what</em> and the <em>how</em>.
+    </p>
+
+    <div class="gate">
+      <div class="gate-step now">
+        <b>1 &middot; Describe</b>
+        <span>A Czarter: who signs in, the agent, its tools, limits and holds.</span>
+      </div>
+      <div class="gate-step later">
+        <b>2 &middot; Set up</b>
+        <span>Czartup configures sign-in, roles, the agent and its grants.</span>
+      </div>
+      <div class="gate-step later">
+        <b>3 &middot; Hand over</b>
+        <span>A build pack in formats coding agents already read.</span>
+      </div>
+      <div class="gate-step later">
+        <b>4 &middot; Build</b>
+        <span>Say &ldquo;Build&rdquo; in Cursor, Claude Code, Devin or VS Code.</span>
+      </div>
+      <div class="gate-step later">
+        <b>5 &middot; Proven</b>
+        <span>The Czarter's checks run as live calls through the gateway.</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2>One document says what the app may do</h2>
+    <p class="sub">The Czarter. Written by whoever is accountable for the app &mdash; the customer's admin or the SI.</p>
+    <div class="cols">
+      <div class="card"><b>People</b><span>Who signs in, with which identity provider, and whether MFA and a fresh login are required.</span></div>
+      <div class="card"><b>The agent</b><span>The service account it acts as, when it runs, what it may and must never do.</span></div>
+      <div class="card"><b>Connections</b><span>The MCP servers, APIs and models it reaches &mdash; and exactly which tools.</span></div>
+      <div class="card"><b>Controls</b><span>Limits that refuse a call and holds that wait for a person's approval.</span></div>
+    </div>
+<pre style="margin-top:16px"><code><span class="cmt"># from the Czarter for Bet Big Predictions</span>
+controls:
+  limits:
+    - id: max-stake
+      description: Largest single bet
+      server: playbook-wallet
+      tool: place_bet
+      field: stake
+      op: "&lt;="
+      value: 1000
+  holds:
+    - id: live-bet
+      reason: Bets on games in progress need approval
+      when: { argEquals: { live: true } }
+      ttlSeconds: 300</code></pre>
+  </section>
+
+  <section>
+    <h2>Czartup sets up the platform</h2>
+    <p class="sub">Every step shows a dry run first, and every result is logged against the Czarter.</p>
+    <ol>
+      <li><b>Sign-in</b> &mdash; creates the app in the identity provider (Auth0 today), with MFA for this app only</li>
+      <li><b>Role and agent</b> &mdash; the app's role and the agent's service account, with its external identity</li>
+      <li><b>Grants</b> &mdash; the agent may call exactly the listed tools, and nothing else</li>
+      <li><b>Policy</b> &mdash; limits and holds generated as policy, scoped to the app's namespace</li>
+      <li><b>Verify</b> &mdash; re-checks all of it against the live platform, step by step</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Hand it over in formats coding agents already read</h2>
+    <p class="sub">No new format to learn. Open it in an editor, download a versioned zip, or push it to your Git server.</p>
+    <table>
+      <tr><th>File</th><th>What it is for</th></tr>
+      <tr><td><code>AGENTS.md</code></td><td>The brief and the guardrails, read by Cursor, Codex, Devin and others; <code>CLAUDE.md</code> points Claude Code at it.</td></tr>
+      <tr><td><code>specs/</code></td><td>Spec, plan and tasks in the GitHub Spec Kit layout.</td></tr>
+      <tr><td><code>servers/</code></td><td>A <code>SERVER-SPEC.md</code> and an MCP Registry <code>server.json</code> for each server still to build.</td></tr>
+      <tr><td><code>RUNBOOK.md</code></td><td>What is already live on the platform, and what is still open.</td></tr>
+      <tr><td><code>czarter.yaml</code></td><td>The source of truth.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Say &ldquo;Build&rdquo;</h2>
+    <p class="sub">The coding agent works in a set order and stops where a person decides.</p>
+    <p>
+      It builds any servers first, then the app, against gateway addresses only.
+      Where a step belongs to the platform &mdash; registering a server, approving
+      its tools, granting access &mdash; it stops and says exactly what the admin
+      must do. It never scripts those steps: the agent writing the code is the
+      party being governed, and it does not get to set its own limits.
+    </p>
+    <div class="note">
+      <b>Limits and holds are not in the code.</b> The pack tells the coding agent
+      to leave them out of the server. A refusal is the gateway's HTTP 403, and a
+      hold is a 403 with an approval to wait for &mdash; so the checks prove
+      Magertron&trade; enforced them, not the app.
+    </div>
+  </section>
+
+  <section>
+    <h2>Bet Big Predictions</h2>
+    <p class="sub">A play-money sports predictions app for a fictional customer, built in Cursor from a Czartup pack.</p>
+    <p>
+      Three screens, a wallet MCP server and a Settler agent that runs on a
+      schedule. Cursor built the wallet and the app from the pack; the platform
+      steps were Czartup's and the admin's. The Czarter's checks, run as live
+      calls through the gateway:
+    </p>
+    <table>
+      <tr><th>Check</th><th>Call</th><th>Result</th></tr>
+      <tr><td>Sign-in</td><td>Password and MFA, then a token exchange at the STS</td><td class="ok">passed</td></tr>
+      <tr><td>Agent</td><td>The exchanged token acts as the Settler's service account</td><td class="ok">passed</td></tr>
+      <tr><td>Limit</td><td><code>place_bet</code> with a stake of 1500 &rarr; 403 <em>Largest single bet</em></td><td class="ok">passed</td></tr>
+      <tr><td>Hold</td><td><code>place_bet</code> on a game in progress &rarr; 403, held for approval</td><td class="ok">passed</td></tr>
+    </table>
+    <p style="margin-top:14px;color:var(--muted);font-size:14px">
+      The wallet itself has no stake limit and no hold. Both are Magertron&trade;'s.
+    </p>
+  </section>
+
+  <section>
+    <h2>Works with</h2>
+    <p class="sub">The editors and agents Magertron&trade; already integrates with.</p>
+    <p>
+      <a href="/cursor/">Cursor</a> &middot; <a href="/claude-code/">Claude Code</a> &middot;
+      <a href="/devin/">Devin</a> &middot; <a href="/vscode/">VS Code</a>
+    </p>
+    <div class="btns">
+      <a class="btn" href="/developers.html#walkthrough">Request a walkthrough</a>
+      <a class="btn ghost" href="/developers.html">Build an agent</a>
+    </div>
+    <p class="soon">Czartup is in preview with design partners.</p>
+  </section>
+
+  <footer>
+    <a href="/">magertron.com</a> &middot;
+    <a href="/developers.html">Build an agent</a> &middot;
+    <a href="/cursor/">Cursor</a> &middot;
+    <a href="/claude-code/">Claude Code</a> &middot;
+    <a href="/devin/">Devin</a> &middot;
+    <a href="/vscode/">VS Code</a>
+  </footer>
+
+</div>
+<script src="/consent.js" defer></script>
+</body>
+</html>

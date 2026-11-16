@@ -738,6 +738,7 @@ body { overflow-x: clip; }
           <a href="api/v1/">API Documentation</a>
           <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
           <a href="developers.html" style="color: var(--text);">Build an agent</a>
+          <a href="czartup/">Czartup</a>
           <a href="vscode/">VS Code</a>
           <a href="devin/">Devin</a>
           <a href="cursor/">Cursor</a>
@@ -868,6 +869,7 @@ body { overflow-x: clip; }
         <a href="/devin/">Devin</a>
         <span>your own Go, Python or TypeScript</span>
       </div>
+      <div class="section-desc" style="margin: 26px auto 0; font-size: 15px;">Building it for a customer? <a href="/czartup/">Czartup</a> hands your coding agent a governed app to build &mdash; sign-in, tools, limits and holds already set up in Magertron&trade;. <a href="/czartup/">See how &rarr;</a></div>
     </div>
   </div>
 </section>
@@ -1225,6 +1227,10 @@ document.querySelectorAll('.code-tab').forEach(function (tab) {
     }
   });
 })();
+</script>
+<script>
+// /czartup/ links here with #walkthrough: open the same form "Try it now" opens.
+if (location.hash === '#walkthrough') window.addEventListener('load', function () { openDemoModal(null); });
 </script>
 </body>
 </html>
