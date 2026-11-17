@@ -104,6 +104,12 @@ spec:
             # Verify reads the installed allowances policy from the bundled OPA's ConfigMap.
             - name: CZARTUP_POLICY
               value: /policy/magertron.rego
+            {{- if .Values.opa.enabled }}
+            # Verify asks the live OPA for real decisions (over a limit -> refused, the agent alone
+            # -> refused) and which apps' policies it has loaded.
+            - name: CZARTUP_OPA_URL
+              value: "http://{{ include "mcp.fullname" . }}-opa:8181"
+            {{- end }}
             # Describe it calls the model as the assistant's service account (see top).
             - name: CZARTUP_LLM_TOKEN_FILE
               value: /var/run/magertron/llm/token

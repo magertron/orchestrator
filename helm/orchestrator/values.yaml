@@ -2524,16 +2524,37 @@ opa:
   resources:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {cpu: 500m, memory: 256Mi}
+  # Apps' own policies (Czartup): kube-mgmt loads each app's ConfigMap into OPA.
+  # Check a tag exists before changing it: docker manifest inspect openpolicyagent/kube-mgmt:<tag>
+  kubeMgmt:
+    enabled: true
+    image:
+      repository: openpolicyagent/kube-mgmt
+      tag: "11.0.7"
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 200m, memory: 128Mi}
   policy: |
     package magertron
 
-    # Starter policy: allow everything Magertron already allowed.
-    # Add deny rules below, e.g.
-    #   decision := {"allow": false, "reason": "transfers over $500 need approval"} if {
+    # Starter policy: allow everything Magertron already allowed. Add a rule by adding
+    # a reason to `deny`, e.g.
+    #   deny contains "transfers over $500 need approval" if {
     #       input.tool == "createTransfer"
     #       input.arguments.amount > 500
     #   }
+    # Apps' own policies (Czartup, one ConfigMap per app) add their reasons too.
     default decision := {"allow": true}
+
+    decision := object.union({"allow": false, "reasons": sort([m | some m in deny])}, decision_hold) if count(deny) > 0
+
+    # A hold: every reason is a hold -> Magertron holds the call for approval instead of refusing it.
+    default decision_hold := {}
+
+    decision_hold := {"hold": hold_request} if {
+        hold_request
+        deny == hold_deny
+    }
 
 # ─── OpenTelemetry (off by default) ──────────────────────────────────────────
 # Set endpoint to an OTLP/gRPC collector as host:port and the v3 Envoy sends a

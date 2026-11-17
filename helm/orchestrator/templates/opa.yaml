@@ -5,8 +5,53 @@ empty). Enable with install.sh --enable-opa, or opa.enabled=true.
 Customers who run their own OPA/Styra/Cerbos leave this off and set
 orchestrator.pdp.url instead.
 */}}
+{{- define "mcp.opaApps" -}}
+package magertron
+
+# ── Apps' own policies (Czartup) ─────────────────────────────────────────────
+# Each app's rules live in their OWN module, package magertron.apps.<app>, loaded
+# from that app's ConfigMap (label openpolicyagent.org/policy=rego) by kube-mgmt.
+# The chart never creates those ConfigMaps, so an upgrade never touches them.
+# This file collects every app's deny / hold_deny / hold_request into the
+# decision above - and ONLY for calls in the namespaces that app declares, so one
+# app's rules can never reach another app's calls, nor override `decision`.
+
+# Czartup's Verify asks for this to know the collector is installed.
+apps_collector := 1
+
+deny contains m if {
+	some app
+	input.namespace in data.magertron.apps[app].namespaces
+	some m in data.magertron.apps[app].deny
+}
+
+hold_deny contains m if {
+	some app
+	input.namespace in data.magertron.apps[app].namespaces
+	some m in data.magertron.apps[app].hold_deny
+}
+
+# One hold per decision. Two apps holding the same call (they share a namespace):
+# the first by name wins, so the result is one value, never a conflict. A base-policy
+# hold firing on the same call as an app's hold is still a conflict - keep holds
+# in the base policy scoped to their own servers.
+hold_request := data.magertron.apps[app].hold_request if {
+	held := sort([a |
+		some a
+		input.namespace in data.magertron.apps[a].namespaces
+		data.magertron.apps[a].hold_request
+	])
+	app := held[0]
+}
+{{- end }}
 {{- if .Values.opa.enabled }}
 {{- $name := printf "%s-opa" (include "mcp.fullname" .) }}
+{{- /* czartup-release.sh upgrades with --reuse-values, which does not bring in NEW chart defaults,
+     so kube-mgmt's settings default here as well - the template never reads a missing key. */}}
+{{- $km := mergeOverwrite (dict "enabled" true "image" (dict "repository" "openpolicyagent/kube-mgmt" "tag" "11.0.7") "resources" (dict "requests" (dict "cpu" "10m" "memory" "32Mi") "limits" (dict "cpu" "200m" "memory" "128Mi"))) (.Values.opa.kubeMgmt | default dict) }}
+{{- /* enabled on its own: a merge never overwrites with false. */}}
+{{- $kmOn := true }}
+{{- if hasKey (.Values.opa.kubeMgmt | default dict) "enabled" }}{{- $kmOn = .Values.opa.kubeMgmt.enabled }}{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -18,6 +63,9 @@ metadata:
 data:
   magertron.rego: |
 {{ .Values.opa.policy | indent 4 }}
+  # Collects each app's own policy (Czartup, one ConfigMap per app) into the decision.
+  magertron-apps.rego: |
+{{ include "mcp.opaApps" . | indent 4 }}
 {{- if .Values.opa.data }}
   # install.sh --opa-data: loaded at the ROOT of `data` (a top-level key
   # "allowances" is data.allowances in Rego).
@@ -46,15 +94,18 @@ spec:
         app.kubernetes.io/component: opa
       annotations:
         # A policy change rolls this pod — OPA loads the file at start.
-        checksum/policy: {{ printf "%s\n%s" .Values.opa.policy (.Values.opa.data | default "") | sha256sum }}
+        checksum/policy: {{ printf "%s\n%s\n%s" .Values.opa.policy (.Values.opa.data | default "") (include "mcp.opaApps" .) | sha256sum }}
     spec:
+      {{- if $kmOn }}
+      serviceAccountName: {{ $name }}
+      {{- end }}
       containers:
         - name: opa
           image: "{{ .Values.opa.image.repository }}:{{ .Values.opa.image.tag }}"
           # ⚠ The FILE, not the directory: a ConfigMap mount also exposes
           # ..data/ and a timestamped copy, and OPA would load the rule 3 times.
           args: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=info",
-                 "/policies/magertron.rego"{{ if .Values.opa.data }}, "/policies/data.json"{{ end }}]
+                 "/policies/magertron.rego", "/policies/magertron-apps.rego"{{ if .Values.opa.data }}, "/policies/data.json"{{ end }}]
           ports:
             - name: http
               containerPort: 8181
@@ -77,6 +128,30 @@ spec:
             - name: policy
               mountPath: /policies
               readOnly: true
+        {{- if $kmOn }}
+        # Apps' own policies: kube-mgmt loads every ConfigMap in this namespace labelled
+        # openpolicyagent.org/policy=rego into OPA (live, no restart) - one per app, written by
+        # Czartup and applied by the admin. The chart never creates them, so upgrades keep them.
+        # ⚠ kube-mgmt does not notice when the OPA container alone restarts, and OPA then has none
+        # of the apps' policies. The marker ConfigMap below is loaded the same way; this probe asks
+        # OPA for it and restarts kube-mgmt (which reloads everything) when it is gone.
+        - name: kube-mgmt
+          image: "{{ $km.image.repository }}:{{ $km.image.tag }}"
+          args: ["--namespaces={{ include "mcp.namespace" . }}", "--enable-data=false"]
+          livenessProbe:
+            httpGet: {path: /health/apps, port: 8181}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          resources:
+            {{- toYaml $km.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+        {{- end }}
       volumes:
         - name: policy
           configMap:
@@ -99,4 +174,64 @@ spec:
     - name: http
       port: 8181
       targetPort: 8181
+{{- if $kmOn }}
+---
+# Loaded by kube-mgmt like any app's policy. GET /health/apps on OPA is 200 only while it
+# is loaded - kube-mgmt's liveness probe (above).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-apps-marker
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+    openpolicyagent.org/policy: rego
+data:
+  apps-marker.rego: |
+    package system.health
+
+    apps := true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+---
+# kube-mgmt reads ConfigMaps in this namespace only, and writes back the status annotation
+# (openpolicyagent.org/kube-mgmt-status) on the ones it loads. Nothing cluster-wide.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}-kube-mgmt
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}-kube-mgmt
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}-kube-mgmt
+subjects:
+  - kind: ServiceAccount
+    name: {{ $name }}
+    namespace: {{ include "mcp.namespace" . }}
+{{- end }}
 {{- end }}
