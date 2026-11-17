@@ -2567,7 +2567,7 @@ czartup:
   enabled: false
   image:
     repository: curtismager20/mcp-czartup
-    tag: "0.2.11"
+    tag: "0.2.12"
     pullPolicy: IfNotPresent
   # Public address for the page and for the hand-over pack. Empty = orchestrator.env.apiPublicUrl.
   publicUrl: ""
