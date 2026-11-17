@@ -52,6 +52,10 @@ hold_request := data.magertron.apps[app].hold_request if {
 {{- /* enabled on its own: a merge never overwrites with false. */}}
 {{- $kmOn := true }}
 {{- if hasKey (.Values.opa.kubeMgmt | default dict) "enabled" }}{{- $kmOn = .Values.opa.kubeMgmt.enabled }}{{- end }}
+{{- /* OPA's API token (only kube-mgmt has it). Random once, then kept: a new one on every upgrade
+     would leave a running OPA and kube-mgmt holding different ones. */}}
+{{- $apiTok := randAlphaNum 40 }}
+{{- with lookup "v1" "Secret" (include "mcp.namespace" .) (printf "%s-api" $name) }}{{- with .data }}{{- if .token }}{{- $apiTok = .token | b64dec }}{{- end }}{{- end }}{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -104,7 +108,11 @@ spec:
           image: "{{ .Values.opa.image.repository }}:{{ .Values.opa.image.tag }}"
           # ⚠ The FILE, not the directory: a ConfigMap mount also exposes
           # ..data/ and a timestamped copy, and OPA would load the rule 3 times.
+          # With kube-mgmt: only it may change policies or data (the Secret <release>-opa-api).
           args: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=info",
+                 {{- if $kmOn }}
+                 "--authentication=token", "--authorization=basic", "/authz/authz.rego",
+                 {{- end }}
                  "/policies/magertron.rego", "/policies/magertron-apps.rego"{{ if .Values.opa.data }}, "/policies/data.json"{{ end }}]
           ports:
             - name: http
@@ -128,6 +136,11 @@ spec:
             - name: policy
               mountPath: /policies
               readOnly: true
+            {{- if $kmOn }}
+            - name: api
+              mountPath: /authz
+              readOnly: true
+            {{- end }}
         {{- if $kmOn }}
         # Apps' own policies: kube-mgmt loads every ConfigMap in this namespace labelled
         # openpolicyagent.org/policy=rego into OPA (live, no restart) - one per app, written by
@@ -137,7 +150,12 @@ spec:
         # OPA for it and restarts kube-mgmt (which reloads everything) when it is gone.
         - name: kube-mgmt
           image: "{{ $km.image.repository }}:{{ $km.image.tag }}"
-          args: ["--namespaces={{ include "mcp.namespace" . }}", "--enable-data=false"]
+          args: ["--namespaces={{ include "mcp.namespace" . }}", "--enable-data=false",
+                 "--opa-auth-token-file=/authz/token"]
+          volumeMounts:
+            - name: api
+              mountPath: /authz
+              readOnly: true
           livenessProbe:
             httpGet: {path: /health/apps, port: 8181}
             initialDelaySeconds: 30
@@ -156,6 +174,12 @@ spec:
         - name: policy
           configMap:
             name: {{ $name }}-policy
+        {{- if $kmOn }}
+        - name: api
+          secret:
+            secretName: {{ $name }}-api
+            defaultMode: 0440
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -175,6 +199,41 @@ spec:
       port: 8181
       targetPort: 8181
 {{- if $kmOn }}
+---
+# OPA's API: reads and decisions are open (the gateway, Czartup's Verify, the kubelet's probes
+# change nothing); anything that WRITES needs this token, and only kube-mgmt has it.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}-api
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opa
+type: Opaque
+stringData:
+  token: {{ $apiTok | quote }}
+  authz.rego: |
+    package system.authz
+
+    default allow := false
+
+    allow if input.method == "GET"
+
+    # POST /v1/data/<path> evaluates a decision - it changes nothing.
+    allow if {
+    	input.method == "POST"
+    	input.path[0] == "v1"
+    	input.path[1] == "data"
+    }
+
+    # POST / - the default decision.
+    allow if {
+    	input.method == "POST"
+    	input.path == []
+    }
+
+    allow if input.identity == {{ $apiTok | quote }}
 ---
 # Loaded by kube-mgmt like any app's policy. GET /health/apps on OPA is 200 only while it
 # is loaded - kube-mgmt's liveness probe (above).
