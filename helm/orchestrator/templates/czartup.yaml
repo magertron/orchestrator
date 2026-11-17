@@ -5,10 +5,14 @@
 # Envoy routes /czartup/* here with the prefix stripped (ads_subscriber.cpp,
 # static cluster `czartup` in envoy-v3-bootstrap.yaml).
 #
-# ⚠ NO MAGERTRON CREDENTIAL IN THIS POD. The page reads the console's session
-# token (same site, sessionStorage "mcp.auth.token") and sends it with every
-# call; Czartup checks it against the orchestrator and then acts AS THAT PERSON.
-# Every change it makes is audited to whoever clicked.
+# ⚠ ONE MAGERTRON CREDENTIAL IN THIS POD, and it can only call a model. The page
+# reads the console's session token (same site, sessionStorage "mcp.auth.token")
+# and sends it with every call; Czartup checks it against the orchestrator and
+# then acts AS THAT PERSON. Every change it makes is audited to whoever clicked.
+# The exception is Describe it: the LLM proxy refuses a person's token (lockdown
+# a), so that one call uses the console assistant's service account
+# (system:llm-consumer), mounted below from the assistant Secret. Only a signed-in
+# administrator reaches it, and the pod log names who asked.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -100,6 +104,9 @@ spec:
             # Verify reads the installed allowances policy from the bundled OPA's ConfigMap.
             - name: CZARTUP_POLICY
               value: /policy/magertron.rego
+            # Describe it calls the model as the assistant's service account (see top).
+            - name: CZARTUP_LLM_TOKEN_FILE
+              value: /var/run/magertron/llm/token
             {{- with .Values.czartup.gitea.url }}
             - name: CZARTUP_GITEA
               value: {{ . | quote }}
@@ -125,6 +132,9 @@ spec:
             - name: policy
               mountPath: /policy
               readOnly: true
+            - name: llm-sa
+              mountPath: /var/run/magertron/llm
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /api/status
@@ -140,4 +150,14 @@ spec:
           configMap:
             name: {{ include "mcp.fullname" . }}-opa-policy
             optional: true
+        # ⚠ A FILE, not an env var: the kubelet refreshes a mounted Secret when
+        # seeding rotates the token; an env var keeps the revoked one until restart.
+        - name: llm-sa
+          secret:
+            secretName: {{ .Values.assistant.externalSecretName | default (printf "%s-assistant" (include "mcp.fullname" .)) }}
+            optional: true
+            defaultMode: 0440
+            items:
+              - key: MAG_SA_JWT
+                path: token
 {{- end }}
