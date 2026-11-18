@@ -1844,13 +1844,16 @@ fi
 
 # ─── App policies (Czartup: one ConfigMap per app) ───────────────────────────
 # Not the chart's: kube-mgmt (beside OPA) loads every ConfigMap labelled
-# openpolicyagent.org/policy=rego. In order, later wins: what was live before
-# teardown, the region bundle's, then --app-policies. Only ConfigMaps labelled
+# openpolicyagent.org/policy=rego. In order, later wins: the region bundle's,
+# then --app-policies, then what was LIVE before teardown (2026-11-18) - so an app
+# already on this cluster keeps exactly what Czartup last wrote, and the files only
+# add apps it does not have yet (a fresh cluster, DR). A stale copy in ~/apps once
+# put back a policy without its approvers. Only ConfigMaps labelled
 # magertron.io/czarter are applied, whatever else a file or folder holds.
 APP_POLICY_SOURCES=()
-[ -n "${APP_POLICIES_SNAPSHOT:-}" ] && APP_POLICY_SOURCES+=( "$APP_POLICIES_SNAPSHOT" )
 [ -n "${BUNDLE_APP_POLICIES:-}" ]   && APP_POLICY_SOURCES+=( "$BUNDLE_APP_POLICIES" )
 [ -n "${APP_POLICIES:-}" ]          && APP_POLICY_SOURCES+=( "$APP_POLICIES" )
+[ -n "${APP_POLICIES_SNAPSHOT:-}" ] && APP_POLICY_SOURCES+=( "$APP_POLICIES_SNAPSHOT" )
 if [ ${#APP_POLICY_SOURCES[@]} -gt 0 ]; then
     section "App policies"
     if [ "${ENABLE_OPA:-0}" != "1" ]; then
@@ -1858,12 +1861,52 @@ if [ ${#APP_POLICY_SOURCES[@]} -gt 0 ]; then
         [ -n "${APP_POLICIES_SNAPSHOT:-}" ] && info "    They were saved to $APP_POLICIES_SNAPSHOT"
     else
         for src in "${APP_POLICY_SOURCES[@]}"; do
-            if kubectl apply -n "$NAMESPACE" -l magertron.io/czarter -f "$src" > app-policies.out 2>&1; then
+            # Clean it first (2026-11-18): an export from a cluster carries resourceVersion/uid,
+            # and a stale resourceVersion is refused with "Conflict". Keep what the snapshot keeps.
+            clean="$(mktemp --suffix=.json)"
+            if ! python3 - "$src" > "$clean" 2> app-policies.out <<'APPCLEAN'
+import json, pathlib, subprocess, sys
+src = pathlib.Path(sys.argv[1])
+files = sorted(p for p in src.rglob("*") if p.suffix in (".yaml", ".yml", ".json")) if src.is_dir() else [src]
+
+
+def docs(p):
+    """Every document in a file - PyYAML when it is there, else kubectl reads it (no python3-yaml needed)."""
+    try:
+        import yaml
+        return list(yaml.safe_load_all(p.read_text()))
+    except ImportError:
+        r = subprocess.run(["kubectl", "create", "--dry-run=client", "-o", "json", "-f", str(p)],
+                           capture_output=True, text=True, check=True)
+        return [json.loads(r.stdout)]
+
+
+out = []
+for p in files:
+    for doc in docs(p):
+        if not isinstance(doc, dict):
+            continue
+        for d in (doc.get("items") or []) if doc.get("kind") == "List" else [doc]:
+            md = d.get("metadata") or {}
+            if d.get("kind") != "ConfigMap" or "magertron.io/czarter" not in (md.get("labels") or {}):
+                continue
+            out.append({"apiVersion": "v1", "kind": "ConfigMap",
+                        "metadata": {"name": md["name"], "labels": md["labels"]}, "data": d.get("data") or {}})
+print(json.dumps({"apiVersion": "v1", "kind": "List", "items": out}))
+APPCLEAN
+            then
+                err "Could not read $src:"
+                sed 's/^/    /' app-policies.out >&2
+                rm -f "$clean"
+                continue
+            fi
+            if kubectl apply -n "$NAMESPACE" -f "$clean" > app-policies.out 2>&1; then
                 ok "$(grep -c . app-policies.out) from $src"
             else
                 err "Could not apply $src:"
                 sed 's/^/    /' app-policies.out >&2
             fi
+            rm -f "$clean"
         done
         info "    kubectl get configmap -n $NAMESPACE -l magertron.io/czarter"
     fi
