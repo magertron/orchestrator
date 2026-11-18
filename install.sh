@@ -582,6 +582,12 @@ Common options:
                               loaded at the root of `data`: a top-level key
                               "allowances" is data.allowances in your policy.
                               Swap the file to change caps without editing Rego.
+  --app-policies <file|dir>   Apps' own OPA policies (Czartup: one ConfigMap per
+                              app, e.g. policies/apps/). Applied after the install
+                              (needs the bundled OPA); only ConfigMaps labelled
+                              magertron.io/czarter. Apps' policies live now are
+                              kept on their own; --region-bundle carries the
+                              primary's.
   --enable-czartup            Serve Czartup(TM) at <your address>/czartup/: declare a
                               governed agent or app, configure it, hand it to a coding
                               assistant. Runs as whoever is signed in to the console.
@@ -706,6 +712,7 @@ while [ $# -gt 0 ]; do
         --enable-opa)          ENABLE_OPA=1; shift ;;
         --opa-policy)          OPA_POLICY="$2"; ENABLE_OPA=1; shift 2 ;;
         --opa-data)            OPA_DATA="$2"; ENABLE_OPA=1; shift 2 ;;
+        --app-policies)        APP_POLICIES="$2"; shift 2 ;;
         --enable-presidio)     ENABLE_PRESIDIO=1; shift ;;
         --enable-czartup)      ENABLE_CZARTUP=1; shift ;;
         --czartup-vault)       CZARTUP_VAULT="$2"; ENABLE_CZARTUP=1; shift 2 ;;
@@ -747,6 +754,11 @@ case "$SERVICE_TYPE" in
     *) echo "ERROR: --service-type must be nodeport|loadbalancer|clusterip (got: $SERVICE_TYPE)" >&2; exit 1 ;;
 esac
 
+
+if [ -n "${APP_POLICIES:-}" ] && [ ! -e "$APP_POLICIES" ]; then
+    echo "ERROR: --app-policies not found: $APP_POLICIES" >&2
+    exit 1
+fi
 
 # ─── Preflight: disk (2026-10-05) ─────────────────────────────────────────────
 # A design partner's 10 GB VM lost its control plane mid-deploy: kubelet evicts
@@ -1036,6 +1048,42 @@ if [ -z "$CHART_VERSION" ]; then
     exit 1
 fi
 echo "  target version: $CHART_VERSION"
+
+# ⚠ The bundled OPA's policy as it is live now, or nothing (fresh install).
+# helm upgrade sets opa.policy from THIS run only, so without this an upgrade
+# that forgets --opa-policy - or passes an older file - silently drops rules.
+# 2026-10-25: the netops Kafka topic rule vanished that way in the .81 install.
+live_opa_policy() {
+    local ns
+    ns="$(kubectl get configmap -A --field-selector metadata.name=mcp-orchestrator-opa-policy \
+          -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null || true)"
+    # None (fresh install), or more than one install on this cluster: don't guess.
+    [ -n "$ns" ] && [ "$(echo "$ns" | wc -w)" -eq 1 ] || return 1
+    kubectl get configmap mcp-orchestrator-opa-policy -n "$ns" \
+        -o jsonpath='{.data.magertron\.rego}' 2>/dev/null | sed -e '$a\'   # jsonpath drops the final newline
+}
+
+# ─── Snapshot the OPA policies BEFORE teardown (2026-11-17) ──────────────────
+# helm uninstall (below) deletes the chart's policy ConfigMap, and --mode
+# reinstall deletes the namespace - with every app's own policy ConfigMap
+# (Czartup, label magertron.io/czarter) in it. Read both NOW: the PDP section
+# keeps the base policy from OPA_POLICY_SNAPSHOT, and "App policies" (after the
+# rollout) re-applies the apps' from APP_POLICIES_SNAPSHOT.
+OPA_POLICY_SNAPSHOT="$(mktemp)"
+live_opa_policy > "$OPA_POLICY_SNAPSHOT" 2>/dev/null || : > "$OPA_POLICY_SNAPSHOT"
+APP_POLICIES_SNAPSHOT=""
+if kubectl get configmap -n "$NAMESPACE" -l magertron.io/czarter -o name 2>/dev/null | grep -q .; then
+    APP_POLICIES_SNAPSHOT="$(pwd)/app-policies-$(date +%Y%m%d-%H%M%S).json"
+    # Name, labels and data only: no uid / resourceVersion, so it applies to a new namespace too.
+    kubectl get configmap -n "$NAMESPACE" -l magertron.io/czarter -o json \
+        | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(json.dumps({"apiVersion": "v1", "kind": "List", "items": [
+    {"apiVersion": "v1", "kind": "ConfigMap",
+     "metadata": {"name": i["metadata"]["name"], "labels": i["metadata"].get("labels", {})},
+     "data": i.get("data", {})} for i in d.get("items", [])]}, indent=1))' > "$APP_POLICIES_SNAPSHOT"
+    note "App policies live now: $(grep -c '"kind": "ConfigMap"' "$APP_POLICIES_SNAPSHOT") (saved to $APP_POLICIES_SNAPSHOT)"
+fi
 
 # ─── Teardown (both modes) ───────────────────────────────────────────────────
 # Helm uninstall is REQUIRED even in upgrade mode. Data preservation
@@ -1592,6 +1640,10 @@ if [ -n "${REGION_BUNDLE:-}" ]; then
                 OPA_DATA="$RB_PDP_DIR/opa-data.json"
                 note "  external PDP: with the primary's data file"
             fi
+            if [ -s "$RB_PDP_DIR/app-policies.json" ]; then
+                BUNDLE_APP_POLICIES="$RB_PDP_DIR/app-policies.json"
+                note "  external PDP: with the primary's app policies"
+            fi
             PDP_URL=""
             note "  external PDP: bundled OPA with the primary's policy"
         elif [ "$PDP_MODE" = "external" ] && [ -n "$PDP_URL" ]; then
@@ -1606,18 +1658,37 @@ if [ -n "${REGION_BUNDLE:-}" ]; then
     unset REGION_BUNDLE_PASSPHRASE
 fi
 
-# ⚠ The bundled OPA's policy as it is live now, or nothing (fresh install).
-# helm upgrade sets opa.policy from THIS run only, so without this an upgrade
-# that forgets --opa-policy - or passes an older file - silently drops rules.
-# 2026-10-25: the netops Kafka topic rule vanished that way in the .81 install.
-live_opa_policy() {
-    local ns
-    ns="$(kubectl get configmap -A --field-selector metadata.name=mcp-orchestrator-opa-policy \
-          -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null || true)"
-    # None (fresh install), or more than one install on this cluster: don't guess.
-    [ -n "$ns" ] && [ "$(echo "$ns" | wc -w)" -eq 1 ] || return 1
-    kubectl get configmap mcp-orchestrator-opa-policy -n "$ns" \
-        -o jsonpath='{.data.magertron\.rego}' 2>/dev/null | sed -e '$a\'   # jsonpath drops the final newline
+# live_opa_policy() and the snapshot are above the teardown: by now helm
+# uninstall has deleted the ConfigMap it reads.
+
+# opa_moved_blocks LIVE NEW REST [app-policy sources...]
+# Prints the apps whose Czarter block is in LIVE, not in NEW, and has its own app policy in one of
+# the sources (files or folders of ConfigMaps labelled magertron.io/czarter). Writes LIVE minus
+# those blocks to REST, so the drop check only sees what would really be lost.
+opa_moved_blocks() {
+    python3 - "$@" <<'PY'
+import pathlib, re, sys
+live, new, rest, *srcs = sys.argv[1:]
+L, N = pathlib.Path(live).read_text(), pathlib.Path(new).read_text()
+apps = set()
+for s in filter(None, srcs):
+    p = pathlib.Path(s)
+    for f in ([p] if p.is_file() else sorted(p.glob("*.y*ml")) + sorted(p.glob("*.json")) if p.is_dir() else []):
+        apps |= set(re.findall(r'magertron\.io/czarter"?\s*:\s*"?([a-z0-9][a-z0-9-]*)', f.read_text(errors="replace")))
+def blocks(text, name):
+    out = [m for m in re.finditer(rf"^# BEGIN czarter {re.escape(name)}[ \t]*\n.*?^# END czarter {re.escape(name)}[ \t]*\n?", text, re.S | re.M)]
+    out += [m for m in re.finditer(rf"^# Generated by Czarter from '{re.escape(name)}'\..*?(?=^# Generated by Czarter from '|^# BEGIN czarter |\Z)", text, re.S | re.M)
+            if not any(b.start() <= m.start() < b.end() for b in out)]
+    return out
+moved = []
+for name in sorted(apps):
+    if blocks(L, name) and not blocks(N, name):
+        moved.append(name)
+        for m in sorted(blocks(L, name), key=lambda m: -m.start()):
+            L = L[:m.start()] + L[m.end():]
+pathlib.Path(rest).write_text(L)
+print(", ".join(moved))
+PY
 }
 
 # ── Bundled Presidio (--enable-presidio) ─────────────────────────────────────
@@ -1652,20 +1723,25 @@ if [ "${ENABLE_OPA:-0}" = "1" ]; then
         HELM_VALUES+=( --set-file "opa.policy=$OPA_POLICY" )
         note "Bundled OPA with policy $OPA_POLICY"
         # Warn when the new file drops lines of the policy that is live now.
-        LIVE_OPA_POLICY="$(mktemp)"
-        if live_opa_policy > "$LIVE_OPA_POLICY" && [ -s "$LIVE_OPA_POLICY" ]; then
-            OPA_DROPPED="$( (diff -B "$LIVE_OPA_POLICY" "$OPA_POLICY" || true) | grep -c '^< ' || true)"
+        LIVE_OPA_POLICY="$OPA_POLICY_SNAPSHOT"
+        if [ -s "$LIVE_OPA_POLICY" ]; then
+            # Czarter blocks whose app now has its own policy moved; they are not dropped rules.
+            OPA_LIVE_REST="$(mktemp)"
+            OPA_MOVED="$(opa_moved_blocks "$LIVE_OPA_POLICY" "$OPA_POLICY" "$OPA_LIVE_REST" \
+                "${APP_POLICIES_SNAPSHOT:-}" "${BUNDLE_APP_POLICIES:-}" "${APP_POLICIES:-}" || true)"
+            [ -n "$OPA_MOVED" ] && note "  App blocks moved to their own policies: $OPA_MOVED"
+            OPA_DROPPED="$( (diff -B "$OPA_LIVE_REST" "$OPA_POLICY" || true) | grep -c '^< ' || true)"
             if [ "${OPA_DROPPED:-0}" -gt 0 ]; then
                 note "  ⚠ $OPA_POLICY drops $OPA_DROPPED line(s) of the policy live now:"
-                (diff -B "$LIVE_OPA_POLICY" "$OPA_POLICY" || true) | grep '^< ' | head -15 | sed 's/^/      /' || true
+                (diff -B "$OPA_LIVE_REST" "$OPA_POLICY" || true) | grep '^< ' | head -15 | sed 's/^/      /' || true
                 note "  (fine if intended; otherwise stop and pass the current file)"
             fi
         fi
     else
         # ⚠ An upgrade with no --opa-policy keeps the live policy; only a
         # fresh install gets the starter allow-all.
-        LIVE_OPA_POLICY="$(mktemp)"
-        if live_opa_policy > "$LIVE_OPA_POLICY" && [ -s "$LIVE_OPA_POLICY" ]; then
+        LIVE_OPA_POLICY="$OPA_POLICY_SNAPSHOT"
+        if [ -s "$LIVE_OPA_POLICY" ]; then
             HELM_VALUES+=( --set-file "opa.policy=$LIVE_OPA_POLICY" )
             note "Bundled OPA: keeping the policy live now ($(wc -l < "$LIVE_OPA_POLICY" | tr -d ' ') lines; --opa-policy replaces it)"
         else
@@ -1764,6 +1840,33 @@ if ! rollout_progress "$NAMESPACE" "mcp-orchestrator" 180; then
     info "    kubectl get pods -n $NAMESPACE"
     info "    kubectl describe pod -n $NAMESPACE -l app=mcp-orchestrator"
     exit 1
+fi
+
+# ─── App policies (Czartup: one ConfigMap per app) ───────────────────────────
+# Not the chart's: kube-mgmt (beside OPA) loads every ConfigMap labelled
+# openpolicyagent.org/policy=rego. In order, later wins: what was live before
+# teardown, the region bundle's, then --app-policies. Only ConfigMaps labelled
+# magertron.io/czarter are applied, whatever else a file or folder holds.
+APP_POLICY_SOURCES=()
+[ -n "${APP_POLICIES_SNAPSHOT:-}" ] && APP_POLICY_SOURCES+=( "$APP_POLICIES_SNAPSHOT" )
+[ -n "${BUNDLE_APP_POLICIES:-}" ]   && APP_POLICY_SOURCES+=( "$BUNDLE_APP_POLICIES" )
+[ -n "${APP_POLICIES:-}" ]          && APP_POLICY_SOURCES+=( "$APP_POLICIES" )
+if [ ${#APP_POLICY_SOURCES[@]} -gt 0 ]; then
+    section "App policies"
+    if [ "${ENABLE_OPA:-0}" != "1" ]; then
+        warn "Not applied: the bundled OPA is off (add --enable-opa or --opa-policy)."
+        [ -n "${APP_POLICIES_SNAPSHOT:-}" ] && info "    They were saved to $APP_POLICIES_SNAPSHOT"
+    else
+        for src in "${APP_POLICY_SOURCES[@]}"; do
+            if kubectl apply -n "$NAMESPACE" -l magertron.io/czarter -f "$src" > app-policies.out 2>&1; then
+                ok "$(grep -c . app-policies.out) from $src"
+            else
+                err "Could not apply $src:"
+                sed 's/^/    /' app-policies.out >&2
+            fi
+        done
+        info "    kubectl get configmap -n $NAMESPACE -l magertron.io/czarter"
+    fi
 fi
 
 # ─── Pin NodePort (only if service-type=nodeport) ────────────────────────────
