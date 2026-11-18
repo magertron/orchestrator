@@ -4,6 +4,7 @@
   czartup login [MAGERTRON_URL]         sign in through your browser (as in Cursor); remembers the URL
   czartup logout                        forget your sign-in on this machine
   czartup whoami                        which Magertron and URL this machine is signed in to
+  czartup commands [--ide NAME] [--remove]   add the /czartup-... commands to Cursor, Claude Code, Codex
 
   czartup list                          the saved Czarters, and whether each is valid
   czartup describe "what the app does"  draft a Czarter from plain words (saves nothing)
@@ -323,6 +324,67 @@ def write_pack(name, folder):
     return 0
 
 
+# ---------- IDE slash commands: the same verbs as Markdown command files ----------
+# Cursor (~/.cursor/commands), Claude Code (~/.claude/commands) and Codex (~/.codex/prompts) list these
+# in their "/" menu, whether or not they show MCP prompts. Each one only tells the assistant which
+# Czartup tools to use; the tools do the work, as you.
+WHICH = ("this repository's Czarter (its name is in HANDOVER-VERSION; if there is none, list_czarters and ask me "
+         "which)")
+IDE_COMMANDS = {
+    "czartup-new": ("Create a governed app or agent with Czartup",
+        "Build this as a governed app on Magertron: $ARGUMENTS\n\nUse the Czartup tools: describe_app, show me the "
+        "draft and save it once I agree, then setup_preview, then setup_run with confirm=true once I agree, then "
+        "get_handover - write its files into this repository - and build what AGENTS.md says. Do not hand-write "
+        "sign-in, policy, credentials or grants."),
+    "czartup-setup": ("Preview, then make Magertron match the Czarter",
+        f"Run Czartup setup for {WHICH}: call setup_preview and show me what it would change. Run setup_run with "
+        "confirm=true only after I say yes. Then tell me the Next: step."),
+    "czartup-build": ("Write the hand-over pack and build the app from it",
+        f"Build {WHICH}: call get_handover, write every file into this repository at its path, then build what "
+        "AGENTS.md says - stopping wherever it says the Magertron admin takes over."),
+    "czartup-update": ("Get the updated Czarter and change the code to match",
+        f"Update to the latest version of {WHICH}: call get_czarter and get_handover, write the pack's files over the "
+        "old ones, and change the code to match AGENTS.md (only its $ARGUMENTS section, if I named one). Tell me what "
+        "you changed."),
+    "czartup-verify": ("Prove the app against the live platform",
+        f"Run Czartup verify for {WHICH}. Show how many checks passed and failed; for each failure, what to fix and "
+        "who does it (me in the IDE, or the Magertron admin)."),
+    "czartup-approvals": ("Build or fix the app's Approvals screen",
+        f"Follow the Approvals section of {WHICH} exactly: call get_handover, write the pack, and make the app's "
+        "Approvals screen, Resubmit and messages match AGENTS.md and reference/approvals.py."),
+    "czartup-status": ("Where the app stands, and what comes next",
+        f"Call czarter_status for {WHICH}. Tell me in a few lines what is done, what failed, and the one next step."),
+}
+IDE_DIRS = {"Cursor": "~/.cursor/commands", "Claude Code": "~/.claude/commands", "Codex": "~/.codex/prompts"}
+
+
+def install_commands(args):
+    only = opt(args, "--ide", "")
+    remove = flag(args, "--remove")
+    done = 0
+    for ide, d in IDE_DIRS.items():
+        home = pathlib.Path(d).expanduser()
+        if only and only.lower() not in ide.lower():
+            continue
+        if not only and not home.parent.exists():       # that IDE is not installed for this user
+            continue
+        home.mkdir(parents=True, exist_ok=True)
+        for name, (desc, body) in IDE_COMMANDS.items():
+            f = home / f"{name}.md"
+            if remove:
+                f.unlink(missing_ok=True)
+                continue
+            f.write_text(f"---\ndescription: {desc}\nargument-hint: [name or details]\n---\n\n{body}\n")
+        done += 1
+        print(f"{'removed from' if remove else 'installed in'} {ide}: {home} ({len(IDE_COMMANDS)} commands)")
+    if not done:
+        print("no supported IDE found (Cursor, Claude Code, Codex) - use --ide NAME to install anyway")
+        return 1
+    if not remove:
+        print("Type / in the IDE's chat: /czartup-new, /czartup-setup, /czartup-build, /czartup-verify ...")
+    return 0
+
+
 def main(argv):
     if not argv or argv[0] in ("-h", "--help", "help"):
         print(USAGE)
@@ -338,6 +400,8 @@ def main(argv):
         print(f"{c.get('base') or 'not set'}  ({c.get('mcp_url') or '-'})  "
               + ("signed in" if c.get("access_token") else "not signed in"))
         return 0
+    if verb == "commands":
+        return install_commands(args)
     if verb == "list":
         return say(*call("list_czarters"))
     if verb == "describe":

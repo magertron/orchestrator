@@ -29,4 +29,6 @@ else
     fi
     echo "Installed $DEST"
 fi
+# The /czartup-... commands for any IDE found (Cursor, Claude Code, Codex) - harmless when none is.
+czartup commands >/dev/null 2>&1 && echo "Added the /czartup-... commands to your IDE(s)." || true
 echo "Next: czartup login https://your-magertron"
