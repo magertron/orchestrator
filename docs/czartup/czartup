@@ -17,6 +17,7 @@
   czartup build NAME [--dir DIR]        write the hand-over pack into DIR (default: here)
   czartup update NAME [--dir DIR]       the same: write the latest pack over the old one
   czartup icon NAME FILE.png [--server S]   give the app (or one server) its icon
+  czartup retire NAME [--yes]           preview, then remove what setup created (needs an admin)
 
 Sign-in is the same MCP OAuth Cursor uses: your own account and MFA, in your browser. Czartup acts as
 you, so you can do exactly what your Magertron roles allow, and every change is audited to you. The
@@ -352,6 +353,9 @@ IDE_COMMANDS = {
     "czartup-approvals": ("Build or fix the app's Approvals screen",
         f"Follow the Approvals section of {WHICH} exactly: call get_handover, write the pack, and make the app's "
         "Approvals screen, Resubmit and messages match AGENTS.md and reference/approvals.py."),
+    "czartup-retire": ("Retire an app: remove what setup created",
+        f"Retire {WHICH}: call retire with confirm=false and show me the list of what would be removed. Call retire "
+        "with confirm=true only after I say yes."),
     "czartup-status": ("Where the app stands, and what comes next",
         f"Call czarter_status for {WHICH}. Tell me in a few lines what is done, what failed, and the one next step."),
 }
@@ -431,6 +435,17 @@ def main(argv):
             return rc
         rc = say(*call("setup_run", name=name, confirm=True))
         print(f"\nIf it is still running: czartup status {name}")
+        return rc
+    if verb == "retire":
+        yes = flag(args, "--yes")
+        keep = flag(args, "--keep-servers")
+        (name,) = need(args, 1, "retire NAME [--yes] [--keep-servers]")
+        kw = {"name": name, "confirm": yes}
+        if keep:
+            kw["keep_servers"] = True
+        rc = say(*call("retire", **kw))
+        if not yes:
+            print(f"\nNothing was changed. To retire it: czartup retire {name} --yes")
         return rc
     if verb == "verify":
         (name,) = need(args, 1, "verify NAME")
