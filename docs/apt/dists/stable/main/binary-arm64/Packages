@@ -1,3 +1,22 @@
+Package: czartup
+Architecture: all
+Version: 0.2.40
+Priority: optional
+Section: utils
+Maintainer: Magertron, LLC <support@magertron.com>
+Depends: python3 (>= 3.8)
+Filename: pool/main/c/czartup/czartup_0.2.40_all.deb
+Size: 6380
+MD5sum: 0c94c71b8359c09035bef14b459e37c8
+SHA1: 451bbc57d03c2b0a50497344e84fef9deda20265
+SHA256: 891c5395c09003bc529625d7d012fd327dc189773db8b4624909bf3f109b41bc
+SHA512: 1fdbabf3ea1658a8fe3d1c6202e574f9a61c60b6a6d24eec5eb6c2dfad79515a536713347f153536ef219c4ef2d53747d8f8aed7ac7509be4b4bce9e7d40b90d
+Homepage: https://magertron.com
+Description: Magertron Czartup command line
+ The Czartup verbs from the terminal: login, describe, setup, build, update,
+ verify, status. Signs in through your browser with your own Magertron
+ account, exactly like Cursor does.
+
 Package: mcpctl
 Architecture: arm64
 Version: 3.0.0

@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""czartup - Magertron(TM) Czartup from the terminal. The same verbs as in Cursor.
+
+  czartup login [MAGERTRON_URL]         sign in through your browser (as in Cursor); remembers the URL
+  czartup logout                        forget your sign-in on this machine
+  czartup whoami                        which Magertron and URL this machine is signed in to
+
+  czartup list                          the saved Czarters, and whether each is valid
+  czartup describe "what the app does"  draft a Czarter from plain words (saves nothing)
+  czartup describe "..." --save         draft it and save it
+  czartup show NAME                     the Czarter, as YAML
+  czartup status NAME                   where it stands, and the next step
+  czartup setup NAME                    preview: what setup would change (changes nothing)
+  czartup setup NAME --yes              make those changes (needs a Magertron admin)
+  czartup verify NAME                   prove it against the live platform (read-only)
+  czartup build NAME [--dir DIR]        write the hand-over pack into DIR (default: here)
+  czartup update NAME [--dir DIR]       the same: write the latest pack over the old one
+  czartup icon NAME FILE.png [--server S]   give the app (or one server) its icon
+
+Sign-in is the same MCP OAuth Cursor uses: your own account and MFA, in your browser. Czartup acts as
+you, so you can do exactly what your Magertron roles allow, and every change is audited to you. The
+sign-in shows in the console under Security > Connections as "Czartup CLI", where it can be revoked.
+
+  Sign-in and URL are kept in ~/.czarter/cli.json (chmod 600). Tokens are never printed.
+  For CI: set MAGERTRON_TOKEN (and CZARTUP_URL) instead of logging in.
+Exit status: 0 when the step succeeded (or verify passed), 1 otherwise.
+"""
+import base64, hashlib, http.server, json, os, pathlib, re, secrets, stat, sys, threading, time
+import urllib.error, urllib.parse, urllib.request, webbrowser
+
+CONF = pathlib.Path("~/.czarter/cli.json").expanduser()
+UA = "czartup-cli/1"
+NAMESPACE = os.environ.get("CZARTUP_NAMESPACE", "mcp-prod")
+USAGE = __doc__.split("\n\n")[1] + "\n\n" + __doc__.split("\n\n")[2]
+
+
+# ---------- config (~/.czarter/cli.json, private) ----------
+
+def load():
+    if not CONF.exists():
+        return {}
+    if CONF.stat().st_mode & (stat.S_IRWXG | stat.S_IRWXO):
+        sys.exit(f"{CONF} is readable by others - run: chmod 600 {CONF}")
+    return json.loads(CONF.read_text() or "{}")
+
+
+def save(c):
+    CONF.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    CONF.touch(mode=0o600, exist_ok=True)
+    CONF.chmod(0o600)
+    CONF.write_text(json.dumps(c, indent=1))
+
+
+def fetch(method, url, data=None, headers=None, form=False):
+    h = {"User-Agent": UA, "Accept": "application/json", **(headers or {})}
+    body = None
+    if data is not None:
+        body = urllib.parse.urlencode(data).encode() if form else json.dumps(data).encode()
+        h["Content-Type"] = "application/x-www-form-urlencoded" if form else "application/json"
+    req = urllib.request.Request(url, data=body, method=method, headers=h)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            raw = r.read()
+            return r.status, r.headers, raw
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers, e.read()
+    except urllib.error.URLError as e:
+        sys.exit(f"could not reach {url}: {e.reason}")
+
+
+def jget(url):
+    st, _, raw = fetch("GET", url)
+    if st != 200:
+        return None
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return None
+
+
+# ---------- login: MCP OAuth (discovery, dynamic registration, PKCE, loopback) ----------
+
+def discover(mcp_url):
+    """The authorization server for Czartup's MCP endpoint, the way Cursor finds it."""
+    st, hdr, _ = fetch("POST", mcp_url, {"jsonrpc": "2.0", "id": 0, "method": "ping"},
+                      {"Accept": "application/json, text/event-stream"})
+    meta = None
+    m = re.search(r'resource_metadata="([^"]+)"', (hdr or {}).get("WWW-Authenticate", "") or "")
+    if m:
+        meta = jget(m.group(1))
+    if not meta:
+        u = urllib.parse.urlparse(mcp_url)
+        for path in ("/.well-known/oauth-protected-resource" + u.path.rstrip("/"),
+                     "/.well-known/oauth-protected-resource"):
+            meta = jget(f"{u.scheme}://{u.netloc}{path}")
+            if meta:
+                break
+    issuer = ((meta or {}).get("authorization_servers") or [None])[0]
+    if not issuer:
+        u = urllib.parse.urlparse(mcp_url)
+        issuer = f"{u.scheme}://{u.netloc}"
+    i = urllib.parse.urlparse(issuer)
+    for path in (f"/.well-known/oauth-authorization-server{i.path.rstrip('/')}",
+                 f"{i.path.rstrip('/')}/.well-known/oauth-authorization-server",
+                 f"{i.path.rstrip('/')}/.well-known/openid-configuration"):
+        asm = jget(f"{i.scheme}://{i.netloc}{path}")
+        if asm and asm.get("authorization_endpoint") and asm.get("token_endpoint"):
+            return asm
+    sys.exit(f"could not find how to sign in to {mcp_url} (no OAuth metadata) - is Czartup connected on that Magertron?")
+
+
+def login(base):
+    c = load()
+    base = (base or c.get("base") or "").rstrip("/")
+    if not base:
+        sys.exit("usage: czartup login https://your-magertron   (the address you open the console or portal at)")
+    if not base.startswith("https://"):
+        base = "https://" + base.split("://")[-1]
+    mcp_url = os.environ.get("CZARTUP_URL") or f"{base}/mcp/{NAMESPACE}/czartup/"
+    asm = discover(mcp_url)
+
+    # A loopback port for the browser to come back to.
+    srv = http.server.HTTPServer(("127.0.0.1", 0), None)
+    port = srv.server_address[1]
+    redirect = f"http://127.0.0.1:{port}/callback"
+
+    client_id = c.get("client_id") if c.get("issuer") == asm.get("issuer") and c.get("base") == base else None
+    if not client_id:
+        if not asm.get("registration_endpoint"):
+            sys.exit("this Magertron does not offer client registration for MCP clients")
+        st, _, raw = fetch("POST", asm["registration_endpoint"], {
+            "client_name": "Czartup CLI", "redirect_uris": ["http://127.0.0.1/callback", redirect],
+            "grant_types": ["authorization_code", "refresh_token"], "response_types": ["code"],
+            "token_endpoint_auth_method": "none"})
+        if st not in (200, 201):
+            sys.exit(f"could not register the Czartup CLI (HTTP {st}): {raw[:200].decode('utf-8', 'replace')}")
+        client_id = json.loads(raw)["client_id"]
+
+    verifier = secrets.token_urlsafe(48)
+    state = secrets.token_urlsafe(16)
+    got = {}
+
+    class Back(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            got.update({k: v[0] for k, v in q.items()})
+            ok = "code" in got and got.get("state") == state
+            body = (b"<h2>Signed in to Czartup.</h2><p>You can close this tab and go back to the terminal.</p>" if ok else
+                    b"<h2>Sign-in did not complete.</h2><p>Go back to the terminal.</p>")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    srv.RequestHandlerClass = Back
+    url = asm["authorization_endpoint"] + "?" + urllib.parse.urlencode({
+        "response_type": "code", "client_id": client_id, "redirect_uri": redirect, "state": state,
+        "code_challenge": base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip("="),
+        "code_challenge_method": "S256", "resource": mcp_url})
+    print(f"Opening your browser to sign in to {base} ...")
+    print(f"If it does not open, go to:\n  {url}")
+    webbrowser.open(url)
+    t = threading.Thread(target=srv.handle_request, daemon=True)
+    t.start()
+    t.join(300)
+    srv.server_close()
+    if got.get("error"):
+        sys.exit(f"sign-in refused: {got.get('error_description') or got['error']}")
+    if "code" not in got or got.get("state") != state:
+        sys.exit("sign-in did not complete (no answer from the browser within 5 minutes)")
+
+    st, _, raw = fetch("POST", asm["token_endpoint"], {
+        "grant_type": "authorization_code", "code": got["code"], "redirect_uri": redirect,
+        "client_id": client_id, "code_verifier": verifier, "resource": mcp_url}, form=True)
+    if st != 200:
+        sys.exit(f"could not finish sign-in (HTTP {st}): {raw[:200].decode('utf-8', 'replace')}")
+    tok = json.loads(raw)
+    save({"base": base, "mcp_url": mcp_url, "issuer": asm.get("issuer"), "token_endpoint": asm["token_endpoint"],
+          "client_id": client_id, "access_token": tok["access_token"], "refresh_token": tok.get("refresh_token", ""),
+          "expires_at": time.time() + float(tok.get("expires_in") or 3600)})
+    print(f"Signed in to Czartup at {base}.")
+    return 0
+
+
+def logout():
+    c = load()
+    if c:
+        save({k: v for k, v in c.items() if k in ("base", "mcp_url")})
+    print("Signed out on this machine. To end the sign-in everywhere, revoke \"Czartup CLI\" under Security > Connections.")
+    return 0
+
+
+def access():
+    """(mcp_url, token): the environment for CI, else the saved sign-in, renewed when it is near its end."""
+    if os.environ.get("MAGERTRON_TOKEN", "").strip():
+        url = os.environ.get("CZARTUP_URL") or load().get("mcp_url")
+        if not url:
+            sys.exit("with MAGERTRON_TOKEN, also set CZARTUP_URL (e.g. https://your-magertron/mcp/mcp-prod/czartup/)")
+        return url, os.environ["MAGERTRON_TOKEN"].strip()
+    c = load()
+    if not c.get("access_token"):
+        sys.exit("not signed in - run: czartup login https://your-magertron")
+    if time.time() > c.get("expires_at", 0) - 60:
+        if not c.get("refresh_token"):
+            sys.exit("your sign-in has ended - run: czartup login")
+        st, _, raw = fetch("POST", c["token_endpoint"], {"grant_type": "refresh_token", "refresh_token": c["refresh_token"],
+                                                      "client_id": c["client_id"], "resource": c["mcp_url"]}, form=True)
+        if st != 200:
+            sys.exit("your sign-in has ended - run: czartup login")
+        tok = json.loads(raw)
+        c.update(access_token=tok["access_token"], refresh_token=tok.get("refresh_token") or c["refresh_token"],
+                 expires_at=time.time() + float(tok.get("expires_in") or 3600))
+        save(c)
+    return c["mcp_url"], c["access_token"]
+
+
+# ---------- MCP calls ----------
+
+_S = {"id": 0, "session": None}
+
+
+def rpc(url, token, method, params=None, notify=False):
+    body = {"jsonrpc": "2.0", "method": method, "params": params or {}}
+    if not notify:
+        _S["id"] += 1
+        body["id"] = _S["id"]
+    h = {"Authorization": "Bearer " + token, "Accept": "application/json, text/event-stream"}
+    if _S["session"]:
+        h["Mcp-Session-Id"] = _S["session"]
+    st, hdr, raw = fetch("POST", url, body, h)
+    if hdr and hdr.get("Mcp-Session-Id"):
+        _S["session"] = hdr.get("Mcp-Session-Id")
+    if st == 401:
+        sys.exit("Czartup says your sign-in has ended (401) - run: czartup login")
+    if st == 403:
+        sys.exit(f"Magertron refused this (403): {raw[:300].decode('utf-8', 'replace')}")
+    if notify:
+        return None
+    if st != 200:
+        sys.exit(f"Czartup answered HTTP {st}: {raw[:300].decode('utf-8', 'replace')}")
+    text = raw.decode("utf-8", "replace").strip()
+    if not text.startswith("{"):                       # an event stream: the last data: line
+        lines = [l[5:].strip() for l in text.splitlines() if l.startswith("data:")]
+        text = lines[-1] if lines else "{}"
+    msg = json.loads(text)
+    if "error" in msg:
+        sys.exit(f"Czartup: {msg['error'].get('message', msg['error'])}")
+    return msg.get("result") or {}
+
+
+def call(tool, **args):
+    url, token = access()
+    if not _S["session"] and _S["id"] == 0:
+        rpc(url, token, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                                      "clientInfo": {"name": "czartup-cli", "version": "1"}})
+        rpc(url, token, "notifications/initialized", notify=True)
+    res = rpc(url, token, "tools/call", {"name": tool, "arguments": args})
+    return res.get("content") or [], bool(res.get("isError"))
+
+
+def text_of(blocks):
+    return "\n".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+
+
+def say(blocks, err):
+    out = text_of(blocks).strip()
+    if out:
+        print(out)
+    return 1 if err else 0
+
+
+def opt(args, name, default=None):
+    if name in args:
+        i = args.index(name)
+        if i + 1 >= len(args):
+            sys.exit(f"{name} needs a value")
+        val = args[i + 1]
+        del args[i:i + 2]
+        return val
+    return default
+
+
+def flag(args, name):
+    if name in args:
+        args.remove(name)
+        return True
+    return False
+
+
+def need(args, n, what):
+    if len(args) < n:
+        sys.exit(f"usage: czartup {what}")
+    return args[:n]
+
+
+def write_pack(name, folder):
+    blocks, err = call("get_handover", name=name)
+    if err:
+        return say(blocks, err)
+    root = pathlib.Path(folder).expanduser().resolve()
+    n = 0
+    for b in blocks:
+        r = b.get("resource") if b.get("type") == "resource" else None
+        if not r:
+            continue
+        rel = r.get("uri", "").split("/handover/", 1)[-1]
+        dest = (root / rel).resolve()
+        if root not in dest.parents:              # never write outside the folder
+            print(f"skipped {rel}: outside {root}")
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if "blob" in r:
+            dest.write_bytes(base64.b64decode(r["blob"]))
+        else:
+            dest.write_text(r.get("text", ""))
+        n += 1
+    print(f"wrote {n} files of {name}'s hand-over pack into {root}")
+    print(f"next: build what AGENTS.md says, then: czartup verify {name}")
+    return 0
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print(USAGE)
+        return 0
+    verb, args = argv[0], argv[1:]
+
+    if verb == "login":
+        return login(args[0] if args else "")
+    if verb == "logout":
+        return logout()
+    if verb == "whoami":
+        c = load()
+        print(f"{c.get('base') or 'not set'}  ({c.get('mcp_url') or '-'})  "
+              + ("signed in" if c.get("access_token") else "not signed in"))
+        return 0
+    if verb == "list":
+        return say(*call("list_czarters"))
+    if verb == "describe":
+        keep = flag(args, "--save")
+        (text,) = need(args, 1, 'describe "what the app does" [--save]')
+        blocks, err = call("describe_app", text=text)
+        rc = say(blocks, err)
+        if err or not keep:
+            return rc
+        m = re.search(r"```yaml\n(.*?)```", text_of(blocks), re.S)
+        if not m:
+            sys.exit("no draft to save")
+        print()
+        return say(*call("save_czarter", yaml=m.group(1)))
+    if verb == "show":
+        (name,) = need(args, 1, "show NAME")
+        return say(*call("get_czarter", name=name))
+    if verb == "status":
+        (name,) = need(args, 1, "status NAME")
+        return say(*call("czarter_status", name=name))
+    if verb == "setup":
+        yes = flag(args, "--yes")
+        (name,) = need(args, 1, "setup NAME [--yes]")
+        if not yes:
+            rc = say(*call("setup_preview", name=name))
+            print(f"\nNothing was changed. To make these changes: czartup setup {name} --yes")
+            return rc
+        rc = say(*call("setup_run", name=name, confirm=True))
+        print(f"\nIf it is still running: czartup status {name}")
+        return rc
+    if verb == "verify":
+        (name,) = need(args, 1, "verify NAME")
+        blocks, err = call("verify", name=name)
+        rc = say(blocks, err)
+        failed = re.search(r"\b(\d+) failed\b", text_of(blocks))
+        return 1 if rc or (failed and failed.group(1) != "0") else 0
+    if verb in ("build", "update"):
+        folder = opt(args, "--dir", ".")
+        (name,) = need(args, 1, f"{verb} NAME [--dir DIR]")
+        return write_pack(name, folder)
+    if verb == "icon":
+        server = opt(args, "--server", "")
+        name, f = need(args, 2, "icon NAME FILE.png [--server S]")
+        data = base64.b64encode(pathlib.Path(f).expanduser().read_bytes()).decode()
+        kw = {"name": name, "image_base64": data}
+        if server:
+            kw["server"] = server
+        return say(*call("set_icon", **kw))
+    print(f"unknown verb: {verb}\n\n{USAGE}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
