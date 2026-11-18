@@ -184,6 +184,16 @@ spec:
             {{- if $pdpUrl }}
             - name: MCP_PDP_URL
               value: {{ $pdpUrl | quote }}
+            {{- if and .Values.opa.enabled (not $pdp.url) }}
+            # The bundled OPA refuses writes without this token; the orchestrator sends it
+            # only when it pushes Allowances / Trading limits (PUT /v1/data/...).
+            - name: MCP_PDP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp.fullname" . }}-opa-api
+                  key: token
+                  optional: true
+            {{- end }}
             - name: MCP_PDP_NAMESPACES
               value: {{ $pdp.namespaces | default "*" | toString | quote }}
             - name: MCP_PDP_TIMEOUT_MS
