@@ -1,4 +1,7 @@
 {{- if .Values.czartup.enabled }}
+{{- /* Czartup may install app policies only where the admission policy below can guard it. */}}
+{{- $czPol := and .Values.opa.enabled (.Capabilities.APIVersions.Has "admissionregistration.k8s.io/v1/ValidatingAdmissionPolicy") }}
+{{- $czSA := printf "%s-czartup" (include "mcp.fullname" .) }}
 # ─────────────────────────────────────────────────────────────────────────────
 # Magertron Czartup(TM) — served at <magertron>/czartup/ (like /portal)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -78,6 +81,9 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      serviceAccountName: {{ $czSA }}
+      # A Kubernetes token only when it may install app policies (the Role below, guarded).
+      automountServiceAccountToken: {{ $czPol }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -109,6 +115,13 @@ spec:
             # -> refused) and which apps' policies it has loaded.
             - name: CZARTUP_OPA_URL
               value: "http://{{ include "mcp.fullname" . }}-opa:8181"
+            {{- end }}
+            {{- if $czPol }}
+            # Setup's "Install the app's policy": Czartup writes czarter-<app>-policy itself.
+            - name: CZARTUP_K8S_POLICIES
+              value: "1"
+            - name: CZARTUP_OPA_NAMESPACE
+              value: {{ include "mcp.namespace" . | quote }}
             {{- end }}
             # Describe it calls the model as the assistant's service account (see top).
             - name: CZARTUP_LLM_TOKEN_FILE
@@ -166,4 +179,101 @@ spec:
             items:
               - key: MAG_SA_JWT
                 path: token
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $czSA }}
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+automountServiceAccountToken: false
+{{- if $czPol }}
+---
+# ConfigMaps in this namespace - and the admission policy below narrows that to the apps' own policies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $czSA }}-app-policies
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $czSA }}-app-policies
+  namespace: {{ include "mcp.namespace" . }}
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $czSA }}-app-policies
+subjects:
+  - kind: ServiceAccount
+    name: {{ $czSA }}
+    namespace: {{ include "mcp.namespace" . }}
+---
+# Czartup may write ONLY app-policy ConfigMaps: czarter-*, labelled, Rego in package magertron.apps.*.
+# Everything else it tries is refused here, whatever its Role says.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: {{ $czSA }}-app-policies-only
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE", "DELETE"]
+        resources: ["configmaps"]
+  matchConditions:
+    - name: czartup-only
+      expression: >-
+        request.userInfo.username == 'system:serviceaccount:{{ include "mcp.namespace" . }}:{{ $czSA }}'
+  validations:
+    - expression: >-
+        (request.operation == 'DELETE' ? oldObject : object).metadata.name.startsWith('czarter-')
+      message: "Czartup may only write ConfigMaps named czarter-*"
+    - expression: >-
+        request.operation == 'DELETE' ||
+        (has(object.metadata.labels) &&
+         'magertron.io/czarter' in object.metadata.labels &&
+         'openpolicyagent.org/policy' in object.metadata.labels &&
+         object.metadata.labels['openpolicyagent.org/policy'] == 'rego')
+      message: "an app policy must carry magertron.io/czarter and openpolicyagent.org/policy=rego"
+    - expression: >-
+        request.operation == 'DELETE' ||
+        (has(object.data) && size(object.data) > 0 &&
+         object.data.all(k, object.data[k].matches(r'(?m)^package magertron\.apps\.[a-z0-9_]+\s*$') &&
+                            size(object.data[k].split('\npackage ')) == 2))
+      message: "an app policy must be Rego in package magertron.apps.<name>, one package per file"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: {{ $czSA }}-app-policies-only
+  labels:
+    {{- include "mcp.labels" . | nindent 4 }}
+    component: czartup
+spec:
+  policyName: {{ $czSA }}-app-policies-only
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: {{ include "mcp.namespace" . }}
+{{- end }}
 {{- end }}
