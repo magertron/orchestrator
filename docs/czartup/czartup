@@ -239,7 +239,10 @@ def rpc(url, token, method, params=None, notify=False):
     if st == 401:
         sys.exit("Czartup says your sign-in has ended (401) - run: czartup login")
     if st == 403:
-        sys.exit(f"Magertron refused this (403): {raw[:300].decode('utf-8', 'replace')}")
+        why = raw[:300].decode("utf-8", "replace")
+        if "tool-approval" in why:
+            raise Unapproved(why)
+        sys.exit(f"Magertron refused this (403): {why}")
     if notify:
         return None
     if st != 200:
@@ -254,13 +257,37 @@ def rpc(url, token, method, params=None, notify=False):
     return msg.get("result") or {}
 
 
+class Unapproved(Exception):
+    """403 tool-approval: the tool is new to Magertron (Czartup was just upgraded)."""
+
+
 def call(tool, **args):
     url, token = access()
     if not _S["session"] and _S["id"] == 0:
         rpc(url, token, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                       "clientInfo": {"name": "czartup-cli", "version": "1"}})
         rpc(url, token, "notifications/initialized", notify=True)
-    res = rpc(url, token, "tools/call", {"name": tool, "arguments": args})
+    try:
+        res = rpc(url, token, "tools/call", {"name": tool, "arguments": args})
+    except Unapproved as e:
+        # Czartup approves its own new tools when an admin first reaches it after an upgrade.
+        # Reach it through a tool Magertron already knows, then wait for the approval.
+        print("Czartup was just upgraded - approving its new tools (up to a minute) ...", file=sys.stderr)
+        try:
+            rpc(url, token, "tools/call", {"name": "list_czarters", "arguments": {}})
+        except Unapproved:
+            pass
+        for _ in range(20):
+            time.sleep(3)
+            try:
+                res = rpc(url, token, "tools/call", {"name": tool, "arguments": args})
+                break
+            except Unapproved:
+                continue
+        else:
+            sys.exit(f"Magertron refused this (403): {e}\n"
+                     "Czartup could not approve its new tools as you (it needs an admin). "
+                     "An admin opens Czartup in the console once, or presses Connect now.")
     return res.get("content") or [], bool(res.get("isError"))
 
 
@@ -329,7 +356,7 @@ def write_pack(name, folder):
 # Cursor (~/.cursor/commands), Claude Code (~/.claude/commands) and Codex (~/.codex/prompts) list these
 # in their "/" menu, whether or not they show MCP prompts. Each one only tells the assistant which
 # Czartup tools to use; the tools do the work, as you.
-WHICH = ("this repository's Czarter (its name is in HANDOVER-VERSION; if there is none, list_czarters and ask me "
+WHICH = ("this repository's Czarter (its name is metadata.name in czarter.yaml here; if there is none, list_czarters and ask me "
          "which)")
 IDE_COMMANDS = {
     "czartup-new": ("Create a governed app or agent with Czartup",
@@ -378,7 +405,8 @@ def install_commands(args):
             if remove:
                 f.unlink(missing_ok=True)
                 continue
-            f.write_text(f"---\ndescription: {desc}\nargument-hint: [name or details]\n---\n\n{body}\n")
+            # The first body line is what Cursor shows in its "/" menu: make it the plain description.
+            f.write_text(f"---\ndescription: {desc}\nargument-hint: [name or details]\n---\n\n{desc}.\n\n{body}\n")
         done += 1
         print(f"{'removed from' if remove else 'installed in'} {ide}: {home} ({len(IDE_COMMANDS)} commands)")
     if not done:
