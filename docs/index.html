@@ -749,7 +749,7 @@ body { overflow-x: clip; }
       <a href="pricing.html">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
+      <a href="https://signup.magertron.com/" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -1583,10 +1583,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoMod
 
 
 <script id="mag-try-hash">
-if (location.hash === '#try') window.addEventListener('load', function () {
-  if (typeof openDemoModal === 'function') openDemoModal();
-  history.replaceState(null, '', location.pathname + location.search);
-});
+// #try used to open the demo-request form; trials are self-serve now (2026-11-19).
+if (location.hash === '#try') location.replace('https://signup.magertron.com/');
 </script>
 <script id="mag-nav-close">
 (function () {

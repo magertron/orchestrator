@@ -758,7 +758,7 @@ body { overflow-x: clip; }
       <a href="pricing.html" style="color: var(--text);">Pricing</a>
       <a href="cost.html">Cost &amp; Reporting</a>
       <a href="security.html">Security</a>
-      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
+      <a href="https://signup.magertron.com/" class="nav-cta">Try it now </a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -828,7 +828,7 @@ body { overflow-x: clip; }
           <li class="disabled">AI Data Reach — govern the data agents can touch</li>
           <li class="disabled">Delegated administration</li>
         </ul>
-        <a href="#" class="pricing-btn primary" onclick="openDemoModal(event)">Try it now → </a>
+        <a href="https://signup.magertron.com/" class="pricing-btn primary">Try it now → </a>
       </div>
 
       <!-- Business -->
@@ -850,7 +850,7 @@ body { overflow-x: clip; }
           <li class="disabled">AI Data Reach &amp; Catalog Universe</li>
           <li class="disabled">Continuous SOC 2 control evidence</li>
         </ul>
-        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Talk to us &rarr;</a>
+        <a href="https://signup.magertron.com/" class="pricing-btn secondary">Talk to us &rarr;</a>
       </div>
 
       <!-- Enterprise -->
@@ -882,7 +882,7 @@ body { overflow-x: clip; }
             <li>Just-in-time provisioning</li>
           </ul>
         </div>
-        <a href="#" class="pricing-btn secondary" onclick="openDemoModal(event)">Contact sales &rarr;</a>
+        <a href="https://signup.magertron.com/" class="pricing-btn secondary">Contact sales &rarr;</a>
       </div>
     </div>
   </div>
@@ -1291,10 +1291,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoMod
 </script>
 <script src="/consent.js" defer></script>
 <script id="mag-try-hash">
-if (location.hash === '#try') window.addEventListener('load', function () {
-  if (typeof openDemoModal === 'function') openDemoModal();
-  history.replaceState(null, '', location.pathname + location.search);
-});
+// #try used to open the demo-request form; trials are self-serve now (2026-11-19).
+if (location.hash === '#try') location.replace('https://signup.magertron.com/');
 </script>
 <script id="mag-nav-close">
 (function () {
