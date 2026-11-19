@@ -1076,29 +1076,6 @@ body { overflow-x: clip; }
   </div>
 </section>
 
-<!-- Showcase: Governance -->
-<section class="showcase" id="governance">
-  <div class="container">
-    <div class="showcase-row reverse">
-      <div class="showcase-content">
-        <div class="section-label">Governance</div>
-        <h3>Enforce policy before anything reaches production</h3>
-        <p>Namespace-scoped governance policies evaluate every deployment at deploy time. Error-severity rules block non-compliant servers. Warnings flag for review.</p>
-        <ul>
-          <li>Different policies for prod vs dev environments</li>
-          <li>Resource limits, transport rules, naming standards</li>
-          <li>Dry-run evaluator for pre-flight checks</li>
-          <li>Export/import policies across clusters</li>
-        </ul>
-      </div>
-      <div class="showcase-image">
-        <!-- REPLACE: <img src="screenshots/governance.png" alt="Governance Policies"> -->
-        <img src="screenshots/governance.png" alt="Governance Policies">
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- Features Grid -->
 
 <section class="features" id="features">
@@ -1118,11 +1095,11 @@ body { overflow-x: clip; }
         <h3>Server & Model Registry</h3>
         <p>Central catalog of every MCP server and LLM provider in your organization. Most platforms don't have a registry — Magertron does, in your cluster.</p>
       </a>
-      <a href="#governance" class="feature-card clickable">
+      <div class="feature-card">
         <div class="feature-icon">◈</div>
         <h3>Governance Engine</h3>
         <p>Policies for resource limits, transport, naming, and security. Namespace-scoped for prod vs dev.</p>
-      </a>
+      </div>
       <div class="feature-card">
         <div class="feature-icon">⛊</div>
         <h3>Multi-Tenant RBAC</h3>

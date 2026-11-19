@@ -44,28 +44,22 @@ a:hover { text-decoration: underline; }
 code { font-family: var(--mono); font-size: .9em; color: var(--accent-text); }
 
 /* Nav (as on magertron.com) */
-/* ── Nav ──────────────────────────────────────────────────────────────── */
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-}
-nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
-.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; gap: 8px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
 .nav-logo:hover { text-decoration: none; color: var(--text); }
 .nav-logo span { color: var(--accent-text); }
-.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
 .nav-links { display: flex; gap: 32px; align-items: center; }
-.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); transition: color 0.2s; }
 .nav-links a:hover { color: var(--text); text-decoration: none; }
-.nav-cta {
-  background: var(--accent) !important; color: white !important;
-  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
-}
+.nav-links a.here { color: var(--text); }
+.nav-cta { background: var(--accent) !important; color: white !important; padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; }
 .nav-cta:hover { background: #1d4ed8 !important; }
+.nav-toggle { display: none; }
 
 /* Hero */
-.hero { padding: 104px 0 32px; position: relative; overflow: hidden; }
+.hero { padding: 104px 0 64px; position: relative; overflow: hidden; }
 .hero-glow { position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 42% 36% at 22% 40%, rgba(37,99,235,.26), transparent 70%),
               radial-gradient(ellipse 38% 32% at 78% 46%, rgba(167,139,250,.18), transparent 70%);
@@ -79,7 +73,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--accent-text), #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .hero p.lead { font-size: 18px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; max-width: 540px; }
 .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-.hero-note { margin-top: 0; font-size: 12.5px; color: var(--text-secondary); }
+.hero-note { margin-top: 14px; font-size: 12.5px; color: var(--text-secondary); }
 .btn-primary { background: var(--accent); color: white; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; transition: all .2s; }
 .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; }
 .btn-secondary { color: var(--text); padding: 14px 28px; border-radius: 8px; font-weight: 500; font-size: 15px; border: 1px solid var(--border); display: inline-block; transition: border-color .2s; }
@@ -238,12 +232,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 
 /* Four commands: a narrower, centered section */
-#how .container, #slash .container, #get-started .container { max-width: 1000px; }
-#slash .split { align-items: start; }
-#how { padding-top: 56px; }
-.divider { border: 0; border-top: 1px solid var(--border); margin: 0 0 32px; }
-#slash { padding-top: 48px; padding-bottom: 24px; }
-#get-started { padding-top: 48px; }
+#how .container, #get-started .container { max-width: 1000px; }
 
 #how .section-desc { max-width: none; }
 
@@ -266,10 +255,10 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 @media (prefers-reduced-motion: reduce) { .step, .step:hover { transition: none; transform: none; } }
 
 /* Get started: a compact box */
-.install { max-width: 700px; padding: 18px 20px; }
-.install h3 { font-size: 14px; margin-top: 2px; }
-.install p { font-size: 12.5px; line-height: 1.45; }
-.install .code { font-size: 11.5px; padding: 8px 54px 8px 10px; margin: 6px 0 12px; }
+.install { max-width: 820px; padding: 22px 24px; }
+.install h3 { font-size: 15px; margin-top: 2px; }
+.install p { font-size: 13.5px; line-height: 1.5; }
+.install .code { font-size: 12.5px; padding: 10px 58px 10px 12px; margin: 8px 0 16px; }
 .install .code:last-child { margin-bottom: 0; }
 .install .copy { top: 6px; right: 6px; padding: 3px 9px; font-size: 11.5px; }
 
@@ -280,6 +269,14 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 }
 @media (max-width: 768px) {
   .container { padding-left: 16px !important; padding-right: 16px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-links { margin-left: auto; }
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none;
+    border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 18px; cursor: pointer; }
+  nav.open .nav-links { position: absolute; top: 64px; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border); padding: 4px 16px 16px; }
+  nav.open .nav-links a:not(.nav-cta) { display: block; padding: 14px 2px; font-size: 16px; color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-links .nav-cta { margin-top: 14px; text-align: center; }
   .hero { padding: 96px 0 32px; }
   .steps, .feature-grid, .stats, .shot-pair { grid-template-columns: 1fr; }
   .ide-body { min-height: 0; }
@@ -289,74 +286,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   .footer-col li { white-space: normal !important; }
 }
 @media (prefers-reduced-motion: reduce) { .hero-glow { animation: none; } .msg { transition: none; } }
-
-/* Phone nav (as on magertron.com) */
-.nav-toggle { display: none; }
-.mag-arch-hint { display: none; }
-@media (max-width: 768px) {
-  .container { padding-left: 20px !important; padding-right: 20px !important; }
-  .nav-links a:not(.nav-cta) { display: none; }
-  .nav-toggle {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
-    background: none; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
-  }
-  nav .container { gap: 8px; }
-  .nav-links { margin-left: auto; }
-  nav.open .nav-links {
-    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
-    flex-direction: column; align-items: stretch; gap: 0;
-    background: var(--bg); border-bottom: 1px solid var(--border);
-    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
-  }
-  nav.open .nav-links a:not(.nav-cta) {
-    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
-    border-bottom: 1px solid var(--border);
-  }
-  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
-}
-</style>
-<style id="mag-solutions-nav">
-.nav-drop { position: relative; }
-.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
-  color: var(--text-secondary); transition: color 0.2s; }
-.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
-.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
-.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
-  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
-.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
-.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
-.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
-.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
-@media (max-width: 1180px) { .nav-links { gap: 22px; } }
-@media (max-width: 768px) {
-  .nav-links .nav-drop { display: none; }
-  nav.open .nav-links .nav-drop { display: block; }
-  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
-    color: var(--text); border-bottom: 1px solid var(--border); }
-  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
-    box-shadow: none; padding: 0 0 0 14px; background: none; }
-  nav.open .nav-drop-menu::before { display: none; }
-}
-</style>
-<style id="mag-nav-center">
-@media (min-width: 769px) {
-  nav .nav-links { flex: 1; }
-  nav .nav-links > :first-child { margin-left: auto; }
-  nav .nav-links > .nav-cta { margin-left: auto; }
-}
-</style>
-<style id="mag-product-marks">
-/* Platform menu: product marks (2026-11-10 v3) */
-.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
-.mag-pm svg { width: 22px; height: 22px; flex: none; }
-</style>
-<style id="mag-solution-marks">
-/* Solutions menu: outlined marks (2026-11-10 v3) */
-.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
-.mag-pm svg { width: 22px; height: 22px; flex: none; }
 </style>
 </head>
 <body>
@@ -364,51 +293,13 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <nav>
   <div class="container">
     <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
-    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
-      <div class="nav-drop">
-        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
-        <div class="nav-drop-menu">
-          <a href="/#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
-          <a href="/ai-assistant.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.7 4.3 4.3 1.7-4.3 1.7L12 16.5l-1.7-4.3-4.3-1.7 4.3-1.7z"/><path d="M17.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fff"/></g></svg><span>AI Assistant</span></a>
-          <a href="/data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
-          <a href="/agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
-          <a href="/solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS™</span></a>
-          <a href="/solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#fff"/></g></svg><span>ToolScout™</span></a>
-          <a href="/czartup/" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5 10 12l-3.5 3.5"/><path d="M12 16h5.5"/></g></svg><span>Czartup™</span></a>
-        </div>
-      </div>
-      <div class="nav-drop">
-        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
-        <div class="nav-drop-menu">
-          <a href="/solutions-banking.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5 12 5.5l7 4"/><path d="M5.5 9.5h13"/><path d="M7.5 11.5v5M12 11.5v5M16.5 11.5v5"/><path d="M5 18.5h14"/></g></svg><span>Banking</span></a>
-          <a href="/solutions-accounts-payable.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h7l3.5 3.5v11.5H7z"/><path d="M14 4.5V8h3.5"/><path d="M9.5 11h5"/><path d="m9.5 15 1.8 1.8 3.4-3.4"/></g></svg><span>Accounts payable</span></a>
-          <a href="/solutions-crm.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5h14"/><path d="M7.5 15.5v-3M11.5 15.5v-5.5M15.5 15.5v-8"/><path d="m6.5 9 3.5-2.5 3 1.5 4.5-3"/></g></svg><span>Sales &amp; CRM</span></a>
-          <a href="/solutions-network-operations.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2"/><circle cx="6.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/><path d="m11 7.8-3.6 7.4M13 7.8l3.6 7.4M8.5 17h7"/></g></svg><span>Network operations</span></a>
-          <a href="/solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17.5h8.5a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 7.3 9.8 3.9 3.9 0 0 0 8 17.5z"/></g></svg><span>Across SaaS platforms</span></a>
-          <a href="/solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#60a5fa"/></g></svg><span>Shadow AI discovery</span></a>
-        </div>
-      </div>
-      <div class="nav-drop">
-        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
-        <div class="nav-drop-menu">
-          <a href="/developers.html">Overview</a>
-          <a href="/czartup/">Czartup™</a>
-          <a href="/#install">Install</a>
-          <a href="/#cli">CLI</a>
-          <a href="/developer-portal.html">Developer Portal</a>
-          <a href="/api/v1/">API Documentation</a>
-          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
-          <a href="/developers.html">Build an agent</a>
-          <a href="/vscode/">VS Code</a>
-          <a href="/devin/">Devin</a>
-          <a href="/cursor/">Cursor</a>
-          <a href="/claude-code/">Claude Code</a>
-        </div>
-      </div>
+    <div class="nav-links">
+      <a href="/#governed-surfaces">Platform</a>
+      <a href="/czartup/" class="here">Czartup™</a>
+      <a href="/developers.html">Developers</a>
       <a href="/pricing.html">Pricing</a>
-      <a href="/cost.html">Cost &amp; Reporting</a>
       <a href="/security.html">Security</a>
-      <a href="#" class="nav-cta" onclick="openDemoModal(event)">Try it now </a>
+      <a href="#get-started" class="nav-cta">Get Czartup</a>
     </div>
     <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
       onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
@@ -425,7 +316,10 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
     <div>
       <h1>Describe your app.<br><em>Get it governed.</em></h1>
       <p class="lead">Type one sentence in your IDE. Czartup™ sets up your agent's sign-in, people, limits, approvals and audit. Magertron™ builds it with your coding assistant, then proves every control works before anyone uses it.</p>
-      
+      <div class="hero-actions">
+        <a href="#get-started" class="btn-primary">Get started</a>
+        <a href="#how" class="btn-secondary">See how it works</a>
+      </div>
       <p class="hero-note">Works in Cursor, Claude Code, Codex and the terminal. Ships with Magertron™.</p>
     </div>
 
@@ -438,7 +332,6 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <!-- How -->
 <section class="block" id="how">
   <div class="container">
-    <hr class="divider">
     <div class="section-label">How it works</div>
     <h2 class="section-title">Four commands. An agentic experience in minutes.</h2>
     <p class="section-desc">Czartup™ keeps the whole app in one short document, the <em>Czarter</em>. Every command reads it, so the IDE, the terminal and the Magertron™ console always agree.</p>
@@ -452,26 +345,9 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
   </div>
 </section>
 
-<!-- Proof -->
-<section class="block" id="slash">
-  <div class="container">
-    <hr class="divider">
-    <div class="split">
-      <div>
-        <div class="section-label">Where you currently work</div>
-        <h3>Your IDE's own slash commands.</h3>
-        <p>Czartup™ is an MCP server in your Magertron™. Add it to your IDE and sign in with your own Magertron account and MFA. Then run <code>czartup commands</code> once, and the short <code>/czartup-...</code> commands appear in Cursor, Claude Code and Codex.</p>
-        <div class="ides"><span>Cursor</span><span>Claude Code</span><span>Codex</span><span>Terminal</span></div>
-      </div>
-      <div class="shot" style="max-width: 440px; width: 100%; justify-self: center;"><img src="img/slash-menu.png" alt="Cursor's chat listing the /czartup commands: new, verify, setup, status, retire, build, approvals, update" loading="lazy"></div>
-    </div>
-  </div>
-</section>
-
 <!-- Get started -->
 <section class="block" id="get-started">
   <div class="container">
-    <hr class="divider">
     <div class="section-label">Get started</div>
     <h2 class="section-title">Connect, sign in, describe.</h2>
     <p class="section-desc">Czartup™ runs inside your Magertron™ AI Orchestrator. Your IDE reaches it as an MCP server; the CLI adds the slash commands and does the same work from a terminal.</p>
