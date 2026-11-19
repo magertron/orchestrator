@@ -1,0 +1,85 @@
+{{- /*
+  The standard demo's MCP servers: Tidewater Marina's three sample servers (invented data), so the
+  small-business-app template is ready to run on every install. Only with Czartup, which registers
+  them on the first admin's visit. HTTPS with a certificate each makes at startup - the gateway
+  only routes to https:// upstreams, and self-signed is fine on a private address.
+*/ -}}
+{{- if and .Values.czartup.enabled .Values.samples.enabled }}
+{{- $ns := .Values.samples.namespace }}
+{{- if not (lookup "v1" "Namespace" "" $ns) }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $ns }}
+  annotations:
+    # Uninstalling Magertron must not delete a namespace an app may also use.
+    helm.sh/resource-policy: keep
+  labels:
+    app.kubernetes.io/part-of: magertron-samples
+---
+{{- end }}
+{{- range $srv := list "slips" "fuel" "notices" }}
+{{- $name := printf "tidewater-%s" $srv }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    app: {{ $name }}
+    app.kubernetes.io/part-of: magertron-samples
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        app.kubernetes.io/part-of: magertron-samples
+    spec:
+      containers:
+        - name: server
+          image: "{{ $.Values.samples.image.repository }}:{{ $.Values.samples.image.tag }}"
+          imagePullPolicy: {{ $.Values.samples.image.pullPolicy }}
+          env:
+            - name: SAMPLE_SERVER
+              value: {{ $srv | quote }}
+            - name: PORT
+              value: "8443"
+            - name: TLS_NAMES
+              value: "{{ $name }}.{{ $ns }}.svc.cluster.local,{{ $name }}.{{ $ns }}.svc,{{ $name }}"
+          ports:
+            - containerPort: 8443
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            periodSeconds: 5
+          resources:
+            {{- toYaml $.Values.samples.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    app: {{ $name }}
+    app.kubernetes.io/part-of: magertron-samples
+spec:
+  selector:
+    app: {{ $name }}
+  ports:
+    - name: mcp
+      port: 8443
+      targetPort: 8443
+---
+{{- end }}
+{{- end }}

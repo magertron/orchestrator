@@ -594,6 +594,9 @@ Common options:
   --czartup-vault-skip-verify Vault has a self-signed certificate.
   --czartup-gitea <url>       Gitea for Czartup's "Push to Gitea".
   --czartup-tag <tag>         Czartup image tag (default: the chart's).
+  --no-samples                Leave out the standard demo's MCP servers (Tidewater
+                              Marina's three, in namespace tidewater). On by default
+                              with Czartup.
   --enable-presidio           Deploy Microsoft Presidio in the cluster and use it
                               as the PII detector: names, places and ID numbers on
                               LLM prompts and replies. Needs ~2 GB of memory. Can
@@ -716,6 +719,7 @@ while [ $# -gt 0 ]; do
         --czartup-vault-skip-verify) CZARTUP_VAULT_SKIP_VERIFY=1; shift ;;
         --czartup-gitea)       CZARTUP_GITEA="$2"; shift 2 ;;
         --czartup-tag)         CZARTUP_TAG="$2"; shift 2 ;;
+        --no-samples)          NO_SAMPLES=1; shift ;;
         --otel-endpoint)       OTEL_ENDPOINT="$2"; shift 2 ;;
         --otel-sampling)       OTEL_SAMPLING="$2"; shift 2 ;;
         --pdp-url)             PDP_URL="$2"; PDP_URL_FLAG="$2"; shift 2 ;;
@@ -1719,6 +1723,8 @@ if [ "${ENABLE_CZARTUP:-0}" = "1" ]; then
     fi
     [ -n "${CZARTUP_GITEA:-}" ] && HELM_VALUES+=( --set-string "czartup.gitea.url=$CZARTUP_GITEA" )
     [ -n "${CZARTUP_TAG:-}" ]   && HELM_VALUES+=( --set-string "czartup.image.tag=$CZARTUP_TAG" )
+    # The standard demo's MCP servers (chart samples.*), on unless --no-samples.
+    [ "${NO_SAMPLES:-0}" = "1" ] && HELM_VALUES+=( --set samples.enabled=false )
     note "Czartup at /czartup/${CZARTUP_VAULT:+ · Vault $CZARTUP_VAULT}${CZARTUP_GITEA:+ · Gitea $CZARTUP_GITEA}${CZARTUP_TAG:+ · image $CZARTUP_TAG}"
 fi
 
@@ -1792,9 +1798,12 @@ sleep 3
 INV_LOG=$(kubectl logs -n "$NAMESPACE" -l app.kubernetes.io/name=mcp-orchestrator \
     --tail=200 2>/dev/null || true)
 
-SELFMINT_COUNT=$(echo "$INV_LOG" | grep -c "self-minted bootstrap" 2>/dev/null || echo 0)
-INVCLIENT_COUNT=$(echo "$INV_LOG" | grep -c "InventoryAdminClient configured" 2>/dev/null || echo 0)
-INVCLIENT_FAIL=$(echo "$INV_LOG" | grep -c "inventory client NOT configured" 2>/dev/null || echo 0)
+# grep -c prints its own 0 when nothing matches (and exits 1): `|| echo 0` would add a second
+# "0" and break the number tests below, so failure is just ignored.
+SELFMINT_COUNT=$(echo "$INV_LOG" | grep -c "self-minted bootstrap" 2>/dev/null || true)
+INVCLIENT_COUNT=$(echo "$INV_LOG" | grep -c "InventoryAdminClient configured" 2>/dev/null || true)
+INVCLIENT_FAIL=$(echo "$INV_LOG" | grep -c "inventory client NOT configured" 2>/dev/null || true)
+SELFMINT_COUNT=${SELFMINT_COUNT:-0}; INVCLIENT_COUNT=${INVCLIENT_COUNT:-0}; INVCLIENT_FAIL=${INVCLIENT_FAIL:-0}
 
 if [ "$SELFMINT_COUNT" -gt 0 ] && [ "$INVCLIENT_COUNT" -gt 0 ] && [ "$INVCLIENT_FAIL" = "0" ]; then
     ok "Self-mint token issued (${SELFMINT_COUNT} orchestrator pod$([ "$SELFMINT_COUNT" -gt 1 ] && echo s))"
@@ -1824,6 +1833,9 @@ kubectl get svc -n "$NAMESPACE" mcp-orchestrator-envoy 2>/dev/null || true
 # LoadBalancer → look for assigned external IP/hostname.
 # ClusterIP → tell user to port-forward.
 section "Access"
+if [ -n "${API_PUBLIC_URL:-}" ]; then
+    echo "  Public URL: ${API_PUBLIC_URL}"
+fi
 case "$SERVICE_TYPE" in
     nodeport)
         # Pick any node's external or internal IP.
@@ -1859,6 +1871,8 @@ case "$SERVICE_TYPE" in
     loadbalancer) [ -n "${LB:-}" ] && ACCESS_URL="https://${LB}" ;;
     clusterip)   ACCESS_URL="https://localhost:8443 (via port-forward)" ;;
 esac
+# An install given --api-public-url is reached there (a trial tenant behind the router).
+[ -n "${API_PUBLIC_URL:-}" ] && ACCESS_URL="$API_PUBLIC_URL"
 
 if [ "$MODE" = "upgrade" ]; then
     box \

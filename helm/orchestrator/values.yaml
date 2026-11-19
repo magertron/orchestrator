@@ -2607,3 +2607,19 @@ czartup:
   resources:
     requests: { cpu: 50m, memory: 128Mi }
     limits: { cpu: "1", memory: 512Mi }
+
+# ─── The standard demo's MCP servers (2026-11-19) ────────────────────────────
+# Tidewater Marina's three sample servers (tidewater-slips, -fuel, -notices) with invented data, so
+# Czartup's small-business-app template is ready to run on every install. Only with Czartup, which
+# registers them on the first admin's visit (external, Trusted upstream on, approved). A Czarter
+# made from the template finds them; retiring it leaves them. install.sh --no-samples leaves them out.
+samples:
+  enabled: true
+  namespace: tidewater          # the template's namespace - keep them together
+  image:
+    repository: curtismager20/mcp-tidewater-sample
+    tag: "1.1.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 20m, memory: 48Mi }
+    limits: { cpu: 250m, memory: 128Mi }
