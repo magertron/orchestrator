@@ -1,24 +1,5 @@
 Package: czartup
 Architecture: all
-Version: 0.2.65
-Priority: optional
-Section: utils
-Maintainer: Magertron, LLC <support@magertron.com>
-Depends: python3 (>= 3.8)
-Filename: pool/main/c/czartup/czartup_0.2.65_all.deb
-Size: 8862
-MD5sum: f0e39d73c54f71927d00165b3a311144
-SHA1: c9caa2b6ac79d214669edf19a66aee3ba69f0d96
-SHA256: dcb055ade09b2ebd0dd752fd1e621ecbd1884f70fa95936de0e4010cf93db4e9
-SHA512: 1d4cc11d0b2a74816d19fec475e4dd364850eeeec2d53c482f84e897389d674b8ce9c722afd78064a32ee88068c2420349ee3fd7d3540921702801a784e41dee
-Homepage: https://magertron.com
-Description: Magertron Czartup command line
- The Czartup verbs from the terminal: login, describe, setup, build, update,
- verify, status. Signs in through your browser with your own Magertron
- account, exactly like Cursor does.
-
-Package: czartup
-Architecture: all
 Version: 0.2.66
 Priority: optional
 Section: utils
@@ -87,6 +68,25 @@ MD5sum: e6d255d1876200cffefde3a96caa369a
 SHA1: 2b41f69aa744b78c03d59dbff65beb289d88bc1c
 SHA256: 39cb190228571b77bb0397c1e6bccc29b86d40e5f2002cabd0b0350230df94ea
 SHA512: c4a85e281384b0698541d7b863f6e19a658a791a06e183171584ca173cca62368d3ca7c6f47ef149580ea4391e174775e8bc55cb2876b318b474ab3eb0c873c1
+Homepage: https://magertron.com
+Description: Magertron Czartup command line
+ The Czartup verbs from the terminal: login, describe, setup, build, update,
+ verify, status. Signs in through your browser with your own Magertron
+ account, exactly like Cursor does.
+
+Package: czartup
+Architecture: all
+Version: 0.2.70
+Priority: optional
+Section: utils
+Maintainer: Magertron, LLC <support@magertron.com>
+Depends: python3 (>= 3.8)
+Filename: pool/main/c/czartup/czartup_0.2.70_all.deb
+Size: 8868
+MD5sum: da94009b34f1b09c4e6aac91761f76d3
+SHA1: 07ec4576a7eb4286d6059c59a46fe11b29d05636
+SHA256: bac7964e4c7b07d6894b601b39bb2300075fc95de46cb2c2f35514c6d204a0bd
+SHA512: bf38ec2afbdd97d5d02b013cccb3f4e12c4b1a981b35bd3c01656ea5073c448b567e7276adef35a0a54c3638ccb6320b914603cd79dcec6be8831c7ecf006eaa
 Homepage: https://magertron.com
 Description: Magertron Czartup command line
  The Czartup verbs from the terminal: login, describe, setup, build, update,
