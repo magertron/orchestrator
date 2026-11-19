@@ -7,260 +7,419 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-NH2TP9BZP7');
 </script>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Magertron Czartup — hand your coding agent a governed app</title>
-<meta name="description" content="Describe a governed app once. Czartup sets up Magertron and hands Cursor, Claude Code, Devin or VS Code a build pack in standard formats. Limits and holds are enforced at the gateway, not in the code.">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Czartup™: Describe Your App, Get It Governed | Magertron™</title>
+<meta name="description" content="Czartup™ turns one sentence in your IDE into an app governed by Magertron™: MFA sign-in, limits, approvals, an agent limited to its own tools, and a full audit trail, proven live before go-live.">
+<link rel="canonical" href="https://magertron.com/czartup/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Magertron">
 <meta property="og:url" content="https://magertron.com/czartup/">
-<meta property="og:title" content="Magertron Czartup">
-<meta property="og:description" content="Describe a governed app once. Czartup sets up the platform and hands your coding agent the build.">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Magertron Czartup">
-<meta name="twitter:description" content="Describe a governed app once. Czartup sets up the platform and hands your coding agent the build.">
+<meta property="og:title" content="Czartup™: Describe your app. Get it governed.">
+<meta property="og:description" content="One sentence in Cursor, Claude Code, Codex or the terminal becomes a governed app on Magertron™, with sign-in, limits, approvals and audit proven before go-live.">
+<meta property="og:image" content="https://magertron.com/czartup/img/slash-menu.png">
+<meta property="og:site_name" content="Magertron">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Czartup™: Describe your app. Get it governed.">
+<meta name="twitter:description" content="One sentence in your IDE becomes a governed app on Magertron™, proven live before go-live.">
+<meta name="twitter:image" content="https://magertron.com/czartup/img/slash-menu.png">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-html { scrollbar-gutter: stable; }
-  :root{
-    --ink:#0B1220;          /* page */
-    --panel:#111A2B;        /* raised */
-    --panel-2:#0E1626;      /* code */
-    --line:#1E2B42;
-    --text:#DCE5F2;
-    --muted:#8A9BB4;
-    --dim:#5F718C;
-    --accent:#4A90E2;
-    --accent-dim:#2B5C96;
-    --ok:#4ADE80;
-    --radius:6px;
-  }
-  *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0;
-    background:var(--ink);
-    color:var(--text);
-    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-  }
-  a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
-  a:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
-  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+html { scrollbar-gutter: stable; scroll-behavior: smooth; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #06080c; --bg-card: #0c1018; --bg-card-hover: #111820; --border: #1a2030; --border-accent: #2563eb;
+  --text: #e8ecf4; --text-secondary: #8694a8; --text-tertiary: #4a5568;
+  --accent: #2563eb; --accent-glow: rgba(37, 99, 235, 0.15); --accent-text: #60a5fa; --success: #22c55e; --warn: #f59e0b;
+  --serif: 'Inter', system-ui, sans-serif; --sans: 'DM Sans', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+}
+body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+code { font-family: var(--mono); font-size: .9em; color: var(--accent-text); }
 
-  /* back link ------------------------------------------------------- */
-  .back{
-    display:inline-flex;align-items:center;gap:7px;
-    font-size:13px;color:var(--muted);margin:0 0 22px;
-    transition:color .15s;
-  }
-  .back:hover{color:var(--text);text-decoration:none}
-  .back .arr{font-size:15px;line-height:1;transition:transform .15s}
-  .back:hover .arr{transform:translateX(-2px)}
+/* Nav (as on magertron.com) */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; gap: 8px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-links a.here { color: var(--text); }
+.nav-cta { background: var(--accent) !important; color: white !important; padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; }
+.nav-cta:hover { background: #1d4ed8 !important; }
+.nav-toggle { display: none; }
 
-  /* header ---------------------------------------------------------- */
-  .top{
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(160deg,#0A1526 0%,#132540 100%);
-  }
-  .top .wrap{padding-top:32px;padding-bottom:44px}
-  .eyebrow{
-    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--accent);font-weight:600;margin:0 0 14px;
-  }
-  h1{
-    font-size:34px;line-height:1.15;font-weight:700;margin:0 0 6px;
-    letter-spacing:-.01em;
-  }
-  h1 .tm{font-size:.45em;vertical-align:super;font-weight:600}
-  .lede{color:var(--muted);font-size:17px;margin:0;max-width:60ch}
-  .rule{width:52px;height:3px;background:var(--accent);margin:18px 0 0;border-radius:2px}
+/* Hero */
+.hero { padding: 120px 0 48px; position: relative; overflow: hidden; }
+.hero-glow { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 42% 36% at 22% 40%, rgba(37,99,235,.26), transparent 70%),
+              radial-gradient(ellipse 38% 32% at 78% 46%, rgba(167,139,250,.18), transparent 70%);
+  animation: drift 24s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translate(12px, 8px) scale(1.04); } }
+.hero .container { position: relative; display: grid; grid-template-columns: 1.02fr 1fr; gap: 56px; align-items: center; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px;
+  border: 1px solid var(--border-accent); background: var(--accent-glow); font-size: 13px; color: var(--accent-text); margin-bottom: 24px; }
+.hero-badge b { font-weight: 600; letter-spacing: .04em; }
+.hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(38px, 4.6vw, 58px); line-height: 1.05; letter-spacing: -0.04em; margin-bottom: 20px; }
+.hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--accent-text), #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p.lead { font-size: 18px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 30px; max-width: 560px; }
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero-note { margin-top: 18px; font-size: 13px; color: var(--text-secondary); }
+.btn-primary { background: var(--accent); color: white; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; transition: all .2s; }
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; }
+.btn-secondary { color: var(--text); padding: 14px 28px; border-radius: 8px; font-weight: 500; font-size: 15px; border: 1px solid var(--border); display: inline-block; transition: border-color .2s; }
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
 
-  /* the gate: signature element ------------------------------------- */
-  .gate{
-    display:flex;flex-wrap:wrap;align-items:stretch;gap:0;
-    border:1px solid var(--line);border-radius:var(--radius);
-    background:var(--panel);margin:34px 0 0;overflow:hidden;
-  }
-  .gate-step{flex:1 1 150px;padding:14px 16px;border-right:1px solid var(--line)}
-  .gate-step:last-child{border-right:0}
-  .gate-step b{display:block;font-size:13px;margin-bottom:2px}
-  .gate-step span{display:block;font-size:12px;color:var(--dim);line-height:1.45}
-  .gate-step.now b{color:var(--ok)}
-  .gate-step.later b{color:var(--dim)}
-  .gate-step.now{background:rgba(74,222,128,.05)}
+/* IDE chat mock (an illustration of the Tidewater run) */
+.ide { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(37,99,235,.1); }
+.ide-bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 12px; color: var(--text-secondary); }
+.ide-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2a3242; display: inline-block; }
+.ide-bar span { margin-left: 8px; }
+.ide-body { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 452px; font-size: 14px; }
+.msg { opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s; }
+.msg.on { opacity: 1; transform: none; }
+.msg.me { align-self: flex-end; max-width: 92%; background: #142036; border: 1px solid #1d3157; border-radius: 10px 10px 2px 10px; padding: 9px 12px; }
+.msg.me code { color: #93c5fd; }
+.msg.ai { color: var(--text-secondary); padding: 2px 2px; line-height: 1.5; }
+.msg.ai b { color: var(--text); font-weight: 600; }
+.ok { color: var(--success); font-weight: 600; }
+.stop { color: var(--warn); font-weight: 600; }
+.verify { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(34,197,94,.45); background: rgba(34,197,94,.08); border-radius: 10px; padding: 12px 14px; }
+.verify .big { white-space: nowrap; flex: none; font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--success); letter-spacing: -.02em; }
+.verify .sub { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+.ide-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-tertiary); }
+.ide-foot button { background: none; border: 0; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.ide-foot button:hover { color: var(--text); }
 
-  /* sections -------------------------------------------------------- */
-  section{padding:40px 0;border-bottom:1px solid var(--line)}
-  section:last-of-type{border-bottom:0}
-  h2{font-size:20px;font-weight:650;margin:0 0 4px;letter-spacing:-.005em}
-  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
-  h3{font-size:13px;font-weight:600;margin:22px 0 8px;color:var(--text)}
-  p{margin:0 0 12px}
-  ol{margin:0 0 4px;padding-left:20px;color:var(--muted)}
-  ol li{margin-bottom:6px}
-  ol li b{color:var(--text);font-weight:600}
+/* Sections */
+section.block { padding: 80px 0; }
+.section-label { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--accent-text); margin-bottom: 16px; }
+.section-title { font-family: var(--serif); font-size: clamp(32px, 4vw, 48px); font-weight: 700; line-height: 1.1; letter-spacing: -.03em; margin-bottom: 16px; }
+.section-desc { font-size: 16px; color: var(--text-secondary); max-width: 640px; line-height: 1.7; margin-bottom: 44px; }
 
-  pre{
-    background:var(--panel-2);border:1px solid var(--line);
-    border-left:3px solid var(--accent-dim);
-    border-radius:var(--radius);
-    padding:12px 14px;margin:0 0 12px;overflow-x:auto;
-  }
-  code{
-    font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
-    color:#BFD4EE;
-  }
-  p code,li code,td code{
-    background:var(--panel-2);border:1px solid var(--line);
-    padding:1px 5px;border-radius:3px;font-size:12.5px;
-  }
-  .cmt{color:var(--dim)}
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: s; }
+.step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 26px 24px; position: relative; }
+.step::before { counter-increment: s; content: counter(s); position: absolute; top: 22px; right: 22px; font-family: var(--mono); font-size: 12px; color: var(--text-tertiary); }
+.step .cmd { font-family: var(--mono); font-size: 15px; color: var(--accent-text); margin-bottom: 12px; display: block; }
+.step h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.step p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+.more-cmds { margin-top: 18px; font-size: 14px; color: var(--text-secondary); }
 
-  .btn{
-    display:inline-block;padding:10px 18px;border-radius:var(--radius);
-    background:var(--accent);color:#08111F;font-weight:650;font-size:14px;
-  }
-  .btn:hover{background:#5C9DE8;text-decoration:none}
-  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-  .btn.ghost:hover{border-color:var(--accent);background:rgba(74,144,226,.07)}
-  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card { padding: 30px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); }
+.feature-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--accent-glow); border: 1px solid rgba(37,99,235,.2);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+.feature-icon svg { width: 20px; height: 20px; stroke: var(--accent-text); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
 
-  .note{
-    background:rgba(74,144,226,.06);border-left:3px solid var(--accent);
-    border-radius:0 var(--radius) var(--radius) 0;
-    padding:12px 15px;margin:18px 0 0;font-size:14px;color:var(--muted);
-  }
-  .note b{color:var(--text)}
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.split h3 { font-family: var(--serif); font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 14px; }
+.split p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px; }
+.split ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.split li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; }
+.split li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.shot { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 16px 48px rgba(0,0,0,.4); }
+.shot img { width: 100%; height: auto; display: block; }
+.shot-pair { display: grid; grid-template-columns: .62fr 1fr; gap: 16px; align-items: start; }
+.cap { font-size: 12px; color: var(--text-tertiary); margin-top: 8px; }
 
-  table{width:100%;border-collapse:collapse;margin:6px 0 0;font-size:14px}
-  th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:top}
-  th{background:var(--panel);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  td:first-child{white-space:nowrap;color:var(--text);font-weight:600}
-  td{color:var(--muted)}
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+.stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.stat .n { font-family: var(--serif); font-size: 40px; font-weight: 700; letter-spacing: -.03em; line-height: 1; margin-bottom: 8px; }
+.stat .n.g { color: var(--success); }
+.stat .t { font-size: 14px; color: var(--text-secondary); }
 
-  footer{padding:30px 0 50px;color:var(--dim);font-size:13px}
-  footer a{color:var(--muted)}
-  .soon{color:var(--dim);font-size:13px;margin:14px 0 0}
+.ides { display: flex; flex-wrap: wrap; gap: 12px; }
+.ides span { border: 1px solid var(--border); background: var(--bg-card); border-radius: 100px; padding: 9px 18px; font-size: 14px; }
 
-  @media (max-width:600px){
-    h1{font-size:27px}
-    .top .wrap{padding-top:24px;padding-bottom:34px}
-    .gate-step{flex:1 1 100%;border-right:0;border-bottom:1px solid var(--line)}
-    .gate-step:last-child{border-bottom:0}
-  }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.install { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; }
+.code { position: relative; background: #080b10; border: 1px solid var(--border); border-radius: 8px; padding: 16px 64px 16px 16px;
+  font-family: var(--mono); font-size: 13.5px; color: var(--text); overflow-x: auto; white-space: pre; margin: 12px 0 20px; }
+.code .c { color: var(--text-tertiary); }
+.copy { position: absolute; top: 10px; right: 10px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+  border-radius: 6px; font: 12px var(--sans); padding: 5px 10px; cursor: pointer; }
+.copy:hover { color: var(--text); border-color: var(--text-tertiary); }
+.install h3 { font-size: 17px; font-weight: 600; }
+.install p { font-size: 14px; color: var(--text-secondary); }
 
-  .gate-step{flex:1 1 110px}
-  .shot{margin:22px 0 0}
-  .shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:var(--radius)}
-  .shot figcaption{font-size:13px;color:var(--dim);margin-top:8px}
-  .pill{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--accent);border:1px solid var(--accent-dim);border-radius:100px;padding:2px 9px;
-    margin-left:10px;vertical-align:middle;font-weight:600}
-  td.ok{color:var(--ok);white-space:nowrap}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0 0}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
-  .card b{display:block;font-size:13px;margin-bottom:4px}
-  .card span{display:block;font-size:13px;color:var(--muted);line-height:1.5}
-  @media (max-width:600px){.cols{grid-template-columns:1fr}}
+.si { background: linear-gradient(135deg, rgba(37,99,235,.14), rgba(167,139,250,.10)); border: 1px solid rgba(37,99,235,.35); border-radius: 16px; padding: 48px; text-align: center; }
+.si h2 { font-family: var(--serif); font-size: clamp(28px, 3.4vw, 40px); font-weight: 700; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 14px; }
+.si p { color: var(--text-secondary); max-width: 640px; margin: 0 auto 28px; font-size: 16px; }
+.si .hero-actions { justify-content: center; }
+
+/* Footer (as on magertron.com) */
+footer { border-top: 1px solid var(--border); padding: 56px 0 32px; margin-top: 40px; }
+.footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+.footer-brand .logo { font-family: var(--mono); font-weight: 500; font-size: 15px; margin-bottom: 12px; }
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-secondary); font-weight: 500; margin-bottom: 14px; }
+.footer-col ul { list-style: none; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); }
+.footer-col a:hover { color: var(--text); text-decoration: none; }
+.footer-bottom { display: flex; justify-content: space-between; padding-top: 24px; border-top: 1px solid var(--border); }
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); }
+
+@media (max-width: 1000px) {
+  .hero .container, .split { grid-template-columns: 1fr; gap: 40px; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .feature-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .container { padding-left: 16px !important; padding-right: 16px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-links { margin-left: auto; }
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: none;
+    border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 18px; cursor: pointer; }
+  nav.open .nav-links { position: absolute; top: 64px; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border); padding: 4px 16px 16px; }
+  nav.open .nav-links a:not(.nav-cta) { display: block; padding: 14px 2px; font-size: 16px; color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-links .nav-cta { margin-top: 14px; text-align: center; }
+  .hero { padding: 96px 0 32px; }
+  .steps, .feature-grid, .stats, .shot-pair { grid-template-columns: 1fr; }
+  .ide-body { min-height: 0; }
+  section.block { padding: 56px 0; }
+  .si, .install { padding: 28px 20px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .footer-brand { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .hero-glow { animation: none; } .msg { transition: none; } }
 </style>
 </head>
 <body>
 
-<header class="top">
-  <div class="wrap">
-    <a class="back" href="/developers.html"><span class="arr" aria-hidden="true">&larr;</span> Back to Build an agent</a>
-    <p class="eyebrow">Czartup <span class="pill">Preview</span></p>
-    <h1>Magertron Czartup<span class="tm">&#8482;</span></h1>
-    <div class="rule"></div>
-    <p class="lede" style="margin-top:18px">
-      Declare a governed agent or app once. Czartup&trade; configures everything
-      and delivers to your coding assistant to build and maintain.
-    </p>
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links">
+      <a href="/#governed-surfaces">Platform</a>
+      <a href="/czartup/" class="here">Czartup™</a>
+      <a href="/developers.html">Developers</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/security.html">Security</a>
+      <a href="#get-started" class="nav-cta">Get Czartup</a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
 
-    <div class="gate">
-      <div class="gate-step now">
-        <b>1 &middot; Describe</b>
-        <span>A Czarter: who signs in, the agent, its tools, limits and holds.</span>
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="container">
+    <div>
+      <div class="hero-badge"><b>NEW</b> Czartup™ for Magertron™</div>
+      <h1>Describe your app.<br><em>Get it governed.</em></h1>
+      <p class="lead">Type one sentence in your IDE. Czartup™ sets up the app's sign-in, people, limits, approvals and audit on Magertron™, builds it with your coding assistant, then proves every control works before anyone uses it.</p>
+      <div class="hero-actions">
+        <a href="#get-started" class="btn-primary">Get started</a>
+        <a href="#how" class="btn-secondary">See how it works</a>
       </div>
-      <div class="gate-step later">
-        <b>2 &middot; Set up</b>
-        <span>Czartup configures sign-in, roles, the agent and its grants.</span>
+      <p class="hero-note">Works in Cursor, Claude Code, Codex and the terminal. Ships with Magertron™.</p>
+    </div>
+
+    <div class="ide" aria-label="An illustration of building the Tidewater Marina app with Czartup in an IDE chat">
+      <div class="ide-bar"><i></i><i></i><i></i><span>tidewater &mdash; chat</span></div>
+      <div class="ide-body" id="chat">
+        <div class="msg me"><code>/czartup-new</code> A slip-rental app for Tidewater Marina: staff book slips and record fuel sales. A fuel sale is at most $500; waiving a late fee needs the harbor master's approval. A nightly agent drafts reminder notices, nothing else.</div>
+        <div class="msg ai">Drafted the <b>Czarter</b>: 3 servers, a <b>$500</b> limit, a late-fee <b>hold</b> for Dana, and a Harbor Agent limited to <b>4 read and draft tools</b>. Save it?</div>
+        <div class="msg me"><code>/czartup-setup</code></div>
+        <div class="msg ai">Preview: the Auth0 app with MFA, the role and the agent's identity, Dana's account, the app's policy. Nothing changes until you say yes. <span class="ok">yes &rarr; done</span></div>
+        <div class="msg me"><code>/czartup-build</code></div>
+        <div class="msg ai">Built 3 servers and the dock-office app. <span class="stop">Stopped:</span> an administrator approves the new servers.</div>
+        <div class="msg me"><code>/czartup-verify</code></div>
+        <div class="msg ai verify"><span class="big">22 / 22</span><span class="sub">checks passed against the live platform: the limit refuses, the hold waits, the agent stays in its lane.</span></div>
       </div>
-      <div class="gate-step later">
-        <b>3 &middot; Hand over</b>
-        <span>A build pack in formats coding agents already read.</span>
+      <div class="ide-foot"><span>Illustration of a real run, Nov 2026</span><button type="button" id="replay">&#8635; Replay</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- How -->
+<section class="block" id="how">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Four commands, empty folder to governed app.</h2>
+    <p class="section-desc">Czartup™ keeps the whole app in one short document, the <em>Czarter</em>. Every command reads it, so the IDE, the terminal and the Magertron™ console always agree.</p>
+    <div class="steps">
+      <div class="step"><span class="cmd">/czartup-new</span><h3>Describe it</h3><p>Say what the app does, who uses it, its limits and approvals. Czartup drafts the Czarter and saves nothing until you agree.</p></div>
+      <div class="step"><span class="cmd">/czartup-setup</span><h3>Set it up</h3><p>A preview of every change, then one yes: the IdP app with MFA, the agent's identity, people, policy and grants.</p></div>
+      <div class="step"><span class="cmd">/czartup-build</span><h3>Build it</h3><p>Your coding assistant builds the servers and the app from Czartup's hand-over pack, then stops for the administrator.</p></div>
+      <div class="step"><span class="cmd">/czartup-verify</span><h3>Prove it</h3><p>Live checks against the platform: limits refuse, holds wait, the agent reaches only its own tools. Run it in CI too.</p></div>
+    </div>
+    <p class="more-cmds">Also: <code>/czartup-approvals</code> builds the app's approvals screen, <code>/czartup-update</code> follows a changed Czarter, <code>/czartup-status</code> says what's next, and <code>/czartup-retire</code> removes an app cleanly.</p>
+  </div>
+</section>
+
+<!-- What you get -->
+<section class="block">
+  <div class="container">
+    <div class="section-label">What you get</div>
+    <h2 class="section-title">The governance you'd otherwise hand-code.</h2>
+    <p class="section-desc">None of it lives in the app. Every call goes through Magertron™, so the controls hold even if the app is wrong or compromised.</p>
+    <div class="feature-grid">
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h3>Sign-in with MFA</h3><p>The app is created in your identity provider, with MFA for this app only. Other apps on the tenant are untouched.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c.8-3 2.8-4.5 5-4.5S12.2 16 13 19M11 19c.8-3 2.8-4.5 5-4.5s4.2 1.5 5 4.5"/></svg></div><h3>Two identities on every call</h3><p>The agent and the person it acts for, joined at Magertron's STS. Policy and audit see both.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 19h14"/><path d="M8 15V9M12 15V5M16 15v-4"/></svg></div><h3>Limits</h3><p>"A fuel sale is at most $500" becomes a policy rule in OPA. A call that breaks it is refused at the gateway.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><h3>Approvals</h3><p>Sensitive calls wait for a named person. The one who asked can never approve it, and one approval lets exactly one call through.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 4 18 6.5v5c0 4-2.6 7-6 8.5-3.4-1.5-6-4.5-6-8.5v-5z"/><path d="m9.5 12 2 2 3.5-4"/></svg></div><h3>An agent in its lane</h3><p>When the nightly agent runs with nobody signed in, it may call only the tools you listed. Everything else is refused.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4M10 12h5M10 16h5"/></svg></div><h3>Audit, from the first call</h3><p>Every call, refusal and approval is recorded to the agent and the person. Retire an app and it leaves no grants behind.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Admin stays in charge -->
+<section class="block">
+  <div class="container split">
+    <div>
+      <div class="section-label">Built for the platform team</div>
+      <h3>Developers move fast. Administrators keep the keys.</h3>
+      <p>Czartup™ acts as the person signed in, with their own Magertron™ roles. Setting an app up needs an administrator, and every change is shown as a preview first.</p>
+      <ul>
+        <li>An administrator decides which new servers the gateway trusts</li>
+        <li>Each app gets its own namespace, role and policy; it can't touch another app's rules</li>
+        <li>Secrets go straight to Vault, never into a file or the chat</li>
+        <li>Every change is audited to the person who said yes</li>
+      </ul>
+    </div>
+    <div>
+      <div class="shot"><img src="img/servers-active.png" alt="The Magertron console's server list showing tidewater-fuel, tidewater-notices and tidewater-slips Active in the tidewater namespace" loading="lazy"></div>
+      <p class="cap">Tidewater's three servers, registered by an administrator and Active.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Proof -->
+<section class="block">
+  <div class="container">
+    <div class="section-label">Proven, not promised</div>
+    <h2 class="section-title">Tidewater Marina, from an empty folder.</h2>
+    <p class="section-desc">A slip-rental app with a fuel-sale limit, a late-fee approval and a nightly agent, described in one sentence and built in Cursor.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">1</div><div class="t">sentence to describe the app</div></div>
+      <div class="stat"><div class="n">&lt; 1 hr</div><div class="t">from an empty folder to every check green</div></div>
+      <div class="stat"><div class="n g">22 / 22</div><div class="t">live Verify checks passed</div></div>
+    </div>
+    <div class="split">
+      <div>
+        <h3>Your IDE's own slash commands.</h3>
+        <p>Run <code>czartup commands</code> once and the <code>/czartup-...</code> commands appear in Cursor, Claude Code and Codex. Or connect Czartup as an MCP server and sign in with your own Magertron™ account and MFA.</p>
+        <div class="ides"><span>Cursor</span><span>Claude Code</span><span>Codex</span><span>Terminal</span></div>
       </div>
-      <div class="gate-step later">
-        <b>4 &middot; Build</b>
-        <span>Say &ldquo;Build&rdquo; in Cursor, Claude Code, Devin or VS Code.</span>
-      </div>
-      <div class="gate-step later">
-        <b>5 &middot; Proven</b>
-        <span>The Czarter's checks run as live calls through the gateway.</span>
+      <div class="shot" style="max-width: 420px; justify-self: center;"><img src="img/slash-menu.png" alt="Cursor's chat listing the /czartup commands: new, verify, setup, status, retire, build, approvals, update" loading="lazy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Get started -->
+<section class="block" id="get-started">
+  <div class="container">
+    <div class="section-label">Get started</div>
+    <h2 class="section-title">Install the CLI and sign in.</h2>
+    <p class="section-desc">Czartup™ runs inside your Magertron™. Install the CLI on any machine, sign in through your browser, and add the slash commands to your IDEs.</p>
+    <div class="install">
+      <h3>1. Install</h3>
+      <p>On Debian or Ubuntu it installs with apt, so updates come with the rest of your system.</p>
+      <div class="code"><button class="copy" type="button">Copy</button>curl -fsSL https://magertron.com/install-czartup.sh | sh</div>
+      <h3>2. Sign in and add the commands</h3>
+      <p>Use the address you open the Magertron™ console or developer portal at.</p>
+      <div class="code"><button class="copy" type="button">Copy</button>czartup login https://your-magertron
+czartup commands</div>
+      <h3>3. Describe your first app</h3>
+      <p>Open an empty folder in your IDE and type <code>/czartup-new</code> followed by what the app does, who uses it, and its limits and approvals.</p>
+      <div class="code"><button class="copy" type="button">Copy</button>/czartup-new Use Czartup to build ... on Magertron, in the namespace ...</div>
+    </div>
+  </div>
+</section>
+
+<!-- SIs -->
+<section class="block">
+  <div class="container">
+    <div class="si">
+      <div class="section-label">For systems integrators</div>
+      <h2>Weeks of governed-app setup become an afternoon.</h2>
+      <p>Identity, policy, approvals and audit are the slow, risky part of every agent project. Czartup™ makes them repeatable for each customer, proven by Verify before handover.</p>
+      <div class="hero-actions">
+        <a href="/alliances.html" class="btn-primary">Join the Alliance Program</a>
+        <a href="/developers.html" class="btn-secondary">Build an agent</a>
       </div>
     </div>
   </div>
-</header>
+</section>
 
-<div class="wrap">
-
-  <section>
-    <h2>One document says what the app may do</h2>
-    <p class="sub">The Czarter. Written by whoever is accountable for the app &mdash; the customer's admin or the SI.</p>
-    <div class="cols">
-      <div class="card"><b>People</b><span>Who signs in, with which identity provider, and whether MFA and a fresh login are required.</span></div>
-      <div class="card"><b>The agent</b><span>The service account it acts as, when it runs, what it may and must never do.</span></div>
-      <div class="card"><b>Connections</b><span>The MCP servers, APIs and models it reaches &mdash; and exactly which tools.</span></div>
-      <div class="card"><b>Controls</b><span>Limits that refuse a call and holds that wait for a person's approval.</span></div>
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>Governance and spend control for enterprise AI agents, in your own cluster.</p>
+      </div>
+      <div class="footer-col"><h4>Product</h4><ul>
+        <li><a href="/#governed-surfaces">AI Orchestrator</a></li>
+        <li><a href="/czartup/">Czartup™</a></li>
+        <li><a href="/agentczar.html">AgentCzar</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/developer-portal.html">Developer Portal</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Developers</h4><ul>
+        <li><a href="/developers.html">Build an Agent</a></li>
+        <li><a href="/cursor/">Cursor</a></li>
+        <li><a href="/claude-code/">Claude Code</a></li>
+        <li><a href="/api/v1/">API Documentation</a></li>
+        <li><a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Company</h4><ul>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/security.html">Security</a></li>
+        <li><a href="/trust.html">Trust</a></li>
+        <li><a href="/alliances.html">Alliance Program</a></li>
+        <li><a href="https://www.linkedin.com/company/magertronc" target="_blank" rel="noopener">LinkedIn</a></li>
+      </ul></div>
     </div>
-    <figure class="shot" style="margin-left:0;margin-right:0">
-      <img src="czartup-review-run.png" width="1200" height="975" loading="lazy"
-           alt="Czartup's Review and run screen: each step from creating the sign-in app to Verify and the hand-over, with its result">
-      <figcaption>Review &amp; run: every step applied one at a time, with its result.</figcaption>
-    </figure>
-  </section>
+    <div class="footer-bottom"><p>&copy; 2026 Magertron, LLC. Magertron™ and Czartup™ are trademarks of Magertron, LLC.</p></div>
+  </div>
+</footer>
 
-  <section>
-    <h2>Deliver to coding agents</h2>
-    <p class="sub">No new format to learn. Open it in an editor, download a versioned zip, or push it to your Git server.</p>
-    <table>
-      <tr><th>File</th><th>What it is for</th></tr>
-      <tr><td><code>AGENTS.md</code></td><td>The brief and the guardrails, read by Cursor, Codex, Devin and others; <code>CLAUDE.md</code> points Claude Code at it.</td></tr>
-      <tr><td><code>specs/</code></td><td>Spec, plan and tasks in the GitHub Spec Kit layout.</td></tr>
-      <tr><td><code>servers/</code></td><td>A <code>SERVER-SPEC.md</code> and an MCP Registry <code>server.json</code> for each server still to build.</td></tr>
-      <tr><td><code>RUNBOOK.md</code></td><td>What is already live on the platform, and what is still open.</td></tr>
-      <tr><td><code>czarter.yaml</code></td><td>The source of truth.</td></tr>
-    </table>
-  </section>
-
-  <section>
-    <h2>Works with</h2>
-    <p class="sub">The editors and agents Magertron&trade; already integrates with.</p>
-    <p>
-      <a href="/cursor/">Cursor</a> &middot; <a href="/claude-code/">Claude Code</a> &middot;
-      <a href="/devin/">Devin</a> &middot; <a href="/vscode/">VS Code</a>
-    </p>
-    <div class="btns">
-      <a class="btn" href="/developers.html#walkthrough">Request a walkthrough</a>
-      <a class="btn ghost" href="/developers.html">Build an agent</a>
-    </div>
-    <p class="soon">Czartup is in preview with design partners.</p>
-  </section>
-
-  <footer>
-    <a href="/">magertron.com</a> &middot;
-    <a href="/developers.html">Build an agent</a> &middot;
-    <a href="/cursor/">Cursor</a> &middot;
-    <a href="/claude-code/">Claude Code</a> &middot;
-    <a href="/devin/">Devin</a> &middot;
-    <a href="/vscode/">VS Code</a>
-  </footer>
-
-</div>
-<script src="/consent.js" defer></script>
+<script>
+// The chat plays once when it scrolls into view; Replay plays it again. No motion if the reader asked for none.
+(function () {
+  var msgs = [].slice.call(document.querySelectorAll('#chat .msg'));
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var timers = [];
+  function play() {
+    timers.forEach(clearTimeout); timers = [];
+    msgs.forEach(function (m) { m.classList.remove('on'); });
+    msgs.forEach(function (m, i) { timers.push(setTimeout(function () { m.classList.add('on'); }, 350 + i * 1100)); });
+  }
+  if (still) { msgs.forEach(function (m) { m.classList.add('on'); }); }
+  else if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (e) { if (e[0].isIntersecting) { play(); io.disconnect(); } }, { threshold: 0.3 });
+    io.observe(document.getElementById('chat'));
+  } else { play(); }
+  document.getElementById('replay').onclick = function () { still ? null : play(); };
+  [].forEach.call(document.querySelectorAll('.copy'), function (b) {
+    b.onclick = function () {
+      var t = b.parentNode.textContent.replace(/^Copy/, '').trim();
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () {
+        b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500);
+      }, function () { b.textContent = 'Select'; });
+    };
+  });
+})();
+</script>
 </body>
 </html>

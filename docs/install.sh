@@ -380,6 +380,7 @@ LICENSE_FILE="${LICENSE_FILE:-}"
 MODE="${MODE:-upgrade}"
 SERVICE_TYPE="${SERVICE_TYPE:-nodeport}"
 NODE_PORT="${NODE_PORT:-30444}"
+INVENTORY_NODE_PORT="${INVENTORY_NODE_PORT:-30348}"
 CHART_VERSION="${CHART_VERSION:-}"
 NAMESPACE="${NAMESPACE:-mcp-system}"
 SKIP_NODE_LABEL="${SKIP_NODE_LABEL:-0}"
@@ -481,8 +482,10 @@ Common options:
   --mode <upgrade|reinstall>  upgrade preserves data (default).
                               reinstall destroys data for a fresh start.
   --service-type <type>       nodeport (default), loadbalancer, clusterip
-  --node-port <number>        NodePort for the v3 Envoy (default 30444; only used with
-                              --service-type nodeport)
+  --node-port <number>        NodePort for the v3 Envoy (default 30444). Give each
+                              Magertron sharing a cluster its own (trial tenants).
+  --inventory-node-port <n>   NodePort for the v3 Envoy's inventory port (default
+                              30348). Unique per Magertron sharing a cluster.
   --chart-version <version>   Pin chart version (default: latest --devel)
   --skip-disk-check            Install even if the disk is below the minimum (not recommended)
   --namespace <name>          Install namespace (default mcp-system)
@@ -688,6 +691,7 @@ while [ $# -gt 0 ]; do
         --mode)            MODE="$2"; shift 2 ;;
         --service-type)    SERVICE_TYPE="$2"; shift 2 ;;
         --node-port)       NODE_PORT="$2"; shift 2 ;;
+        --inventory-node-port) INVENTORY_NODE_PORT="$2"; shift 2 ;;
         --chart-version)   CHART_VERSION="$2"; shift 2 ;;
         --namespace)       NAMESPACE="$2"; shift 2 ;;
         --node-name)       NODE_NAME="$2"; shift 2 ;;
@@ -1445,6 +1449,10 @@ HELM_VALUES=(
     --set "envoy.v3.enabled=true"
     --set "loadBalancer.provider=$SERVICE_TYPE"
 )
+# The v3 Envoy Service is a NodePort whatever --service-type says, so its two ports are always
+# pinned. Defaults (30444, 30348) render the same Service as before; a Magertron sharing a
+# cluster with another (a trial tenant) passes its own pair.
+HELM_VALUES+=( --set "envoy.v3.nodePort=$NODE_PORT" --set "envoy.v3.inventoryNodePort=$INVENTORY_NODE_PORT" )
 
 # Only inject apiPublicUrl when set — otherwise let the chart's own default
 # (values.yaml) stand, rather than forcing an empty override.

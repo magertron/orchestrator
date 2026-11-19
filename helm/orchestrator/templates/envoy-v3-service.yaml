@@ -37,6 +37,6 @@ spec:
     - name: inventory
       port: 10347
       targetPort: 10347
-      nodePort: 30348
+      nodePort: {{ .Values.envoy.v3.inventoryNodePort | default 30348 }}
       protocol: TCP
 {{- end }}
