@@ -435,6 +435,7 @@ func apiDelete(gf globalFlags, path string) error {
 // ─── Commands ────────────────────────────────────────────────────────────────
 
 func cmdLogin(gf globalFlags, args []string) {
+	printBanner() // the Magertron(TM) mark, at a terminal only (banner.go)
 	// ── Service-account login ────────────────────────────────────────────
 	// ⚠ A service account holds a signed JWT, not a password. There is nothing
 	// to POST to /auth/login — the credential IS the session. So this path

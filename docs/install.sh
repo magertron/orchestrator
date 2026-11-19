@@ -363,14 +363,36 @@ box() {
 }
 
 # Print the Magertron banner.
+# At a UTF-8 terminal: the braille Magertron(TM) mark - the same one the mcpctl and czartup CLIs
+# show at login - with the ▸ in Magertron blue (plain when NO_COLOR is set). Elsewhere (CI logs,
+# piped output, non-UTF-8 terminals): the one-line text banner, as before.
 banner() {
-    if [ -n "${NO_COLOR:-}" ]; then
+    local utf8=0
+    case "${LANG:-}${LC_ALL:-}" in *UTF-8*|*utf8*|*UTF8*) utf8=1 ;; esac
+    if [ "$IS_TTY" = "1" ] && [ "$utf8" = "1" ]; then
+        local blue="" reset="" line
+        if [ -z "${NO_COLOR:-}" ]; then blue=$'\033[38;5;75m' reset=$'\033[0m'; fi
+        local mark=(
+        '⢰⣄⡀'
+        '⢸⣿⣿⣶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣶'
+        '⢸⣿⣿⣿⣿⣿⣶⣄⡀⠀⠀⠀⠈⣿⡗⠉⣿⡖⠉⣿⡆⠀⢞⣉⣹⣶⠀⣴⡏⠑⣿⡏⠀⣴⡏⠉⣷⡄⠈⣿⡗⠉⠃⢹⣿⠉⠀⢹⣿⠊⠙⣴⡏⠉⣷⡄⠀⢹⣿⠊⢹⣷'
+        '⢸⣿⣿⣿⣿⣿⠿⠋⠁⠀⠀⠀⠀⣿⡇⠀⣿⡇⠀⣿⡇⢸⣿⠀⢸⣿⠀⢿⡇⠀⣿⡇⠀⢿⣏⠉⢉⠅⠀⣿⡇⠀⠀⢸⣿⠀⡀⢸⣿⠀⠀⢿⡇⠀⣿⠇⠀⢸⣿⠀⢸⣿'
+        '⢸⣿⣿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠈⠉⠉⠈⠉⠉⠈⠉⠉⠀⠉⠉⠉⠉⠁⢠⡉⢉⣿⠇⠀⠀⠉⠉⠁⠀⠈⠉⠉⠀⠀⠀⠉⠉⠀⠉⠉⠁⠀⠀⠉⠉⠁⠀⠀⠉⠉⠁⠉⠉⠁'
+        '⠸⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠁'
+        )
         echo ""
-        echo "  | MAGERTRON  MCP Orchestrator Installer"
+        for line in "${mark[@]}"; do
+            printf "  %s%s%s%s\n" "$blue" "${line:0:9}" "$reset" "${line:9}"
+        done
+        printf "  ${C_DIM}AI Orchestrator Installer${C_RESET}\n"
+        echo ""
+    elif [ -n "${NO_COLOR:-}" ]; then
+        echo ""
+        echo "  | MAGERTRON  AI Orchestrator Installer"
         echo ""
     else
         echo ""
-        printf "  ${C_CYAN}${C_BOLD}▌${C_RESET} ${C_BOLD}MAGERTRON${C_RESET}  ${C_DIM}MCP Orchestrator Installer${C_RESET}\n"
+        printf "  ${C_CYAN}${C_BOLD}▌${C_RESET} ${C_BOLD}MAGERTRON${C_RESET}  ${C_DIM}AI Orchestrator Installer${C_RESET}\n"
         echo ""
     fi
 }
