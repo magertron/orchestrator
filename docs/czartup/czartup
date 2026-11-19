@@ -112,7 +112,30 @@ def discover(mcp_url):
     sys.exit(f"could not find how to sign in to {mcp_url} (no OAuth metadata) - is Czartup connected on that Magertron?")
 
 
+# ---------- the banner (Magertron's mark in braille, like vcluster's) ----------
+BANNER = [
+    "⢰⣄⡀",
+    "⢸⣿⣿⣶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣶",
+    "⢸⣿⣿⣿⣿⣿⣶⣄⡀⠀⠀⠀⠈⣿⡗⠉⣿⡖⠉⣿⡆⠀⢞⣉⣹⣶⠀⣴⡏⠑⣿⡏⠀⣴⡏⠉⣷⡄⠈⣿⡗⠉⠃⢹⣿⠉⠀⢹⣿⠊⠙⣴⡏⠉⣷⡄⠀⢹⣿⠊⢹⣷",
+    "⢸⣿⣿⣿⣿⣿⠿⠋⠁⠀⠀⠀⠀⣿⡇⠀⣿⡇⠀⣿⡇⢸⣿⠀⢸⣿⠀⢿⡇⠀⣿⡇⠀⢿⣏⠉⢉⠅⠀⣿⡇⠀⠀⢸⣿⠀⡀⢸⣿⠀⠀⢿⡇⠀⣿⠇⠀⢸⣿⠀⢸⣿",
+    "⢸⣿⣿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠈⠉⠉⠈⠉⠉⠈⠉⠉⠀⠉⠉⠉⠉⠁⢠⡉⢉⣿⠇⠀⠀⠉⠉⠁⠀⠈⠉⠉⠀⠀⠀⠉⠉⠀⠉⠉⠁⠀⠀⠉⠉⠁⠀⠀⠉⠉⠁⠉⠉⠁",
+    "⠸⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠁",
+]
+
+
+def banner():
+    """The Magertron(TM) mark on stderr, when a person is watching: stdout stays clean for pipes.
+    The mark is Magertron blue unless NO_COLOR is set."""
+    if not sys.stderr.isatty():
+        return
+    blue, reset = ("", "") if os.environ.get("NO_COLOR") else ("\033[38;5;75m", "\033[0m")
+    for line in BANNER:
+        print(f"{blue}{line[:9]}{reset}{line[9:]}", file=sys.stderr)
+    print(file=sys.stderr)
+
+
 def login(base):
+    banner()
     c = load()
     base = (base or c.get("base") or "").rstrip("/")
     if not base:
