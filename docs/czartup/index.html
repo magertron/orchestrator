@@ -59,19 +59,19 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .nav-toggle { display: none; }
 
 /* Hero */
-.hero { padding: 120px 0 48px; position: relative; overflow: hidden; }
+.hero { padding: 104px 0 64px; position: relative; overflow: hidden; }
 .hero-glow { position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 42% 36% at 22% 40%, rgba(37,99,235,.26), transparent 70%),
               radial-gradient(ellipse 38% 32% at 78% 46%, rgba(167,139,250,.18), transparent 70%);
   animation: drift 24s ease-in-out infinite alternate; }
 @keyframes drift { to { transform: translate(12px, 8px) scale(1.04); } }
-.hero .container { position: relative; display: grid; grid-template-columns: 0.88fr 1.22fr; gap: 44px; align-items: center; }
+.hero .container { position: relative; display: grid; grid-template-columns: 0.95fr 1.15fr; gap: 48px; align-items: center; }
 .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px;
   border: 1px solid var(--border-accent); background: var(--accent-glow); font-size: 13px; color: var(--accent-text); margin-bottom: 24px; }
 .hero-badge b { font-weight: 600; letter-spacing: .04em; }
-.hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(32px, 3.5vw, 46px); line-height: 1.06; letter-spacing: -0.035em; margin-bottom: 16px; }
+.hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(36px, 4.2vw, 56px); line-height: 1.05; letter-spacing: -0.035em; margin-bottom: 16px; }
 .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--accent-text), #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.hero p.lead { font-size: 16.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; max-width: 540px; }
+.hero p.lead { font-size: 18px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; max-width: 540px; }
 .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
 .hero-note { margin-top: 14px; font-size: 12.5px; color: var(--text-secondary); }
 .btn-primary { background: var(--accent); color: white; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; transition: all .2s; }
@@ -79,11 +79,19 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .btn-secondary { color: var(--text); padding: 14px 28px; border-radius: 8px; font-weight: 500; font-size: 15px; border: 1px solid var(--border); display: inline-block; transition: border-color .2s; }
 .btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
 
-.hero .btn-primary, .hero .btn-secondary { padding: 11px 22px; font-size: 14px; }
+.hero .btn-primary, .hero .btn-secondary { padding: 13px 26px; font-size: 15px; }
 
 .hero-shot { margin: 0; }
 .hero-shot a.shot { display: block; cursor: zoom-in; }
 .hero-shot .shot { box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(37,99,235,.1); }
+
+/* Page header above the hero */
+.page-head { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto 36px; padding: 0 32px; }
+.ph-inner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.ph-name { font-family: var(--serif); font-weight: 700; font-size: 22px; letter-spacing: -.02em; color: var(--text); }
+.ph-sep { width: 1px; height: 22px; background: var(--border); }
+.ph-tag { font-size: 17px; color: var(--accent-text); }
+@media (max-width: 768px) { .page-head { padding: 0 16px; margin-bottom: 24px; } .ph-sep { display: none; } .ph-inner { gap: 4px; flex-direction: column; align-items: flex-start; } .ph-name { font-size: 20px; } .ph-tag { font-size: 15px; } }
 
 /* IDE chat mock (an illustration of the Tidewater run) */
 .ide { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
@@ -225,6 +233,7 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 
 /* Four commands: a narrower, centered section */
 #how .container, #slash .container, #get-started .container { max-width: 1000px; }
+#slash .split { align-items: start; }
 
 #how .section-desc { max-width: none; }
 
@@ -301,6 +310,9 @@ footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 
 <!-- Hero -->
 <section class="hero">
   <div class="hero-glow" aria-hidden="true"></div>
+  <div class="page-head">
+    <div class="ph-inner"><span class="ph-name">Magertron Czartup™</span><span class="ph-sep" aria-hidden="true"></span><span class="ph-tag">Build agents and applications in record time</span></div>
+  </div>
   <div class="container">
     <div>
       <h1>Describe your app.<br><em>Get it governed.</em></h1>
