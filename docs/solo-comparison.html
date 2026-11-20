@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>AI Orchestrator vs Solo.io agentgateway — AI Agent and MCP Governance Compared | Magertron</title>
+<meta name="description" content="A side-by-side comparison of Magertron&#x27;s AI Orchestrator and Solo.io&#x27;s agent stack (agentgateway, agentregistry, kagent, Agent Substrate). Infrastructure to run and connect agents, and a platform built for agent governance and spend: what each is for, and where each fits.">
+
+<link rel="canonical" href="https://magertron.com/solo-comparison.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/solo-comparison.html">
+<meta property="og:title" content="AI Orchestrator vs Solo.io: AI agent and MCP governance compared">
+<meta property="og:description" content="A side-by-side comparison of Magertron&#x27;s AI Orchestrator and Solo.io&#x27;s agent stack (agentgateway, agentregistry, kagent, Agent Substrate). Infrastructure to run and connect agents, and a platform built for agent governance and spend: what each is for, and where each fits.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+html { scrollbar-gutter: stable; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav (matches index.html) */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* Hero */
+.hero { padding: 110px 0 36px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 520px; height: 340px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.6; pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
+}
+.hero h1 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(28px, 3.6vw, 40px); line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 16px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto 16px; line-height: 1.65;
+}
+.hero .meta {
+  font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+  margin-top: 32px;
+}
+
+/* Section structure */
+section.content { padding: 60px 0; }
+section.content .container { max-width: 920px; }
+.section-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 12px;
+}
+section.content h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 20px;
+}
+section.content h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em; margin: 32px 0 12px;
+}
+section.content p {
+  font-size: 17px; color: var(--text-secondary); line-height: 1.8;
+  margin-bottom: 16px;
+}
+section.content strong { color: var(--text); font-weight: 600; }
+section.content em { color: var(--text); font-style: italic; }
+
+/* Two-column "at a glance" cards */
+.glance { padding: 40px 0 60px; }
+.glance .container { max-width: 1100px; }
+.glance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.glance-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px;
+}
+.glance-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.glance-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.glance-card-label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 8px;
+}
+.glance-card.mcp-orch .glance-card-label { color: var(--accent-text); }
+.glance-card.agentcore .glance-card-label { color: #ff9900; }
+.glance-card h3 {
+  font-family: var(--serif); font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 16px;
+}
+.glance-card p {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px;
+}
+.glance-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+}
+.glance-card ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start;
+}
+.glance-card ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.glance-card.agentcore ul li::before { color: #ff9900; }
+
+/* Comparison table */
+.comparison { padding: 40px 0 60px; }
+.comparison .container { max-width: 1100px; }
+.comparison table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.comparison th, .comparison td {
+  padding: 18px 24px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comparison thead th {
+  background: rgba(255, 255, 255, 0.02);
+  font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-tertiary); font-weight: 500;
+}
+.comparison thead th.col-mag { color: var(--accent-text); }
+.comparison thead th.col-aws { color: #ff9900; }
+.comparison tbody tr:last-child th,
+.comparison tbody tr:last-child td { border-bottom: none; }
+.comparison tbody th {
+  font-family: var(--sans); font-weight: 600; font-size: 14px;
+  color: var(--text); width: 24%;
+}
+.comparison tbody td {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* Collapsible wrapper for the comparison table */
+.cmp-toggle { margin: 0; }
+.cmp-toggle > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 24px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  transition: border-color 0.2s, background 0.2s;
+}
+.cmp-toggle > summary::-webkit-details-marker { display: none; }
+.cmp-toggle > summary:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+.cmp-toggle > summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.cmp-chevron {
+  flex-shrink: 0; color: var(--text-tertiary); font-size: 13px;
+  transition: transform 0.2s, color 0.2s;
+}
+.cmp-toggle[open] > summary .cmp-chevron { transform: rotate(90deg); color: var(--accent-text); }
+.cmp-label { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--text); }
+.cmp-count {
+  margin-left: auto; flex-shrink: 0;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary);
+}
+.cmp-toggle .when-open { display: none; }
+.cmp-toggle[open] .when-open { display: inline; }
+.cmp-toggle[open] .when-closed { display: none; }
+.cmp-body { margin-top: 16px; }
+
+/* Pills inside table cells */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-right: 6px; margin-bottom: 4px;
+}
+.pill.good { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+.pill.warn { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.3); }
+.pill.info { background: rgba(96, 165, 250, 0.1); color: var(--accent-text); border: 1px solid rgba(96, 165, 250, 0.3); }
+.pill.neutral { background: rgba(134, 148, 168, 0.1); color: var(--text-secondary); border: 1px solid rgba(134, 148, 168, 0.3); }
+
+/* "Pick X when..." section */
+.pick { padding: 60px 0; }
+.pick .container { max-width: 1100px; }
+.pick h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 48px; text-align: center;
+}
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.pick-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px;
+}
+.pick-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.pick-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.pick-card .label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 12px;
+}
+.pick-card.mcp-orch .label { color: var(--accent-text); }
+.pick-card.agentcore .label { color: #ff9900; }
+.pick-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  margin-bottom: 24px; letter-spacing: -0.02em;
+}
+.pick-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 14px;
+}
+.pick-card ul li {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pick-card ul li::before {
+  content: '✓'; color: var(--success); flex-shrink: 0; font-weight: 700;
+}
+.pick-card ul li strong { color: var(--text); font-weight: 600; }
+
+/* Closing CTA */
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 60px 48px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 700; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 32px; position: relative; }
+.cta-actions { display: flex; gap: 16px; justify-content: center; position: relative; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; color: white; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px;
+  font-weight: 500; font-size: 14px; border: 1px solid var(--border); text-decoration: none;
+  transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; color: var(--text); }
+
+/* Footer */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .glance-row, .pick-row { grid-template-columns: 1fr; }
+  .comparison table { font-size: 13px; }
+  .comparison th, .comparison td { padding: 14px 16px; }
+  .comparison tbody th { width: 30%; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
+</style>
+<style id="mag-solutions-nav">
+.nav-drop { position: relative; }
+.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+  color: var(--text-secondary); transition: color 0.2s; }
+.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
+.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
+.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
+  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
+.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
+.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
+@media (max-width: 1180px) { .nav-links { gap: 22px; } }
+@media (max-width: 768px) {
+  .nav-links .nav-drop { display: none; }
+  nav.open .nav-links .nav-drop { display: block; }
+  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
+    color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
+    box-shadow: none; padding: 0 0 0 14px; background: none; }
+  nav.open .nav-drop-menu::before { display: none; }
+}
+</style>
+<style id="mag-demo-form">
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px;
+  padding: 10px 14px; color: #0a0d12; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: #6b7280; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #b9bfca; color: #0a0d12; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+</style>
+<style id="mag-nav-center">
+@media (min-width: 769px) {
+  nav .nav-links { flex: 1; }
+  nav .nav-links > :first-child { margin-left: auto; }
+  nav .nav-links > .nav-cta { margin-left: auto; }
+}
+</style>
+<style id="mag-product-marks">
+/* Platform menu: product marks (2026-11-10 v3) */
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
+.mag-pm svg { width: 22px; height: 22px; flex: none; }
+</style>
+<style id="mag-solution-marks">
+/* Solutions menu: outlined marks (2026-11-10 v3) */
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
+.mag-pm svg { width: 22px; height: 22px; flex: none; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the difference between Magertron and Solo.io?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both run on Kubernetes and put a gateway in front of AI agents. They aim at different jobs. Solo.io builds the infrastructure to run and connect agents: Agent Substrate (with Google) runs them, kagent builds them, agentgateway carries their MCP, LLM and agent-to-agent traffic, and agentregistry catalogs them. Magertron governs what agents may do and what they spend: every call is checked for the agent and the person it acts for, judged by your own policy engine if you want, rated on your contracts with chargeback, and held for a named approver when it is risky."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I use Solo.io or Magertron?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "If you are building your agent platform on Solo's open-source stack and want the runtime, the mesh and the gateway from one vendor, Solo fits. If you want APIs, MCP tools, models and event streams governed and metered the same way, with spend charged back to people and departments, approvals and tool discovery on employee laptops, Magertron is built for that."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Magertron and Solo.io be used together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Agents that run on Agent Substrate or kagent can send their tool and model calls through Magertron, and an API behind agentgateway can be registered in Magertron like any other REST API."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does each one run?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both run in your own Kubernetes cluster. Magertron runs on any cloud, on-premises or air-gapped. Solo's enterprise distributions also offer air-gapped installation; Agent Substrate's managed install on Google Cloud needs GKE Standard 1.37 or later."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Solo's agentgateway open source?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. agentgateway is a Linux Foundation project that Solo created in 2025. Solo Enterprise for agentgateway adds governance features such as token exchange, tool-server fingerprinting and verifiable audit trails."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="index.html#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
+          <a href="ai-assistant.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.7 4.3 4.3 1.7-4.3 1.7L12 16.5l-1.7-4.3-4.3-1.7 4.3-1.7z"/><path d="M17.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fff"/></g></svg><span>AI Assistant</span></a>
+          <a href="data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
+          <a href="agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
+          <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS™</span></a>
+          <a href="solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#fff"/></g></svg><span>ToolScout™</span></a>          <a href="/czartup/" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5 10 12l-3.5 3.5"/><path d="M12 16h5.5"/></g></svg><span>Czartup™</span></a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="solutions-banking.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5 12 5.5l7 4"/><path d="M5.5 9.5h13"/><path d="M7.5 11.5v5M12 11.5v5M16.5 11.5v5"/><path d="M5 18.5h14"/></g></svg><span>Banking</span></a>
+          <a href="solutions-accounts-payable.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h7l3.5 3.5v11.5H7z"/><path d="M14 4.5V8h3.5"/><path d="M9.5 11h5"/><path d="m9.5 15 1.8 1.8 3.4-3.4"/></g></svg><span>Accounts payable</span></a>
+          <a href="solutions-crm.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5h14"/><path d="M7.5 15.5v-3M11.5 15.5v-5.5M15.5 15.5v-8"/><path d="m6.5 9 3.5-2.5 3 1.5 4.5-3"/></g></svg><span>Sales &amp; CRM</span></a>
+          <a href="solutions-network-operations.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2"/><circle cx="6.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/><path d="m11 7.8-3.6 7.4M13 7.8l3.6 7.4M8.5 17h7"/></g></svg><span>Network operations</span></a>
+          <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17.5h8.5a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 7.3 9.8 3.9 3.9 0 0 0 8 17.5z"/></g></svg><span>Across SaaS platforms</span></a>
+          <a href="solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#60a5fa"/></g></svg><span>Shadow AI discovery</span></a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="developers.html">Overview</a>
+          <a href="index.html#install">Install</a>
+          <a href="index.html#cli">CLI</a>
+          <a href="developer-portal.html">Developer Portal</a>
+          <a href="api/v1/">API Documentation</a>
+          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
+          <a href="developers.html">Build an agent</a>
+          <a href="vscode/">VS Code</a>
+          <a href="devin/">Devin</a>
+          <a href="cursor/">Cursor</a>
+          <a href="claude-code/">Claude Code</a>
+        </div>
+      </div>
+      <a href="pricing.html">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="https://signup.magertron.com/" class="nav-cta">Try it now </a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Comparison</div>
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">AI Orchestrator vs <em>Solo.io</em></h1>
+    <p style="line-height: 1.5;">Both are Kubernetes-native and both put a gateway in front of AI agents. Solo.io builds the infrastructure that runs and connects agents. Magertron<sup style="font-size:0.5em">™</sup> AI Orchestrator governs what they may do and what they spend, across APIs, MCPs, LLMs and streaming events.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">The framing</div>
+    <h2 style="font-size: clamp(22px, 2.6vw, 28px); line-height: 1.25;">Infrastructure to run and connect agents vs a platform to govern them and their spend.</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Solo.io's stack covers the runtime: Agent Substrate (co-maintained with Google) puts idle agents to sleep, kagent builds them, agentgateway carries their traffic and agentregistry catalogs them. Its spend controls are token budgets per user, enforced as rate limits.</p>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">With Magertron&#8482;, every API, model message, event stream or tool call is checked for the agent <em>and</em> the person it acts for. It is priced on your vendor contracts and charged back to its rightful business owner. Streams are a first class citizen just like tool calls.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">MCP servers</div>
+    <h2>A registry lists the servers you know about. ToolScout&#8482; finds the ones you don't.</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Developers add MCP servers to Claude, Cursor, VS Code and Devin on their own laptops. Most run locally, so they never pass through a gateway or get registered anywhere.</p>
+    <style>.cmp-t{width:100%;border-collapse:collapse;margin:18px 0 8px;font-size:15px;line-height:1.5}.cmp-t th,.cmp-t td{border-top:1px solid var(--border);padding:12px 14px;text-align:left;vertical-align:top}.cmp-t thead th{border-top:none;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-tertiary)}.cmp-t td:first-child{color:var(--text);font-weight:600;width:34%}.cmp-t td{color:var(--text-secondary)}.cmp-t .win td{background:var(--bg-card)}@media(max-width:640px){.cmp-t{font-size:14px}.cmp-t th,.cmp-t td{padding:10px 8px}}</style>
+    <div style="overflow-x:auto">
+    <table class="cmp-t">
+      <thead><tr><th></th><th>Magertron&#8482;</th><th>Solo.io</th></tr></thead>
+      <tbody>
+        <tr><td>Catalog of approved MCP servers</td><td>&#10003; Inventory with review and approval</td><td>&#10003; agentregistry: review and approval before publishing (enterprise)</td></tr>
+        <tr><td>Agent acts for a named person</td><td>&#10003; RFC 8693 token exchange; both on every audit row</td><td>&#10003; RFC 8693 on-behalf-of token exchange (Solo Enterprise for agentgateway 2.3)</td></tr>
+        <tr class="win"><td>Finds MCP servers on employee laptops</td><td>&#10003; ToolScout&#8482; reads MCP configs through the MDM you already run</td><td>Not advertised: servers are published to the registry or routed through the gateway</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size: 14px; color: var(--text-tertiary); margin-top: 6px;">Based on Solo.io's public documentation as of November 2026. <a href="solutions-shadow-ai.html">How ToolScout&#8482; works</a></p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">The honest take</div>
+    <h2>Which one fits</h2>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;"><strong>Choose Solo.io</strong> when you are building your agent platform on its open-source stack and want the runtime, the mesh and the gateway from one vendor.</p>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;"><strong>Choose Magertron</strong> when you want APIs, MCP tools, models and event streams managed in one place, with developer portal, tool discovery, chargeback, approvals and your own policy engine, inside your cluster.</p>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;"><strong>Or use both.</strong> Agents running on Agent Substrate or kagent can send their tool and model calls through Magertron, so they get its permissions, policy and metering.</p>
+  </div>
+</section>
+<section class="content">
+  <div class="container">
+    <div class="section-eyebrow">Questions</div>
+    <h2>Frequently asked</h2>
+    <style>
+      .faq-item { border-top: 1px solid var(--border); }
+      .faq-item:last-of-type { border-bottom: 1px solid var(--border); }
+      .faq-item summary { list-style: none; cursor: pointer; padding: 14px 0; display: flex;
+        align-items: center; gap: 12px; font-size: 17px; font-weight: 600; color: var(--text); }
+      .faq-item summary::-webkit-details-marker { display: none; }
+      .faq-item summary .faq-chev { color: var(--text-tertiary); font-size: 12px;
+        transition: transform .15s; }
+      .faq-item[open] summary .faq-chev { transform: rotate(90deg); color: var(--accent-text); }
+      .faq-item p { margin: 0 0 14px 24px; }
+    </style>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>What is the difference between Magertron and Solo.io?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Both run on Kubernetes and put a gateway in front of AI agents. They aim at different jobs. Solo.io builds the infrastructure to run and connect agents: Agent Substrate (with Google) runs them, kagent builds them, agentgateway carries their MCP, LLM and agent-to-agent traffic, and agentregistry catalogs them. Magertron governs what agents may do and what they spend: every call is checked for the agent and the person it acts for, judged by your own policy engine if you want, rated on your contracts with chargeback, and held for a named approver when it is risky.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Should I use Solo.io or Magertron?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">If you are building your agent platform on Solo's open-source stack and want the runtime, the mesh and the gateway from one vendor, Solo fits. If you want APIs, MCP tools, models and event streams governed and metered the same way, with spend charged back to people and departments, approvals and tool discovery on employee laptops, Magertron is built for that.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Can Magertron and Solo.io be used together?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Yes. Agents that run on Agent Substrate or kagent can send their tool and model calls through Magertron, and an API behind agentgateway can be registered in Magertron like any other REST API.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Where does each one run?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Both run in your own Kubernetes cluster. Magertron runs on any cloud, on-premises or air-gapped. Solo's enterprise distributions also offer air-gapped installation; Agent Substrate's managed install on Google Cloud needs GKE Standard 1.37 or later.</p>
+    </details>
+    <details class="faq-item">
+      <summary><span class="faq-chev">&#9656;</span>Is Solo's agentgateway open source?</summary>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 10px;">Yes. agentgateway is a Linux Foundation project that Solo created in 2025. Solo Enterprise for agentgateway adds governance features such as token exchange, tool-server fingerprinting and verifiable audit trails.</p>
+    </details>
+    <h3 style="margin-top:36px; font-size: 17px;">Sources</h3>
+    <ul style="font-size: 16px; line-height: 1.6;">
+      <li><a href="https://www.solo.io/press-releases/enterprise-agentgateway-mcp-labs" target="_blank" rel="noopener">Solo.io press release: Solo Enterprise for agentgateway and Solo Labs for MCP (Oct 2025)</a></li>
+      <li><a href="https://www.solo.io/blog/solo-enterprise-for-agentgateway-2-3-aws-bedrock-agentcore-intelligent-failover-and-deeper-mcp-control" target="_blank" rel="noopener">Solo.io blog: Solo Enterprise for agentgateway 2.3 (Apr 2026)</a></li>
+      <li><a href="https://agentgateway.dev/docs/kubernetes/latest/mcp/tool-access/" target="_blank" rel="noopener">agentgateway docs: Control access to MCP tools</a></li>
+      <li><a href="https://agentgateway.dev/docs/kubernetes/latest/llm/cost-controls/budget-limits/" target="_blank" rel="noopener">agentgateway docs: Budget and spend limits</a></li>
+      <li><a href="https://docs.solo.io/agentregistry/latest/about/about/" target="_blank" rel="noopener">Solo.io docs: agentregistry</a></li>
+      <li><a href="https://www.solo.io/press-releases/announcing-kagent-1-0-ga" target="_blank" rel="noopener">Solo.io press release: enterprise Agent Substrate and kagent GA (Nov 2026)</a></li>
+      <li><a href="https://docs.cloud.google.com/kubernetes-engine/ai-ml/about-agent-substrate" target="_blank" rel="noopener">Google Cloud docs: About Agent Substrate</a></li>
+      <li><a href="https://www.solo.io/blog/aaif-announcement-agentgateway" target="_blank" rel="noopener">Solo.io blog: agentgateway and the Agentic AI Foundation (Dec 2025)</a></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="ai-assistant.html">AI Assistant</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="agentczar.html">AgentCzar</a></li>
+          <li><a href="solutions-saas.html">AgentSaaS</a></li>
+          <li><a href="solutions-shadow-ai.html">ToolScout</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="index.html#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
+          <li><a href="kong-comparison.html">AI Orchestrator vs. Kong</a></li>
+          <li><a href="solo-comparison.html">AI Orchestrator vs. Solo.io</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+          <li><a href="integrations.html">Partner Integrations</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="mailto:sales@magertron.com">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/consent.js" defer></script>
+
+
+<!-- mag-demo-form: copied from index.html -->
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="margin-bottom:14px;">
+      <strong style="color:var(--text-primary);">A private instance, today.</strong>
+      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      of your own, with servers, traffic and audit history already running in it.
+      Bring your own model key and the assistant works too.
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>What are you hoping to see?</label>
+      <select id="demo-tier">
+        <option value="Governing agents">Governing what my agents can reach</option>
+        <option value="Cost and spend">Cost attribution and spend control</option>
+        <option value="Audit and evidence">Audit trail and compliance evidence</option>
+        <option value="Data governance">Data access governance (Snowflake, Databricks, BigQuery)</option>
+        <option value="Just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything you want on it? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="A particular vendor, a warehouse, a scenario you want to try — or leave this blank."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Get a live instance';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Got it — your instance is on the way.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            You'll get a URL and a login by email today — a private instance with servers,
+            traffic and audit history already running in it. Nothing to install, no call to book.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+<!-- /mag-demo-form -->
+<script id="mag-nav-close">
+(function () {
+  function closeAll(except) {
+    document.querySelectorAll('.nav-drop.open').forEach(function (d) {
+      if (d !== except) d.classList.remove('open');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var drop = e.target.closest('.nav-drop');
+    if (!drop) {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+      return;
+    }
+    if (e.target.closest('.nav-drop-menu a')) {
+      closeAll(null);
+      e.target.closest('.nav-drop-menu a').blur();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+    }
+  });
+})();
+</script>
+</body>
+</html>
