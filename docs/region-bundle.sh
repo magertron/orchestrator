@@ -17,7 +17,8 @@
 # What the bundle carries:
 #   * the six platform keys from mcp-orchestrator-secrets
 #   * the external PDP settings, if EAST has one: bundled OPA (with its policy
-#     and its data file, if one was installed with --opa-data)
+#     and its data file, if one was installed with --opa-data, and the apps'
+#     own policies - the ConfigMaps labelled magertron.io/czarter)
 #     or the URL of your own PDP, plus its namespaces and fail mode
 #
 # The bundle is AES-256 encrypted (openssl, PBKDF2, 200k iterations) with a
@@ -72,7 +73,7 @@ keys_json() { printf '%s\n' "${KEYS[@]}" | jq -R . | jq -s .; }
 # The PDP settings this region runs with, as JSON (or "null" when there is none).
 #   {mode: "bundled"|"external", url, namespaces, fail, policy_b64, data_b64}
 pdp_json() {
-    local env_json url ns fail mode policy="" data=""
+    local env_json url ns fail mode policy="" data="" apps=""
     env_json="$(kc get statefulset "$ORCH_STS" -o json 2>/dev/null \
         | jq -c '[.spec.template.spec.containers[] | (.env // [])[]] | map({(.name): (.value // "")}) | add // {}')" \
         || { echo null; return; }
@@ -85,11 +86,16 @@ pdp_json() {
         policy="$(kc get configmap "$OPA_CM" -o json | jq -r '.data["magertron.rego"] // ""' | base64 -w0)"
         # install.sh --opa-data: the caps the policy reads (empty when none).
         data="$(kc get configmap "$OPA_CM" -o json | jq -r '.data["data.json"] // ""' | base64 -w0)"
+        # The apps' own policies (Czartup): name, labels, data - nothing cluster-specific.
+        apps="$(kc get configmap -l magertron.io/czarter -o json | jq -c 'if (.items | length) == 0 then empty else
+            {apiVersion: "v1", kind: "List", items: ([.items[] | {apiVersion: "v1", kind: "ConfigMap",
+             metadata: {name: .metadata.name, labels: .metadata.labels}, data: .data}] | sort_by(.metadata.name))} end' \
+            | base64 -w0)"
     else
         mode="external"
     fi
-    jq -cn --arg m "$mode" --arg u "$url" --arg n "$ns" --arg f "$fail" --arg p "$policy" --arg d "$data" \
-        '{mode: $m, url: $u, namespaces: $n, fail: $f, policy_b64: $p, data_b64: $d}'
+    jq -cn --arg m "$mode" --arg u "$url" --arg n "$ns" --arg f "$fail" --arg p "$policy" --arg d "$data" --arg a "$apps" \
+        '{mode: $m, url: $u, namespaces: $n, fail: $f, policy_b64: $p, data_b64: $d, apps_b64: $a}'
 }
 
 do_export() {
@@ -109,7 +115,8 @@ do_export() {
     unset RB_PASS
     note "exported ${#KEYS[@]} keys from ${KUBE_CONTEXT:-current context} $NS/$SECRET -> $out"
     case "$(jq -r '.mode // "none"' <<<"$pdp")" in
-        bundled)  note "  + external PDP: bundled OPA with its policy$( [ -n "$(jq -r '.data_b64 // ""' <<<"$pdp")" ] && echo " and data file") (namespaces $(jq -r .namespaces <<<"$pdp"), fail-$(jq -r .fail <<<"$pdp"))" ;;
+        bundled)  note "  + external PDP: bundled OPA with its policy$( [ -n "$(jq -r '.data_b64 // ""' <<<"$pdp")" ] && echo " and data file") (namespaces $(jq -r .namespaces <<<"$pdp"), fail-$(jq -r .fail <<<"$pdp"))"
+                  note "  + app policies: $(jq -r '.apps_b64 // ""' <<<"$pdp" | base64 -d 2>/dev/null | jq -r '.items | map(.metadata.name) | join(", ") // ""' 2>/dev/null || true)" ;;
         external) note "  + external PDP: your own at $(jq -r .url <<<"$pdp") (namespaces $(jq -r .namespaces <<<"$pdp"), fail-$(jq -r .fail <<<"$pdp"))" ;;
         *)        note "  (no external PDP configured here — none carried)" ;;
     esac
@@ -176,7 +183,7 @@ do_verify_payload() {   # $1 = payload, $2 = "keys" to skip the PDP comparison
             echo "DIFFER  EXTERNAL_PDP (not configured in this region)"; bad=1
         else
             local f
-            for f in mode namespaces fail policy_b64 data_b64; do
+            for f in mode namespaces fail policy_b64 data_b64 apps_b64; do
                 local w h label
                 w="$(jq -r --arg f "$f" '.[$f] // ""' <<<"$want_pdp")"
                 h="$(jq -r --arg f "$f" '.[$f] // ""' <<<"$have_pdp")"
@@ -194,6 +201,7 @@ do_verify() { local payload; payload="$(decrypt "$1")"; do_verify_payload "$payl
 #   <dir>/pdp.env          PDP_MODE, PDP_URL, PDP_NAMESPACES, PDP_FAIL
 #   <dir>/opa-policy.rego  (bundled mode only)
 #   <dir>/opa-data.json    (bundled mode, when the primary has a data file)
+#   <dir>/app-policies.json (bundled mode, when the primary has app policies)
 # Writes nothing when the bundle carries no PDP. Never touches the cluster.
 do_pdp() {
     local payload; payload="$(decrypt "$1")"
@@ -212,6 +220,10 @@ do_pdp() {
         # Bundles made before data files were carried have no data_b64.
         if [ -n "$(jq -r '.data_b64 // ""' <<<"$pdp")" ]; then
             jq -r '.data_b64' <<<"$pdp" | base64 -d > "$dir/opa-data.json"
+        fi
+        # The apps' own policies (bundles made before 2026-11-17 have none).
+        if [ -n "$(jq -r '.apps_b64 // ""' <<<"$pdp")" ]; then
+            jq -r '.apps_b64' <<<"$pdp" | base64 -d > "$dir/app-policies.json"
         fi
     fi
 }
