@@ -2304,6 +2304,10 @@ secrets:
   # MAG_SECRET_ENCRYPTION_KEY — empty = generate once, then reuse.
   # A replica region: set to the PRIMARY's value (all regions share one).
   secretEncryptionKey: ""
+  # MCP_WEB_STEPUP_SECRET (AgentCzar web front) — empty = generate once, then
+  # reuse. The credit union's step-up page signs with the same value; set it
+  # here only if they hand you theirs (32+ characters).
+  webStepupSecret: ""
   jwtPublicKey: ""    # PEM-encoded RSA public key (derived from private if empty)
 
   # ── Probo GRC secrets (only relevant when probo.enabled=true) ───────────────
