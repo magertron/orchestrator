@@ -1,8 +1,8 @@
 {
   "name": "magertron-submit",
   "displayName": "Magertron",
-  "description": "Hand an MCP server you have built to the team that governs it.",
-  "version": "0.1.0",
+  "description": "Build what Czartup sends you, and hand the MCP server you built to the team that governs it.",
+  "version": "0.2.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/magertron/orchestrator.git",
@@ -23,7 +23,10 @@
     "magertron",
     "governance"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onUri",
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [

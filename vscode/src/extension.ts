@@ -21,6 +21,9 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { execFile } from 'child_process';
+import * as os from 'os';
+import * as https from 'https';
+import * as http from 'http';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
@@ -209,6 +212,133 @@ async function status(ctx: vscode.ExtensionContext) {
   }
 }
 
+// ─── push from Czartup ─────────────────────────────────────────────────────
+
+/**
+ * Czartup's "Push to IDE" opens cursor://magertron.magertron-submit/build?czarter=…&kit=…
+ * (vscode://… for VS Code). The kit URL carries a one-time, 15-minute ticket: it is the
+ * only credential, so nothing has to be configured here and no token is stored.
+ *
+ * ⚠ THE KIT IS DATA, NOT CODE. It is written to disk and opened; nothing in it is run.
+ * Every path is checked to stay inside the folder the developer chose.
+ */
+const OPEN_KEY = 'magertron.openOnStart';
+const PROMPT = (open: string) =>
+  `Build what ${open} says, following AGENTS.md. Stop wherever it says the Magertron admin takes over.`;
+
+function getJson(url: string): Promise<any> {
+  const insecure = !!vscode.workspace.getConfiguration('magertron').get<boolean>('insecureTls');
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https:') ? https : http;
+    const req = mod.get(url, { rejectUnauthorized: !insecure, headers: { Accept: 'application/json' } } as any, res => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c: Buffer) => chunks.push(c));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        let j: any;
+        try { j = JSON.parse(body); } catch { j = undefined; }
+        if ((res.statusCode ?? 0) >= 400 || !j) {
+          reject(new Error(j?.error || `the build kit could not be downloaded (HTTP ${res.statusCode})`));
+        } else { resolve(j); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(60_000, () => req.destroy(new Error('timed out downloading the build kit')));
+  });
+}
+
+async function pullBuild(ctx: vscode.ExtensionContext, uri: vscode.Uri) {
+  const q = new URLSearchParams(uri.query);
+  const czarter = (q.get('czarter') || '').replace(/[^A-Za-z0-9._-]/g, '');
+  const kit = q.get('kit') || '';
+  if (uri.path !== '/build' || !czarter || !/^https?:\/\//.test(kit)) {
+    vscode.window.showErrorMessage('Magertron: this link is not a Czartup build link.');
+    return;
+  }
+
+  const here = vscode.workspace.workspaceFolders?.[0]?.uri;
+  const picked = await vscode.window.showOpenDialog({
+    canSelectFiles: false, canSelectFolders: true, canSelectMany: false,
+    openLabel: `Put ${czarter} here`,
+    title: `Czartup: where should the ${czarter} build kit go?`,
+    defaultUri: here ? vscode.Uri.file(path.dirname(here.fsPath)) : vscode.Uri.file(os.homedir()),
+  });
+  if (!picked?.[0]) { return; }
+  let target = path.join(picked[0].fsPath, czarter);
+  if (fs.existsSync(target) && fs.readdirSync(target).length) {
+    const act = await vscode.window.showWarningMessage(
+      `${target} already has files. The build kit's files replace theirs; your other files stay.`,
+      { modal: true }, 'Update it');
+    if (act !== 'Update it') { return; }
+  }
+
+  let j: any;
+  try {
+    j = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `Magertron: getting the ${czarter} build kit…` },
+      () => getJson(kit));
+  } catch (e: any) {
+    vscode.window.showErrorMessage(`Magertron: ${e?.message || e}`);
+    return;
+  }
+
+  const root = path.resolve(target);
+  let n = 0;
+  for (const f of (j.files || []) as { path: string; base64: string }[]) {
+    const out = path.resolve(root, f.path);
+    if (out !== root && !out.startsWith(root + path.sep)) {
+      log(`skipped ${f.path}: outside the folder`);
+      continue;
+    }
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, Buffer.from(f.base64, 'base64'));
+    n++;
+  }
+  log(`\n── build kit ${czarter}: ${n} files in ${root}`);
+
+  const open = String(j.open || 'AGENTS.md');
+  await ctx.globalState.update(OPEN_KEY, { folder: root, open, czarter });
+  const same = here && path.resolve(here.fsPath) === root;
+  if (same) {
+    await openKit(ctx);
+  } else {
+    // A new window starts a fresh copy of this extension; it opens the kit on start (activate).
+    await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(root),
+      { forceNewWindow: !!vscode.workspace.workspaceFolders?.length });
+  }
+}
+
+async function openKit(ctx: vscode.ExtensionContext) {
+  const s = ctx.globalState.get<{ folder: string; open: string; czarter: string }>(OPEN_KEY);
+  const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!s || !ws || path.resolve(ws) !== s.folder) { return; }
+  await ctx.globalState.update(OPEN_KEY, undefined);
+  const file = path.join(s.folder, s.open);
+  if (fs.existsSync(file)) {
+    await vscode.window.showTextDocument(vscode.Uri.file(file), { preview: false });
+  }
+  const prompt = PROMPT(s.open);
+  await vscode.env.clipboard.writeText(prompt);
+  // Put the build prompt in the agent's chat, ready to send. Cursor: its documented prompt deeplink
+  // (pre-filled, the developer confirms - it never runs by itself). VS Code: the chat view's query.
+  let filled = false;
+  if (/cursor/i.test(vscode.env.appName || '')) {
+    // ⚠ Cursor drops a prompt after a "&" and refuses ".env" in it - PROMPT has neither.
+    const link = 'cursor://anysphere.cursor-deeplink/prompt?text=' + encodeURIComponent(prompt);
+    filled = await vscode.env.openExternal(vscode.Uri.parse(link));
+  } else {
+    try {
+      await vscode.commands.executeCommand('workbench.action.chat.open', { query: prompt, isPartialQuery: true });
+      filled = true;
+    } catch { /* no chat view in this editor */ }
+  }
+  vscode.window.showInformationMessage(filled
+    ? `Czartup build kit for ${s.czarter} is here. The build prompt is in the agent chat - send it to start. ` +
+      `When the server is done, submit it with Magertron: Submit.`
+    : `Czartup build kit for ${s.czarter} is here. Paste the build prompt (on your clipboard) into the agent chat. ` +
+      `When the server is done, submit it with Magertron: Submit.`);
+}
+
 export function activate(ctx: vscode.ExtensionContext) {
   channel = vscode.window.createOutputChannel('Magertron');
   ctx.subscriptions.push(channel);
@@ -218,7 +348,9 @@ export function activate(ctx: vscode.ExtensionContext) {
       (uri?: vscode.Uri) => submit(ctx, uri)),
     vscode.commands.registerCommand('magertron.status',
       () => status(ctx)),
+    vscode.window.registerUriHandler({ handleUri: (uri: vscode.Uri) => pullBuild(ctx, uri) }),
   );
+  void openKit(ctx);
 }
 
 export function deactivate() { /* nothing to clean up */ }
