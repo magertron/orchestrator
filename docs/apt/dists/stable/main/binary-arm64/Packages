@@ -1,16 +1,16 @@
 Package: czartup
 Architecture: all
-Version: 0.2.95
+Version: 0.2.100
 Priority: optional
 Section: utils
 Maintainer: Magertron, LLC <support@magertron.com>
 Depends: python3 (>= 3.8)
-Filename: pool/main/c/czartup/czartup_0.2.95_all.deb
+Filename: pool/main/c/czartup/czartup_0.2.100_all.deb
 Size: 8868
-MD5sum: d4bd71190a9364bb38c09f27e4f5d8fa
-SHA1: 6dbb6fb92abfebf2b5815a010370de6d37cf351a
-SHA256: 75c0a0b5ad44405480de4e4b5edcd4fafe02e0959145c37c3fb61fd77db24259
-SHA512: 0ccafdf50ec99771ac74ed6705e00cf30d498591ee8d05627214b9a07a04bcdfff5d06b91a613d847c9260a46bf0f6092ecb48b8c57473f76ab7e7b8a18834c7
+MD5sum: aa4604a9b4ab0f3c185e4c2c0228f2ef
+SHA1: 0be7022a5279b1b6cfb603a80ec20b325affb5a0
+SHA256: 57c4e3d66bd722c194c40f24b269a0fe3de359cbdf227fab437b6b1adb1f05bd
+SHA512: 56d769a10f47698b01218831f08be336863b3c8d7f654ca30cdc0a396a9c1e7439365a97c414daa614c0ce75abdaad06e86a753f06094a0fc5e40c15e92ce54c
 Homepage: https://magertron.com
 Description: Magertron Czartup command line
  The Czartup verbs from the terminal: login, describe, setup, build, update,
