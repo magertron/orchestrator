@@ -1,32 +1,32 @@
 Architectures: amd64 arm64
 Codename: stable
 Components: main
-Date: Tue, 24 Nov 2026 19:06:28 +0000
+Date: Tue, 24 Nov 2026 19:21:54 +0000
 Description: Magertron official APT repository
 Label: Magertron
 Origin: Magertron
 Suite: stable
 MD5Sum:
- e66468fee5c4b9e04202e1a61e5683cf              195 Release
- 4c4640c28714e82e37da0cd82ebee834             8255 main/binary-amd64/Packages
- 43fbd8a2ec9f4ea3b280020b030d6b6a             2434 main/binary-amd64/Packages.gz
- 334512dc541882cc2f21222a9bbdc186             8255 main/binary-arm64/Packages
- 6f34a33ccde010670013e54a74049b59             2443 main/binary-arm64/Packages.gz
+ 26893b89223e60a5865f5f6429ed111d              195 Release
+ ea800416c88e8dd66fdb7e6504629cfd             8255 main/binary-amd64/Packages
+ 1a237d768330dd8fc4e7a540965694dc             2435 main/binary-amd64/Packages.gz
+ a780233fc0e83e1a04bf7b610431c112             8255 main/binary-arm64/Packages
+ 7a2f88735873f045ef6f7a988201ac7c             2442 main/binary-arm64/Packages.gz
 SHA1:
- 3a41520bb8e53096c5b66aaae0d5141293a302c3              195 Release
- 037a532f912f2001d17b3ba79a735a4d0ec6e024             8255 main/binary-amd64/Packages
- 15f8a4eb8ea11bf57b7d6b6abdf0455aaf2072dd             2434 main/binary-amd64/Packages.gz
- 4f5bf15aab546fd725cc45b5a737945892fffb59             8255 main/binary-arm64/Packages
- d9174639ad982ab6e2a737c7fec111063e54ad99             2443 main/binary-arm64/Packages.gz
+ bd4f0b70432efd9b467f702c6e9de6ce5ea99062              195 Release
+ fcb3248c559934d10a3cfce34fcfd0ca7af1aa24             8255 main/binary-amd64/Packages
+ a30a1657c236019e1154393f5594cd78a6ba3f54             2435 main/binary-amd64/Packages.gz
+ f34f1d771b64ec84e53448f2a7536112b8866744             8255 main/binary-arm64/Packages
+ aed54666ca52d3b57aec002aeb02b6599731fc32             2442 main/binary-arm64/Packages.gz
 SHA256:
- e75d1ba6ce3b39476fdd179688ab91333258decbdf4d155e739d0a03f3be8d88              195 Release
- 5a71f308ff7d285ebf7e002fbc9e6b8847e8bc743154c29f4c58b4fd854c7922             8255 main/binary-amd64/Packages
- b435fda9f36d08582375c4812c361946b59855d4898ec99df8fcb734400e2c29             2434 main/binary-amd64/Packages.gz
- 921d62e0da1d1f9ecf4a65ea06dffea07c7a6d08dd27572c9acadaf7d3d11fef             8255 main/binary-arm64/Packages
- c918c68a103288e389b1c13aad1445895d75530d3df191f8c508281156597616             2443 main/binary-arm64/Packages.gz
+ d68630a3516918493c1b8ea20d597711194347e65babd9487b9424ce6ee01318              195 Release
+ 9eade76cf10d7bb464157d78d6412a893209f3baac34edf74cf65d244b818ed4             8255 main/binary-amd64/Packages
+ b52be3dbe0aca412a8b071ec86223f95ae3d7387c80096fab88e4c9e02f23831             2435 main/binary-amd64/Packages.gz
+ 09cc4cf71999f27c87606da36eceab00c8076b37ed1c764f6f4d19059adaec43             8255 main/binary-arm64/Packages
+ 18f2eeff731d8c552ea16716994d7ddaabc090eeaa1a67b29cc71d506c2b71f3             2442 main/binary-arm64/Packages.gz
 SHA512:
- c5440e9b9417b42c82b13e0d0191b790a656a3fdc0c84aaf0c74dc5a2db4623017e3798f5426cad95a5b97c573861f66b3c09b635c65f1b73770284b9e35c9e7              195 Release
- ad15be8a0c3e1c47e686df319a84d28d29bdb84044fcbb2d24170a08a547cf71a0644fc59032b60be786bcc49d5c3be15ad3a850f69759b2e8e24450d61e41fe             8255 main/binary-amd64/Packages
- cb58f325007c64a3d1c13fa4e652eeecdb8efc296c9d29974a9f886fd48d2a8580e5d14bc5f1989c1d132b70dff71a7f5a8b36bedde6bd49631d251d2f2285d7             2434 main/binary-amd64/Packages.gz
- cd377ae9c43a19d43e92eacf5d679afc9cee36b8b6b2392d630519beb51d8c6be8e41e9c1c189356b0c7d4bbdff596735e2468072d799cfeacb09c2b4ec4d5d1             8255 main/binary-arm64/Packages
- b75be252bd0559457c910bce6d3c26c48d7a283aa9c8e1131c931080495677573967523e6a869e61ff7ff9500c825a895dad5a783003b91acd6c063279e64ac7             2443 main/binary-arm64/Packages.gz
+ 1f46016cb4a6196ea0788031a8bb763d45cac4bef7ebc3cf596901a864e8ab2ac5942b9f71bea6253ece1bb8ee371418b428f68fcb09fcb0f86080c151ebcd2b              195 Release
+ bc45367808e7f2885d59ee1b9ef04519c21f68ea9dcfd8f2ef2cd55c02497fa3918ac9bea9b42a3144a31bf79e4c3145c922851802e3c751c19fdab20ced5442             8255 main/binary-amd64/Packages
+ 25c8bb945e10a97f3bfe2f1bb932dc690c2053b2e251b17ce211b9823b7c50855852b28ee24d46df485a46eb2821ae0dfa38eb17df95238fe21d060ceeacf452             2435 main/binary-amd64/Packages.gz
+ 03c210fbf96eae34fd1c29bdf2086b23b12ec310ac02c5a196cb2b1c27263ab0ea5fdd90fc76a7f82bc7aaf1b0f2828d68e4fb7389c92be69473dec9ce70aa89             8255 main/binary-arm64/Packages
+ 2f41c8f0561ddc3a13a6b6b29550a69e9d219a62bbd00a964deb023b7815fe0483109c560686cc5db74459ddfb0c2edaf7b4ab43dcce8bf58b45b6bcdba280e0             2442 main/binary-arm64/Packages.gz
