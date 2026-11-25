@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="color-scheme" content="dark">
+<style id="mag-dark-first">html{background:#06080c}</style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
 <script>
@@ -621,6 +623,54 @@ body { overflow-x: clip; }
   .hs-card { position: relative; right: auto; bottom: auto; width: 94%; margin: -28px 0 0 auto; }
 }
 </style>
+<style id="mag-colonel">
+/* AgentColonel(TM): the live feed (2026-11-25) */
+.mc-feed { max-width: 860px; margin: 0 auto; background: #080b11; border: 1px solid #1d2638; border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 60px rgba(37,99,235,.10); overflow: hidden; text-align: left; }
+.mc-bar { display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-bottom: 1px solid #1a2130;
+  font: 500 12px var(--mono, monospace); color: #7d8aa0; letter-spacing: .04em; }
+.mc-bar i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+.mc-bar span:last-child { margin-left: auto; }
+.mc-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 18px; align-items: center; padding: 15px 18px;
+  border-bottom: 1px solid #121826; font: 13.5px var(--mono, monospace); opacity: 0; animation: mcIn .5s ease-out forwards; }
+.mc-row:last-child { border-bottom: 0; }
+.mc-row:nth-child(2) { animation-delay: .3s } .mc-row:nth-child(3) { animation-delay: 1.1s }
+.mc-row:nth-child(4) { animation-delay: 1.9s } .mc-row:nth-child(5) { animation-delay: 2.7s }
+.mc-who { color: #e8ecf4; font-weight: 500; }
+.mc-who small { display: block; font-size: 11px; color: #5d6a80; font-weight: 400; margin-top: 2px; }
+.mc-what { color: #9aa6ba; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-v { font: 600 11px var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px;
+  border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.mc-no { color: #ff7a7a; border-color: rgba(255,122,122,.45); background: rgba(255,122,122,.08); }
+.mc-ok { color: #4cc98a; border-color: rgba(76,201,138,.4); background: rgba(76,201,138,.07); }
+@keyframes mcIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mc-row { animation: none; opacity: 1; } }
+.mc-say { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 28px; margin: -6px auto 0; max-width: 860px;
+  font-size: 15px; color: var(--text-secondary, #8694a8); }
+.mc-say b { color: var(--text, #e8ecf4); font-weight: 600; }
+.mc-mode { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 34px auto 0; flex-wrap: wrap;
+  font-size: 15px; color: var(--text-secondary, #8694a8); }
+.mc-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: #0c1018; border: 1px solid #1d2638;
+  font: 600 12px var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
+.mc-switch span { padding: 6px 14px; border-radius: 999px; color: #5d6a80; }
+.mc-switch span:last-child { color: #fff; background: #2563eb; animation: mcFlip 4s ease-in-out infinite alternate; }
+@keyframes mcFlip { 0%,45% { background: transparent; color: #5d6a80; } 55%,100% { background: #2563eb; color: #fff; } }
+.mc-line { text-align: center; font-size: 14px; color: var(--text-secondary, #8694a8); margin: 26px auto 0; max-width: 720px; line-height: 1.6; }
+.mc-under { text-align: center; font-size: 12.5px; color: var(--text-tertiary, #6b7789); margin: 12px auto 0; line-height: 1.6; }
+.mc-steps-h { text-align: center; font-family: var(--serif, Inter, sans-serif); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 22px; color: var(--text, #e8ecf4); }
+.mc-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; position: relative; }
+.mc-steps::before { content: ""; position: absolute; top: 15px; left: 16%; right: 16%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(96,165,250,.5), rgba(167,139,250,.5), transparent); }
+.mc-steps li { position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mc-n { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font: 600 13px var(--mono, monospace); color: #60a5fa; background: #0c1018; border: 1px solid rgba(96,165,250,.6);
+  margin-bottom: 6px; position: relative; z-index: 1; }
+.mc-steps b { font-size: 15px; color: var(--text, #e8ecf4); font-weight: 600; }
+.mc-steps li > span:last-child { font-size: 14px; color: var(--text-secondary, #8694a8); line-height: 1.55; max-width: 240px; }
+@media (max-width: 760px) { .mc-steps { grid-template-columns: 1fr; gap: 20px; } .mc-steps::before { display: none; } }
+.mc-link { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--accent-text, #60a5fa); }
+@media (max-width: 700px) { .mc-row { grid-template-columns: 1fr auto; } .mc-what { grid-column: 1 / -1; grid-row: 2; white-space: normal; } }
+</style>
 </head>
 <body>
 
@@ -636,7 +686,7 @@ body { overflow-x: clip; }
           <a href="data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
           <a href="agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
           <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS™</span></a>
-          <a href="solutions-shadow-ai.html" class="mag-pm" style="color: var(--text);"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#fff"/></g></svg><span>ToolScout™</span></a>          <a href="/czartup/" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5 10 12l-3.5 3.5"/><path d="M12 16h5.5"/></g></svg><span>Czartup™</span></a>
+          <a href="solutions-shadow-ai.html" class="mag-pm" style="color: var(--text);"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#fff"/></g></svg><span>ToolScout™</span></a><a href="agentcolonel.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8.5 12 6l5 2.5"/><path d="M7 12.5 12 10l5 2.5"/><path d="M7 16.5 12 14l5 2.5"/></g></svg><span>AgentColonel™</span></a>          <a href="/czartup/" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5 10 12l-3.5 3.5"/><path d="M12 16h5.5"/></g></svg><span>Czartup™</span></a>
         </div>
       </div>
       <div class="nav-drop on">
@@ -679,8 +729,8 @@ body { overflow-x: clip; }
 <section class="hero">
   <div class="container">
     <div style="font-size: 14px; font-weight: 700; letter-spacing: .06em; opacity: .75; margin-bottom: 14px;">Magertron ToolScout™</div>
-    <h1 style="font-size: clamp(34px, 5vw, 56px);">See every AI agent on every laptop<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>Then decide what it may do</em></span></h1>
-    <p class="lede" style="max-width: 660px; margin: 18px auto 0;">Developers add MCP servers to Claude, Cursor, VS Code and Devin every day, and their AI agents run commands and open files nobody approved. ToolScout™ shows you every MCP server on every laptop you manage, approved or not, and holds every agent action to your rules before it happens.</p>
+    <h1 style="font-size: clamp(34px, 5vw, 56px);">See every AI agent on every laptop<span class="sol-sub" style="display: block; font-size: 0.42em; margin-top: 14px;"><em>Then apply governance</em></span></h1>
+    <p class="lede" style="max-width: 660px; margin: 18px auto 0;">ToolScout™ discovers MCP servers on every laptop, approved or not, and holds every agent action to your enterprise rules before it happens.</p>
     <figure class="hs" aria-label="Magertron ToolScout governing an AI agent on a laptop">
       <div class="hs-laptop">
         <div class="hs-lid"><img src="screenshots/toolscout-hero-cursor.png" alt="Cursor on a developer laptop: the agent is asked to read .env and run cat .env, and refuses both under Magertron policy: secrets files are off limits to AI agents." width="1249" height="796"></div>
@@ -772,6 +822,17 @@ body { overflow-x: clip; }
   <img src="screenshots/submitted-servers.png" alt="Magertron's Submitted Servers view: MCP servers reported by MDM and awaiting review, with transport, endpoint, who reported them, sightings and last seen. Known, not governed until onboarded." style="display:block;width:100%;height:auto;border-radius:8px">
 </figure>
 
+<section id="agentcolonel" class="cta" style="margin:16px auto 0;max-width:1000px;width:100%;padding:40px 0 24px">
+  <div class="cta-box">
+    <div style="font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#60a5fa;margin-bottom:12px;position:relative">Magertron AgentColonel&trade;</div>
+    <h2 style="font-size:clamp(28px,3.4vw,40px);margin:0">Then make the rules hold</h2>
+    <p style="max-width:640px;margin:14px auto 28px;text-align:center">Finding every agent is half the job. AgentColonel&trade; enforces your policy at the operating system, below every agent, so no prompt or workaround gets past it.</p>
+    <div class="cta-actions">
+      <a href="agentcolonel.html" class="btn-primary" style="background:#2563eb;color:#fff;border-color:#2563eb">See AgentColonel&trade; &rarr;</a>
+    </div>
+  </div>
+</section>
+
 <section class="xs-cta" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
   <a href="https://signup.magertron.com/" class="cta-a primary">Try it now</a>
   <a href="security.html" class="cta-a ghost">Read the security guide</a>
@@ -825,6 +886,7 @@ body { overflow-x: clip; }
           <li><a href="agentczar.html">AgentCzar&trade;</a></li>
           <li><a href="solutions-saas.html">AgentSaaS&trade;</a></li>
           <li><a href="solutions-shadow-ai.html">ToolScout&trade;</a></li>
+          <li><a href="agentcolonel.html">AgentColonel&trade;</a></li>
           <li><a href="pricing.html">Pricing</a></li>
           <li><a href="index.html#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
