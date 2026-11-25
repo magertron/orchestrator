@@ -597,8 +597,8 @@ body { overflow-x: clip; }
 </style>
 <style id="mag-hero-shot">
 /* ToolScout hero shot (2026-11-24): real screenshots, laptop + floating console card */
-.hs { position: relative; max-width: 1000px; margin: 48px auto 88px; padding: 0 0 56px; text-align: left; }
-.hs-laptop { width: 80%; }
+.hs { position: relative; max-width: 900px; margin: 48px auto 72px; padding: 0 0 24px; text-align: left; }
+.hs-laptop { width: 70%; }
 .hs-lid { background: #0a0c11; border: 1px solid #262b36; border-radius: 16px 16px 6px 6px;
   padding: 12px 12px 16px; box-shadow: 0 40px 90px rgba(0,0,0,.65), inset 0 0 0 1px rgba(255,255,255,.03); }
 .hs-lid img { display: block; width: 100%; height: auto; border-radius: 4px; }
@@ -606,7 +606,7 @@ body { overflow-x: clip; }
   background: linear-gradient(#4a505c, #23272f 60%, #15181e); box-shadow: 0 18px 30px rgba(0,0,0,.55); }
 .hs-base::after { content: ""; display: block; width: 16%; height: 5px; margin: 0 auto;
   background: #2c313b; border-radius: 0 0 8px 8px; }
-.hs-card { position: absolute; right: 0; bottom: 8px; width: 58%; background: #0a0e17;
+.hs-card { position: absolute; right: 0; bottom: 8px; width: 60%; background: #0a0e17;
   border: 1px solid rgba(96,165,250,.35); border-radius: 12px; overflow: hidden;
   box-shadow: 0 30px 70px rgba(0,0,0,.75), 0 0 48px rgba(37,99,235,.22); }
 .hs-card-bar { display: flex; align-items: center; gap: 8px; padding: 9px 14px;
@@ -615,13 +615,10 @@ body { overflow-x: clip; }
 .hs-card-bar i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e;
   box-shadow: 0 0 8px #22c55e; }
 .hs-card img { display: block; width: 100%; height: auto; }
-.hs-note { position: absolute; left: 0; bottom: 0; font-size: 13px; color: var(--text-secondary, #9aa4b5); }
-.hs-note b { color: var(--accent-text, #60a5fa); font-weight: 600; }
 @media (max-width: 760px) {
   .hs { padding-bottom: 0; margin-bottom: 56px; }
   .hs-laptop { width: 100%; }
   .hs-card { position: relative; right: auto; bottom: auto; width: 94%; margin: -28px 0 0 auto; }
-  .hs-note { position: static; margin-top: 14px; text-align: center; }
 }
 </style>
 </head>
@@ -693,11 +690,11 @@ body { overflow-x: clip; }
         <div class="hs-card-bar"><i></i>Magertron ToolScout&trade;</div>
         <img src="screenshots/toolscout-hero-activity.png" alt="Magertron Agent Activity: Cursor's git push --force was asked for approval under the force-push rule; Cursor and Claude Code reads of .env were denied under the secrets-files rule." width="1081" height="333" loading="eager">
       </div>
-      <figcaption class="hs-note"><b>Real product.</b> Not a mockup.</figcaption>
     </figure>
   </div>
 </section>
 <div class="xs"><div class="xs-wrap">
+<h2 style="margin:0 auto -28px;max-width:800px;width:100%;font-family:var(--serif);font-size:clamp(26px,3vw,34px);font-weight:700;letter-spacing:-0.03em;text-align:center">How it Works</h2>
 <figure class="figure" style="margin:0 auto;max-width:800px;width:100%">
 <div class="scroll">
 <svg class="arch" viewBox="0 0 860 540" role="img" aria-labelledby="shTitle shDesc" style="min-width:760px">
