@@ -32,7 +32,7 @@ openapi: 3.1.0
 
 info:
   title: Magertron™ Platform API
-  version: "1.1.0"
+  version: "1.4.0"
   summary: Governed control plane for MCP servers, agents and their traffic.
   description: |
     Magertron™ sits between agents and the MCP servers, LLM providers and REST
@@ -225,6 +225,43 @@ tags:
     description: Enumerating tenants.
   - name: System
     description: Preview. Host health.
+  - name: AI Estate
+    description: |
+      Preview. AI agents on managed laptops: what each device reports (fleet
+      sync), the agent hooks policy, the per-action decision the hook asks
+      for, and device hook keys. Six agents are hooked: Claude Code, Cursor,
+      Codex, Gemini CLI, Windsurf and GitHub Copilot CLI.
+  - name: Holds
+    description: |
+      Preview. Calls and agent actions waiting for a person's approval — from
+      the gateway and from laptops (namespace `_endpoint`).
+  - name: Service accounts
+    description: |
+      Preview. Machine identities: create, list, change, rotate and revoke the
+      accounts automation and agents sign in as. Admin-only (ManageRoles).
+  - name: Webhooks
+    description: |
+      Preview. Outbound notifications: deployments, failures, holds and
+      service-account expiry, POSTed to your endpoint and optionally signed.
+  - name: Audit
+    description: |
+      Preview. Reading the audit trail and the signed authority record of a
+      turn, for a SIEM pull or an auditor.
+  - name: External policy
+    description: |
+      Preview. Enterprise. The customer's own policy decision point (OPA):
+      its status, which namespaces ask it, the allowances it reads, and dry
+      runs. The policy itself stays in git — there is no API to edit Rego.
+  - name: PII
+    description: |
+      Preview. Personal data on model calls: the estate default, per-server
+      settings, the detector (regex or Presidio) and the Never redact list.
+  - name: Agent protection
+    description: |
+      Preview. What an agent must prove before it acts for a person: a person
+      behind the call, bound delegation, the person's MFA, key-bound tokens,
+      agents' sign-in keys, and how each identity provider's tokens are read.
+      Changes need system:platform-admin.
 
 # =============================================================================
 paths:
@@ -1265,6 +1302,1885 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/NotLeader" }
 
+  # ─── AI Estate ──────────────────────────────────────────────────────────
+  /fleet/sync:
+    post:
+      tags: [AI Estate]
+      summary: Report one MCP client config from a device
+      operationId: fleetSync
+      x-stability: preview
+      security:
+        - bearerAuth: []
+        - inventoryToken: []
+      description: |
+        Called by the fleet script (MDM, Ansible or by hand) once per config
+        file it finds, and once with no file when it finds none, so the device
+        still checks in.
+
+        ⚠ **Rewriting is policy, not a request parameter.** `mode` in the
+        response is whatever the tenant's fleet rewrite mode resolves to;
+        a caller cannot ask for `enforce`.
+
+        ⚠ `env` and `headers` values, and secrets in `args` / URLs, are masked
+        on the device before sending. `config_sha256` is of the original file,
+        so change detection still works.
+
+        The response also carries the agent hooks mode, which the script uses
+        to install or remove the hooks on the device.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FleetSyncRequest" }
+      responses:
+        "200":
+          description: Recorded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FleetSyncResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /inventory/agents:
+    get:
+      tags: [AI Estate]
+      summary: List devices, or one device's MCP servers
+      operationId: listInventoryAgents
+      x-stability: preview
+      description: |
+        Without `include`, one row per (token subject, device). With
+        `include=servers` and `host_id`, every MCP server declared on that
+        device, with how it is routed — the AI Estate → Devices view.
+      parameters:
+        - name: agent_id
+          in: query
+          schema: { type: string }
+          description: Only devices reporting under this token subject.
+        - name: host_id
+          in: query
+          schema: { type: string, pattern: "^[A-Za-z0-9._:-]+$" }
+          description: The device. Required with `include=servers`.
+        - name: include
+          in: query
+          schema: { type: string, enum: [servers] }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: |
+            `items` holds `InventoryAgent` rows, or `DeviceServer` rows with
+            `include=servers`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: "#/components/schemas/InventoryAgent"
+                        - $ref: "#/components/schemas/DeviceServer"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /settings/endpoint-hooks:
+    get:
+      tags: [AI Estate]
+      summary: Get the agent hooks policy
+      operationId: getEndpointHooks
+      x-stability: preview
+      description: Every key is present; gaps are filled with defaults.
+      responses:
+        "200":
+          description: The policy.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EndpointHookPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [AI Estate]
+      summary: Change the agent hooks policy
+      operationId: putEndpointHooks
+      x-stability: preview
+      description: |
+        Send only the keys to change. `rules`, when sent, replaces the whole
+        list. Each change is audited as `EndpointHookPolicyChanged`.
+
+        ⚠ **Two speeds.** `mode` and `fail` reach laptops at their next MDM
+        check-in (that is when hooks are installed or removed). Rules and the
+        other settings apply to the next decision, within ~10 s on every
+        replica.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EndpointHookPolicy" }
+      responses:
+        "200":
+          description: The policy after the change.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EndpointHookPolicy" }
+        "400":
+          description: |
+            A value out of range, an unknown action, or a rule whose `match` is
+            not a valid regular expression. The message names which.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /endpoint/decide:
+    post:
+      tags: [AI Estate]
+      summary: May this agent action run?
+      operationId: endpointDecide
+      x-stability: preview
+      security:
+        - deviceKey: []
+        - bearerAuth: []
+      description: |
+        Called by `magertron-hook` on the laptop before an agent runs a
+        command, reads or edits a file, fetches a URL or calls an MCP tool.
+        Tool names arrive in Claude Code's vocabulary whichever agent asked
+        (`Bash`, `Read`, `Write`, `Edit`, `WebFetch`, `WebSearch`, `mcp__…`),
+        so one rule list covers every agent.
+
+        With a **device key** the device is the key's, never the body's
+        `device_id`. With a JWT (admins, tests) `device_id` is a claim.
+
+        **Hold.** A `hold` answer carries `hold_id`; the hook re-asks with it
+        every few seconds, up to `wait_seconds`. An approval releases this
+        exact action once; a decline denies it.
+
+        **Rate limit.** Over `device_rate_per_minute`, enforce mode answers
+        `deny` with `rule: rate-limit` (observe answers `allow`). Re-asks
+        about a real pending hold are not counted.
+
+        **Audit.** Deny, ask and hold are written one by one
+        (`EndpointToolDecision`); plain allows are counted into
+        `EndpointToolAllowSummary` unless `allow_audit` is `all`.
+
+        `{"ping": true}` checks a key without asking anything.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EndpointDecideRequest" }
+      responses:
+        "200":
+          description: |
+            The decision, or `{"ok": true, "device_id": …}` for a ping.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EndpointDecision" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /endpoint/enroll:
+    post:
+      tags: [AI Estate]
+      summary: Issue a device its own hook key
+      operationId: endpointEnroll
+      x-stability: preview
+      security:
+        - inventoryToken: []
+        - bearerAuth: []
+      description: |
+        Called by the fleet script, as root, with the MDM inventory token. The
+        key it returns (`mhk.…`) can ask `/endpoint/decide` about this device
+        and nothing else. Audited as `EndpointDeviceEnrolled`.
+
+        ⚠ **Enrolling again replaces the device's key**; the old one stops
+        working. Anyone holding the MDM token can enroll any device id — the
+        MDM token is the trust anchor, and it lives root-only on managed
+        machines.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_id]
+              properties:
+                device_id: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$" }
+                hostname: { type: string, maxLength: 255 }
+                mdm: { type: string, description: "jamf | intune | manual | …", default: unknown }
+      responses:
+        "200":
+          description: The key. Shown once; store it root-owned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hook_token: { type: string, example: "mhk.Y3phcg.…" }
+                  device_id: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /endpoint/devices/{deviceId}/key:
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$" }
+    delete:
+      tags: [AI Estate]
+      summary: Revoke a device's hook key
+      operationId: revokeEndpointKey
+      x-stability: preview
+      description: |
+        The key stops working at once. ⚠ The device enrolls again at its next
+        check-in (so this is a rotation); revoke its MDM token as well to
+        shut it out. Audited as `EndpointDeviceKeyRevoked`.
+      responses:
+        "200":
+          description: Revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revoked: { type: boolean, const: true }
+                  device_id: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ─── Holds ──────────────────────────────────────────────────────────────
+  /holds:
+    get:
+      tags: [Holds]
+      summary: List holds you may see
+      operationId: listHolds
+      x-stability: preview
+      description: |
+        Holds you are an approver of, that are for you, or in a namespace you
+        can read. Laptop holds have namespace `_endpoint`.
+      responses:
+        "200":
+          description: Holds, wrapped in a `holds` envelope.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  holds:
+                    type: array
+                    items: { $ref: "#/components/schemas/Hold" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /holds/{holdId}:
+    parameters:
+      - $ref: "#/components/parameters/HoldId"
+    get:
+      tags: [Holds]
+      summary: Get a hold
+      operationId: getHold
+      x-stability: preview
+      responses:
+        "200":
+          description: The hold.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /holds/{holdId}/approve:
+    parameters:
+      - $ref: "#/components/parameters/HoldId"
+    post:
+      tags: [Holds]
+      summary: Approve a hold
+      operationId: approveHold
+      x-stability: preview
+      description: |
+        Releases the held call once: the identical call, resubmitted, goes
+        through. Audited as `HoldApproved`.
+
+        ⚠ The person a hold is for never decides it, and an agent alone never
+        decides its own. When the hold names approvers, only they may decide.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HoldDecision" }
+      responses:
+        "200":
+          description: The hold, now approved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The hold is no longer pending (approved, declined, consumed or expired).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /holds/{holdId}/decline:
+    parameters:
+      - $ref: "#/components/parameters/HoldId"
+    post:
+      tags: [Holds]
+      summary: Decline a hold
+      operationId: declineHold
+      x-stability: preview
+      description: |
+        The held call, resubmitted, is refused with the note. Audited as
+        `HoldDeclined`. Same rules on who may decide as approve.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HoldDecision" }
+      responses:
+        "200":
+          description: The hold, now declined.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The hold is no longer pending.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  # ─── Service accounts ───────────────────────────────────────────────────
+  /service-accounts:
+    get:
+      tags: [Service accounts]
+      summary: List service accounts
+      operationId: listServiceAccounts
+      x-stability: preview
+      description: |
+        Active accounts (not revoked, not expired), newest first, with
+        `last_used_at` taken from the audit log — service accounts never log in,
+        so this is the only "last seen" there is.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: cursor, in: query, schema: { type: string }, description: "`next_cursor` from the previous page." }
+        - { name: organization_id, in: query, schema: { type: string, format: uuid }, description: Defaults to the default organization. }
+      responses:
+        "200":
+          description: One page.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/ServiceAccount" } }
+                  next_cursor: { type: string, description: Absent on the last page. }
+                  total: { type: integer, description: Size of the whole filtered set, not the page. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Service accounts]
+      summary: Create a service account
+      operationId: createServiceAccount
+      x-stability: preview
+      description: |
+        Creates the account and returns its token **once**, in `token`. It is
+        not retrievable afterwards — store it before doing anything else.
+
+        ⚠ **`subject` is permanent and is what every grant is keyed on.** It
+        becomes the token's `sub`; it cannot be patched. Name it for the job:
+        `ci-provisioner`, `finance-export`.
+
+        ⚠ **`organization_id` is required.** Single-organization installs use the
+        default organization's id — read it from `GET /orgs`.
+
+        Audited as `ServiceAccountCreated`. Capped per license tier: `402` when
+        the cap is reached (existing accounts above a cap are kept; only new
+        ones are refused).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateServiceAccount" }
+      responses:
+        "201":
+          description: Created. `token` is shown this once.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccountWithToken" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402":
+          description: The license tier's service-account cap is reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  tier: { type: string }
+                  current: { type: integer }
+                  limit: { type: integer }
+                  upgrade_url: { type: string }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /service-accounts/_quota:
+    get:
+      tags: [Service accounts]
+      summary: How many service accounts the license allows
+      operationId: getServiceAccountQuota
+      x-stability: preview
+      responses:
+        "200":
+          description: The cap and current use.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tier: { type: string, description: The tier the platform enforces. }
+                  package: { type: string, description: "What was bought (e.g. Business), when the license names one." }
+                  limit: { type: integer }
+                  current: { type: integer, description: Active accounts. }
+                  percent: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /service-accounts/{saId}:
+    parameters:
+      - $ref: "#/components/parameters/ServiceAccountId"
+    get:
+      tags: [Service accounts]
+      summary: Get a service account
+      operationId: getServiceAccount
+      x-stability: preview
+      responses:
+        "200":
+          description: The account. Never contains its token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccount" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Service accounts]
+      summary: Change a service account
+      operationId: updateServiceAccount
+      x-stability: preview
+      description: |
+        Send only what changes. ⚠ **Immutable fields are refused, not
+        ignored:** `id`, `subject`, `organization_id`, `expires_at`,
+        `revoked_at`, `created_at` and `created_by` return `400`.
+
+        ⚠ **New roles reach new tokens, not the one already issued.** A token
+        carries the roles it was minted with; rotate (below) for a running
+        agent to pick up a role change. Audited as `ServiceAccountUpdated`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PatchServiceAccount" }
+      responses:
+        "200":
+          description: The account after the change.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccount" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The account is revoked, or `external_id` is already held by another account.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      tags: [Service accounts]
+      summary: Revoke a service account
+      operationId: revokeServiceAccount
+      x-stability: preview
+      description: |
+        Soft revoke: the row stays, because it owns metering and audit
+        history. The token is refused at once by the replica that answered and
+        within about 30 seconds by every other. Audited as
+        `ServiceAccountRevoked`.
+      responses:
+        "204": { description: Revoked. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /service-accounts/{saId}/rotate:
+    parameters:
+      - $ref: "#/components/parameters/ServiceAccountId"
+    post:
+      tags: [Service accounts]
+      summary: Rotate a service account's token
+      operationId: rotateServiceAccount
+      x-stability: preview
+      description: |
+        Issues a new token for the same `subject`, roles and scopes, with the
+        same lifetime as the original counted from now, and revokes the old
+        one. Audited as `ServiceAccountRotated`.
+
+        ⚠ **The response has a new `id`.** The account keeps its `subject`; its
+        `id` (the token's `jti`) changes. Store the new id, or the next PATCH
+        or DELETE addresses the revoked predecessor.
+
+        ⚠ **The old token stops working at once** (within ~30 s on other
+        replicas). Deploy the new one first if both must overlap — or create a
+        second account, deploy, then revoke the first.
+      responses:
+        "200":
+          description: The new account row and its token, shown this once.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccountWithToken" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The account is revoked; create a new one instead.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /orgs:
+    get:
+      tags: [Service accounts]
+      summary: List organizations
+      operationId: listOrganizations
+      x-stability: preview
+      description: The organization ids `POST /service-accounts` needs. A single-organization install has one, `default`.
+      responses:
+        "200":
+          description: Organizations.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ─── Webhooks ───────────────────────────────────────────────────────────
+  /webhooks:
+    get:
+      tags: [Webhooks]
+      summary: List webhooks
+      operationId: listWebhooks
+      x-stability: preview
+      description: Read from the database, so every replica answers the same. Secrets are never returned.
+      responses:
+        "200":
+          description: Webhooks.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Webhook" } }
+                  total: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Webhooks]
+      summary: Create a webhook
+      operationId: createWebhook
+      x-stability: preview
+      description: |
+        ⚠ **The response names the webhook; it does not carry its id.** List
+        and match on `name` to get the id you need for PUT, DELETE and test —
+        so give each webhook a unique name.
+
+        The URL must be http or https and must not point at an internal or
+        private address (checked now, and again at every delivery, so DNS
+        rebinding does not get round it).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookWrite" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+                  name: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /webhooks/{webhookId}:
+    parameters:
+      - $ref: "#/components/parameters/WebhookId"
+    get:
+      tags: [Webhooks]
+      summary: Get a webhook
+      operationId: getWebhook
+      x-stability: preview
+      responses:
+        "200":
+          description: The webhook, without its secret.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Webhook" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Webhooks]
+      summary: Replace a webhook
+      operationId: updateWebhook
+      x-stability: preview
+      description: |
+        ⚠ **A replace, not a patch.** `name` and `url` are required, and
+        omitted `event_types` / `namespaces` reset to `["*"]` — every event,
+        every namespace. Send the whole webhook.
+
+        ⚠ **Send `secret` again if the webhook is signed.** GET never returns
+        it, so a read-modify-write without it may leave the webhook unsigned
+        *(verify)*.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookWrite" }
+      responses:
+        "200":
+          description: Replaced.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+                  name: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: [Webhooks]
+      summary: Delete a webhook
+      operationId: deleteWebhook
+      x-stability: preview
+      responses:
+        "200": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /webhooks/{webhookId}/test:
+    parameters:
+      - $ref: "#/components/parameters/WebhookId"
+    post:
+      tags: [Webhooks]
+      summary: Send a test notification
+      operationId: testWebhook
+      x-stability: preview
+      description: |
+        Sends one `Test` event now, signed like a real one. Answered by
+        whichever replica you reach, unlike real deliveries, which only the
+        leader sends.
+      responses:
+        "200": { description: Delivered — your endpoint answered 2xx. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: Not delivered — check the URL, and that your endpoint answers 2xx.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  # ─── Audit and evidence ─────────────────────────────────────────────────
+  /audit:
+    get:
+      tags: [Audit]
+      summary: Query the audit log
+      operationId: queryAudit
+      x-stability: preview
+      description: |
+        The append-only audit trail, newest first, OCSF-aligned. Paged by
+        `page` and `size`; for a SIEM pull, page with a `from` window and keep
+        the newest `occurred_at` you have seen.
+
+        ⚠ **`occurred_at` is Unix seconds, as a string** (`"1764021600"`), not
+        an ISO timestamp — while `from` and `to` take ISO 8601.
+
+        ⚠ **`total` can be a floor.** With `total_capped: true` it means
+        "at least this many"; keep paging rather than computing pages from it.
+
+        **Namespace scoping is automatic.** A namespace-confined caller sees
+        only its namespace, and asking for another returns nothing rather than
+        an error.
+
+        Prompt text is never in this list; it is a separate, audited read
+        (`/audit/prompt/{turnId}`).
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, default: 50 } }
+        - { name: kind, in: query, schema: { type: string }, example: EndpointToolDecision, description: One event kind. }
+        - { name: actor, in: query, schema: { type: string }, description: Who authenticated. }
+        - { name: exclude_actor, in: query, schema: { type: string }, description: Leave one actor out — e.g. the drift probe. }
+        - { name: role, in: query, schema: { type: string }, description: Events by actors holding this role at the time. }
+        - { name: namespace, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: delegated, in: query, schema: { type: boolean }, description: Only calls an agent made for a person. }
+        - { name: exclude_handshake, in: query, schema: { type: boolean }, description: Leave out MCP initialize and list calls. }
+        - { name: proposed_by, in: query, schema: { type: string, enum: [assistant] }, description: Only changes applied from an assistant proposal. }
+      responses:
+        "200":
+          description: One page.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/AuditEvent" } }
+                  total: { type: integer }
+                  total_capped: { type: boolean, description: "true: total is a floor, not an exact count." }
+                  page: { type: integer }
+                  size: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /audit/prompt/{turnId}:
+    parameters:
+      - $ref: "#/components/parameters/TurnId"
+    get:
+      tags: [Audit]
+      summary: Read what was asked in one turn
+      operationId: getPromptText
+      x-stability: preview
+      description: |
+        ⚠ **Every read is itself audited** (`PromptRevealed`, naming who read
+        whose question), whether or not a prompt was recorded — "somebody
+        looked" is the fact. Prompts exist only while prompt recording is on
+        (Volume 2, Chapter 32).
+      responses:
+        "200":
+          description: The prompt, or none.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turn_id: { type: string }
+                  prompt: { type: string }
+                  recorded: { type: boolean, description: "false: recording was off for this turn — not an empty prompt." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /audit/turn-costs:
+    get:
+      tags: [Audit]
+      summary: What a set of turns cost
+      operationId: getTurnCosts
+      x-stability: preview
+      parameters:
+        - name: turns
+          in: query
+          required: true
+          schema: { type: string }
+          description: Comma-separated turn ids; at most 100 are read.
+      responses:
+        "200":
+          description: One row per turn that called a model.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        turn_id: { type: string }
+                        model_calls: { type: integer }
+                        input_tokens: { type: integer }
+                        output_tokens: { type: integer }
+                        cached_tokens: { type: integer }
+                        cost_usd: { type: number }
+                        cost_uncached: { type: number, description: What it would have cost with cached tokens billed as ordinary input. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /evidence/public-key:
+    get:
+      tags: [Audit]
+      summary: The key authority records are signed with
+      operationId: getEvidencePublicKey
+      x-stability: preview
+      security: []
+      description: |
+        **No token needed**, deliberately: the verifier is meant to be somebody
+        without an account here.
+
+        ⚠ Fetching the key from the platform means trusting the platform for
+        that fetch. Pin `key_id` out of band at the start of an engagement and
+        check it thereafter (Volume 2, §33.5.3).
+      responses:
+        "200":
+          description: The public key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  public_key_pem: { type: string }
+                  key_id: { type: string, description: The fingerprint to pin. }
+                  algorithm: { type: string, const: RS256 }
+                  shared_with_jwt_key: { type: boolean, description: "true: the install signs records with its JWT key — set MCP_EVIDENCE_PRIVATE_KEY to separate them." }
+        "404":
+          description: No signing key configured; records are unsigned but still reproducible.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /evidence/turns:
+    get:
+      tags: [Audit]
+      summary: Find turns
+      operationId: searchEvidenceTurns
+      x-stability: preview
+      description: |
+        Find an exchange without knowing its turn id — by a name, a server, a
+        tool, a verdict and a window.
+
+        ⚠ **A window over 90 days needs a principal or a server**, and is
+        refused with `400` rather than silently shortened. The window searched
+        is returned with the answer, so "no turns" means "none in this window".
+      parameters:
+        - { name: principal, in: query, schema: { type: string }, description: Either side of a delegation — the agent or the person. }
+        - { name: server, in: query, schema: { type: string } }
+        - { name: tool, in: query, schema: { type: string } }
+        - { name: verdict, in: query, schema: { type: string, enum: [allowed, denied] } }
+        - { name: from, in: query, schema: { type: string, format: date-time }, description: Default 30 days ago. }
+        - { name: to, in: query, schema: { type: string, format: date-time }, description: Default now. }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Matching turns, with the window and filters used.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turns: { type: array, items: { type: object, additionalProperties: true } }
+                  from: { type: string }
+                  to: { type: string }
+                  limit: { type: integer }
+                  count: { type: integer }
+                  filters: { type: object, additionalProperties: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /evidence/turns/{turnId}:
+    parameters:
+      - $ref: "#/components/parameters/TurnId"
+    get:
+      tags: [Audit]
+      summary: One turn's authority record
+      operationId: getTurnEvidence
+      x-stability: preview
+      description: |
+        Who asked, what each gate decided, which rules were in force **at that
+        moment**, and what the record does not know — assembled on read, signed
+        when the install has a key. Verify it outside Magertron with
+        `tools/cfverify` (Volume 2, Chapter 33).
+      responses:
+        "200":
+          description: The record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthorityRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No audit events correlate to this turn — it does not exist, or predates turn correlation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  # ─── External policy ────────────────────────────────────────────────────
+  /governance/pdp:
+    get:
+      tags: [External policy]
+      summary: External policy status
+      operationId: getPdpStatus
+      x-stability: preview
+      description: Whether a PDP is configured, where, which namespaces ask it, its failure mode, this replica's decision counts, and its health.
+      responses:
+        "200":
+          description: Status.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pdp/policy:
+    get:
+      tags: [External policy]
+      summary: The policy the PDP is running
+      operationId: getPdpPolicy
+      x-stability: preview
+      description: Read from the PDP, as it is loaded now. Read-only — change it in git and redeploy (Volume 2, §35.5).
+      responses:
+        "200":
+          description: "`available`, and `policies[]` with each module's `raw` Rego."
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pdp/recommendations:
+    get:
+      tags: [External policy]
+      summary: What to change, from the last 24 hours
+      operationId: getPdpRecommendations
+      x-stability: preview
+      description: |
+        Suggestions from 24 hours of audit and the PDP's own configuration —
+        e.g. money-moving tools that no rule covers, with a starter rule. It
+        suggests; a person writes and ships the policy.
+      responses:
+        "200":
+          description: Recommendations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured: { type: boolean }
+                  window_hours: { type: integer }
+                  audit_ok: { type: boolean }
+                  policy_read: { type: boolean }
+                  items: { type: array, items: { type: object, additionalProperties: true } }
+                  jev: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pdp/test-options:
+    get:
+      tags: [External policy]
+      summary: Choices for a dry run
+      operationId: getPdpTestOptions
+      x-stability: preview
+      description: The subject, server and tool combinations seen in the last 7 days, with each server's type, and the last deny. Cached for 5 minutes per replica.
+      responses:
+        "200":
+          description: Options.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pdp/arg-values/{namespace}/{name}/{nouns}:
+    parameters:
+      - $ref: "#/components/parameters/Namespace"
+      - $ref: "#/components/parameters/ServerName"
+      - name: nouns
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[A-Za-z0-9_,]+$" }
+        example: topics,endpoints
+        description: What to list, comma-separated.
+    get:
+      tags: [External policy]
+      summary: Live values for a dry run's arguments
+      operationId: getPdpArgValues
+      x-stability: preview
+      description: Asks the server's own list tools (e.g. Kafka topics, ZeroMQ endpoints), so a dry run can pick a real value instead of remembering one.
+      responses:
+        "200":
+          description: Values.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /governance/pdp/test:
+    post:
+      tags: [External policy]
+      summary: Ask the PDP about a call, without making it
+      operationId: testPdp
+      x-stability: preview
+      description: |
+        Builds the input the gateway would send for this call and returns the
+        PDP's answer, and the input itself. Never forwarded upstream, counted
+        or recorded.
+
+        Unless `spend` is given, the input carries the person's real
+        month-to-date spend — send `spend` to ask "what if they had spent $40?".
+
+        ⚠ **`in_scope: false` means the gateway would not ask the PDP at all**
+        for this namespace, whatever it answers here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject: { type: string }
+                roles: { type: array, items: { type: string } }
+                on_behalf_of: { type: string }
+                namespace: { type: string }
+                server: { type: string }
+                server_type: { type: string, enum: [mcp, internal, rest, llm], default: mcp }
+                tool: { type: string }
+                arguments: { type: object, additionalProperties: true }
+                spend: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: The PDP's answer.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allow: { type: boolean }
+                  error: { type: boolean, description: "true: no verdict — the PDP was unreachable or answered badly; the gateway would follow its failure mode." }
+                  reason: { type: string }
+                  in_scope: { type: boolean }
+                  input: { type: object, additionalProperties: true, description: Exactly what the PDP was sent. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: No PDP is configured (install with --enable-opa or --pdp-url).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /governance/authz/check:
+    post:
+      tags: [External policy]
+      summary: Would this person's call be allowed now?
+      operationId: checkAuthz
+      x-stability: preview
+      description: |
+        For things one call created and that outlive it — a webhook delivering
+        for 24 hours after it was registered. Their server asks again here, so
+        a removed role or a changed policy stops them within minutes.
+
+        Runs the gateway's own RBAC and PDP checks, live. **Not** checked: tool
+        approval, delegation and merchant entitlement.
+
+        ⚠ **`allowed: null` is not a deny.** It means the PDP gave no verdict;
+        keep things as they are and ask again later.
+        ⚠ **`known_subject: false`** means no such Magertron user — a service
+        identity or a deleted user — and is for the caller to interpret.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, namespace, server, tool]
+              properties:
+                subject: { type: string, description: A Magertron username. }
+                namespace: { type: string }
+                server: { type: string }
+                tool: { type: string }
+                arguments: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: The verdict, and which check decided.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allowed: { type: [boolean, "null"] }
+                  stage: { type: string, enum: [subject, rbac, pdp] }
+                  reason: { type: string }
+                  known_subject: { type: boolean }
+                  roles: { type: array, items: { type: string } }
+                  rbac: { type: [object, "null"], additionalProperties: true }
+                  pdp: { type: [object, "null"], additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /governance/pdp/namespaces:
+    put:
+      tags: [External policy]
+      summary: Set which namespaces ask the PDP
+      operationId: setPdpNamespaces
+      x-stability: preview
+      description: |
+        Replaces the list, live on this replica at once and on the others at
+        their next refresh. Overrides the install's `--pdp-namespaces` until
+        reset (DELETE). Audited as `PdpScopeChanged`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [namespaces]
+              properties:
+                namespaces:
+                  oneOf:
+                    - { type: string, example: "mcp-prod,netops", description: 'Comma list, or "*" for every namespace.' }
+                    - { type: array, items: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/PdpScope" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/PdpNotConfigured" }
+    delete:
+      tags: [External policy]
+      summary: Back to the install's namespaces
+      operationId: resetPdpNamespaces
+      x-stability: preview
+      description: Forgets the console's list; the install's `--pdp-namespaces` applies again.
+      responses:
+        "200": { $ref: "#/components/responses/PdpScope" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/PdpNotConfigured" }
+
+  /governance/pdp/namespaces/{ns}:
+    parameters:
+      - $ref: "#/components/parameters/PdpNamespace"
+    post:
+      tags: [External policy]
+      summary: Add one namespace
+      operationId: addPdpNamespace
+      x-stability: preview
+      description: 'Idempotent: adding one already in scope (or when scope is `*`) answers `changed` false.'
+      responses:
+        "200": { $ref: "#/components/responses/PdpScope" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/PdpNotConfigured" }
+    delete:
+      tags: [External policy]
+      summary: Remove one namespace
+      operationId: removePdpNamespace
+      x-stability: preview
+      description: |
+        ⚠ Refused (`409`) while scope is `*` — set a list first. Refused
+        (`400`) if it would leave no namespace: use `*` or the install's
+        default instead.
+      responses:
+        "200": { $ref: "#/components/responses/PdpScope" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: External Policy is not configured, or scope is every namespace.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /governance/pdp/data:
+    get:
+      tags: [External policy]
+      summary: The allowances the policy reads
+      operationId: getPdpData
+      x-stability: preview
+      description: |
+        Monthly allowances per person and budgets per department, with this
+        month's spend, and the users and departments that may be named.
+        `source` is `console` once saved here, otherwise `opa` (the
+        `--opa-data` file) or `none`.
+      responses:
+        "200":
+          description: The data, and where it came from.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source: { type: string, enum: [console, opa, none] }
+                  data: { $ref: "#/components/schemas/PdpData" }
+                  in_sync: { type: boolean, description: "false: saved, but the bundled OPA has not taken it yet." }
+                  writable: { type: boolean, description: "false: your own PDP — edit its data where it lives." }
+                  primary: { type: boolean }
+                  region: { type: string }
+                  spend: { type: object, additionalProperties: true }
+                  users: { type: array, items: { type: string } }
+                  departments: { type: array, items: { type: string } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [External policy]
+      summary: Change the allowances, live
+      operationId: setPdpData
+      x-stability: preview
+      description: |
+        Stores the numbers and pushes them to the bundled OPA's data API: live
+        in about a second, no restart. Audited as `AllowancesChanged`, naming
+        what changed.
+
+        ⚠ **A replace.** Send the whole `data`; a person left out loses their
+        allowance.
+        ⚠ **Names must exist:** people by Magertron username, departments by
+        name. A name that matches nobody would cap nobody, so it is refused.
+        ⚠ **Bundled OPA only** — `409` with your own PDP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { $ref: "#/components/schemas/PdpData" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved: { type: boolean }
+                  pushed: { type: boolean, description: "false: saved, OPA retried every 30 s until it takes it." }
+                  detail: { type: string }
+                  data: { $ref: "#/components/schemas/PdpData" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Not the bundled OPA.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      tags: [External policy]
+      summary: Back to the data file
+      operationId: resetPdpData
+      x-stability: preview
+      description: |
+        Forgets the console's copy. ⚠ OPA keeps the numbers it holds until its
+        next restart, when it loads the `--opa-data` file again. Audited as
+        `AllowancesReset`.
+      responses:
+        "200": { description: Cleared. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/FeatureRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ─── PII ────────────────────────────────────────────────────────────────
+  /governance/pii:
+    get:
+      tags: [PII]
+      summary: PII settings at a glance
+      operationId: getPiiGovernance
+      x-stability: preview
+      description: The estate default, the detector and its health, the bundled Presidio's state, every PII type, and the Never redact list.
+      responses:
+        "200":
+          description: Settings.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  default_mode: { $ref: "#/components/schemas/PiiMode" }
+                  detector: { type: object, additionalProperties: true }
+                  presidio:
+                    type: object
+                    properties:
+                      state: { type: string, enum: [none, starting, ready, failed] }
+                      managed_by: { type: string, enum: [console, helm] }
+                      name: { type: string }
+                      namespace: { type: string }
+                      url: { type: string }
+                      image: { type: string }
+                      reason: { type: string }
+                  all_types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+                  default_types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+                  presidio_types: { type: array, items: { $ref: "#/components/schemas/PiiType" }, description: Found only with Presidio. }
+                  allow_list: { type: array, items: { type: string } }
+                  allow_list_seeded: { type: boolean, description: "true: the built-in list, never saved here." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /settings/pii-default:
+    get:
+      tags: [PII]
+      summary: The estate default
+      operationId: getPiiDefault
+      x-stability: preview
+      responses:
+        "200":
+          description: The default, and which detector runs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode: { $ref: "#/components/schemas/PiiMode" }
+                  detector: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [PII]
+      summary: Set the estate default
+      operationId: setPiiDefault
+      x-stability: preview
+      description: Applies to every LLM server set to `default`; a server with its own setting keeps it. Live on the next call. Audited as `PiiPolicyChanged`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { $ref: "#/components/schemas/PiiMode" }
+      responses:
+        "200":
+          description: Set.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode: { $ref: "#/components/schemas/PiiMode" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /servers/{namespace}/{name}/pii:
+    parameters:
+      - $ref: "#/components/parameters/Namespace"
+      - $ref: "#/components/parameters/ServerName"
+    get:
+      tags: [PII]
+      summary: One LLM server's PII setting
+      operationId: getServerPii
+      x-stability: preview
+      responses:
+        "200":
+          description: The setting, and what is actually in force.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServerPii" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [PII]
+      summary: Set one LLM server's PII setting
+      operationId: setServerPii
+      x-stability: preview
+      description: |
+        `default` follows the estate default. `types` narrows what is looked
+        for; omitted, the default types apply. Live on the next call. Audited
+        as `PiiPolicyChanged`.
+
+        ⚠ **Types beyond the default six need Presidio** (`presidio_types`):
+        with the regex detector, a server set to find `person` finds nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  type: string
+                  enum: [default, "off", detect, redact, block]
+                types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+      responses:
+        "200":
+          description: The setting after the change.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServerPii" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /governance/pii/detector:
+    put:
+      tags: [PII]
+      summary: Choose the detector
+      operationId: setPiiDetector
+      x-stability: preview
+      description: |
+        `regex` (built in) or `presidio` at a URL. Live on the next PII-checked
+        call on every replica. Audited as `PiiPolicyChanged`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [detector]
+              properties:
+                detector: { type: string, enum: [regex, presidio] }
+                url: { type: string, description: Required for presidio. }
+                threshold: { type: number, minimum: 0, maximum: 1, default: 0.5, description: Presidio's confidence floor. }
+                fail:
+                  type: string
+                  enum: [regex, open]
+                  default: regex
+                  description: "If Presidio is unreachable: fall back to regex, or check nothing."
+                language: { type: string, default: en, pattern: "^[a-z]{2,5}$" }
+      responses:
+        "200":
+          description: All PII settings after the change (as GET /governance/pii).
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pii/detector/test:
+    post:
+      tags: [PII]
+      summary: Check a Presidio URL
+      operationId: testPiiDetector
+      x-stability: preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string }
+      responses:
+        "200":
+          description: Its health.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pii/allow:
+    put:
+      tags: [PII]
+      summary: Replace the Never redact list
+      operationId: setPiiAllowList
+      x-stability: preview
+      description: |
+        Words never treated as personal data — product and brand names a
+        detector would otherwise mistake for a person. A replace. Live on the
+        next call on every replica. Audited as `PiiAllowListChanged`, with the
+        words added and removed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [words]
+              properties:
+                words: { type: array, items: { type: string }, example: [Magertron] }
+      responses:
+        "200":
+          description: All PII settings after the change (as GET /governance/pii).
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/pii/presidio:
+    post:
+      tags: [PII]
+      summary: Deploy the bundled Presidio
+      operationId: deployPresidio
+      x-stability: preview
+      description: |
+        Starts Microsoft Presidio in the platform namespace — about 2 GB of
+        memory. Idempotent. ⚠ Deploying it does not switch the detector: set
+        `detector: presidio` once `state` is `ready`.
+      responses:
+        "200":
+          description: All PII settings (as GET /governance/pii), with Presidio starting.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: [PII]
+      summary: Remove the bundled Presidio
+      operationId: removePresidio
+      x-stability: preview
+      description: |
+        Switches the detector back to regex first if it pointed here, then
+        removes it. ⚠ Refused for a Presidio installed by the chart
+        (`install.sh --enable-presidio`) — upgrade without that flag instead.
+      responses:
+        "200":
+          description: All PII settings (as GET /governance/pii).
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ─── Agent protection ───────────────────────────────────────────────────
+  /settings/agent-protection:
+    get:
+      tags: [Agent protection]
+      summary: Agent protection, per namespace
+      operationId: getAgentProtection
+      x-stability: preview
+      description: |
+        The four switches for every namespace, and **readiness**: the last 7
+        days of token exchanges, per agent — how many delegations were bound,
+        showed the person's MFA, were key-bound — so you can see who would be
+        refused before turning a switch on.
+      responses:
+        "200":
+          description: Settings and readiness.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  namespaces: { type: array, items: { $ref: "#/components/schemas/AgentProtection" } }
+                  binding_mode: { type: string, enum: ["off", warn, enforce], description: The install's MCP_STS_SUBJECT_BINDING. }
+                  binding_mode_set: { type: boolean }
+                  readiness: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [Agent protection]
+      summary: Change agent protection in one namespace
+      operationId: setAgentProtection
+      x-stability: preview
+      description: |
+        Send the namespace and only the switches to change. Live on this
+        replica at once and on the others at their next refresh. Audited as
+        `AgentProtectionChanged`.
+
+        ⚠ **Check readiness first.** Each switch refuses calls that do not meet
+        it, from the next call: an agent that has never shown the person's MFA
+        stops working the moment `require_mfa` is on.
+        ⚠ **Platform admin only** — a namespace admin cannot lift protection
+        from their own namespace.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentProtection" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved: { type: boolean }
+                  namespace: { type: string }
+                  changes: { type: string, example: "+ require a person, + MFA for the person" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /settings/require-person:
+    get:
+      tags: [Agent protection]
+      summary: Namespaces that refuse an agent calling alone
+      operationId: getRequirePerson
+      x-stability: preview
+      description: The same switch as `require_person` in agent protection, as a list.
+      responses:
+        "200":
+          description: The list, where it came from, and the namespaces it may name.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  namespaces: { type: array, items: { type: string } }
+                  source: { type: string }
+                  known_namespaces: { type: array, items: { type: string } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [Agent protection]
+      summary: Replace the list
+      operationId: setRequirePerson
+      x-stability: preview
+      description: |
+        A replace. Only namespaces that have servers may be named. Platform
+        admin only. Audited as `RequirePersonChanged`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [namespaces]
+              properties:
+                namespaces: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved: { type: boolean }
+                  namespaces: { type: array, items: { type: string } }
+                  source: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /settings/agent-keys:
+    get:
+      tags: [Agent protection]
+      summary: Agents' sign-in keys
+      operationId: listAgentKeys
+      x-stability: preview
+      description: Public keys registered per agent, for key-pair sign-in and key-bound tokens. Never private keys.
+      responses:
+        "200":
+          description: Agents and their keys.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subject: { type: string }
+                        client_id: { type: string }
+                        require: { type: boolean, description: "Key-pair only: no other sign-in accepted." }
+                        keys:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              kid: { type: string }
+                              kty: { type: string }
+                              crv: { type: string }
+                              thumbprint: { type: string }
+                              added: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /settings/agent-keys/{subject}:
+    parameters:
+      - name: subject
+        in: path
+        required: true
+        schema: { type: string }
+        description: The agent's subject.
+    put:
+      tags: [Agent protection]
+      summary: Add or remove a key, or set key-pair only
+      operationId: setAgentKeys
+      x-stability: preview
+      description: |
+        One or more of `add_key`, `remove_key`, `client_id`, `require`.
+        Platform admin only. Audited as `AgentKeysChanged`.
+
+        ⚠ **Public keys only.** A JWK with `d` is a private key and is refused
+        — never send one.
+        ⚠ **`require: true` needs a key first.** Turning on key-pair only for
+        an agent with no key would lock it out, so it is refused.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                add_key: { type: object, additionalProperties: true, description: "A public JWK: EC P-256, RSA 2048+ or Ed25519." }
+                remove_key: { type: string, description: The key's thumbprint. }
+                client_id: { type: string, description: '"" clears it.' }
+                require: { type: boolean }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved: { type: boolean }
+                  subject: { type: string }
+                  changes: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /settings/idp-token-rules:
+    get:
+      tags: [Agent protection]
+      summary: How each identity provider's tokens are read
+      operationId: listIdpTokenRules
+      x-stability: preview
+      responses:
+        "200":
+          description: Rules per provider, and the install's defaults.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules: { type: object, additionalProperties: { $ref: "#/components/schemas/IdpTokenRule" } }
+                  default_mfa_acr_values: { type: array, items: { type: string } }
+                  install_allows_password_grant: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /settings/idp-token-rules/{providerId}:
+    parameters:
+      - name: providerId
+        in: path
+        required: true
+        schema: { type: string }
+        description: An SSO provider's id.
+    put:
+      tags: [Agent protection]
+      summary: Change how one provider's tokens are read
+      operationId: setIdpTokenRule
+      x-stability: preview
+      description: |
+        Send only what changes; the rest is kept. Platform admin only. Audited
+        as `IdpTokenRulesChanged`.
+
+        ⚠ **`allow_password_grant: true` weakens delegation.** A password-grant
+        token proves a password, not that the person signed in to this agent;
+        the audit row says so with a warning.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IdpTokenRule" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved: { type: boolean }
+                  id: { type: string }
+                  rule: { $ref: "#/components/schemas/IdpTokenRule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /settings/mfa:
+    get:
+      tags: [Agent protection]
+      summary: Who must use MFA at sign-in
+      operationId: getMfaPolicy
+      x-stability: preview
+      description: |
+        The setting, and a preview of each choice: how many users it covers and
+        **who would be locked out** — people it would require MFA of who have
+        no identity-provider email to complete it with.
+      responses:
+        "200":
+          description: Setting and preview.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  required_for: { type: string, enum: [privileged, everyone] }
+                  preview:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        mfa_users: { type: integer }
+                        without_idp: { type: array, items: { type: string } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [Agent protection]
+      summary: Set who must use MFA
+      operationId: setMfaPolicy
+      x-stability: preview
+      description: |
+        ⚠ Read the preview's `without_idp` first: those people are locked out
+        at their next sign-in. The break-glass account is exempt by design.
+        Audited as `MfaPolicyChanged`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [required_for]
+              properties:
+                required_for: { type: string, enum: [privileged, everyone] }
+      responses:
+        "200":
+          description: The setting and preview after the change.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
 # =============================================================================
 components:
 
@@ -1278,6 +3194,21 @@ components:
         or a token from `/auth/login` for interactive use. The token's `sub` is
         the identity every grant is keyed on; its optional `scopes` claim
         narrows what it may call at the gateway.
+
+    inventoryToken:
+      type: http
+      scheme: bearer
+      description: |
+        A token minted in Inventory → Integration Tokens (`inventory:write`),
+        pasted into the MDM. It can report what a device has, and enroll a
+        device for its hook key; nothing else.
+    deviceKey:
+      type: http
+      scheme: bearer
+      description: |
+        A device's own hook key (`mhk.…`, from `/endpoint/enroll`). It can ask
+        `/endpoint/decide` about that device and nothing else; an admin can
+        revoke it.
 
   parameters:
     Namespace:
@@ -1298,10 +3229,70 @@ components:
         type: string
         pattern: "^[a-z][a-z0-9-]{2,62}$"
       example: alpha-vantage
+    HoldId:
+      name: holdId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ServiceAccountId:
+      name: saId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+      description: The account's `id` (its token's `jti`), not its `subject`.
+    WebhookId:
+      name: webhookId
+      in: path
+      required: true
+      schema: { type: string }
+    TurnId:
+      name: turnId
+      in: path
+      required: true
+      schema: { type: string }
+      description: The `X-Magertron-Turn-Id` of one user message (Volume 2, Chapter 31).
+    PdpNamespace:
+      name: ns
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[a-z0-9-]+$" }
 
   responses:
     Unauthorized:
       description: Missing, malformed or expired token.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    PdpScope:
+      description: The namespaces that ask the PDP now.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              namespaces: { type: string, example: "mcp-prod,netops", description: 'Comma list, or "*".' }
+              namespaces_default: { type: string, description: "The install's --pdp-namespaces." }
+              changed: { type: boolean }
+    PdpNotConfigured:
+      description: External Policy is not configured on this install.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    FeatureRequired:
+      description: |
+        This install's license does not include the feature. Not a permissions
+        problem: no role unlocks it.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: Feature requires a paid license }
+              feature: { type: string, example: webhooks }
+              tier_required: { type: string, enum: [pro, enterprise] }
+              upgrade_url: { type: string }
+    Forbidden:
+      description: Signed in, but not permitted to do this.
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -1947,3 +3938,465 @@ components:
         error: { type: string }
         detail: { type: string }
         hint: { type: string }
+
+    # ── AI Estate (preview, from the handlers, 2026-11-24) ──────────────
+    FleetSyncRequest:
+      type: object
+      required: [client, device_id, hostname, collected_at]
+      properties:
+        client:
+          type: string
+          description: |
+            One of claude-desktop, claude-code, cursor, vscode, windsurf, devin,
+            gemini-cli, cline, roo-code, kiro, amazon-q, codex, zed, continue,
+            goose, claude-code-project. Only some are ever rewritten; see
+            `rewrite_supported` in the response.
+        device_id: { type: string, description: "Platform UUID / MachineGuid, so a rename is the same device." }
+        hostname: { type: string }
+        user: { type: string, description: The console user the script saw. A claim. }
+        mdm: { type: string, default: unknown, description: "jamf | intune | ansible | manual | …" }
+        host_os: { type: string }
+        config_path: { type: string }
+        config_sha256: { type: string, description: SHA-256 of the original file, before masking. }
+        config_contents: { type: string, description: The config as JSON text, secrets masked. }
+        collected_at: { type: string, format: date-time }
+        hooks_state:
+          type: string
+          enum: [installed, none]
+          description: Were the agent hooks on this device when the run started?
+        hooks_agents:
+          type: string
+          example: claude-code,cursor,codex
+          description: |
+            Fleet script 0.7.1+. Which agents the hooks are registered with,
+            comma-separated. Unknown names are dropped.
+    FleetSyncResponse:
+      type: object
+      properties:
+        mode: { type: string, enum: [observe, advise, enforce] }
+        declared: { type: integer, description: Servers the config declares. }
+        observed: { type: integer, description: Sightings recorded. }
+        gateway: { type: integer, description: Declared servers routed through the gateway. }
+        stale: { type: integer, description: Gateway-shaped routes no longer served. }
+        rewrite_supported: { type: boolean }
+        rewrite:
+          description: Null under observe, or when this client is not rewritten.
+          oneOf:
+            - type: "null"
+            - type: object
+              properties:
+                path: { type: string }
+                contents: { type: string }
+                servers: { type: integer }
+        endpoint_hooks:
+          type: object
+          description: What the script should install. The rules stay server-side.
+          properties:
+            mode: { type: string, enum: [off, observe, enforce] }
+            fail: { type: string, enum: [open, closed] }
+    InventoryAgent:
+      type: object
+      properties:
+        agent_id: { type: string, description: The token subject the device reports under. }
+        host_id: { type: string }
+        hostname: { type: string }
+        claimed_user: { type: string }
+        host_os: { type: string }
+        host_os_version: { type: string }
+        agent_version: { type: string, description: "How it reports: jamf | intune | manual | …" }
+        first_seen_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        last_observation_count: { type: integer }
+        hooks_state:
+          type: string
+          example: installed:claude-code,cursor,codex
+          description: |
+            `installed`, `none`, or (fleet script 0.7.1+) `installed:` followed
+            by the agents the hooks are registered with. Absent before 0.3.1.
+        hooks_seen_at: { type: string, format: date-time }
+    DeviceServer:
+      type: object
+      properties:
+        declared_name: { type: string }
+        config_path: { type: string }
+        client: { type: string }
+        route: { type: string, enum: [gateway, gateway_stale, direct, ""] }
+        transport: { type: string }
+        command: { type: string }
+        endpoint_url: { type: string }
+        server_id: { type: string }
+        server_name: { type: string }
+        server_state: { type: string }
+        server_origin: { type: string }
+        last_seen_at: { type: string, format: date-time }
+    EndpointHookRule:
+      type: object
+      required: [id, tool, match, action]
+      properties:
+        id: { type: string }
+        tool:
+          type: string
+          example: Read|Write|Edit|MultiEdit
+          description: Regular expression over the tool name, in Claude Code's vocabulary.
+        match: { type: string, description: Regular expression over the command, path, URL or query. }
+        action: { type: string, enum: [allow, ask, deny, hold] }
+        reason: { type: string, description: Shown to the developer and the agent. }
+        approvers:
+          type: array
+          items: { type: string }
+          description: "hold only: who may approve. Empty = namespace admins."
+    EndpointHookPolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [off, observe, enforce]
+          default: "off"
+          description: off removes the hooks at next check-in; observe records only; enforce blocks.
+        fail:
+          type: string
+          enum: [open, closed]
+          default: open
+          description: What the hook does when Magertron™ is unreachable.
+        rules:
+          type: array
+          items: { $ref: "#/components/schemas/EndpointHookRule" }
+          description: First match wins. A new install starts with five starter rules.
+        hold_wait_seconds: { type: integer, minimum: 0, maximum: 100, default: 60 }
+        hold_ttl_seconds: { type: integer, minimum: 60, maximum: 86400, default: 900 }
+        allow_audit:
+          type: string
+          enum: [summary, all]
+          default: summary
+          description: summary writes one count per device every 5 minutes instead of a row per allow.
+        device_rate_per_minute:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          default: 600
+          description: |
+            Most decisions one device may ask for in a minute; 0 = no limit.
+            ⚠ Counted per orchestrator replica, so N replicas allow up to N ×
+            the limit.
+    EndpointDecideRequest:
+      type: object
+      properties:
+        agent: { type: string, enum: [claude-code, cursor, codex, gemini, windsurf, copilot] }
+        tool: { type: string, example: Bash, description: Required unless ping. }
+        subject: { type: string, maxLength: 2000, description: "The command, path, URL or query. Never file contents." }
+        cwd: { type: string }
+        device_id: { type: string, description: Ignored with a device key. }
+        hostname: { type: string }
+        user: { type: string }
+        hold_id: { type: string, description: Re-asking about a hold this call opened. }
+        ping: { type: boolean, description: Only check that the key works. }
+    EndpointDecision:
+      type: object
+      properties:
+        decision: { type: string, enum: [allow, ask, deny, hold] }
+        would:
+          type: string
+          enum: [allow, ask, deny, hold]
+          description: What enforce would answer. Differs from decision in observe mode.
+        device_id: { type: string }
+        mode: { type: string, enum: [off, observe, enforce] }
+        fail: { type: string, enum: [open, closed] }
+        rule: { type: string, description: "The matching rule's id, or rate-limit." }
+        reason: { type: string }
+        hold_id: { type: string }
+        approvers: { type: array, items: { type: string } }
+        wait_seconds: { type: integer, description: How long the hook should wait for an approval. }
+        ok: { type: boolean, description: ping only. }
+
+    # ── Holds (preview) ─────────────────────────────────────────────────
+    Hold:
+      type: object
+      additionalProperties: true
+      properties:
+        id: { type: string, format: uuid }
+        namespace: { type: string, description: "`_endpoint` for a laptop hold." }
+        server: { type: string, description: The server, or the laptop for a laptop hold. }
+        tool: { type: string }
+        subject: { type: string, description: Who made the call (`device:<id>` for a laptop). }
+        on_behalf_of: { type: string, description: The person the call was for. }
+        reason: { type: string }
+        state: { type: string, enum: [pending, approved, declined, consumed, expired] }
+        approvers: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        decided_by: { type: string }
+        decided_at: { type: string, format: date-time }
+        decision_note: { type: string }
+    HoldDecision:
+      type: object
+      properties:
+        note: { type: string, description: Kept with the decision; a decline shows it to the requester. }
+
+    # ── Service accounts (preview, from the handlers, 2026-11-24) ───────
+    ServiceAccount:
+      type: object
+      properties:
+        id: { type: string, format: uuid, description: "The current token's jti. Changes on rotate." }
+        organization_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        subject: { type: string, description: "The token's sub. Permanent." }
+        role_ids: { type: array, items: { type: string } }
+        scopes: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time }
+        last_used_at:
+          type: [string, "null"]
+          format: date-time
+          description: Most recent audited activity; null if none.
+        reminder_sent_at: { type: string, format: date-time, description: When the expiry reminder webhook fired. }
+        owner_email: { type: string, description: The person to remind before expiry. }
+        external_id: { type: string, description: "The IdP's identifier for this agent, e.g. Auth0 <client_id>@clients." }
+        created_by: { type: string }
+    ServiceAccountWithToken:
+      allOf:
+        - $ref: "#/components/schemas/ServiceAccount"
+        - type: object
+          properties:
+            token:
+              type: string
+              description: The JWT. Shown once — store it now; it cannot be read back.
+    CreateServiceAccount:
+      type: object
+      required: [name, subject, organization_id]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        subject:
+          type: string
+          pattern: "^[a-z0-9_-]{1,128}$"
+          description: Becomes the token's sub. Permanent — every grant is keyed on it.
+        organization_id: { type: string, format: uuid, description: "From GET /orgs." }
+        description: { type: string }
+        role_ids: { type: array, items: { type: string }, example: ["system:deploy-manager"] }
+        scopes:
+          type: array
+          items: { type: string }
+          description: |
+            Narrows what the token may call at the gateway: `*`,
+            `tool:<tool>`, `tool:<ns>/<server>/<tool>` or `server:<ns>/<server>`.
+        ttl_seconds:
+          type: integer
+          minimum: 60
+          maximum: 157680000
+          default: 7776000
+          description: Default 90 days, at most 5 years. 0 means the default.
+        owner_email: { type: string, format: email }
+        external_id: { type: string, maxLength: 255, description: No spaces. }
+    PatchServiceAccount:
+      type: object
+      description: Any of these. Immutable fields are refused with 400.
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        description: { type: string }
+        role_ids: { type: array, items: { type: string } }
+        scopes: { type: array, items: { type: string } }
+        owner_email: { type: string, description: '"" clears it.' }
+        external_id: { type: string, description: '"" clears it. 409 if another account holds it.' }
+
+    # ── Webhooks (preview) ──────────────────────────────────────────────
+    Webhook:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        url: { type: string }
+        event_types:
+          type: array
+          items: { type: string }
+          description: See WebhookWrite.
+        namespaces: { type: array, items: { type: string } }
+        enabled: { type: boolean }
+        created_at: { type: string }
+        updated_at: { type: string }
+    WebhookWrite:
+      type: object
+      required: [name, url]
+      properties:
+        name: { type: string, description: Make it unique — create returns the name, not the id. }
+        url:
+          type: string
+          description: |
+            http or https, public addresses only. A URL containing `slack`
+            gets a short text message instead of the JSON payload.
+        secret:
+          type: string
+          description: |
+            Signs every delivery: `X-MCP-Signature: sha256=<hex>`, HMAC-SHA256
+            of the raw body — the same scheme as GitHub's, so existing
+            verification code works. Without one, deliveries are unsigned.
+        event_types:
+          type: array
+          items:
+            type: string
+            enum: ["*", Deployed, Undeployed, Scaled, Updated, Failed, HealthChange,
+                   HoldOpened, HoldApproved, HoldDeclined, ServiceAccountExpiringSoon]
+          default: ["*"]
+        namespaces:
+          type: array
+          items: { type: string }
+          default: ["*"]
+          description: Laptop holds are namespace `_endpoint`.
+        enabled: { type: boolean, default: true }
+    WebhookDelivery:
+      description: |
+        What your endpoint receives (`POST`, `application/json`). Only the
+        leader replica delivers, so each event arrives once; a failed delivery
+        is retried three times with backoff.
+
+        ⚠ **Two envelopes.** Server lifecycle events name themselves in
+        `event`; every other event (holds, service-account expiry) in
+        `event_type`. Read both.
+      oneOf:
+        - title: Server lifecycle
+          type: object
+          properties:
+            event: { type: string, enum: [Deployed, Undeployed, Scaled, Updated, Failed, HealthChange, Test] }
+            server: { type: string }
+            namespace: { type: string }
+            actor: { type: string }
+            detail: { type: string }
+            state: {}
+            timestamp: { type: string, format: date-time }
+            platform: { type: string, const: mcp-orchestrator }
+        - title: Hold
+          type: object
+          properties:
+            event_type: { type: string, enum: [HoldOpened, HoldApproved, HoldDeclined] }
+            hold_id: { type: string }
+            state: { type: string }
+            reason: { type: string }
+            namespace: { type: string }
+            server: { type: string }
+            tool: { type: string }
+            agent: { type: string }
+            on_behalf_of: { type: string }
+            approvers: { type: array, items: { type: string } }
+            arguments: {}
+            created_at: { type: string }
+            expires_at: { type: string }
+            decided_by: { type: string }
+            decided_at: { type: string }
+            decision_note: { type: string }
+            approve_path: { type: string, example: /api/v1/holds/3f2c…/approve }
+            decline_path: { type: string }
+            summary: { type: string, description: One readable line — what Slack shows. }
+            timestamp: { type: string, format: date-time }
+            platform: { type: string, const: mcp-orchestrator }
+
+    # ── Audit (preview) ─────────────────────────────────────────────────
+    AuditEvent:
+      type: object
+      description: Optional fields are omitted when empty.
+      properties:
+        id: { type: integer }
+        event_uid: { type: string }
+        plane: { type: string, description: "gateway, admin, …" }
+        kind: { type: string, example: ToolInvoked }
+        class_uid: { type: integer, description: OCSF class. }
+        activity_id: { type: integer }
+        severity_id: { type: integer }
+        status_id: { type: integer }
+        status_detail: { type: string }
+        server_name: { type: string }
+        namespace: { type: string }
+        tool_name: { type: string }
+        actor: { type: string, description: Who authenticated — the agent, on a delegated call. }
+        actor_email: { type: string }
+        actor_session_id: { type: string }
+        actor_idp: { type: string }
+        actor_roles: { type: array, items: { type: string }, description: Roles held at the time. }
+        on_behalf_of_subject: { type: string, description: The person an agent acted for. }
+        detail: { type: string, description: "The reason, verbatim — its prefix names which gate decided." }
+        occurred_at: { type: string, example: "1764021600", description: "⚠ Unix seconds, as a string." }
+        src_ip: { type: string }
+        src_user_agent: { type: string }
+        request_id: { type: string }
+        turn_id: { type: string }
+        prompt: { type: string, description: Present only while prompt recording is on. }
+        is_model: { type: boolean, description: "Always present: true for a model call, false for a tool call." }
+        tenant: { type: string }
+        cluster_uid: { type: string }
+        old_state: {}
+        new_state: {}
+        unmapped: { type: object, additionalProperties: true, description: "Kind-specific fields, e.g. unmapped.endpoint on agent-hook decisions." }
+        securable_name: { type: string }
+        securable_type: { type: string }
+        securable_id: { type: string }
+    AuthorityRecord:
+      type: object
+      additionalProperties: true
+      description: Volume 2, Chapter 33 describes every section.
+      properties:
+        turn_id: { type: string }
+        as_of: { type: string, description: When the decision happened. }
+        generated_at: { type: string, description: When this record was assembled. }
+        principal: { type: object, additionalProperties: true, description: "subject, on_behalf_of, roles at the time." }
+        events: { type: array, items: { type: object, additionalProperties: true }, description: Every audit row of the turn, detail verbatim. }
+        authority: { type: array, items: { type: object, additionalProperties: true }, description: Permissions and role definitions in force at as_of. }
+        data_reach: { type: array, items: { type: object, additionalProperties: true } }
+        constraints: { type: object, additionalProperties: true }
+        environment: { type: object, additionalProperties: true }
+        coverage: { type: object, additionalProperties: true, description: Read before concluding anything from an absence. }
+        exchange_bounded: { type: boolean, description: "true: an inferred turn; this record is a slice." }
+        signature: { type: string }
+        key_id: { type: string }
+        key_shared_with_jwt: { type: boolean }
+
+    # ── External policy, PII, agent protection (preview, 2026-11-24) ────
+    PdpData:
+      type: object
+      description: What the policy reads as `data.allowances` and `data.department_budgets_usd`.
+      properties:
+        allowances:
+          type: object
+          properties:
+            people:
+              type: object
+              additionalProperties: true
+              description: Keyed by Magertron username.
+          additionalProperties: true
+        department_budgets_usd:
+          type: object
+          additionalProperties: { type: number }
+          description: Keyed by department name.
+      additionalProperties: true
+    PiiMode:
+      type: string
+      enum: ["off", detect, redact, block]
+    PiiType:
+      type: string
+      enum: [secret, iban, card, ssn, email, phone, ip, person, location, nrp, passport,
+             driver_license, bank_account, itin, date]
+    ServerPii:
+      type: object
+      properties:
+        mode: { type: string, enum: [default, "off", detect, redact, block] }
+        types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+        default_mode: { $ref: "#/components/schemas/PiiMode" }
+        effective_mode: { $ref: "#/components/schemas/PiiMode" }
+        detector: { type: string, enum: [regex, presidio] }
+        all_types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+        default_types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+        presidio_types: { type: array, items: { $ref: "#/components/schemas/PiiType" } }
+    AgentProtection:
+      type: object
+      required: [namespace]
+      properties:
+        namespace: { type: string, description: A namespace with servers in it. }
+        require_person: { type: boolean, description: Refuse a service account calling with no person behind it. }
+        bound_delegation: { type: boolean, description: Refuse a delegation the platform did not bind at token exchange. }
+        require_mfa: { type: boolean, description: Refuse a delegation whose person did not show MFA. }
+        require_dpop: { type: boolean, description: Refuse tokens not bound to the agent's key (DPoP). }
+    IdpTokenRule:
+      type: object
+      properties:
+        client_claim: { type: string, enum: [auto, azp, client_id, cid, appid], description: Which claim names the agent's client. }
+        mfa_acr_values: { type: array, items: { type: string }, description: acr values that count as MFA for this provider. }
+        allow_password_grant: { type: boolean }
+        trusted_clients: { type: array, items: { type: string } }
