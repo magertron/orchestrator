@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="color-scheme" content="dark">
+<style id="mag-dark-first">html{background:#06080c}</style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NH2TP9BZP7');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Magertron™: Governance and Spend Control for Enterprise AI Agents</title>
+<meta name="description" content="Kubernetes-native control plane for AI agents: who may call which MCP tool, model or API, under your own OPA policy, metered and charged back per team, with a signed audit trail. Free up to 20 servers.">
+
+<!-- ─── SEO: canonical, Open Graph, Twitter Card, JSON-LD ─────────────────── -->
+<link rel="canonical" href="https://magertron.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magertron.com/">
+<meta property="og:title" content="Magertron™: Governance and Spend Control for Enterprise AI Agents">
+<meta property="og:description" content="Govern what your AI agents may call - MCP tools, models and APIs - under your own policy, with spend limits, chargeback and a signed audit trail. Free up to 20 servers.">
+<meta property="og:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user, committed vs pay-as-you-go, with budget tracking">
+<meta property="og:site_name" content="Magertron">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://magertron.com/">
+<meta name="twitter:title" content="Magertron™: Governance and Spend Control for Enterprise AI Agents">
+<meta name="twitter:description" content="Govern what your AI agents may call - MCP tools, models and APIs - under your own policy, with spend limits, chargeback and a signed audit trail. Free up to 20 servers.">
+<meta name="twitter:image" content="https://magertron.com/screenshots/dashboard-galaxy.png">
+<meta name="twitter:image:alt" content="Magertron AI Cost Dashboard — agent spend by vendor and user">
+
+<meta name="keywords" content="MCP, Model Context Protocol, MCP orchestrator, MCP gateway, MCP server management, AI control plane, MCP control plane, Kubernetes, Helm chart, AI infrastructure, AI governance, Envoy, xDS, enterprise AI">
+<meta name="author" content="Magertron">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Magertron AI Orchestrator",
+  "alternateName": "Magertron",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Kubernetes Platform",
+  "operatingSystem": "Linux, Kubernetes",
+  "description": "The spend control plane for enterprise AI agents. Meter every MCP tool call, charge it back per user and team, and enforce hard budget limits at the gateway.",
+  "softwareVersion": "4.3.19",
+  "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
+  "url": "https://magertron.com",
+  "downloadUrl": "https://github.com/magertron/orchestrator",
+  "screenshot": "https://magertron.com/screenshots/dashboard-galaxy.png",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free",
+      "description": "Free forever. Up to 20 MCP servers, live metrics, and LLM calls by name. CLI and portal require Pro.",
+      "price": "0",
+      "priceCurrency": "USD",
+      "category": "Free"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro",
+      "description": "Live metrics, history & rollback, webhooks, audit trail, custom RBAC, rug-pull protection. Up to 50 MCP servers.",
+      "price": "499",
+      "priceCurrency": "USD",
+      "category": "Subscription"
+    }
+  ],
+  "author": {
+    "@type": "Organization",
+    "name": "Magertron",
+    "url": "https://magertron.com",
+    "sameAs": [
+      "https://github.com/magertron/orchestrator",
+      "https://www.linkedin.com/company/magertronc",
+      "https://www.linkedin.com/company/114304646",
+      "https://www.crunchbase.com/organization/magertron",
+      "https://artifacthub.io/packages/helm/magertron/mcp-orchestrator"
+    ]
+  }
+}
+</script>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Magertron",
+  "url": "https://magertron.com",
+  "description": "The spend control plane for enterprise AI agents — metering, per-user chargeback, and budget enforcement for Model Context Protocol servers at scale.",
+  "foundingLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressRegion": "FL",
+      "addressCountry": "US"
+    }
+  },
+  "founder": {
+    "@type": "Person",
+    "name": "Curtis Mager"
+  },
+  "sameAs": [
+    "https://github.com/magertron/orchestrator",
+    "https://www.linkedin.com/company/magertronc",
+    "https://www.linkedin.com/company/114304646",
+    "https://www.crunchbase.com/organization/magertron",
+    "https://artifacthub.io/packages/helm/magertron/mcp-orchestrator"
+  ],
+  "legalName": "Magertron, LLC",
+  "alternateName": "Magertron™",
+  "logo": "https://magertron.com/logo.svg"
+}
+</script>
+<!-- ─── End SEO ─────────────────────────────────────────────────────────── -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html { scrollbar-gutter: stable; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* ── Nav ──────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; text-decoration: none; cursor: pointer; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero { padding: 88px 0 36px; text-align: center; position: relative; overflow: hidden; }
+/* Soft glow behind the headline and the live console: two out-of-focus
+   blue/violet pools that drift slowly. No picture, no labels. */
+.hero-glow {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 42% 36% at 28% 46%, rgba(37, 99, 235, 0.28), transparent 70%),
+    radial-gradient(ellipse 38% 32% at 74% 40%, rgba(167, 139, 250, 0.20), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 50% 78%, rgba(37, 99, 235, 0.14), transparent 75%);
+  animation: heroGlowDrift 24s ease-in-out infinite alternate;
+}
+@keyframes heroGlowDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(12px, 8px) scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-glow { animation: none; } }
+.hero .container { position: relative; z-index: 2; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 680px; height: 500px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px; border: 1px solid var(--border);
+  background: var(--bg-card); font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 26px; animation: fadeUp 0.6s ease-out;
+}
+.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s ease-in-out infinite; }
+.hero h1 {
+  font-family: var(--serif); font-weight: 700; font-style: normal;
+  font-size: clamp(42px, 6vw, 74px); line-height: 1.06; letter-spacing: -0.04em;
+  margin-bottom: 20px; animation: fadeUp 0.6s ease-out 0.1s both;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p {
+  font-size: 17px; color: var(--text-secondary); max-width: 680px;
+  margin: 0 auto 34px; line-height: 1.45; animation: fadeUp 0.6s ease-out 0.2s both;
+}
+.hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeUp 0.6s ease-out 0.3s both; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px;
+  font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); text-decoration: none; color: white; }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 14px 32px; border-radius: 8px;
+  font-weight: 500; font-size: 15px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Hero Screenshot ──────────────────────────────────────────────────── */
+.hero-screenshot {
+  max-width: 780px; margin: 36px auto 0; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border); background: var(--bg-card);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1);
+  animation: fadeUp 0.8s ease-out 0.4s both;
+  position: relative;
+}
+.hero-screenshot img {
+  width: 100%; height: auto; display: block;
+}
+/* ── Live console (replaces the hero carousel) ────────────────────────── */
+.live-demo { max-width: 1180px; margin: 36px auto 0; animation: fadeUp 0.8s ease-out 0.4s both; }
+.live-demo-frame {
+  position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--bg-card); aspect-ratio: 16 / 10;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.1);
+}
+.live-demo-frame.is-live { aspect-ratio: auto; }
+.live-demo-poster { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; filter: brightness(.55); }
+.live-demo-start {
+  position: absolute; inset: 0; margin: auto; width: max-content; height: max-content;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: rgba(11, 16, 32, .82); border: 1px solid rgba(34, 197, 94, .55); border-radius: 14px;
+  padding: 22px 34px; color: var(--text-primary, #fff); cursor: pointer; font: inherit;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .5); transition: transform .15s, border-color .15s;
+}
+.live-demo-start:hover { transform: translateY(-2px); border-color: #22c55e; }
+.live-demo-play { width: 54px; height: 54px; border-radius: 50%; background: #22c55e; color: #06210f;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; padding-left: 4px; }
+.live-demo-cta { font-size: 19px; font-weight: 700; }
+.live-demo-sub { font-size: 13px; color: var(--text-secondary); }
+.live-demo-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
+.live-demo-foot a { color: var(--text-secondary); }
+.live-demo-foot a:hover { color: var(--text-primary); }
+@media (max-width: 600px) {
+  .live-demo-start { padding: 12px 18px; gap: 6px; }
+  .live-demo-play { width: 40px; height: 40px; font-size: 16px; }
+  .live-demo-cta { font-size: 16px; }
+  .live-demo-sub { font-size: 11px; }
+}
+.hero-screenshot .placeholder {
+  width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700; font-style: normal; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 16px;
+}
+.section-desc {
+  font-size: 16px; color: var(--text-secondary); max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+}
+
+/* ── Showcase (screenshot sections) ───────────────────────────────────── */
+.showcase { padding: 80px 0; }
+.showcase-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+}
+.showcase-row.reverse { direction: rtl; }
+.showcase-row.reverse > * { direction: ltr; }
+.showcase-content { max-width: 460px; }
+.showcase-content h3 {
+  font-family: var(--serif); font-size: 32px; font-weight: 600; font-style: normal;
+  margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.02em;
+}
+.showcase-content p { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+.showcase-content ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+}
+.showcase-content ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;
+}
+.showcase-content ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.showcase-image {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.showcase-image:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+.showcase-image img { width: 100%; height: auto; display: block; }
+.showcase-image .placeholder {
+  width: 100%; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--text-tertiary); font-family: var(--mono);
+  background: linear-gradient(135deg, #0a0e14 0%, #111822 100%);
+}
+
+/* ── Features ─────────────────────────────────────────────────────────── */
+.features { padding: 80px 0; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card {
+  padding: 32px; border-radius: 12px; background: var(--bg-card);
+  border: 1px solid var(--border); transition: all 0.3s;
+  position: relative;
+}
+/* Hover affordance: only the clickable variant gets the lift + accent
+   treatment, so the visual difference between "click me" and "informational"
+   is obvious to a reader scanning the grid. */
+.feature-card.clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.feature-card.clickable:hover { border-color: var(--border-accent); background: var(--bg-card-hover); transform: translateY(-2px); text-decoration: none; }
+.feature-card.clickable::after {
+  content: "→";
+  position: absolute;
+  top: 32px; right: 32px;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  transition: transform 0.2s, color 0.2s;
+}
+.feature-card.clickable:hover::after { color: var(--accent-text); transform: translateX(4px); }
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--accent-glow); border: 1px solid rgba(37, 99, 235, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 20px;
+}
+.feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+/* ── Architecture diagram (Governed Surfaces) ─────────────────────────── */
+.mag-arch-scroll { overflow-x: auto; margin: 0 0 40px; }
+.mag-arch-scroll svg { display: block; width: 100%; height: auto; min-width: 780px; }
+.mag-arch-card {
+  background: #080b10; border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; margin: 0 0 40px;
+}
+.mag-arch-card .mag-arch-scroll { margin: 0; }
+@media (max-width: 768px) { .mag-arch-card { padding: 16px; } }
+
+.mag-arch-caption {
+  max-width: 660px; margin: 0 auto 48px; text-align: center;
+  font-size: 15px; line-height: 1.7; color: var(--text-secondary);
+}
+.mag-arch-caption strong { color: var(--text); font-weight: 500; }
+.mag-arch-caption code { font-family: var(--mono); font-size: 13px; color: var(--accent-text); }
+
+.ma-frame  { fill: none;               stroke: var(--border); stroke-width: 1; }
+.ma-panel  { fill: var(--bg-card);     stroke: var(--border); stroke-width: 1; }
+.ma-hero   { fill: var(--accent-glow); stroke: var(--accent); stroke-width: 1.5; }
+/* The control plane box: lifted off the page so it reads as the product (2026-11-09). */
+.ma-core   { fill: rgba(120, 160, 255, 0.14); stroke: var(--accent); stroke-opacity: 0.8; stroke-width: 1.5; }
+.ma-rule   { stroke: var(--border); stroke-width: 1; }
+.ma-flow   { stroke: var(--text-tertiary); stroke-width: 1.5; fill: none; }
+.ma-head   { fill: var(--text-tertiary); }
+.ma-t      { fill: var(--text);           font-family: var(--sans); font-size: 14px; }
+.ma-t-sm   { fill: var(--text-secondary); font-family: var(--sans); font-size: 12px; }
+.ma-mono   { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 10.5px; }
+.ma-mono-c { fill: var(--text-tertiary);  font-family: var(--mono); font-size: 11px; }
+.ma-label  { fill: var(--accent-text);    font-family: var(--mono); font-size: 11px;
+             letter-spacing: 0.1em; text-transform: uppercase; }
+.ma-acc    { fill: var(--accent-text); }
+
+/* ── CLI Section ──────────────────────────────────────────────────────── */
+.cli-section { padding: 80px 0; }
+.cli-section .container { max-width: 900px; }
+.terminal-preview {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: #0a0e14;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+.terminal-bar {
+  display: flex; gap: 6px; padding: 12px 16px; background: #111722;
+  border-bottom: 1px solid var(--border);
+}
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot:nth-child(1) { background: #ff5f57; }
+.terminal-dot:nth-child(2) { background: #febc2e; }
+.terminal-dot:nth-child(3) { background: #28c840; }
+.terminal-body {
+  padding: 20px 24px; font-family: var(--mono); font-size: 13px;
+  line-height: 1.8; color: var(--text-secondary);
+}
+.terminal-body .cmd { color: var(--text); }
+.terminal-body .accent { color: var(--accent-text); }
+.terminal-body .success { color: var(--success); }
+.terminal-body .dim { color: var(--text-tertiary); }
+
+/* ── Pricing ──────────────────────────────────────────────────────────── */
+.pricing { padding: 80px 0; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; max-width: 1240px; margin: 48px auto 0; }
+@media (max-width: 1100px) { .pricing-grid { grid-template-columns: 1fr 1fr; } }
+.pricing-card {
+  padding: 40px; border-radius: 16px; background: var(--bg-card);
+  border: 1px solid var(--border); position: relative; transition: all 0.3s;
+}
+.pricing-card:hover { border-color: var(--border-accent); }
+.pricing-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, var(--bg-card) 100%);
+}
+.pricing-card.featured::before {
+  content: 'RECOMMENDED'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: white; padding: 4px 16px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; font-family: var(--mono);
+}
+.pricing-tier {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 8px;
+}
+.pricing-name { font-family: var(--serif); font-size: 32px; font-style: normal; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+.pricing-price { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+.pricing-divider { height: 1px; background: var(--border); margin: 24px 0; }
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.pricing-features li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start; }
+.pricing-features li::before { content: '✓'; color: var(--success); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.pricing-features li.disabled { color: var(--text-tertiary); }
+.pricing-features li.disabled::before { content: '—'; color: var(--text-tertiary); }
+.pricing-btn {
+  display: block; width: 100%; text-align: center; padding: 12px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; text-decoration: none;
+}
+.pricing-btn.primary { background: var(--accent); color: white; border: none; }
+.pricing-btn.primary:hover { background: #1d4ed8; text-decoration: none; }
+.pricing-btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.pricing-btn.secondary:hover { border-color: var(--text-tertiary); text-decoration: none; }
+
+/* ── Demo Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #0c1018; border: 1px solid #1a2030; border-radius: 16px;
+  padding: 40px; width: min(520px, 95vw); max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: fadeUp 0.25s ease-out;
+}
+.modal h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.modal p { font-size: 14px; color: #8694a8; margin-bottom: 28px; }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: #8694a8; font-size: 20px;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: #e8ecf4; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #8694a8; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-group input, .form-group textarea, .form-group select {
+  background: #b9bfca; border: 1px solid #98a0ad; border-radius: 8px;
+  padding: 10px 14px; color: #0a0d12; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s; outline: none; width: 100%;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: #6b7280; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2563eb; }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select option { background: #b9bfca; color: #0a0d12; }
+.modal-submit {
+  width: 100%; padding: 12px; background: #2563eb; color: white;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; margin-top: 4px;
+}
+.modal-submit:hover { background: #1d4ed8; }
+
+
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 72px 60px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700; font-style: normal; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; position: relative; }
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   Multi-column layout: brand block on the left (logo + tagline), navigation
+   columns on the right (Products / Resources / Company / Social). On mobile
+   the brand block stacks above the columns. The bottom strip carries the
+   copyright and a slim set of utility links. */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  color: var(--text-primary);
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p {
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  max-width: 280px;
+}
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 13px; color: var(--text-tertiary); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--text-primary); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .showcase-row, .showcase-row.reverse { grid-template-columns: 1fr; }
+  .hero { padding: 104px 0 48px; }
+  .hero-glow { opacity: 0.7; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .cta-box { padding: 48px 32px; }
+  footer .container { flex-direction: column; gap: 16px; }
+}
+  /* fixed nav is ~72px; keep anchored section headings visible below it */
+  #features, #governance, #install, #pricing, #server-management { scroll-margin-top: 88px; }
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
+</style>
+<style id="mag-solutions-nav">
+.nav-drop { position: relative; }
+.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+  color: var(--text-secondary); transition: color 0.2s; }
+.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
+.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
+.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
+  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
+.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
+.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
+@media (max-width: 1180px) { .nav-links { gap: 22px; } }
+@media (max-width: 768px) {
+  .nav-links .nav-drop { display: none; }
+  nav.open .nav-links .nav-drop { display: block; }
+  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
+    color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
+    box-shadow: none; padding: 0 0 0 14px; background: none; }
+  nav.open .nav-drop-menu::before { display: none; }
+}
+</style>
+<style id="mag-nav-center">
+@media (min-width: 769px) {
+  nav .nav-links { flex: 1; }
+  nav .nav-links > :first-child { margin-left: auto; }
+  nav .nav-links > .nav-cta { margin-left: auto; }
+}
+</style>
+<style id="mag-product-marks">
+/* Platform menu: product marks (2026-11-10 v3) */
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
+.mag-pm svg { width: 22px; height: 22px; flex: none; }
+</style>
+<style id="mag-solution-marks">
+/* Solutions menu: outlined marks (2026-11-10 v3) */
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
+.mag-pm svg { width: 22px; height: 22px; flex: none; }
+</style>
+<style id="mag-logos-css">
+.mag-logos { max-width: 1100px; margin: 0 auto; padding: 56px 24px 40px; text-align: center; }
+.mag-logos-label { margin: 0 0 28px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-secondary, #8b93a7); }
+.mag-logos-window { display: flex; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.mag-logos-track { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; flex: none;
+  gap: 72px; padding-right: 72px; animation: magLogos 28s linear infinite; }
+.mag-logos-window:hover .mag-logos-track { animation-play-state: paused; }
+@keyframes magLogos { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.mag-logo { display: flex; align-items: center; height: 52px; padding: 0 16px; border-radius: 10px;
+  transition: background-color .2s; }
+/* every logo as a white silhouette, so dark and light logos read the same on the dark site */
+.mag-logo img { height: 36px; width: auto; max-width: 180px; object-fit: contain;
+  filter: brightness(0) invert(1); opacity: .9; transition: opacity .2s; }
+/* hover: the logo in its real colours, on a light card so dark logos still show */
+.mag-logo:hover { background: #f5f3ee; }
+.mag-logo:hover img { filter: none; opacity: 1; }
+.mag-logo-ph { height: 36px; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 600;
+  font-size: 15px; white-space: nowrap; color: var(--text-secondary, #8b93a7);
+  border: 1px dashed var(--border, #2a3348); border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .mag-logos-window { justify-content: center; -webkit-mask-image: none; mask-image: none; }
+  .mag-logos-track { animation: none; flex-wrap: wrap; justify-content: center; padding-right: 0; }
+  .mag-logos-track[aria-hidden="true"] { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});event.preventDefault();"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
+          <a href="ai-assistant.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.7 4.3 4.3 1.7-4.3 1.7L12 16.5l-1.7-4.3-4.3-1.7 4.3-1.7z"/><path d="M17.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fff"/></g></svg><span>AI Assistant</span></a>
+          <a href="data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
+          <a href="agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
+          <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS™</span></a>
+          <a href="solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#fff"/></g></svg><span>ToolScout™</span></a><a href="agentcolonel.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8.5 12 6l5 2.5"/><path d="M7 12.5 12 10l5 2.5"/><path d="M7 16.5 12 14l5 2.5"/></g></svg><span>AgentColonel™</span></a>
+          <a href="czartup/" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5 10 12l-3.5 3.5"/><path d="M12 16h5.5"/></g></svg><span>Czartup™</span></a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="solutions-banking.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5 12 5.5l7 4"/><path d="M5.5 9.5h13"/><path d="M7.5 11.5v5M12 11.5v5M16.5 11.5v5"/><path d="M5 18.5h14"/></g></svg><span>Banking</span></a>
+          <a href="solutions-accounts-payable.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h7l3.5 3.5v11.5H7z"/><path d="M14 4.5V8h3.5"/><path d="M9.5 11h5"/><path d="m9.5 15 1.8 1.8 3.4-3.4"/></g></svg><span>Accounts payable</span></a>
+          <a href="solutions-crm.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5h14"/><path d="M7.5 15.5v-3M11.5 15.5v-5.5M15.5 15.5v-8"/><path d="m6.5 9 3.5-2.5 3 1.5 4.5-3"/></g></svg><span>Sales &amp; CRM</span></a>
+          <a href="solutions-network-operations.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2"/><circle cx="6.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/><path d="m11 7.8-3.6 7.4M13 7.8l3.6 7.4M8.5 17h7"/></g></svg><span>Network operations</span></a>
+          <a href="solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17.5h8.5a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 7.3 9.8 3.9 3.9 0 0 0 8 17.5z"/></g></svg><span>Across SaaS platforms</span></a>
+          <a href="solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#60a5fa"/></g></svg><span>Shadow AI discovery</span></a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="developers.html">Overview</a>
+          <a href="czartup/">Czartup™</a>
+          <a href="czartup/#studio">Czartup™ Studio</a>
+          <a href="#install">Install</a>
+          <a href="#cli">CLI</a>
+          <a href="developer-portal.html">Developer Portal</a>
+          <a href="api/v1/">API Documentation</a>
+          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
+          <a href="developers.html">Build an agent</a>
+          <a href="vscode/">VS Code</a>
+          <a href="devin/">Devin</a>
+          <a href="cursor/">Cursor</a>
+          <a href="claude-code/">Claude Code</a>
+        </div>
+      </div>
+      <a href="pricing.html">Pricing</a>
+      <a href="cost.html">Cost &amp; Reporting</a>
+      <a href="security.html">Security</a>
+      <a href="https://signup.magertron.com/" class="nav-cta">Try it now </a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="container">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Now available — v4.3.19
+    </div>
+    <a href="trust.html" class="hero-badge" style="margin-left: 8px; border-color: var(--border-accent); background: var(--accent-glow); color: var(--accent-text); text-decoration: none;">
+      <span style="font-weight: 600; letter-spacing: 0.04em;">SOC 2 Type II</span>
+      &mdash; clean opinion &rarr;
+    </a>
+    <h1>Command your <em>AI Estate</em>.</h1>
+    <!-- was: <h1>Govern every agent. Prove every action. Control every dollar.</h1> -->
+    <!-- was: <h1>The <em>AI spend</em> plane<br>for the token economy.</h1> (for the CFO section) -->
+    <p>From Claude Code on a developer’s laptop to the data your agents reach, Magertron™ discovers every agent, holds each to your operating rules, and proves what agents did and what it cost.</p>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-top: -8px;">Free up to 20 servers — no signup, no credit card.</p>
+
+    <!-- Live console: the real Magertron UI on a simulated company (/explore/).
+         Poster first (no heavy load above the fold); a click loads the console
+         in place, scaled to fit. Phones open it full screen. -->
+    <div class="live-demo" id="live-demo">
+      <div class="live-demo-frame">
+        <img class="live-demo-poster" src="screenshots/agent-galaxy.png" alt="Magertron console - Agent Galaxy: which people and AI agents can reach which tools and models">
+        <button type="button" class="live-demo-start" aria-label="Explore the live Magertron console">
+          <span class="live-demo-play">&#9654;</span>
+          <span class="live-demo-cta">Explore the live console</span>
+          <span class="live-demo-sub">Guided tour &middot; fictional data &middot; nothing to install</span>
+        </button>
+      </div>
+      <div class="live-demo-foot">
+        <span>The real Magertron&trade; console, running on a simulated company.</span>
+        <a href="explore/" target="_blank" rel="noopener">Open full screen &#8599;</a>
+      </div>
+    </div>
+<script>
+/* mag-demo-reset: live console <-> poster */
+(function(){
+  var box=document.getElementById('live-demo'); if(!box) return;
+  var frame=box.querySelector('.live-demo-frame');
+  var poster=frame.innerHTML, W=1440, H=900, ifr=null;
+  function fit(){ if(!ifr) return; var s=frame.clientWidth/W; ifr.style.transform='scale('+s+')'; frame.style.height=(H*s)+'px'; }
+  function start(){
+    if(window.innerWidth<760){ window.location.href='explore/'; return; }
+    ifr=document.createElement('iframe');
+    ifr.src='explore/?embed=1'; ifr.title='Magertron live console (simulated data)';
+    ifr.style.cssText='position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;border:0;transform-origin:0 0;background:#0b1020';
+    frame.innerHTML=''; frame.appendChild(ifr); frame.classList.add('is-live'); fit();
+  }
+  function reset(){
+    if(!ifr) return;
+    ifr=null; frame.classList.remove('is-live'); frame.style.height=''; frame.innerHTML=poster; bind();
+  }
+  function bind(){ var b=frame.querySelector('.live-demo-start'); if(b) b.addEventListener('click',start); }
+  bind();
+  window.addEventListener('resize',fit);
+  // the tour inside the console says when it's finished
+  window.addEventListener('message',function(e){
+    if(e.origin!==location.origin||!e.data||e.data.type!=='mag-demo') return;
+    if(e.data.event==='tour-finished') setTimeout(reset,500);
+  });
+  // scrolled fully away -> back to the poster
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){ es.forEach(function(en){ if(!en.isIntersecting) reset(); }); },{threshold:0}).observe(box);
+  }
+  // returned with Back/Forward (page restored from cache) -> back to the poster
+  window.addEventListener('pageshow',function(e){ if(e.persisted) reset(); });
+})();
+</script>
+
+<section id="mag-logos" class="mag-logos" aria-label="Trusted by">
+  <p class="mag-logos-label">Trusted by</p>
+  <div class="mag-logos-window">
+    <ul class="mag-logos-track">
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/judara.svg" alt="Judara" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/judara.svg" alt="" data-alt="Judara" loading="lazy"></li>
+    </ul>
+    <ul class="mag-logos-track" aria-hidden="true">
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/judara.svg" alt="" data-alt="Judara" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/genboot.png" alt="" data-alt="" data-alt="" data-alt="Genboot" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/everpay.png" alt="" data-alt="" data-alt="" data-alt="Everpay" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/tenir.png" alt="" data-alt="" data-alt="" data-alt="TENIR" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/ocp.png" alt="" data-alt="" data-alt="" data-alt="Open Compute Project" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/zeroday.png" alt="" data-alt="" data-alt="" data-alt="Zero Day" loading="lazy"></li>
+      <li class="mag-logo"><img src="img/logos/judara.svg" alt="" data-alt="Judara" loading="lazy"></li>
+    </ul>
+  </div>
+</section>
+
+
+    <!-- Install snippet — visible above the fold for HN/listicle visitors
+         who want to see "can I try this in 5 minutes?" answered immediately. -->
+    <div style="border-top: 1px solid var(--border); margin-top: 56px; padding-top: 48px;">
+      <div id="install" style="max-width: 720px; margin: 0 auto; text-align: left;">
+      <div style="font-family: var(--serif); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 18px; text-align: center;">Install in 5 minutes</div>
+      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; margin: 0; overflow-x: auto; color: var(--text-primary);"><span style="color: var(--text-secondary);"># Bare Ubuntu box — installs k3s, helm and Magertron</span>
+<span style="color: var(--text-secondary);">$</span> curl -fsSL https://magertron.com/bootstrap.sh | sudo bash -s -- \
+      --api-public-url https://mcp.example.com
+
+<span style="color: var(--text-secondary);"># Already have a Kubernetes cluster</span>
+<span style="color: var(--text-secondary);">$</span> git clone https://github.com/magertron/orchestrator.git
+<span style="color: var(--text-secondary);">$</span> cd orchestrator
+<span style="color: var(--text-secondary);">$</span> ./install.sh                                  <span style="color: var(--text-secondary);"># Free tier — no license needed</span>
+<span style="color: var(--text-secondary);">$</span> ./install.sh --license /path/to/license.json  <span style="color: var(--text-secondary);"># With a license</span></pre>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Showcase: Server Management -->
+<section style="padding:80px 0; border-top: 1px solid var(--border);">
+  <div class="container" style="max-width:1200px;">
+    <div class="rogue-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;">
+      <div>
+        <div class="section-label">Enterprise Security</div>
+        <h2 class="section-title">Rogue MCP servers are already inside your network</h2>
+        <p class="section-desc">Developers are spinning up ungoverned MCP servers on laptops, in personal cloud accounts, and inside your perimeter — with no audit trail and no controls. AI agents talking to these servers can execute actions at scale.</p>
+        <p class="section-desc"><strong>Now you can find them.</strong> Magertron&#8482; reads MCP client configs on every endpoint you manage, shows you every server in use — approved or not — and points them at the gateway with a single policy change. No resident agent on the laptop &mdash; a script and a timer, delivered by the MDM you already run.</p>
+        <a href="solutions-shadow-ai.html" style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--accent-text);">
+          See how ToolScout&#8482; finds them →
+        </a>
+      </div>
+
+      <!-- Tabbed threat model + fleet devices screenshot -->
+      <div>
+      <div class="threat-tabs">
+        <div class="threat-tab-buttons" role="tablist">
+          <button class="threat-tab-btn active" data-tab="tv01" role="tab" aria-selected="true">
+            <span class="threat-tab-num">01</span>
+            <span class="threat-tab-label">North-South</span>
+          </button>
+          <button class="threat-tab-btn" data-tab="tv02" role="tab" aria-selected="false">
+            <span class="threat-tab-num" style="color:#fca5a5;">02</span>
+            <span class="threat-tab-label">East-West</span>
+          </button>
+          <button class="threat-tab-btn" data-tab="tvresp" role="tab" aria-selected="false">
+            <span class="threat-tab-num" style="color:#86efac;">✓</span>
+            <span class="threat-tab-label">Response</span>
+          </button>
+        </div>
+
+        <div class="threat-tab-content active" id="tv01" role="tabpanel">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:8px;">THREAT VECTOR 01</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">External AI agents</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">AI agents outside your perimeter reaching ungoverned internal MCP servers. Perimeter firewalls catch these — but only if the agent actually crosses the perimeter, and only if the MCP server is registered as a public service.</div>
+        </div>
+
+        <div class="threat-tab-content" id="tv02" role="tabpanel" hidden>
+          <div style="font-size:12px;font-family:var(--mono);color:#fca5a5;margin-bottom:8px;">THREAT VECTOR 02 — HARDER</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">Internal AI agents</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">AI agents inside your perimeter bypassing the gateway entirely — talking to MCP servers pod-to-pod, laptop-to-laptop, namespace-to-namespace. Traditional perimeter defenses see none of it.</div>
+        </div>
+
+        <div class="threat-tab-content" id="tvresp" role="tabpanel" hidden>
+          <div style="font-size:12px;font-family:var(--mono);color:#86efac;margin-bottom:8px;">PLATFORM RESPONSE</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:8px;">Three enforcement layers</div>
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">Perimeter firewall handles external agents. Internal network policy stops pod-to-pod lateral movement. Kubernetes NetworkPolicy isolates MCP server namespaces automatically. All three applied by default on every install.</div>
+        </div>
+      </div>
+      <div class="showcase-image" style="margin-top:20px;">
+        <img src="screenshots/inventory-scan.png" alt="Magertron fleet devices — one integration token, four endpoints across macOS, Linux and Windows reporting their MCP client configs, with delivery method and last check-in per device">
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Three deployment patterns -->
+<section id="governed-surfaces" style="scroll-margin-top: 72px; padding:80px 0; border-top: 1px solid var(--border);">
+  <div class="container">
+
+    <div style="text-align:center; max-width:720px; margin:0 auto 48px;">
+      <div class="section-label">Governed Surfaces</div>
+      <h2 class="section-title">Every model, API, stream and tool call. One policy plane.</h2>
+    </div>
+
+    <div class="mag-arch-card">
+      <p class="mag-arch-hint">Swipe to see the full diagram &rarr;</p>
+      <div class="mag-arch-scroll">
+      <svg viewBox="0 0 1160 500" role="img"
+           aria-label="Calls from MCP clients, models and agent frameworks enter the Magertron control plane, where an Envoy v3 data plane applies identity resolution, dual-principal authorization, securable resolution and metering before reaching MCP servers, REST APIs, event streams, LLM providers, tools and catalog securables.">
+        <defs>
+          <marker id="maArrow" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="ma-head"/>
+          </marker>
+        </defs>
+
+        <text x="40" y="44" class="ma-label">Your stack</text>
+        <rect x="24" y="56" width="248" height="268" rx="10" class="ma-frame"/>
+
+        <rect x="40" y="76" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="103" class="ma-t">MCP clients</text>
+        <text x="56" y="124" class="ma-mono">Claude · Cursor · custom</text>
+
+        <rect x="40" y="154" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="181" class="ma-t">Models — BYOK</text>
+        <text x="56" y="202" class="ma-mono">Anthropic · OpenAI · Ollama</text>
+
+        <rect x="40" y="232" width="216" height="66" rx="8" class="ma-panel"/>
+        <text x="56" y="259" class="ma-t">Frameworks — BYOAF</text>
+        <text x="56" y="280" class="ma-mono">LangChain · CrewAI · yours</text>
+
+        <text x="306" y="178" class="ma-mono" text-anchor="middle">every call</text>
+        <line x1="280" y1="190" x2="332" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
+
+        <rect x="340" y="40" width="488" height="300" rx="12" class="ma-core"/>
+        <text x="356" y="68" class="ma-label">Magertron control plane</text>
+
+        <rect x="356" y="82" width="456" height="36" rx="8" class="ma-panel"/>
+        <text x="372" y="105" class="ma-t-sm">Envoy v3 data plane</text>
+        <text x="796" y="105" class="ma-mono-c" text-anchor="end">ext_authz</text>
+
+        <rect x="356" y="130" width="456" height="44" rx="8" class="ma-panel"/>
+        <text x="372" y="149" class="ma-t">Identity resolution</text>
+        <text x="372" y="166" class="ma-mono-c">human subject + agent service account</text>
+
+        <rect x="356" y="184" width="456" height="44" rx="8" class="ma-hero"/>
+        <text x="372" y="203" class="ma-t ma-acc" style="font-weight:600">Dual-principal authorization</text>
+        <text x="372" y="220" class="ma-mono-c">agent grants ∩ human grants — never the union</text>
+
+        <rect x="356" y="238" width="456" height="44" rx="8" class="ma-panel"/>
+        <text x="372" y="257" class="ma-t">Securable resolution</text>
+        <text x="372" y="274" class="ma-mono-c">catalog → schema → table · explicit deny wins</text>
+
+        <rect x="356" y="292" width="456" height="36" rx="8" class="ma-panel"/>
+        <text x="372" y="315" class="ma-t-sm">Meter, rate &amp; budget-cap</text>
+        <text x="796" y="315" class="ma-mono-c" text-anchor="end">per call</text>
+
+        <text x="862" y="178" class="ma-mono" text-anchor="middle">allowed</text>
+        <line x1="836" y1="190" x2="888" y2="190" class="ma-flow" marker-end="url(#maArrow)"/>
+
+        <text x="912" y="44" class="ma-label">Governed surfaces</text>
+        <rect x="896" y="56" width="240" height="336" rx="10" class="ma-frame"/>
+
+        <rect x="912" y="76" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="100" class="ma-t">MCP servers</text>
+
+        <rect x="912" y="122" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="146" class="ma-t">REST APIs</text>
+
+        <rect x="912" y="168" width="208" height="52" rx="8" class="ma-panel"/>
+        <text x="928" y="191" class="ma-t">Event streams</text>
+        <text x="928" y="209" class="ma-mono">Kafka · ZeroMQ</text>
+
+        <rect x="912" y="228" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="252" class="ma-t">LLM providers</text>
+
+        <rect x="912" y="274" width="208" height="38" rx="8" class="ma-panel"/>
+        <text x="928" y="298" class="ma-t">Tools</text>
+
+        <rect x="912" y="320" width="208" height="52" rx="8" class="ma-panel"/>
+        <text x="928" y="343" class="ma-t">Catalog securables</text>
+        <text x="928" y="361" class="ma-mono">catalog / schema / table</text>
+
+        <line x1="584" y1="340" x2="584" y2="372" class="ma-rule"/>
+        <rect x="340" y="372" width="488" height="92" rx="12" class="ma-frame"/>
+        <text x="356" y="398" class="ma-label">On every decision</text>
+
+        <rect x="356" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="410" y="428" class="ma-t-sm" text-anchor="middle">Audit trail</text>
+        <text x="410" y="442" class="ma-mono" text-anchor="middle">immutable</text>
+
+        <rect x="472" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="526" y="428" class="ma-t-sm" text-anchor="middle">Chargeback</text>
+        <text x="526" y="442" class="ma-mono" text-anchor="middle">per dept / user</text>
+
+        <rect x="588" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="642" y="428" class="ma-t-sm" text-anchor="middle">Drift checks</text>
+        <text x="642" y="442" class="ma-mono" text-anchor="middle">tool definitions</text>
+
+        <rect x="704" y="410" width="108" height="38" rx="8" class="ma-panel"/>
+        <text x="758" y="428" class="ma-t-sm" text-anchor="middle">Policy as code</text>
+        <text x="758" y="442" class="ma-mono" text-anchor="middle">Terraform</text>
+      </svg>
+    </div>
+    </div>
+
+    <p class="mag-arch-caption">
+      Enforcement lives in the Envoy <code>ext_authz</code> path.
+      <strong>Every call crosses the same boundary</strong> — whether it lands on
+      an MCP tool, a REST endpoint or an inference provider.
+    </p>
+
+    
+  </div>
+</section>
+
+<section class="showcase" id="server-management">
+  <div class="container">
+    <div class="showcase-row">
+      <div class="showcase-content">
+        <div class="section-label">Server Management</div>
+        <h3>Full lifecycle control for every server you run</h3>
+        <p>Deploy MCP servers and LLM pods from any container image, monitor real-time CPU and memory metrics, and scale with a slider. Every action is audited.</p>
+        <ul>
+          <li>Live metrics charts polling every 5 seconds</li>
+          <li>Real pod logs from Kubernetes API</li>
+          <li>One-click rollback from deployment history</li>
+          <li>Rolling restart with zero downtime</li>
+        </ul>
+      </div>
+      <div class="showcase-image">
+        <!-- REPLACE: <img src="screenshots/server-detail.png" alt="Server Detail Panel"> -->
+        <img src="screenshots/server-detail.png" alt="Server Detail Panel">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Security Teaser -->
+
+<style>
+  .threat-tabs {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .threat-tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.15);
+  }
+  .threat-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 16px 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .threat-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.02);
+  }
+  .threat-tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-text);
+    background: rgba(255,255,255,0.03);
+  }
+  .threat-tab-num {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.05em;
+  }
+  .threat-tab-btn.active .threat-tab-num {
+    color: var(--accent-text);
+  }
+  .threat-tab-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .threat-tab-content {
+    padding: 28px 28px 32px;
+  }
+  .threat-tab-content[hidden] {
+    display: none;
+  }
+  @media (max-width: 900px) {
+    .threat-tab-btn {
+      padding: 12px 8px;
+    }
+    .threat-tab-label {
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.threat-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.tab;
+      btn.parentElement.querySelectorAll('.threat-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const container = btn.closest('.threat-tabs');
+      container.querySelectorAll('.threat-tab-content').forEach(c => {
+        c.hidden = (c.id !== targetId);
+      });
+    });
+  });
+</script>
+
+<!-- CLI Section -->
+<section class="cli-section" id="cli">
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 48px;">
+      <div class="section-label">Developer Experience</div>
+      <div class="section-title">A CLI that gets out<br>of your way</div>
+      <div class="section-desc" style="margin-left: auto; margin-right: auto;">
+        Single binary, zero dependencies. Deploy, scale, and evaluate governance from your terminal. Ships for macOS and Linux.
+      </div>
+    </div>
+
+    <div class="terminal-preview">
+      <div class="terminal-bar">
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="dim">$</span> <span class="cmd">mcpctl login https://mcp.acme.internal admin</span></div>
+        <div><span class="success">✓</span> Logged in as admin (system:platform-admin)</div>
+        <br>
+        <div><span class="dim">$</span> <span class="cmd">mcpctl deploy code-assistant mcp-prod ghcr.io/acme/code-assistant --tag v2.1 --team platform</span></div>
+        <div>Deploying code-assistant to mcp-prod...</div>
+        <div><span class="success">✓</span> Server deployed (state: Running)</div>
+        <br>
+        <div><span class="dim">$</span> <span class="cmd">mcpctl governance evaluate spec.json --namespace mcp-prod</span></div>
+        <div><span class="success">✓</span> ALLOWED</div>
+        <div>  ⚠ Mutating tools detected — review required before production use</div>
+        <br>
+        <div><span class="dim">$</span> <span class="cmd">mcpctl servers</span></div>
+        <div>NAME              NAMESPACE    STATE     REPLICAS  IMAGE</div>
+        <div><span class="accent">code-assistant</span>    mcp-prod     Running   2/2       ghcr.io/acme/code-assistant:v2.1</div>
+        <div><span class="accent">search-tool</span>       mcp-prod     Running   3/3       ghcr.io/acme/search:latest</div>
+        <div><span class="accent">doc-retriever</span>     mcp-staging  Running   1/1       ghcr.io/acme/docs:v1.4</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px; color:var(--text-secondary); max-width:720px; margin:18px auto 0; text-align:center; line-height:1.6;">
+      <code>mcpctl</code> is a signed Go binary — install it below.
+      <strong>There are unrelated <code>mcpctl</code> packages on npm and PyPI; neither is ours.</strong>
+    </p>
+
+    <!-- Install options — four parallel paths, collapsed by default -->
+    <style>
+      .install-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .install-card summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        user-select: none;
+        transition: background 0.15s ease;
+      }
+      .install-card summary::-webkit-details-marker { display: none; }
+      .install-card summary:hover { background: rgba(255,255,255,0.02); }
+      .install-card summary .label { font-weight: 600; }
+      .install-card summary .tag {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-left: auto;
+      }
+      .install-card summary .caret {
+        color: var(--text-tertiary);
+        font-size: 12px;
+        transition: transform 0.2s ease;
+        margin-left: 8px;
+      }
+      .install-card[open] summary .caret { transform: rotate(90deg); }
+      .install-card .body {
+        padding: 0 20px 20px;
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+      }
+      .install-card .tagline {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+      .install-card .snippet {
+        background: var(--bg-terminal, #0d1117);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+        overflow-x: auto;
+        line-height: 1.5;
+      }
+    </style>
+    <div class="install-grid" style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+      <!-- Homebrew -->
+      <details class="install-card">
+        <summary>
+          <span class="label">Homebrew</span>
+          <span class="tag">macOS · Linux</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline">Cleanest install if you have brew &mdash; and the only one that upgrades itself:</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">brew trust magertron/tap</span><br>
+            <span class="dim">$</span> <span class="cmd">brew install magertron/tap/mcpctl</span>
+          </div>
+          <div class="tagline" style="margin-top: 12px; font-size: 13px;">
+            Homebrew&nbsp;6 asks you to trust any tap outside its core before it will
+            load a formula, because a formula is code that runs on your machine.
+            One command, once. Afterwards <code>brew upgrade</code> keeps
+            <code>mcpctl</code> current.
+          </div>
+        </div>
+      </details>
+
+      <!-- curl one-liner -->
+      <details class="install-card">
+        <summary>
+          <span class="label">curl one-liner</span>
+          <span class="tag">macOS · Linux</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline">No package manager required:</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/install-mcpctl.sh | sh</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- Debian / Ubuntu -->
+      <details class="install-card">
+        <summary>
+          <span class="label">Debian / Ubuntu</span>
+          <span class="tag">apt · amd64 · arm64</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">One-time setup</div>
+          <div class="snippet" style="font-size: 12px; margin-bottom: 14px;">
+            <span class="dim">$</span> <span class="cmd">curl -fsSL https://magertron.com/apt/magertron-archive-keyring.gpg | sudo tee /etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg &gt; /dev/null</span><br>
+            <span class="dim">$</span> <span class="cmd">echo "deb [signed-by=/etc/apt/trusted.gpg.d/magertron-archive-keyring.gpg] https://magertron.com/apt stable main" | sudo tee /etc/apt/sources.list.d/magertron.list</span><br>
+            <span class="dim">$</span> <span class="cmd">sudo apt update</span>
+          </div>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Install</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">sudo apt install mcpctl</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- RHEL / Fedora -->
+      <details class="install-card">
+        <summary>
+          <span class="label">RHEL / Fedora / Rocky</span>
+          <span class="tag">dnf · x86_64</span>
+          <span class="caret">▸</span>
+        </summary>
+        <div class="body">
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">One-time setup</div>
+          <div class="snippet" style="font-size: 12px; margin-bottom: 14px;">
+            <span class="dim">$</span> <span class="cmd">sudo curl -fsSL https://magertron.com/yum/magertron.repo -o /etc/yum.repos.d/magertron.repo</span>
+          </div>
+          <div class="tagline" style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Install</div>
+          <div class="snippet">
+            <span class="dim">$</span> <span class="cmd">sudo dnf install mcpctl</span>
+          </div>
+        </div>
+      </details>
+
+    </div>
+
+    <!-- Direct download fallback -->
+    <div style="margin-top: 20px; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div style="font-weight: 600; margin-bottom: 4px;">Or download a binary directly</div>
+        <div style="font-size: 12px; color: var(--text-tertiary);">macOS arm64 · macOS amd64 · Linux amd64 · Linux arm64</div>
+      </div>
+      <a href="https://github.com/magertron/orchestrator/releases/latest" target="_blank" style="color: var(--accent-text); text-decoration: none; font-weight: 500; white-space: nowrap;">View latest release →</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-secondary);">
+      Apache 2.0 licensed. Source at
+      <a href="https://github.com/magertron/orchestrator/tree/main/mcpctl" target="_blank" style="color: var(--accent-text);">magertron/orchestrator/mcpctl</a>.
+      Free to download; connecting it to an orchestrator requires a Pro or Enterprise
+      license — <code>mcpctl login</code> is refused on the Free tier, and commands that
+      reach higher-tier features return a clear license error naming the
+      tier they need.
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+
+<!-- CTA -->
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="ai-assistant.html">AI Assistant</a></li>
+          <li><a href="data-reach.html">AI Data Reach</a></li>
+          <li><a href="agentczar.html">AgentCzar&trade;</a></li>
+          <li><a href="solutions-saas.html">AgentSaaS&trade;</a></li>
+          <li><a href="solutions-shadow-ai.html">ToolScout&trade;</a></li>
+          <li><a href="agentcolonel.html">AgentColonel&trade;</a></li>
+          <li><a href="czartup/">Czartup&trade;</a></li>
+          <li><a href="czartup/#studio">Czartup&trade; Studio</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="developer-portal.html">Developer Portal</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="rfp/">AI Governance RFP Template</a></li>
+          <li><a href="demos.html">Watch</a></li>
+          <li><a href="developers.html">Build an Agent</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+          <li><a href="cost.html">Cost &amp; Reporting</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
+          <li><a href="kong-comparison.html">AI Orchestrator vs. Kong</a></li>
+          <li><a href="solo-comparison.html">AI Orchestrator vs. Solo.io</a></li>
+          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="trust.html">Trust</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="compliance.html">Compliance</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
+          <li><a href="alliances.html">Alliance Program</a></li>
+          <li><a href="integrations.html">Partner Integrations</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="#" onclick="openDemoModal(event, 'contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Demo Request Modal -->
+<div class="modal-overlay" id="demoModal" onclick="closeDemoModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDemoModal()">✕</button>
+    <h3 id="demo-modal-title">Get a live instance</h3>
+    <p id="demo-modal-subtitle" style="margin-bottom:14px;">
+      <strong style="color:var(--text-primary);">A private instance, today.</strong>
+      Not a slide deck and not a screen share — a URL and a login to a Magertron
+      of your own, with servers, traffic and audit history already running in it.
+      Bring your own model key and the assistant works too.
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First name</label>
+        <input type="text" id="demo-fname" placeholder="Jane" />
+      </div>
+      <div class="form-group">
+        <label>Last name</label>
+        <input type="text" id="demo-lname" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" id="demo-email" placeholder="jane@company.com" />
+    </div>
+    <div class="form-group">
+      <label>Company</label>
+      <input type="text" id="demo-company" placeholder="Acme Corp" />
+    </div>
+    <div class="form-group">
+      <label>What are you hoping to see?</label>
+      <select id="demo-tier">
+        <option value="Governing agents">Governing what my agents can reach</option>
+        <option value="Cost and spend">Cost attribution and spend control</option>
+        <option value="Audit and evidence">Audit trail and compliance evidence</option>
+        <option value="Data governance">Data access governance (Snowflake, Databricks, BigQuery)</option>
+        <option value="Just looking">Just having a look</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Anything you want on it? <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <textarea id="demo-message" placeholder="A particular vendor, a warehouse, a scenario you want to try — or leave this blank."></textarea>
+    </div>
+    <button id="demo-submit" class="modal-submit" onclick="submitDemoForm()">Send it over →</button>
+  </div>
+</div>
+
+<script>
+function openDemoModal(e, mode) {
+  if (e) e.preventDefault();
+
+  // Swap modal title and subtitle based on entry point. Same form fields,
+  // same Formspree endpoint — just different framing for "Schedule a demo"
+  // (sales/pricing intent) vs "Contact us" (general inquiry from footer).
+  const title = document.getElementById('demo-modal-title');
+  const subtitle = document.getElementById('demo-modal-subtitle');
+  if (mode === 'contact') {
+    if (title) title.textContent = 'Contact us';
+    if (subtitle) subtitle.textContent = 'Send us a message and we\u2019ll reply within one business day.';
+  } else {
+    if (title) title.textContent = 'Get a live instance';
+    if (subtitle) subtitle.textContent = 'We\u2019ll send you a private Magertron instance today \u2014 a URL, a login, and a running estate with servers, traffic and audit history already in it. No call, no screen share. Bring your own model key and the assistant works too.';
+  }
+
+  document.getElementById('demoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDemoModal() {
+  document.getElementById('demoModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeDemoModalOutside(e) {
+  if (e.target === document.getElementById('demoModal')) closeDemoModal();
+}
+function submitDemoForm() {
+  const fname   = document.getElementById('demo-fname').value.trim();
+  const lname   = document.getElementById('demo-lname').value.trim();
+  const email   = document.getElementById('demo-email').value.trim();
+  const company = document.getElementById('demo-company').value.trim();
+  const tier    = document.getElementById('demo-tier').value;
+  const message = document.getElementById('demo-message').value.trim();
+
+  if (!fname || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+
+  // Submit to Formspree — relays the form fields to sales@magertron.com.
+  // The previous implementation opened a mailto: link which lost roughly
+  // half of leads (users on webmail without a configured native client
+  // saw nothing happen). Formspree's free tier handles 50 submissions/mo;
+  // dashboard at formspree.io tracks every submission for HN-day analytics.
+  const btn = document.getElementById('demo-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('https://formspree.io/f/mbdqeejk', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    `${fname} ${lname}`.trim(),
+      email,
+      company,
+      _subject: `Demo Request — ${company || fname} (${tier})`,
+      tier,
+      message,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Submission failed');
+    // Replace modal body with a thank-you confirmation
+    const modal = document.getElementById('demoModal');
+    if (modal) {
+      const card = modal.querySelector('.modal');
+      if (card) {
+        card.innerHTML = `
+          <button class="modal-close" onclick="closeDemoModal()">✕</button>
+          <h3>Got it — your instance is on the way.</h3>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px;">
+            You'll get a URL and a login by email today — a private instance with servers,
+            traffic and audit history already running in it. Nothing to install, no call to book.
+            In the meantime, you can <a href="https://github.com/magertron/orchestrator" target="_blank" style="color: var(--border-accent);">browse the source on GitHub</a>
+            or kick the tires with <code style="font-family: var(--mono); font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">./install.sh</code> (Free tier, no license required).
+          </p>
+        `;
+      }
+    }
+  })
+  .catch(err => {
+    alert('Something went wrong sending the form. Email sales@magertron.com directly and we\u2019ll respond right away.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send request →'; }
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDemoModal(); });
+</script>
+
+<script src="/consent.js" defer></script>
+
+
+<script id="mag-try-hash">
+// #try used to open the demo-request form; trials are self-serve now (2026-11-19).
+if (location.hash === '#try') location.replace('https://signup.magertron.com/');
+</script>
+<script id="mag-nav-close">
+(function () {
+  function closeAll(except) {
+    document.querySelectorAll('.nav-drop.open').forEach(function (d) {
+      if (d !== except) d.classList.remove('open');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var drop = e.target.closest('.nav-drop');
+    if (!drop) {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+      return;
+    }
+    if (e.target.closest('.nav-drop-menu a')) {
+      closeAll(null);
+      e.target.closest('.nav-drop-menu a').blur();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+    }
+  });
+})();
+</script>
+</body>
+</html>
