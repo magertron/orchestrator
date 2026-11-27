@@ -121,10 +121,6 @@ data:
         -- deployments, role changes) from events emitted by ext_authz (caller
         -- plane: per-tool-invocation decisions). Two pipelines write to this
         -- one table; SIEM filtering happens by 'plane'.
-    -- Merchant portfolio refused count (4.2.20, 2026-11-02): refused caller rows
-    -- only, so the portfolio counts them from the index instead of the table.
-    CREATE INDEX IF NOT EXISTS audit_events_caller_refused_idx ON audit_events (ts)
-        INCLUDE (actor, on_behalf_of_subject) WHERE plane = 'caller' AND status_id = 2;
         plane             VARCHAR(8)   NOT NULL DEFAULT 'admin'
                                        CHECK (plane IN ('admin', 'caller')),
 
@@ -324,6 +320,13 @@ data:
     -- exactly that distinction.
     ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS on_behalf_of_subject TEXT;
     CREATE INDEX IF NOT EXISTS audit_events_obo_idx ON audit_events (on_behalf_of_subject, ts) WHERE on_behalf_of_subject IS NOT NULL;
+    -- Moved here 2026-11-27: it sat inside CREATE TABLE audit_events (...), a syntax
+    -- error that stopped every NEW database at this script (no audit_events, no
+    -- tables after it), and it needs on_behalf_of_subject, added just above.
+    -- Merchant portfolio refused count (4.2.20, 2026-11-02): refused caller rows
+    -- only, so the portfolio counts them from the index instead of the table.
+    CREATE INDEX IF NOT EXISTS audit_events_caller_refused_idx ON audit_events (ts)
+        INCLUDE (actor, on_behalf_of_subject) WHERE plane = 'caller' AND status_id = 2;
     CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
     -- per-namespace audit listing, newest first (in use on peppy; was hand-built)
     CREATE INDEX IF NOT EXISTS idx_audit_events_ns_ts ON audit_events (namespace, ts DESC);
@@ -2080,87 +2083,6 @@ data:
     CROSS JOIN cfg
     LEFT JOIN win w ON w.server_id = t.server_id AND w.tool_name = t.tool_name;
 
-    DROP VIEW IF EXISTS v_server_utilization;
-    -- Per-server coverage with the contract's monthly figure, derived
-    -- from billing_period: minimum_amount_usd is a minimum PER PERIOD,
-    -- not a whole-term total. PAYG with no minimum yields NULL, not zero: the assistant
-    -- says "usage-billed", never "$0/mo".
-    --
-    -- ⚠ No snapshot rows in the window means NO OPINION: coverage is NULL and
-    -- flagged is false. Before this guard an empty table flagged every server
-    -- at 0%, which the assistant read as "nothing is used".
-    --
-    -- ⚠ No contract means NOT METERED, not unused. meter_events only exist for
-    -- servers under a cost_contract, so an uncontracted server always reads
-    -- 0 calls and would be a false positive. Coverage and the flag are scoped
-    -- to contracted servers; the rest carry NULL coverage and metered=false.
-    -- This is also the CFO's scope: the question is about contracts.
-    --
-    -- snapshot_days is PLATFORM-wide, not per server. A server with no rows
-    -- while others have them is not unknown: the graph emitted no edge for it
-    -- because nobody is entitled and nobody called — that is 0% with 0 dark,
-    -- the pure-unprovisioned case, and it should be reported as such.
-    CREATE OR REPLACE VIEW v_server_utilization AS
-    WITH cfg AS (SELECT * FROM utilization_thresholds WHERE id = 1),
-    days AS (
-        SELECT COUNT(DISTINCT d.snapshot_date) AS snapshot_days
-        FROM tool_usage_daily d, cfg
-        WHERE d.snapshot_date > CURRENT_DATE - cfg.window_days
-    ),
-    agg AS (
-        SELECT server_id,
-               COUNT(*)                                          AS catalog_tools,
-               COUNT(*) FILTER (WHERE bucket <> 'unprovisioned') AS entitled_tools,
-               COUNT(*) FILTER (WHERE bucket = 'dark')           AS dark_tools,
-               COUNT(*) FILTER (WHERE bucket = 'underused')      AS underused_tools,
-               COUNT(*) FILTER (WHERE calls > 0)                 AS exercised_tools,
-               SUM(calls)                                        AS calls
-        FROM v_tool_utilization GROUP BY server_id
-    )
-    SELECT s.id AS server_id, s.namespace, s.name, s.server_type,
-           COALESCE(a.catalog_tools,0)   AS catalog_tools,
-           COALESCE(a.entitled_tools,0)  AS entitled_tools,
-           COALESCE(a.dark_tools,0)      AS dark_tools,
-           COALESCE(a.underused_tools,0) AS underused_tools,
-           COALESCE(a.exercised_tools,0) AS exercised_tools,
-           COALESCE(a.calls,0)           AS calls,
-           COALESCE(dy.snapshot_days,0)  AS snapshot_days,
-           (c.id IS NOT NULL)            AS metered,
-           CASE WHEN c.id IS NULL
-                  OR COALESCE(dy.snapshot_days,0) = 0
-                  OR COALESCE(a.catalog_tools,0) = 0 THEN NULL
-                ELSE a.exercised_tools::numeric / a.catalog_tools END AS coverage,
-           (c.id IS NOT NULL
-             AND COALESCE(dy.snapshot_days,0) > 0
-             AND COALESCE(a.catalog_tools,0) > 0
-             AND a.exercised_tools::numeric / a.catalog_tools < cfg.coverage_threshold)
-                                          AS flagged,
-           c.id AS contract_id, c.vendor_name, c.contract_type,
-           -- minimum_amount_usd is a minimum PER BILLING PERIOD, not a
-           -- whole-term total. Dividing by the term understated every monthly
-           -- commitment ~12x (wix-dcr-server: $20/mo reported as $1.67/mo on a
-           -- 12-month term) and never read billing_period at all.
-           --
-           -- This column is the EXPOSURE figure the utilization ranking sorts
-           -- on. Understating it ranked committed servers BELOW PAYG ones,
-           -- which is backwards: dark tools on PAYG cost nothing, while a
-           -- committed server bills whether its tools are called or not.
-           --
-           -- ELSE, not NULL, for an unrecognised billing_period: a slightly
-           -- wrong number keeps the server in the ranking; NULL drops it out
-           -- silently.
-           CASE WHEN COALESCE(c.minimum_amount_usd,0) <= 0 THEN NULL
-                WHEN c.billing_period = 'monthly'   THEN round(c.minimum_amount_usd, 2)
-                WHEN c.billing_period = 'quarterly' THEN round(c.minimum_amount_usd / 3, 2)
-                WHEN c.billing_period = 'annual'    THEN round(c.minimum_amount_usd / 12, 2)
-                ELSE round(c.minimum_amount_usd
-                           / GREATEST(1, (c.term_end - c.term_start) / 30.4375), 2)
-           END                            AS committed_usd_per_month
-    FROM deployed_servers s
-    CROSS JOIN cfg
-    LEFT JOIN agg a ON a.server_id = s.id
-    CROSS JOIN days dy
-    LEFT JOIN cost_contracts c ON c.server_id = s.id;
 
     -- ── Multi-tenancy: namespace confinement ────────────────────────────────────
     -- Magertron is namespace-multi-tenanted; UC securables must be too. This
@@ -2772,6 +2694,90 @@ data:
     -- same discipline as cost_budgets.limit_usd above.
     ALTER TABLE rating_watermarks
         ADD COLUMN IF NOT EXISTS full_rerate_at TIMESTAMPTZ;
+
+    -- v_server_utilization reads cost_contracts (above), so it is created here, after it (2026-11-27).
+    DROP VIEW IF EXISTS v_server_utilization;
+    -- Per-server coverage with the contract's monthly figure, derived
+    -- from billing_period: minimum_amount_usd is a minimum PER PERIOD,
+    -- not a whole-term total. PAYG with no minimum yields NULL, not zero: the assistant
+    -- says "usage-billed", never "$0/mo".
+    --
+    -- ⚠ No snapshot rows in the window means NO OPINION: coverage is NULL and
+    -- flagged is false. Before this guard an empty table flagged every server
+    -- at 0%, which the assistant read as "nothing is used".
+    --
+    -- ⚠ No contract means NOT METERED, not unused. meter_events only exist for
+    -- servers under a cost_contract, so an uncontracted server always reads
+    -- 0 calls and would be a false positive. Coverage and the flag are scoped
+    -- to contracted servers; the rest carry NULL coverage and metered=false.
+    -- This is also the CFO's scope: the question is about contracts.
+    --
+    -- snapshot_days is PLATFORM-wide, not per server. A server with no rows
+    -- while others have them is not unknown: the graph emitted no edge for it
+    -- because nobody is entitled and nobody called — that is 0% with 0 dark,
+    -- the pure-unprovisioned case, and it should be reported as such.
+    CREATE OR REPLACE VIEW v_server_utilization AS
+    WITH cfg AS (SELECT * FROM utilization_thresholds WHERE id = 1),
+    days AS (
+        SELECT COUNT(DISTINCT d.snapshot_date) AS snapshot_days
+        FROM tool_usage_daily d, cfg
+        WHERE d.snapshot_date > CURRENT_DATE - cfg.window_days
+    ),
+    agg AS (
+        SELECT server_id,
+               COUNT(*)                                          AS catalog_tools,
+               COUNT(*) FILTER (WHERE bucket <> 'unprovisioned') AS entitled_tools,
+               COUNT(*) FILTER (WHERE bucket = 'dark')           AS dark_tools,
+               COUNT(*) FILTER (WHERE bucket = 'underused')      AS underused_tools,
+               COUNT(*) FILTER (WHERE calls > 0)                 AS exercised_tools,
+               SUM(calls)                                        AS calls
+        FROM v_tool_utilization GROUP BY server_id
+    )
+    SELECT s.id AS server_id, s.namespace, s.name, s.server_type,
+           COALESCE(a.catalog_tools,0)   AS catalog_tools,
+           COALESCE(a.entitled_tools,0)  AS entitled_tools,
+           COALESCE(a.dark_tools,0)      AS dark_tools,
+           COALESCE(a.underused_tools,0) AS underused_tools,
+           COALESCE(a.exercised_tools,0) AS exercised_tools,
+           COALESCE(a.calls,0)           AS calls,
+           COALESCE(dy.snapshot_days,0)  AS snapshot_days,
+           (c.id IS NOT NULL)            AS metered,
+           CASE WHEN c.id IS NULL
+                  OR COALESCE(dy.snapshot_days,0) = 0
+                  OR COALESCE(a.catalog_tools,0) = 0 THEN NULL
+                ELSE a.exercised_tools::numeric / a.catalog_tools END AS coverage,
+           (c.id IS NOT NULL
+             AND COALESCE(dy.snapshot_days,0) > 0
+             AND COALESCE(a.catalog_tools,0) > 0
+             AND a.exercised_tools::numeric / a.catalog_tools < cfg.coverage_threshold)
+                                          AS flagged,
+           c.id AS contract_id, c.vendor_name, c.contract_type,
+           -- minimum_amount_usd is a minimum PER BILLING PERIOD, not a
+           -- whole-term total. Dividing by the term understated every monthly
+           -- commitment ~12x (wix-dcr-server: $20/mo reported as $1.67/mo on a
+           -- 12-month term) and never read billing_period at all.
+           --
+           -- This column is the EXPOSURE figure the utilization ranking sorts
+           -- on. Understating it ranked committed servers BELOW PAYG ones,
+           -- which is backwards: dark tools on PAYG cost nothing, while a
+           -- committed server bills whether its tools are called or not.
+           --
+           -- ELSE, not NULL, for an unrecognised billing_period: a slightly
+           -- wrong number keeps the server in the ranking; NULL drops it out
+           -- silently.
+           CASE WHEN COALESCE(c.minimum_amount_usd,0) <= 0 THEN NULL
+                WHEN c.billing_period = 'monthly'   THEN round(c.minimum_amount_usd, 2)
+                WHEN c.billing_period = 'quarterly' THEN round(c.minimum_amount_usd / 3, 2)
+                WHEN c.billing_period = 'annual'    THEN round(c.minimum_amount_usd / 12, 2)
+                ELSE round(c.minimum_amount_usd
+                           / GREATEST(1, (c.term_end - c.term_start) / 30.4375), 2)
+           END                            AS committed_usd_per_month
+    FROM deployed_servers s
+    CROSS JOIN cfg
+    LEFT JOIN agg a ON a.server_id = s.id
+    CROSS JOIN days dy
+    LEFT JOIN cost_contracts c ON c.server_id = s.id;
+
   03-seed.sql: |
     -- Seed data: default admin user. Password hash from .Values.seed.adminPasswordHash
     -- (default: bcrypt of "admin" — CHANGE for production).
