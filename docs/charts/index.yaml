@@ -50,10 +50,10 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.65
-    created: "2026-11-27T16:35:29.918278174-05:00"
+    created: "2026-11-27T21:36:19.725866431Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
-    digest: 2b5741942fa937aab3c46798cabbd4c9d2d08645e66e496e5a178f5ca9d44be8
+    digest: d1e84bea7aec7948cb56621bd049c664e06d070e5fba10653576d38e19d1e295
     home: https://magertron.com
     icon: https://magertron.com/logo-mark.png
     keywords:
@@ -123,7 +123,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.64
-    created: "2026-11-27T16:35:29.912656966-05:00"
+    created: "2026-11-27T21:36:19.720039504Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: d05df647dc24641e7517844dd4adbe16bf1b0c06e1a9153a76b57083e1317a58
@@ -196,7 +196,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.62
-    created: "2026-11-27T16:35:29.908567079-05:00"
+    created: "2026-11-27T21:36:19.714886191Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: be32af033e384b5b0426a5f55381bba4dc00dcdf73595bd9478d2bc9e0a09b2d
@@ -269,7 +269,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.61
-    created: "2026-11-27T16:35:29.90364141-05:00"
+    created: "2026-11-27T21:36:19.708226359Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 8b019cfad845a9cd7f272c9fa5c646f8e933a59f19c6e81885e0455e18dd4a98
@@ -342,7 +342,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.60
-    created: "2026-11-27T16:35:29.898638485-05:00"
+    created: "2026-11-27T21:36:19.702993092Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: b382ece928cc19a0f6063fed21c3cde062cb717102f8b1ff478c1050f63ebc4a
@@ -415,7 +415,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.59
-    created: "2026-11-27T16:35:29.894026506-05:00"
+    created: "2026-11-27T21:36:19.697862466Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: c8dedc1ab7d975e38694984da7cf4995bfcad152e4e2e65f1af670f02d6976d3
@@ -488,7 +488,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.58
-    created: "2026-11-27T16:35:29.889516058-05:00"
+    created: "2026-11-27T21:36:19.691817444Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 0c7f58dbe7d85aa8ebd3a34b7afdc0bfb631d09012643c61c9906457804dc40f
@@ -561,7 +561,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.57
-    created: "2026-11-27T16:35:29.884666021-05:00"
+    created: "2026-11-27T21:36:19.686614367Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 8fc589b2194889bc07d4ce7c4c2497dcb6a7e3ae6210d049dbd421c5b3bca91c
@@ -634,7 +634,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.56
-    created: "2026-11-27T16:35:29.880568801-05:00"
+    created: "2026-11-27T21:36:19.680273203Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: b27500bd73105fff63e5702910f3a18429f0a610989c41c7e306492ecf6dfcd5
@@ -707,7 +707,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.55
-    created: "2026-11-27T16:35:29.875280749-05:00"
+    created: "2026-11-27T21:36:19.674940324Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 00a9f6f41ef2509d037afc3a92bd2258a5b8012004e3083ae5f73c7bb41042cf
@@ -780,7 +780,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.53
-    created: "2026-11-27T16:35:29.871015172-05:00"
+    created: "2026-11-27T21:36:19.669737011Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 57a6bfdfcefc914bf79d939c9628e1fcff90e22507f50b1c8e4d6f9c6411ef9c
@@ -853,7 +853,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.52
-    created: "2026-11-27T16:35:29.866611625-05:00"
+    created: "2026-11-27T21:36:19.663785434Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 9a5a5ab7285e401167b1d409fb603f64f7c54f4f41fa99a2547548fa47fb70fb
@@ -926,7 +926,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.49
-    created: "2026-11-27T16:35:29.861360233-05:00"
+    created: "2026-11-27T21:36:19.657914655Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 2a432bc6c973173b4392f8a54ce3e836caafe940b30d2d0b0e0ac9a00c8a0d93
@@ -999,7 +999,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.47
-    created: "2026-11-27T16:35:29.856955965-05:00"
+    created: "2026-11-27T21:36:19.65264706Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: bd5f3eb064d731d54c5b4e6b59ec7275adaa9f385f4889107b8903b12e768535
@@ -1072,7 +1072,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.46
-    created: "2026-11-27T16:35:29.852784695-05:00"
+    created: "2026-11-27T21:36:19.646830113Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 392306a508982a037ee9886d2fde320e0c77d0ff97bd65de81d65a123fe1ab24
@@ -1145,7 +1145,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.45
-    created: "2026-11-27T16:35:29.8479144-05:00"
+    created: "2026-11-27T21:36:19.641572511Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ce5a6e81a452e479478e7dec4017cdaf36c43ef96fc426caa5f7abbcdc8310d1
@@ -1218,7 +1218,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.44
-    created: "2026-11-27T16:35:29.843509771-05:00"
+    created: "2026-11-27T21:36:19.636370883Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ff5cfa9080a3393ede392c15c423227c3b50b58b71d15836327decbcc5cfe44a
@@ -1291,7 +1291,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.41
-    created: "2026-11-27T16:35:29.838476499-05:00"
+    created: "2026-11-27T21:36:19.630601782Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 9cd30ce2ce503e388b2cf7779308731263663e1a27abef06424492eebb37cc98
@@ -1364,7 +1364,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.40
-    created: "2026-11-27T16:35:29.834414305-05:00"
+    created: "2026-11-27T21:36:19.62537486Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: b95c7ba4fd3e43d6d2d4ee4418ec8a36aaf45adae89cc2c65aa73acbf28ad72c
@@ -1437,7 +1437,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.38
-    created: "2026-11-27T16:35:29.829314558-05:00"
+    created: "2026-11-27T21:36:19.619454677Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: e88e4cbc785929da0fcb4c7bb091a49f416e08493d8008ab1c7ecbe737f60399
@@ -1510,7 +1510,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.37
-    created: "2026-11-27T16:35:29.824854775-05:00"
+    created: "2026-11-27T21:36:19.614262303Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 2e4eb98db30f6367acb67346e6218c619b7b56980bd2558cd24ee7eb70030678
@@ -1583,7 +1583,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.36
-    created: "2026-11-27T16:35:29.819891746-05:00"
+    created: "2026-11-27T21:36:19.608927191Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 85abfb8d154f75745cc8e96e850f6c07bd8b8562645e1db2ca9007c6964d0a5b
@@ -1656,7 +1656,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.29
-    created: "2026-11-27T16:35:29.815854478-05:00"
+    created: "2026-11-27T21:36:19.60279445Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3e3674e6b641e92e5cb95dc5e3d89fdcb8d51186b3f645945a4083f9abb1597f
@@ -1729,7 +1729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.28
-    created: "2026-11-27T16:35:29.810126579-05:00"
+    created: "2026-11-27T21:36:19.597484521Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a350ea500d1cf4832faa8d7de0f01931ce77c8a31e9a8a0ad4ab178bb1b9af62
@@ -1802,7 +1802,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.26
-    created: "2026-11-27T16:35:29.806191725-05:00"
+    created: "2026-11-27T21:36:19.591484394Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: db6b822c053c298203846b41dbdaa2713c271da7a0459ea2638c96b056193a50
@@ -1875,7 +1875,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.19
-    created: "2026-11-27T16:35:29.801636643-05:00"
+    created: "2026-11-27T21:36:19.586282932Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: beb03ab40ae4f33f9943d4824a9fac90d4449331ee839a4b5050d580f6fb4d87
@@ -1948,7 +1948,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.18
-    created: "2026-11-27T16:35:29.797557767-05:00"
+    created: "2026-11-27T21:36:19.580645116Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: fc0a465363289f5354576daf6eefadc850b6418481c21972b863f978b3a0906e
@@ -2021,7 +2021,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.17
-    created: "2026-11-27T16:35:29.793434357-05:00"
+    created: "2026-11-27T21:36:19.5752461Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 0f2ec28f05dcb8edc80d2b92a134e99587b33790bbcf09682ab18fe98a297d34
@@ -2094,7 +2094,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.14
-    created: "2026-11-27T16:35:29.788164841-05:00"
+    created: "2026-11-27T21:36:19.570095377Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ea68cd5b1c7d5e53706b65431e2120c7050ec79f4c88ecce0278aabb24c2d23c
@@ -2167,7 +2167,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.13
-    created: "2026-11-27T16:35:29.784177257-05:00"
+    created: "2026-11-27T21:36:19.56393465Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5878f91a8a1f2b77a6cac5215211972c67002782822d70cb13565227dd662388
@@ -2240,7 +2240,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.11
-    created: "2026-11-27T16:35:29.780136062-05:00"
+    created: "2026-11-27T21:36:19.558665711Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 8a23b03b8cbd416162b6513887a32d483dd5c415200d744ecfdf49a5737a5d22
@@ -2313,7 +2313,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.10
-    created: "2026-11-27T16:35:29.775436829-05:00"
+    created: "2026-11-27T21:36:19.552610536Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: cb9fa2b214076ba136d1c61baf31848d68d6c087e2bf79ab710bcd2b8c72dc0f
@@ -2386,7 +2386,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.08
-    created: "2026-11-27T16:35:29.771380084-05:00"
+    created: "2026-11-27T21:36:19.547294631Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: e7c2f091c55cb09b0ee5d1831037f125c7151c58724b8e58409437291213da91
@@ -2459,7 +2459,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.07
-    created: "2026-11-27T16:35:29.766715366-05:00"
+    created: "2026-11-27T21:36:19.541335875Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 7aefc662d4de46fb8e34847873794703ce0e0427337c370feb8faefccb074c7b
@@ -2532,7 +2532,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.06
-    created: "2026-11-27T16:35:29.762748481-05:00"
+    created: "2026-11-27T21:36:19.536123587Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 57246401d5d144f3e282ae7e6a79ec67333155496ad22ad294037a35ecaf610f
@@ -2605,7 +2605,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.04
-    created: "2026-11-27T16:35:29.758583684-05:00"
+    created: "2026-11-27T21:36:19.530084917Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 0c76c90e60e2b2c40202a8c7be8da7324dfb1187ec42b81a93d8314117b390c7
@@ -2678,7 +2678,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.03
-    created: "2026-11-27T16:35:29.754130874-05:00"
+    created: "2026-11-27T21:36:19.524857466Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5af37994661fd77e7d3af26f4697ebed005bd65c9f6ae0d751af6975ca3edfc7
@@ -2751,7 +2751,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.01
-    created: "2026-11-27T16:35:29.749983008-05:00"
+    created: "2026-11-27T21:36:19.519173985Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 98f9db6fe3d2b5f533621a60a5cffcae439d3e4cb9cd10c846a03a507be3f3f5
@@ -2824,7 +2824,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.3.00
-    created: "2026-11-27T16:35:29.745287412-05:00"
+    created: "2026-11-27T21:36:19.512694299Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3105f38cd5fd1ce35d4eabda951e0aa2aeaf6d0fafecfc654632ef3b1e1a2e9b
@@ -2897,7 +2897,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.99
-    created: "2026-11-27T16:35:29.741167509-05:00"
+    created: "2026-11-27T21:36:19.505727067Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 71808a84c66804128d9cd654cad712687647ce13607cbd3090e300007762d835
@@ -2970,7 +2970,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.97
-    created: "2026-11-27T16:35:29.737073004-05:00"
+    created: "2026-11-27T21:36:19.499734124Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5367e34a981a2e8b0f4d1922ae0419f1a79f2c178e6b1b59ca952151643704af
@@ -3043,7 +3043,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.96
-    created: "2026-11-27T16:35:29.73093868-05:00"
+    created: "2026-11-27T21:36:19.494563703Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ad2a62671fb205a6dbd9147956c993616fc6e7b5436f369cfdf50ce649276230
@@ -3116,7 +3116,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.95
-    created: "2026-11-27T16:35:29.724340273-05:00"
+    created: "2026-11-27T21:36:19.488903463Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: cbf10afa9701f9986d33be18aaa97a09ed4a1012c05fb4e6b63333081f99bb5a
@@ -3189,7 +3189,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.93
-    created: "2026-11-27T16:35:29.717965997-05:00"
+    created: "2026-11-27T21:36:19.483723133Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 138ad3317fac078ae370a7d87425a370af4da77717c57c4e6fd94adfdea18ee7
@@ -3262,7 +3262,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.92
-    created: "2026-11-27T16:35:29.713419852-05:00"
+    created: "2026-11-27T21:36:19.477968458Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3293bdc94af4eeb9b051d395d5f7a08aa5d8304be7437641cec1bd404f855eef
@@ -3335,7 +3335,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.91
-    created: "2026-11-27T16:35:29.709084564-05:00"
+    created: "2026-11-27T21:36:19.47285642Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 33a151593638c56fffc579ba8f2a7df8b74aa5386befac1f708088a4ec6a9b70
@@ -3408,7 +3408,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.90
-    created: "2026-11-27T16:35:29.704399197-05:00"
+    created: "2026-11-27T21:36:19.467194463Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1f10b6154ea1f4afe2645f3c404cada326ff869eaaaa4e1ef80426e330b92daa
@@ -3481,7 +3481,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.89
-    created: "2026-11-27T16:35:29.700218028-05:00"
+    created: "2026-11-27T21:36:19.462143629Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: fd16f83f689ecff605320b6d383cf0c429e163f5cda781527a858fd73e488287
@@ -3554,7 +3554,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.88
-    created: "2026-11-27T16:35:29.696050716-05:00"
+    created: "2026-11-27T21:36:19.456562423Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 427f5f3d1492e37c1966a75d3427ee1d6a5bad5480cc2f3a07ed75643615dd16
@@ -3627,7 +3627,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.82
-    created: "2026-11-27T16:35:29.691523917-05:00"
+    created: "2026-11-27T21:36:19.451474868Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 93b6ad2d9b9635a5bfb57cb705a332d89da3e8ed198ed3529910f1118256e529
@@ -3700,7 +3700,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.80
-    created: "2026-11-27T16:35:29.687383806-05:00"
+    created: "2026-11-27T21:36:19.445918358Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 7bcaf26814e6677a515156dc09bbbac0091976a76a26476e3bdfd9905b78f7c0
@@ -3773,7 +3773,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.78
-    created: "2026-11-27T16:35:29.682712386-05:00"
+    created: "2026-11-27T21:36:19.440839033Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: df69492c8037e1b68a00e38533b859d08854df9334a139cfc8b1d126d6d90d80
@@ -3846,7 +3846,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.75
-    created: "2026-11-27T16:35:29.678712368-05:00"
+    created: "2026-11-27T21:36:19.434511284Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 110a9156f18df345fdbb28f77407e3d3c358c479d7f951d1799cb22926e61ebb
@@ -3919,7 +3919,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.73
-    created: "2026-11-27T16:35:29.674575092-05:00"
+    created: "2026-11-27T21:36:19.427050557Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 9307b89c712568a559ca4ef45badfed56ecd5fd60ffa1ae2e84f84e469146189
@@ -3992,7 +3992,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.72
-    created: "2026-11-27T16:35:29.669318781-05:00"
+    created: "2026-11-27T21:36:19.417663777Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: cae1b6427494dcee58e2dbedda908639a9e5cb4d07c18f590f66d9e109e733f0
@@ -4065,7 +4065,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.70
-    created: "2026-11-27T16:35:29.665052693-05:00"
+    created: "2026-11-27T21:36:19.412363171Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 7bfbb115b0498621a861ab11d75b7c3713b32a2b4011b5e4d9f9117c7872bd78
@@ -4138,7 +4138,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.69
-    created: "2026-11-27T16:35:29.660542555-05:00"
+    created: "2026-11-27T21:36:19.407349376Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 315996643dd7f2f898038f6b7c67d0887c3bfcbee4adbac6f8fa18635fe201c6
@@ -4211,7 +4211,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.63
-    created: "2026-11-27T16:35:29.655965212-05:00"
+    created: "2026-11-27T21:36:19.401822627Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3ac4b39903ef769ecc30af320578ba5acc77fc704f81355d7389742b30890baa
@@ -4284,7 +4284,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.60
-    created: "2026-11-27T16:35:29.651852001-05:00"
+    created: "2026-11-27T21:36:19.396882863Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1868bc598fe6260880f7066f40b3e3ca1ae366b71a4c92c92b850a4c7b67d209
@@ -4357,7 +4357,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.59
-    created: "2026-11-27T16:35:29.647215155-05:00"
+    created: "2026-11-27T21:36:19.391453791Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a7fa0812372a3b737f466ae827e04c65efa3dfbdc00aad51b3dc47bef59946ef
@@ -4430,7 +4430,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.58
-    created: "2026-11-27T16:35:29.643181605-05:00"
+    created: "2026-11-27T21:36:19.386566851Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: b18531ac08c93c11d4bf2b90f523921e291d7f7fd0c2f92a93da15ab04061469
@@ -4503,7 +4503,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.57
-    created: "2026-11-27T16:35:29.639327933-05:00"
+    created: "2026-11-27T21:36:19.381037472Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3553cb5c096b72cb952337acce4d56639e5fa1e4c2ee02cc364c9183c0df73eb
@@ -4576,7 +4576,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.55
-    created: "2026-11-27T16:35:29.63474609-05:00"
+    created: "2026-11-27T21:36:19.376027558Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: f745a75a4615a14fbad4a07f9740cf7efc983463c8fd2093304dd650caa56639
@@ -4649,7 +4649,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.54
-    created: "2026-11-27T16:35:29.630424678-05:00"
+    created: "2026-11-27T21:36:19.370554351Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1754a5f85f7075693a75b30e9e84a7e9cdd28895acb07927877850b94794d707
@@ -4722,7 +4722,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.52
-    created: "2026-11-27T16:35:29.625765961-05:00"
+    created: "2026-11-27T21:36:19.365677108Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 114ff34fb5ec4f4f7c13ce1ecad48efb12b4ecbbaf21daa18e786e0aaea79d98
@@ -4795,7 +4795,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.50
-    created: "2026-11-27T16:35:29.620853777-05:00"
+    created: "2026-11-27T21:36:19.360135401Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ccdf9d5de0d1d50f116fcd6a226ed2cf4654b6870ac28cb058315cee5ea0f437
@@ -4868,7 +4868,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.48
-    created: "2026-11-27T16:35:29.616735868-05:00"
+    created: "2026-11-27T21:36:19.355132767Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5d666d708c87a32d242d6ec773b21ff8f332b32080b0a789982c623db321af6a
@@ -4941,7 +4941,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.47
-    created: "2026-11-27T16:35:29.611774602-05:00"
+    created: "2026-11-27T21:36:19.349555463Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 7f36ad057979e84c283088cc5ec249090ffb50992504bc0f71a0d8d2e346fdf0
@@ -5014,7 +5014,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.46
-    created: "2026-11-27T16:35:29.607661371-05:00"
+    created: "2026-11-27T21:36:19.344587271Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 0d2a3cfbc93b535673fb1ff4d72fdbb75903e0a7b16efdeb59d1a6b6ae3ba706
@@ -5087,7 +5087,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.44
-    created: "2026-11-27T16:35:29.602361768-05:00"
+    created: "2026-11-27T21:36:19.339633235Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 167bfd5c9374a85268a022ecdde3f1ebb336c6782d7b4caf3f67c88127d27d96
@@ -5160,7 +5160,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.43
-    created: "2026-11-27T16:35:29.598094267-05:00"
+    created: "2026-11-27T21:36:19.333853251Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: daa16321e60910b5f53aa537b768c53c0a420a104114665756a7358bb2b08ecf
@@ -5233,7 +5233,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.42
-    created: "2026-11-27T16:35:29.593843017-05:00"
+    created: "2026-11-27T21:36:19.328927812Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: f4803cb0aa15ebb6bcc2a8830c74101215c7e3cb93c00a92e9ea35d0e1dd5f99
@@ -5306,7 +5306,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.40
-    created: "2026-11-27T16:35:29.588850702-05:00"
+    created: "2026-11-27T21:36:19.322913969Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: de4c3db9346207746c33eac52839fe3c3231231e9bd303c404fecdd56791b95e
@@ -5379,7 +5379,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.38
-    created: "2026-11-27T16:35:29.584859211-05:00"
+    created: "2026-11-27T21:36:19.318022617Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a82ae706684c4d4555da6c72ab2a779aa06ff4beca4a83eb1a270bd25018831b
@@ -5452,7 +5452,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.36
-    created: "2026-11-27T16:35:29.580715183-05:00"
+    created: "2026-11-27T21:36:19.312544893Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ff579c084353bee266ed24dc217d127772f0d1eb37c9b529e59d206670914509
@@ -5525,7 +5525,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.35
-    created: "2026-11-27T16:35:29.575828727-05:00"
+    created: "2026-11-27T21:36:19.307589721Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 2c4683d115a18592a97c4be9d359ae7dcbbd1b2dffc9f1bd07b1d90e7c7904fd
@@ -5598,7 +5598,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.34
-    created: "2026-11-27T16:35:29.571611451-05:00"
+    created: "2026-11-27T21:36:19.302255859Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 871d062a182c957c4939e5e51b029e2aecd2500f44ee9ca6557dd33c535384c0
@@ -5671,7 +5671,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.33
-    created: "2026-11-27T16:35:29.567091365-05:00"
+    created: "2026-11-27T21:36:19.297350961Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: d3bc3a93d5c260ded5484f5323aa164e61ce1a0223e8573f5ca2f85d2ae61242
@@ -5744,7 +5744,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.32
-    created: "2026-11-27T16:35:29.56204574-05:00"
+    created: "2026-11-27T21:36:19.292463592Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 043459ab0d58d1c78f07cb54fe8d261c88619a91a9cb1a5081b8da0506fe1a16
@@ -5817,7 +5817,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.31
-    created: "2026-11-27T16:35:29.557755226-05:00"
+    created: "2026-11-27T21:36:19.286998658Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 9b13237c197fe84bc3cd9f46c3b9d3a05e1bb13c9a1b0a0c6c5059ea6938dff1
@@ -5890,7 +5890,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.29
-    created: "2026-11-27T16:35:29.543748978-05:00"
+    created: "2026-11-27T21:36:19.282136236Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1d46bb9fc1385e1eb87f683d5b0d6bd6f42a0e470d5c6dfb03ec2c23ec9fa0d4
@@ -5963,7 +5963,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.28
-    created: "2026-11-27T16:35:29.540012867-05:00"
+    created: "2026-11-27T21:36:19.276438328Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 31a6139d58daa579f8382a8e979038dc0cbb9ae063d378dcdadf84f08ada4990
@@ -6036,7 +6036,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.27
-    created: "2026-11-27T16:35:29.536067422-05:00"
+    created: "2026-11-27T21:36:19.271403582Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 33d1513d46eb0e214a69cd5d7c9fab35740a8b6924118152d0c26747d226a23d
@@ -6109,7 +6109,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.26
-    created: "2026-11-27T16:35:29.531168243-05:00"
+    created: "2026-11-27T21:36:19.266490543Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1e70a6bb8888d429c62ab52ae637950bfbc71d3221575a709071476bf48a88f4
@@ -6182,7 +6182,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.25
-    created: "2026-11-27T16:35:29.527034243-05:00"
+    created: "2026-11-27T21:36:19.260809553Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a6a36fe84eeb828125733645cfea8e42b57a3aa5ab0cd2c2fb802faef7961769
@@ -6255,7 +6255,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.22
-    created: "2026-11-27T16:35:29.522725315-05:00"
+    created: "2026-11-27T21:36:19.255238191Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 168562493ab8728c0411fbf300796ada830b8011d8daedc4a387e8972df03b8b
@@ -6328,7 +6328,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.21
-    created: "2026-11-27T16:35:29.517824622-05:00"
+    created: "2026-11-27T21:36:19.250385958Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5e771ede7a1af9116511a69feaccf25b9587017d1bd20b50b73dec6481de5e2d
@@ -6401,7 +6401,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.20
-    created: "2026-11-27T16:35:29.513493732-05:00"
+    created: "2026-11-27T21:36:19.245552903Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: f154ba2a0d786a19a3007a6371fd8b531fd87c2ac41284faf727bc84acedccee
@@ -6474,7 +6474,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.19
-    created: "2026-11-27T16:35:29.508303796-05:00"
+    created: "2026-11-27T21:36:19.239911964Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 432222ac27bfc8946ca0ceb168dd1fdf722d7c4688e44dc263cab4963fbf38fd
@@ -6547,7 +6547,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.17
-    created: "2026-11-27T16:35:29.50447487-05:00"
+    created: "2026-11-27T21:36:19.23507707Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 7584dc90b693cab8ddeefd5e3d7629c7087080cdf2db3ad109f16419747e8116
@@ -6620,7 +6620,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.16
-    created: "2026-11-27T16:35:29.500637218-05:00"
+    created: "2026-11-27T21:36:19.229712268Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5cc0a809de1716f5ac6b18432851d4901bf3e0b443b128e2c42baaeb8f88d525
@@ -6693,7 +6693,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.12
-    created: "2026-11-27T16:35:29.49609976-05:00"
+    created: "2026-11-27T21:36:19.22487451Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 78ebddc32af86ca82892e4faf718fcf87aa712b76c2fa83edf032a43aa95c78d
@@ -6766,7 +6766,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.05
-    created: "2026-11-27T16:35:29.491383625-05:00"
+    created: "2026-11-27T21:36:19.219318853Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 8a49e97079a969d0eb826cb7a9e38accd8273bdbf2eeaf245d448b20cbf5139d
@@ -6839,7 +6839,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.04
-    created: "2026-11-27T16:35:29.48726298-05:00"
+    created: "2026-11-27T21:36:19.214479229Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 0b85cb28a55ff37a2e049733e1cf3ec61334098ede0346facfb39fba55d57ce4
@@ -6912,7 +6912,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.01
-    created: "2026-11-27T16:35:29.482557315-05:00"
+    created: "2026-11-27T21:36:19.209299293Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 2dae69065a2009b9e9c841900413630680ad6dc53bf85d3bc85a372b838bf16a
@@ -6985,7 +6985,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.2.00
-    created: "2026-11-27T16:35:29.478083035-05:00"
+    created: "2026-11-27T21:36:19.204052328Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 8a3ffb5b6ad6602387061cdd7e69d7311cc2bfbcc8d72d8f0b36b4c32fc5eff2
@@ -7058,7 +7058,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.96
-    created: "2026-11-27T16:35:29.473397127-05:00"
+    created: "2026-11-27T21:36:19.199142906Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 85a6af419eb68aa19e41d54e760b65d1070bb8f8432938bc1c7a60f6997e2c01
@@ -7131,7 +7131,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.94
-    created: "2026-11-27T16:35:29.469327759-05:00"
+    created: "2026-11-27T21:36:19.193787662Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3b2f3ae81eafd87cad018de75e102178c7d8143ff26b3a3ced00015d767542a0
@@ -7204,7 +7204,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.92
-    created: "2026-11-27T16:35:29.465341036-05:00"
+    created: "2026-11-27T21:36:19.188817799Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 395f84f093c551ffa34ab08149797752a5f0d56ef4af5f85145cbf9ac8579b89
@@ -7277,7 +7277,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.89
-    created: "2026-11-27T16:35:29.460598983-05:00"
+    created: "2026-11-27T21:36:19.183308056Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: f42655401111d6d90e4eb0a051e510755b0c1f5c5bdec17679ccfcdbe0967f8f
@@ -7350,7 +7350,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.88
-    created: "2026-11-27T16:35:29.456545765-05:00"
+    created: "2026-11-27T21:36:19.178410429Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1bf9a7956482dc64efbed76fd3296bd3d2bbf574d12250c8c646560a16a192dd
@@ -7423,7 +7423,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.83
-    created: "2026-11-27T16:35:29.451742276-05:00"
+    created: "2026-11-27T21:36:19.173450132Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 5c29487aa4ce07b7e8c2284561507e31b3dda6ee60f22d6b01e2727e3e168848
@@ -7496,7 +7496,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.81
-    created: "2026-11-27T16:35:29.447750233-05:00"
+    created: "2026-11-27T21:36:19.167728271Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a2ec6a68866e4d0f2775a00886b0986498af143a6bab36a42d968ae667b7d4d6
@@ -7569,7 +7569,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.80
-    created: "2026-11-27T16:35:29.443552925-05:00"
+    created: "2026-11-27T21:36:19.162875947Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 8d7f770469b9ec42982528fb222c9e783cd033e548d1f19a41fc27da49aa196a
@@ -7642,7 +7642,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.79
-    created: "2026-11-27T16:35:29.438734727-05:00"
+    created: "2026-11-27T21:36:19.157089852Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 08004d994a1829bb9e094922e027c0b00735930f60ad45a2dcdafc3af50f0e75
@@ -7715,7 +7715,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.78
-    created: "2026-11-27T16:35:29.434740611-05:00"
+    created: "2026-11-27T21:36:19.152203597Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ca397a967833c757046a2fa88ab5abb7ca633a998a466a42b7f39cda58f7e754
@@ -7788,7 +7788,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.75
-    created: "2026-11-27T16:35:29.430255581-05:00"
+    created: "2026-11-27T21:36:19.146844725Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: d362019614a4affd4d2c2fe586f656d8ca4c66c536c39e51d817b2758531e9cf
@@ -7861,7 +7861,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.73
-    created: "2026-11-27T16:35:29.426334262-05:00"
+    created: "2026-11-27T21:36:19.142028748Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 36617eff189198cf1147fe14f73c00809202c471fcf499c0a46dbe0663104770
@@ -7934,7 +7934,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.72
-    created: "2026-11-27T16:35:29.42180041-05:00"
+    created: "2026-11-27T21:36:19.136443616Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 583075a05cb2d8fc473681e3b366e0162e8ecfff57eb00b57eeb3fdf0375f3b8
@@ -8007,7 +8007,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.71
-    created: "2026-11-27T16:35:29.416336187-05:00"
+    created: "2026-11-27T21:36:19.131480478Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: e9dce6a95c5038e9b213d62487e04f2ff424d987ec8d60696026d08d655f75ac
@@ -8080,7 +8080,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.70
-    created: "2026-11-27T16:35:29.412152784-05:00"
+    created: "2026-11-27T21:36:19.126106606Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 815147d0bdcdf9f3efb50017c1b953f056500045ef631741acc2f453f0d877c2
@@ -8153,7 +8153,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.69
-    created: "2026-11-27T16:35:29.407758736-05:00"
+    created: "2026-11-27T21:36:19.121203978Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3dbe9518d416eb122a036c7acb57e4adb40093a574a8c40ece0c8ffec1ea8e44
@@ -8226,7 +8226,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.68
-    created: "2026-11-27T16:35:29.402377619-05:00"
+    created: "2026-11-27T21:36:19.116275774Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 1e8c6c6963dd29342d9ac0f36d002653882a51b0c590e300e50253a45eac337f
@@ -8299,7 +8299,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.67
-    created: "2026-11-27T16:35:29.398375698-05:00"
+    created: "2026-11-27T21:36:19.110533837Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: fadf3f7f7afa0e288e1a86116553c94c33d6a7f2b4b091ad533be3f09d9d9d24
@@ -8372,7 +8372,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.65
-    created: "2026-11-27T16:35:29.393694819-05:00"
+    created: "2026-11-27T21:36:19.105736241Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 6a4b8f693e1a5518d3ee4bd232d3928146f749160e4ded56216c7565863d29a6
@@ -8445,7 +8445,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.60
-    created: "2026-11-27T16:35:29.389850615-05:00"
+    created: "2026-11-27T21:36:19.100354368Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 87eda95aa787136b25471db35664ccb3630ad6ca5d2ae72078b440614c396883
@@ -8518,7 +8518,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.59
-    created: "2026-11-27T16:35:29.385885513-05:00"
+    created: "2026-11-27T21:36:19.095502412Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: db2955802b641fededcce4d1723b467008203ccf33e7072b15a9bd79d1a85f63
@@ -8591,7 +8591,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.56
-    created: "2026-11-27T16:35:29.381270499-05:00"
+    created: "2026-11-27T21:36:19.090136397Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 4b9589934a80f562496f9d75c3e99de792cd9f1c4418528eed1c686d857b2463
@@ -8664,7 +8664,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.55
-    created: "2026-11-27T16:35:29.377047842-05:00"
+    created: "2026-11-27T21:36:19.085289306Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a95f51ec6ab705b1c244276ece3994de48b19eae44537f48fb3f24cd31da0f11
@@ -8737,7 +8737,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.54
-    created: "2026-11-27T16:35:29.371794607-05:00"
+    created: "2026-11-27T21:36:19.079833771Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 87588a8d05bd0f2397b3dcb985dfe7bcd8214725e15969dba16745bbcf86f566
@@ -8810,7 +8810,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.53
-    created: "2026-11-27T16:35:29.36800245-05:00"
+    created: "2026-11-27T21:36:19.074974975Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 42c3452dac49fcf5d094ae668ac759c95fe38d8b218b2461b5d6810539b05169
@@ -8883,7 +8883,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.51
-    created: "2026-11-27T16:35:29.364164929-05:00"
+    created: "2026-11-27T21:36:19.069917685Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: cc416c3010c3926c8e30339264cea0437022ac2efdf7012dd624c7e94fc96b58
@@ -8956,7 +8956,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.50
-    created: "2026-11-27T16:35:29.359589589-05:00"
+    created: "2026-11-27T21:36:19.064563226Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 93274524a1f041fc239708eb16c5986bf740b378d1e3bdb349237c5b5d06b4ec
@@ -9029,7 +9029,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.49
-    created: "2026-11-27T16:35:29.355578059-05:00"
+    created: "2026-11-27T21:36:19.059707794Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 30a96c2c85a9d0cfe59285674acf80427ba07bd260bebd972bd74e60439175b2
@@ -9102,7 +9102,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.42
-    created: "2026-11-27T16:35:29.350564274-05:00"
+    created: "2026-11-27T21:36:19.05433116Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 174ed782b96fb941e8cd7bd8bc67a8e0ba6eeb7ab5d84148a430d85ca1cb829a
@@ -9175,7 +9175,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.41
-    created: "2026-11-27T16:35:29.346514112-05:00"
+    created: "2026-11-27T21:36:19.049548909Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ca71cf632c6d855403bc38d3df3f1e345d7b4c000edf7dae8b61b8c693b628a3
@@ -9248,7 +9248,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.39
-    created: "2026-11-27T16:35:29.342247323-05:00"
+    created: "2026-11-27T21:36:19.044129534Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 505e266bd7e1e33e2beb9c4436c3742bc2c3e2e04eebdf39cc4ba77d207a5e48
@@ -9321,7 +9321,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.38
-    created: "2026-11-27T16:35:29.337259677-05:00"
+    created: "2026-11-27T21:36:19.039281614Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: f7cf4f70e42561315b904ce77c25ab86184f974389886b27e9d2ffa8c9d818c4
@@ -9394,7 +9394,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.30
-    created: "2026-11-27T16:35:29.333356472-05:00"
+    created: "2026-11-27T21:36:19.034290524Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: df05d42c7253ea18e04bd432050ece4213e3be974e26e4863e8f30d8840cb7cd
@@ -9467,7 +9467,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.26
-    created: "2026-11-27T16:35:29.329339873-05:00"
+    created: "2026-11-27T21:36:19.029074024Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 317af1d9825a859e30e9a44f5ea54e4ad91015544093797d1a49f046dba03209
@@ -9540,7 +9540,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.24
-    created: "2026-11-27T16:35:29.324165506-05:00"
+    created: "2026-11-27T21:36:19.024220656Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a3cf7c147360c3f25977a79848a38ea65d656c93a5fbf4bac4cd85c96b636b96
@@ -9613,7 +9613,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.23
-    created: "2026-11-27T16:35:29.319831129-05:00"
+    created: "2026-11-27T21:36:19.018836244Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: ba581d5bde74a4ce8b0d13f5ca2b86946035a06fc9c06219ca0d3b401ddae09c
@@ -9686,7 +9686,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.22
-    created: "2026-11-27T16:35:29.315063137-05:00"
+    created: "2026-11-27T21:36:19.013795863Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 110fa26a9f34585e8c4f658ef26d6d8bf6179bfa7808977758b188bff3baac33
@@ -9759,7 +9759,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.21
-    created: "2026-11-27T16:35:29.310799423-05:00"
+    created: "2026-11-27T21:36:19.008398733Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 7e29682d4c74de8ecb1d46c45d40c54f5338702bc506be1f25f69a361e791e06
@@ -9832,7 +9832,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.20
-    created: "2026-11-27T16:35:29.306170542-05:00"
+    created: "2026-11-27T21:36:19.003630138Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 07ef8e838ac914b42547115adc0dde310eeab6e0614ad1d7893a3dd367bcded7
@@ -9905,7 +9905,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.19
-    created: "2026-11-27T16:35:29.301619899-05:00"
+    created: "2026-11-27T21:36:18.998485525Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: cd216eeddc6596a77ac2d53772c2e370f770805d25ff15ba6fd3ebc5e8d3ac7b
@@ -9978,7 +9978,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.17
-    created: "2026-11-27T16:35:29.297508942-05:00"
+    created: "2026-11-27T21:36:18.993392179Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 117f2f69024b48962c48e8d75d65e465311cce822860e19eac114a4679c9daa9
@@ -10051,7 +10051,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.16
-    created: "2026-11-27T16:35:29.29216178-05:00"
+    created: "2026-11-27T21:36:18.988687383Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 77397920c56f63a3046a73af8d394d787372f5ddbe7d472bd1d0e9203138055a
@@ -10124,7 +10124,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.14
-    created: "2026-11-27T16:35:29.288174086-05:00"
+    created: "2026-11-27T21:36:18.983409352Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 02139a7f760ebc27ff51f4d2fe8c1f0bca304c5146e230cc3fd18535057dc9d2
@@ -10197,7 +10197,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.13
-    created: "2026-11-27T16:35:29.284032362-05:00"
+    created: "2026-11-27T21:36:18.978697523Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 3a255e0ac7459b58fc669aff205d4c04e6ce5f228f711bea9d4746792182296a
@@ -10270,7 +10270,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.10
-    created: "2026-11-27T16:35:29.279303763-05:00"
+    created: "2026-11-27T21:36:18.973029885Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 6cb68a677e0c074d81925e0b8b3c409958dd6864361dad9ddebc0410ed116510
@@ -10343,7 +10343,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.1.09
-    created: "2026-11-27T16:35:29.273025879-05:00"
+    created: "2026-11-27T21:36:18.96813414Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 944dfcd6c57d8ff0aa1d2d76dd425d6164337421eca066b563cc54a0cf4e61c5
@@ -10416,7 +10416,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.97
-    created: "2026-11-27T16:35:29.266976465-05:00"
+    created: "2026-11-27T21:36:18.963255073Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 96b782a734a640e43cdffd23d47569349bc32780e00abe136292e15a7c6e62da
@@ -10489,7 +10489,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.95
-    created: "2026-11-27T16:35:29.262820063-05:00"
+    created: "2026-11-27T21:36:18.957979866Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 85e6a4253b9464595415543cc1b2b2e57971daeb2b64b30a2547ce75fce23cc4
@@ -10562,7 +10562,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.94
-    created: "2026-11-27T16:35:29.258165604-05:00"
+    created: "2026-11-27T21:36:18.952555614Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 78b91a31ce71b9e483b13a002edaaf6be6ee874447ea172b79854823f1272541
@@ -10635,7 +10635,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.93
-    created: "2026-11-27T16:35:29.253121562-05:00"
+    created: "2026-11-27T21:36:18.947753733Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 76cd650b3f2dfe6c1006d5072c11734e72c95e5ad0eb6a31ebfa59117e0eb9a0
@@ -10708,7 +10708,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.91
-    created: "2026-11-27T16:35:29.248496989-05:00"
+    created: "2026-11-27T21:36:18.942945453Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: a9b188b0ff010699bebb8b498fa8edbdc70649eac532ec58edde6808c2c86b79
@@ -10781,7 +10781,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.89
-    created: "2026-11-27T16:35:29.243601547-05:00"
+    created: "2026-11-27T21:36:18.936402212Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 49ff67f3bdb2b0b4a89f1468f79416fa36078cef9b2687e5af47006f77acc7a8
@@ -10854,7 +10854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.88
-    created: "2026-11-27T16:35:29.23990446-05:00"
+    created: "2026-11-27T21:36:18.929274664Z"
     description: Magertron™ AI Orchestrator — Kubernetes-native governance, metering
       and audit for LLM, MCP and API traffic
     digest: 4e42c30829196ceb89906763c2e29ada6d3bf678148b0417d270929ada510a27
@@ -10979,7 +10979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.87
-    created: "2026-11-27T16:35:29.235822959-05:00"
+    created: "2026-11-27T21:36:18.922320689Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cbf86a64ffa7e9d3a87eb89449b9f55e83db44d6f04b019bc759b18ce22e1343
@@ -11104,7 +11104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.86
-    created: "2026-11-27T16:35:29.230891168-05:00"
+    created: "2026-11-27T21:36:18.917021866Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e86795d2e4e1f13caff19d58e2a0804c5394e1322d5723e33a90be311334847b
@@ -11229,7 +11229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.83
-    created: "2026-11-27T16:35:29.226925576-05:00"
+    created: "2026-11-27T21:36:18.911421277Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3c16d770dde9ebad1505abe032a3b0172956cd4a1af83fa6ebf032fefc1a17cc
@@ -11354,7 +11354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.81
-    created: "2026-11-27T16:35:29.222329817-05:00"
+    created: "2026-11-27T21:36:18.905973783Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 36d4ef73e350d3d515f173ef6514310898bb3804ba2d6c93a93f5bbdfbdd7f51
@@ -11479,7 +11479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.79
-    created: "2026-11-27T16:35:29.218161062-05:00"
+    created: "2026-11-27T21:36:18.900928386Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2de6eb37b2d644feb6c62be21cfd311dc094f62c41b922950338153d014b83d1
@@ -11604,7 +11604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.78
-    created: "2026-11-27T16:35:29.212567726-05:00"
+    created: "2026-11-27T21:36:18.895384528Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 98563fbf578396e2ceef4bd5f5492f4e2de9688a03beec4a3accdfa701d045a5
@@ -11729,7 +11729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.74
-    created: "2026-11-27T16:35:29.207969082-05:00"
+    created: "2026-11-27T21:36:18.890451256Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c7f9ffeeed3188b0ab0c2a7a30a12bd3b19c64bd264720cdfab9dbd2af3f784c
@@ -11854,7 +11854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.73
-    created: "2026-11-27T16:35:29.203586625-05:00"
+    created: "2026-11-27T21:36:18.88489958Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cd85bc240af41d1cb0ea64b76fc5cc660c19822ce3f5a3a53ff9fd6506ad5701
@@ -11979,7 +11979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.72
-    created: "2026-11-27T16:35:29.198632052-05:00"
+    created: "2026-11-27T21:36:18.879882898Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d278ea8a7c15a01703c642298acae75e8285a9ded565698f4c7916061ab19c62
@@ -12104,7 +12104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.71
-    created: "2026-11-27T16:35:29.194478165-05:00"
+    created: "2026-11-27T21:36:18.87417012Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: dc1d8ee683d0d1848b54a754342127282f6ade4a37242841b36b65f63e2d5e6b
@@ -12229,7 +12229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.70
-    created: "2026-11-27T16:35:29.189638908-05:00"
+    created: "2026-11-27T21:36:18.869113322Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b7b661ceb7759243aa9c4321c5b31c30d9bc76e38b2fb39272efe3f11092ec3b
@@ -12354,7 +12354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.67
-    created: "2026-11-27T16:35:29.185432262-05:00"
+    created: "2026-11-27T21:36:18.863229919Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2b9221c75b38095fccd2c7d247e6869645144c43c0bf8091820974bb9b61c15b
@@ -12479,7 +12479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.66
-    created: "2026-11-27T16:35:29.180394692-05:00"
+    created: "2026-11-27T21:36:18.85760431Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 454de99926a7daf5b5c3053e3584c45a0c412e707e5b59b007a3749190a0c7ff
@@ -12604,7 +12604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.65
-    created: "2026-11-27T16:35:29.175936823-05:00"
+    created: "2026-11-27T21:36:18.852614194Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 84c81fb8f8c16c0f5737c5a3c781daf78a87ad95144f4f47b32f4c1c7b99037f
@@ -12729,7 +12729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.61
-    created: "2026-11-27T16:35:29.171606484-05:00"
+    created: "2026-11-27T21:36:18.847115849Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: ae32456773f8d372b003ee755ed67516ffd3eec541fc5b0bd13c8c40d26c323d
@@ -12854,7 +12854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.59
-    created: "2026-11-27T16:35:29.166896851-05:00"
+    created: "2026-11-27T21:36:18.842181284Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 14f3cd8bdb76e74c42cd9a4d0d65f5362834acd8da0719e43d780af99d9a8160
@@ -12979,7 +12979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.55
-    created: "2026-11-27T16:35:29.161723806-05:00"
+    created: "2026-11-27T21:36:18.836612153Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8eb48d655766956d8e93b57cf619c4ce3fa404a817c5290e2a55d49eb643a7a0
@@ -13104,7 +13104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.54
-    created: "2026-11-27T16:35:29.157588875-05:00"
+    created: "2026-11-27T21:36:18.831534466Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6187762ba189affcfdcc9eb4d30dae894dd4cab1ad9c9a7cb4eb2f15d4fde573
@@ -13229,7 +13229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.44
-    created: "2026-11-27T16:35:29.152406051-05:00"
+    created: "2026-11-27T21:36:18.825932113Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: eef3ea0dbddc5e280577849c9e5b6090526edbe46d722474879670c55408a42a
@@ -13354,7 +13354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.35
-    created: "2026-11-27T16:35:29.147947251-05:00"
+    created: "2026-11-27T21:36:18.820970221Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 372b2bf7ea32889fd5656a2f74e179c6375b09fb51c30b0f1e78febbee74fdd8
@@ -13479,7 +13479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.21
-    created: "2026-11-27T16:35:29.142502434-05:00"
+    created: "2026-11-27T21:36:18.815102719Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 1b5047fa70fdc098d7706bab33ac7e7a1f709cead80dbf60100fd32cd77fa42d
@@ -13604,7 +13604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.20
-    created: "2026-11-27T16:35:29.138378995-05:00"
+    created: "2026-11-27T21:36:18.810065259Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7160845aa54734a0c05f913bea38bb118df4fca5f98f5d4fdafbda846e7dfe7b
@@ -13729,7 +13729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.15
-    created: "2026-11-27T16:35:29.133429701-05:00"
+    created: "2026-11-27T21:36:18.804044243Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 55e027fa4bb56d6ff3086cfa55886b700a3f3d1f979dff36f1065a69087841e0
@@ -13854,7 +13854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.14
-    created: "2026-11-27T16:35:29.128225427-05:00"
+    created: "2026-11-27T21:36:18.798780824Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 397803b03a432db8db1db3286d74ab496869da2d4eb1274a376e96e92a5797e5
@@ -13979,7 +13979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.13
-    created: "2026-11-27T16:35:29.124017909-05:00"
+    created: "2026-11-27T21:36:18.793447591Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5ff5552569fb2c32aed4b4e1f6a3236652b2cebf744e4a8fd9aa0002d158798c
@@ -14104,7 +14104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.12
-    created: "2026-11-27T16:35:29.119006258-05:00"
+    created: "2026-11-27T21:36:18.787872717Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6eb5fe4dd7d994886c538105614398f9232078a150c242c3d184f8f0f76ce3db
@@ -14229,7 +14229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.09
-    created: "2026-11-27T16:35:29.114349866-05:00"
+    created: "2026-11-27T21:36:18.78294005Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: d542bc008f2154ba1bbe091b9ba22d82ac7b40499a5a10e9f7f3a3b210fa12b3
@@ -14354,7 +14354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.08
-    created: "2026-11-27T16:35:29.109492815-05:00"
+    created: "2026-11-27T21:36:18.777203608Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2edfa1bfdf666b9666feeb70139b2278c6b17e01b63140f9e5cdb75901347e27
@@ -14479,7 +14479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 4.0.00
-    created: "2026-11-27T16:35:29.10391029-05:00"
+    created: "2026-11-27T21:36:18.772156195Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e52a81978dcaa490314337797a621bf447fa83df0b2054ddcd38116b5178ff35
@@ -14604,7 +14604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.98
-    created: "2026-11-27T16:35:29.100064463-05:00"
+    created: "2026-11-27T21:36:18.766787867Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 253cc71847b5f641e89f38a314f561c55a8e469242c80a4c2178662648bc6305
@@ -14729,7 +14729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.95
-    created: "2026-11-27T16:35:29.095852236-05:00"
+    created: "2026-11-27T21:36:18.761310324Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b5e39324405ee8133c3b50b24ee2419e91868cf4885932af9b155f334177f00c
@@ -14854,7 +14854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.88
-    created: "2026-11-27T16:35:29.091544419-05:00"
+    created: "2026-11-27T21:36:18.756443957Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 29ca794814ab8296f2ac1f5d97e3b708b667dbb4d04ca764e3d291c4147ec480
@@ -14979,7 +14979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.75
-    created: "2026-11-27T16:35:29.087416351-05:00"
+    created: "2026-11-27T21:36:18.75098639Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 05100efae276c85ea13c4532aa524061c52b36d334ad9a0141e176ca76a8e8f5
@@ -15104,7 +15104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.74
-    created: "2026-11-27T16:35:29.081828355-05:00"
+    created: "2026-11-27T21:36:18.746062892Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b2ad2e60c2539af6e7fba9ba987d96b966135a260c447fb2ac471506c4497fd2
@@ -15229,7 +15229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.73
-    created: "2026-11-27T16:35:29.077626758-05:00"
+    created: "2026-11-27T21:36:18.740341204Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 355cc897be27a288934c8227b89865f0a5f3f8d5da9e53b166469b9293f1b1d1
@@ -15354,7 +15354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.71
-    created: "2026-11-27T16:35:29.072837255-05:00"
+    created: "2026-11-27T21:36:18.735387979Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4176c1d7f255791d8f24f7ec8fe3147185bfefd5ff474f9678dea0d24d22dcf3
@@ -15479,7 +15479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.69
-    created: "2026-11-27T16:35:29.068640488-05:00"
+    created: "2026-11-27T21:36:18.729485858Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 38aa239eac0e5589f743aa00c39ab1f33dd29dbb8fe7c492452a72ef7ff3627f
@@ -15604,7 +15604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.68
-    created: "2026-11-27T16:35:29.064170235-05:00"
+    created: "2026-11-27T21:36:18.723586148Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4ebdf1e6962707a9c4ee36f52ce0e7810641b7cfbc7d9498554e3fdaf5c51837
@@ -15729,7 +15729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.65
-    created: "2026-11-27T16:35:29.05921994-05:00"
+    created: "2026-11-27T21:36:18.718729327Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a08f67b039ce2d1f103f4ac06b17e27a48f67da889eaee9ed9cd0f1cbcb9b433
@@ -15854,7 +15854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.63
-    created: "2026-11-27T16:35:29.054902094-05:00"
+    created: "2026-11-27T21:36:18.713082347Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c0b22fe44c759bf21db5f01fd8ffbdd4202898bfed326e0d11ed349a1df4f76f
@@ -15979,7 +15979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.54
-    created: "2026-11-27T16:35:29.04947954-05:00"
+    created: "2026-11-27T21:36:18.708222229Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 1d696088e63a26f6387990254c335fe701066d07f4eccaaf836ac173b77fbd68
@@ -16104,7 +16104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.40
-    created: "2026-11-27T16:35:29.045224402-05:00"
+    created: "2026-11-27T21:36:18.701321649Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 0c0ed20e4f9fe1ba4d9064a16ca1417377c2770cfe84a1ee42de315d4660e191
@@ -16229,7 +16229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.39
-    created: "2026-11-27T16:35:29.040413529-05:00"
+    created: "2026-11-27T21:36:18.693943836Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 78d59f2854fc5f775615b85cd3d63235280abeaffc890ce66b7352ef2e69d02d
@@ -16354,7 +16354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.35
-    created: "2026-11-27T16:35:29.036182507-05:00"
+    created: "2026-11-27T21:36:18.687777743Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5f2794e33ba56ae8cfd411d3a03458c85dad167041830d548095b67dbc81c4ba
@@ -16479,7 +16479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.27
-    created: "2026-11-27T16:35:29.031376593-05:00"
+    created: "2026-11-27T21:36:18.682195343Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2c13b79dea4b145116466650d0a13dcb5d39480f5bd32d3907911d017749c10a
@@ -16604,7 +16604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.23
-    created: "2026-11-27T16:35:29.027285213-05:00"
+    created: "2026-11-27T21:36:18.677454525Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6efe18b9d34feba266ccda3535971b56703b1c33de8cb435b728b0fd6ef4bda8
@@ -16729,7 +16729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.18
-    created: "2026-11-27T16:35:29.022657675-05:00"
+    created: "2026-11-27T21:36:18.67227813Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e0abab6b0df3e763a12b5da354da38f2482a5c50cb2a1ffcc6bce06723ef8cb8
@@ -16854,7 +16854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.16
-    created: "2026-11-27T16:35:29.018668348-05:00"
+    created: "2026-11-27T21:36:18.66761252Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 26e606aee3b19a894542cd499c19ccaf949234847487e0d9c46ec8c4c4452312
@@ -16979,7 +16979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.9.12
-    created: "2026-11-27T16:35:29.0140889-05:00"
+    created: "2026-11-27T21:36:18.661994003Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: c19dee06decc5f88d95abdbf4c5eb4f265112860eb873c936c20fb6e0a49651d
@@ -17104,7 +17104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.99
-    created: "2026-11-27T16:35:29.010099172-05:00"
+    created: "2026-11-27T21:36:18.657300868Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 43de5e8ed47f9577777917c08b52d1a931b279cc3c0769d5457205bc7c651a0d
@@ -17229,7 +17229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.97
-    created: "2026-11-27T16:35:29.005239036-05:00"
+    created: "2026-11-27T21:36:18.651749335Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f553be8c9c54142e964f77e2697bbe26eea61549bbd35a9d251210476dd3a6d8
@@ -17354,7 +17354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.92
-    created: "2026-11-27T16:35:29.000965965-05:00"
+    created: "2026-11-27T21:36:18.646506672Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: fe9a868e992d2d270f39a9621b6de7fa6888f7628a9d5d0e6f784ada3ee7fb0d
@@ -17479,7 +17479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.75
-    created: "2026-11-27T16:35:28.996818931-05:00"
+    created: "2026-11-27T21:36:18.641929143Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: bd3606f40a0969cf0ed2f023a544a6c745161e15c9620c2a05bbac46097b43be
@@ -17604,7 +17604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.71
-    created: "2026-11-27T16:35:28.992053954-05:00"
+    created: "2026-11-27T21:36:18.636619733Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 6d2d10986cceaa9ae1acac9ad883cc76585e6a929c4cfb1e5143eb9fcc3f2bbe
@@ -17729,7 +17729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.68
-    created: "2026-11-27T16:35:28.987504823-05:00"
+    created: "2026-11-27T21:36:18.631988141Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 84f386c1b58aa3984d3e8a668f610b6d22e67429e46ca0593005b56c44b7694f
@@ -17854,7 +17854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.67
-    created: "2026-11-27T16:35:28.983084204-05:00"
+    created: "2026-11-27T21:36:18.626387825Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3f5861775d7c6aabcf6ea7e8ccb7aa6b5e9651448fd7a55f5d969a13f726fa41
@@ -17979,7 +17979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.65
-    created: "2026-11-27T16:35:28.978765276-05:00"
+    created: "2026-11-27T21:36:18.621769963Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 596b467433fd23fd19bb0f4d23bca1f819c521da7673ce308281311d1a6f2aa5
@@ -18104,7 +18104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.63
-    created: "2026-11-27T16:35:28.973464762-05:00"
+    created: "2026-11-27T21:36:18.616337713Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8b3d02d44878579ae612ae2fa5da9cb77585200a3ba338beb2ba50f4bca03123
@@ -18229,7 +18229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.62
-    created: "2026-11-27T16:35:28.967691617-05:00"
+    created: "2026-11-27T21:36:18.610731744Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 746bad080632aa8361c90fa01697d4130e330474735f7df7b6be4ad4c10af636
@@ -18354,7 +18354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.52
-    created: "2026-11-27T16:35:28.961878929-05:00"
+    created: "2026-11-27T21:36:18.604205221Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 22b1f67be0a3fc79ee3d647acd976e48bf21369cec9cdeb89908a0302769855e
@@ -18479,7 +18479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.43
-    created: "2026-11-27T16:35:28.957632187-05:00"
+    created: "2026-11-27T21:36:18.599169426Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7043730024213a1e619f2d39dda886b051dbea2a08f9f48aa12b8c2724619c30
@@ -18604,7 +18604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.31
-    created: "2026-11-27T16:35:28.953202231-05:00"
+    created: "2026-11-27T21:36:18.592145875Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 7dbdf8be8b74925ef91739be15c00b8b7806ae3b68f91899f87129dd7cd0894b
@@ -18729,7 +18729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.30
-    created: "2026-11-27T16:35:28.949539047-05:00"
+    created: "2026-11-27T21:36:18.585326938Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8004fff01a201b76fce847eea77979ebf0800cae37fe94c73cfac5c75b44f702
@@ -18854,7 +18854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.29
-    created: "2026-11-27T16:35:28.945305731-05:00"
+    created: "2026-11-27T21:36:18.580647821Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 03d91e2784cf1343fe6f85ef5e6017a993806c20bb8238a97880ceeae424f882
@@ -18979,7 +18979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.28
-    created: "2026-11-27T16:35:28.941296787-05:00"
+    created: "2026-11-27T21:36:18.575410668Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 43b975969d9f51408620703e45f76a3fec2f6a9432170757a812b426595664a8
@@ -19104,7 +19104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.26
-    created: "2026-11-27T16:35:28.936420049-05:00"
+    created: "2026-11-27T21:36:18.570193142Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 26081cc040c8753fe8a04b08c0de8ca9604182246a09a8b5547f2e1075bccde2
@@ -19229,7 +19229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.23
-    created: "2026-11-27T16:35:28.932279638-05:00"
+    created: "2026-11-27T21:36:18.565498169Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 15142ba5a0be35845028f4398a4fe0b5666053de39a8c18664f654a9cd7e04a5
@@ -19354,7 +19354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.09
-    created: "2026-11-27T16:35:28.92787573-05:00"
+    created: "2026-11-27T21:36:18.560236066Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b8ffb1c45ed8b21e3339b47297d3524a1adef935b3efcb48ef08b574c8f14257
@@ -19479,7 +19479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.8.00
-    created: "2026-11-27T16:35:28.923746379-05:00"
+    created: "2026-11-27T21:36:18.555166609Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: daa149f9ebd53fbfc5bbe015b57b2bce3f0980448c57721f18f40e69c226c4b8
@@ -19604,7 +19604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.95
-    created: "2026-11-27T16:35:28.918904788-05:00"
+    created: "2026-11-27T21:36:18.550611854Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: cebdf7396da2d4b76aa958daedf5a51c089e32bbe6fc5de96ac7f06ae5f46540
@@ -19729,7 +19729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.92
-    created: "2026-11-27T16:35:28.914663186-05:00"
+    created: "2026-11-27T21:36:18.54532601Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 4761b5f04f81a9c9dc7db0102c4bf6a50b87155eefbd5cf498776f281ee3344a
@@ -19854,7 +19854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.90
-    created: "2026-11-27T16:35:28.909695367-05:00"
+    created: "2026-11-27T21:36:18.540262615Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 59b0aef8ed65d7717946ed3301d6b95d18fdbad12bfad9233ce306a255105348
@@ -19979,7 +19979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.89
-    created: "2026-11-27T16:35:28.905549175-05:00"
+    created: "2026-11-27T21:36:18.53572356Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a931564131014e70675af946aa4156c9559cef6e7eded6d4b4cf71dd0ffc8be1
@@ -20104,7 +20104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.86
-    created: "2026-11-27T16:35:28.900432166-05:00"
+    created: "2026-11-27T21:36:18.530659284Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 000e19ad740318c0a628db9714898f40481b8480ad74ba3beb2f967be24fcf6c
@@ -20229,7 +20229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.85
-    created: "2026-11-27T16:35:28.895972784-05:00"
+    created: "2026-11-27T21:36:18.525498031Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 382514cec1172389acbc825d1d2acf0d171b2c7f0b0dc142a144a7445479b7f9
@@ -20354,7 +20354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.84
-    created: "2026-11-27T16:35:28.89013621-05:00"
+    created: "2026-11-27T21:36:18.52089557Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: a040ed0b42588c5eec67deacdbc1d001ea00bfcc2e6fff3616db2f18c9743ba5
@@ -20479,7 +20479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.82
-    created: "2026-11-27T16:35:28.886021427-05:00"
+    created: "2026-11-27T21:36:18.515721428Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: e59f83fad6c669a4f3714a22603af4d8dec4e2b0e8f115c2441213d123d6a5ee
@@ -20604,7 +20604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.81
-    created: "2026-11-27T16:35:28.881372969-05:00"
+    created: "2026-11-27T21:36:18.510872557Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 99025bad12a3a366aea019235c806d759028cc1be226c03ad1e79366cc704b72
@@ -20729,7 +20729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.80
-    created: "2026-11-27T16:35:28.876804983-05:00"
+    created: "2026-11-27T21:36:18.506308723Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 5c7fa9bd7a673fd2e73341e40692d5b4a5bdbec1da7e4504cb0407494b6f54fa
@@ -20854,7 +20854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.79
-    created: "2026-11-27T16:35:28.872733501-05:00"
+    created: "2026-11-27T21:36:18.501217182Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 9ea4daf68f578e73dc7f106f034b35b45739eb5d48461b9d87ee03f2e8d94747
@@ -20979,7 +20979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.74
-    created: "2026-11-27T16:35:28.868130759-05:00"
+    created: "2026-11-27T21:36:18.496240879Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 97bfd4196d106ee3ec77c29d5a7f69812edfc97c48df536be6f3cb9e0df916f2
@@ -21104,7 +21104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.69
-    created: "2026-11-27T16:35:28.863931778-05:00"
+    created: "2026-11-27T21:36:18.491753573Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 55601d21f69b957b8f97db3be86712d08ffae336aaa4212272799fffc60454e3
@@ -21229,7 +21229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.68
-    created: "2026-11-27T16:35:28.86002714-05:00"
+    created: "2026-11-27T21:36:18.486787038Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2ed1e7586f3ed39ff636bd6f63a7bd6db33ead11d307a55acf92c24e1be8160e
@@ -21354,7 +21354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.66
-    created: "2026-11-27T16:35:28.854660841-05:00"
+    created: "2026-11-27T21:36:18.482309393Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 3a5319a17e2b84354ad5f29ff5d69bd28614c78233da02dcde665fa16e5075df
@@ -21479,7 +21479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.64
-    created: "2026-11-27T16:35:28.850388491-05:00"
+    created: "2026-11-27T21:36:18.477104504Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 59062ecc75363f943072df245d0d8ff50d0176fd0cdf49ecc0a92fe9fdc59800
@@ -21604,7 +21604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.61
-    created: "2026-11-27T16:35:28.84604121-05:00"
+    created: "2026-11-27T21:36:18.471906254Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 99786ffc07eeab9116c7e0f112a5777ef4a34913d1c4abc65fb4b664ef862192
@@ -21729,7 +21729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.58
-    created: "2026-11-27T16:35:28.842451986-05:00"
+    created: "2026-11-27T21:36:18.467362375Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8a4c1e6a966845d50ec8006c72e2af7116993ba4abddcdc8f39ccfc2df0ce2aa
@@ -21854,7 +21854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.57
-    created: "2026-11-27T16:35:28.838503495-05:00"
+    created: "2026-11-27T21:36:18.462275065Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 249db443f1bedf8e1f158183a8650c982a7034ee1d973944ffb3b8e18e3f2478
@@ -21979,7 +21979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.56
-    created: "2026-11-27T16:35:28.833869836-05:00"
+    created: "2026-11-27T21:36:18.45731147Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 63184a85bbe4f1451fb86bc31931268e82b596e42217376352834085ee56dbcc
@@ -22104,7 +22104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.55
-    created: "2026-11-27T16:35:28.830327419-05:00"
+    created: "2026-11-27T21:36:18.452823062Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 8417f677a3f920bec0f3e361fb41f15d2cb907566918c2615263cb4a47e6f4ac
@@ -22229,7 +22229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.54
-    created: "2026-11-27T16:35:28.826097049-05:00"
+    created: "2026-11-27T21:36:18.447690755Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 18210df83aeb37688ce95966b79883fd108b6f1507affcbb174ef26add8e2185
@@ -22354,7 +22354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.53
-    created: "2026-11-27T16:35:28.822385825-05:00"
+    created: "2026-11-27T21:36:18.443183796Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: b4b5d537e6c81701b882e7b5d0ce9f70bfd9378da1e2b206d9ccb2ddeea7f54f
@@ -22479,7 +22479,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.52
-    created: "2026-11-27T16:35:28.817736185-05:00"
+    created: "2026-11-27T21:36:18.438092319Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: f946771e70d6817d2a9d016fdcf45ffa2fdf8877293ff9200e4ff43b86dca27e
@@ -22604,7 +22604,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.29
-    created: "2026-11-27T16:35:28.81409895-05:00"
+    created: "2026-11-27T21:36:18.43252918Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 833741170cae4d35da9e528474c3a859b6c39f6a8b564ef2800ae918d4a9bbdb
@@ -22729,7 +22729,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.13
-    created: "2026-11-27T16:35:28.809076569-05:00"
+    created: "2026-11-27T21:36:18.427959591Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 320c3f963c410f11c0484dda55b7e9bc77d6f9656de49c98e1c82dfe1acc36b4
@@ -22854,7 +22854,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.09
-    created: "2026-11-27T16:35:28.804261147-05:00"
+    created: "2026-11-27T21:36:18.422923409Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 44fbcba3f57a0815b2f3e1159648709b7cb787d48d6a4de0fffd1bfee5db314f
@@ -22979,7 +22979,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.09
-    created: "2026-11-27T16:35:28.800543651-05:00"
+    created: "2026-11-27T21:36:18.417681981Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2bc710d0584c5231394e53bb59e793864b3c8dc22b20b2771739c076f8dba534
@@ -23104,7 +23104,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.08
-    created: "2026-11-27T16:35:28.796422445-05:00"
+    created: "2026-11-27T21:36:18.412425141Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2168872ad346e6e2977128a5290c6d51438fc90900dd075ac92a8aaf654b565d
@@ -23229,7 +23229,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.03
-    created: "2026-11-27T16:35:28.791443726-05:00"
+    created: "2026-11-27T21:36:18.407478319Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2058e440e6edb6b907452577b8a147ab58a43c47e877bf7a948ba16e2888a019
@@ -23354,7 +23354,7 @@ entries:
           url: https://magertron.com/screenshots/governance.png
     apiVersion: v2
     appVersion: 3.7.01
-    created: "2026-11-27T16:35:28.787715631-05:00"
+    created: "2026-11-27T21:36:18.402825972Z"
     description: MCP Orchestrator — Kubernetes-native control plane for managing MCP
       servers
     digest: 2271ba502716f83e6ae972ea8f2f3b22c7f08705db12c7d581e5b83546a2330b
@@ -23378,4 +23378,4 @@ entries:
     urls:
     - https://magertron.com/charts/mcp-orchestrator-3.7.01.tgz
     version: 3.7.01
-generated: "2026-11-27T16:35:28.783325499-05:00"
+generated: "2026-11-27T21:36:18.397259615Z"
