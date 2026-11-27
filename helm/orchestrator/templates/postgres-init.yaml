@@ -330,6 +330,8 @@ data:
     CREATE INDEX IF NOT EXISTS audit_events_tenant_idx    ON audit_events (tenant)     WHERE tenant     IS NOT NULL;
     -- per-namespace audit listing, newest first (in use on peppy; was hand-built)
     CREATE INDEX IF NOT EXISTS idx_audit_events_ns_ts ON audit_events (namespace, ts DESC);
+    -- events of one kind, newest first: Agent Activity, By department (2026-11-27)
+    CREATE INDEX IF NOT EXISTS audit_events_kind_ts_idx ON audit_events (kind, ts DESC);
 
     -- ── Audit immutability guard (R-06) ─────────────────────────────────────────
     -- audit_events is append-only. UPDATE is always denied. DELETE is denied
