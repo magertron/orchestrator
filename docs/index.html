@@ -53,7 +53,7 @@
   "applicationSubCategory": "Kubernetes Platform",
   "operatingSystem": "Linux, Kubernetes",
   "description": "The spend control plane for enterprise AI agents. Meter every MCP tool call, charge it back per user and team, and enforce hard budget limits at the gateway.",
-  "softwareVersion": "4.3.70",
+  "softwareVersion": "4.3.65",
   "releaseNotes": "Multi-node high availability: pod anti-affinity and topology spread distribute orchestrator and Envoy replicas across nodes. Autoscaling Envoy data plane with HPA stabilization tuning.",
   "url": "https://magertron.com",
   "downloadUrl": "https://github.com/magertron/orchestrator",
@@ -737,6 +737,7 @@ body { overflow-x: clip; }
 /* Both headlines take two lines' room, so the sentences under them line up. */
 @media (min-width: 901px) { .door h2 { min-height: 2.1em; } }
 @media (max-width: 900px) { .doors-grid { grid-template-columns: 1fr; } .door { padding: 26px 22px; } }
+@media (min-width: 769px) { .footer-grid { grid-template-columns: 2fr repeat(6, 1fr); gap: 28px; } }
 .platform-band { padding: 56px 0 24px; border-top: 1px solid var(--border); }
 .band { display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
 .band h3 { font-family: var(--serif); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
@@ -812,7 +813,7 @@ body { overflow-x: clip; }
   <div class="container">
     <div class="hero-badge">
       <span class="dot"></span>
-      Now available — v4.3.70
+      Now available — v4.3.65
     </div>
     <a href="trust.html" class="hero-badge" style="margin-left: 8px; border-color: var(--border-accent); background: var(--accent-glow); color: var(--accent-text); text-decoration: none;">
       <span style="font-weight: 600; letter-spacing: 0.04em;">SOC 2 Type II</span>
@@ -953,7 +954,7 @@ body { overflow-x: clip; }
       </div>
 
       <div class="footer-col">
-        <h4>Product</h4>
+        <h4>Platform</h4>
         <ul>
           <li><a href="platform.html#governed-surfaces">AI Orchestrator</a></li>
           <li><a href="ai-assistant.html">AI Assistant</a></li>
@@ -964,8 +965,6 @@ body { overflow-x: clip; }
           <li><a href="agentcolonel.html">AgentColonel&trade;</a></li>
           <li><a href="czartup/">Czartup&trade;</a></li>
           <li><a href="czartup/#studio">Czartup&trade; Studio</a></li>
-          <li><a href="pricing.html">Pricing</a></li>
-          <li><a href="platform.html#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
           <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
@@ -973,20 +972,40 @@ body { overflow-x: clip; }
       </div>
 
       <div class="footer-col">
+        <h4>Solutions</h4>
+        <ul>
+          <li><a href="solutions-banking.html">Banking</a></li>
+          <li><a href="solutions-accounts-payable.html">Accounts payable</a></li>
+          <li><a href="solutions-crm.html">Sales &amp; CRM</a></li>
+          <li><a href="solutions-network-operations.html">Network operations</a></li>
+          <li><a href="solutions-saas.html">Across SaaS platforms</a></li>
+          <li><a href="solutions-shadow-ai.html">Shadow AI discovery</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Integrations</h4>
+        <ul>
+          <li><a href="integrations.html">Partner Integrations</a></li>
+          <li><a href="siem-integration.html">SIEM Integration</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+          <li><a href="/vscode/">VS Code</a></li>
+          <li><a href="/claude-code/">Claude Code</a></li>
+          <li><a href="/cursor/">Cursor</a></li>
+          <li><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
         <h4>Resources</h4>
         <ul>
           <li><a href="rfp/">AI Governance RFP Template</a></li>
           <li><a href="demos.html">Watch</a></li>
           <li><a href="developers.html">Build an Agent</a></li>
-          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
-          <li><a href="cost.html">Cost &amp; Reporting</a></li>
-          <li><a href="siem-integration.html">SIEM Integration</a></li>
           <li><a href="agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
           <li><a href="cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
           <li><a href="gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
           <li><a href="kong-comparison.html">AI Orchestrator vs. Kong</a></li>
           <li><a href="solo-comparison.html">AI Orchestrator vs. Solo.io</a></li>
-          <li style="white-space: nowrap;"><a href="/vscode/">VS Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/claude-code/">Claude Code</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/cursor/">Cursor</a><span style="color: var(--text-tertiary); padding: 0 6px;">&middot;</span><a href="/devin/">Devin</a></li>
         </ul>
       </div>
 
@@ -1003,7 +1022,6 @@ body { overflow-x: clip; }
           <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
           <li><a href="#" onclick="openDemoModal(event, 'contact')">Contact</a></li>
           <li><a href="alliances.html">Alliance Program</a></li>
-          <li><a href="integrations.html">Partner Integrations</a></li>
         </ul>
       </div>
 
