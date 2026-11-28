@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="color-scheme" content="dark">
+<style id="mag-dark-first">html{background:#06080c}</style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NH2TP9BZP7"></script>
 <script>
@@ -28,272 +30,669 @@
 <meta name="twitter:title" content="Magertron for Cursor">
 <meta name="twitter:description" content="The MCP servers your platform approved, in your editor.">
 <meta name="twitter:image" content="https://magertron.com/cursor/og-cursor.png">
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
 <style>
 html { scrollbar-gutter: stable; }
-  :root{
-    --ink:#0B1220;          /* page */
-    --panel:#111A2B;        /* raised */
-    --panel-2:#0E1626;      /* code */
-    --line:#1E2B42;
-    --text:#DCE5F2;
-    --muted:#8A9BB4;
-    --dim:#5F718C;
-    --accent:#4A90E2;
-    --accent-dim:#2B5C96;
-    --ok:#4ADE80;
-    --radius:6px;
-  }
-  *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0;
-    background:var(--ink);
-    color:var(--text);
-    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-  }
-  a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
-  a:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
-  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* back link ------------------------------------------------------- */
-  .back{
-    display:inline-flex;align-items:center;gap:7px;
-    font-size:13px;color:var(--muted);margin:0 0 22px;
-    transition:color .15s;
-  }
-  .back:hover{color:var(--text);text-decoration:none}
-  .back .arr{font-size:15px;line-height:1;transition:transform .15s}
-  .back:hover .arr{transform:translateX(-2px)}
+:root {
+  --bg: #06080c;
+  --bg-card: #0c1018;
+  --bg-card-hover: #111820;
+  --border: #1a2030;
+  --border-accent: #2563eb;
+  --text: #e8ecf4;
+  --text-secondary: #8694a8;
+  --text-tertiary: #4a5568;
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #60a5fa;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --serif: 'Inter', system-ui, sans-serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
 
-  /* header ---------------------------------------------------------- */
-  .top{
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(160deg,#0A1526 0%,#132540 100%);
-  }
-  .top .wrap{padding-top:32px;padding-bottom:44px}
-  .eyebrow{
-    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--accent);font-weight:600;margin:0 0 14px;
-  }
-  h1{
-    font-size:34px;line-height:1.15;font-weight:700;margin:0 0 6px;
-    letter-spacing:-.01em;
-  }
-  h1 .tm{font-size:.45em;vertical-align:super;font-weight:600}
-  .lede{color:var(--muted);font-size:17px;margin:0;max-width:60ch}
-  .rule{width:52px;height:3px;background:var(--accent);margin:18px 0 0;border-radius:2px}
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
-  /* the gate: signature element ------------------------------------- */
-  .gate{
-    display:flex;flex-wrap:wrap;align-items:stretch;gap:0;
-    border:1px solid var(--line);border-radius:var(--radius);
-    background:var(--panel);margin:34px 0 0;overflow:hidden;
-  }
-  .gate-step{flex:1 1 150px;padding:14px 16px;border-right:1px solid var(--line)}
-  .gate-step:last-child{border-right:0}
-  .gate-step b{display:block;font-size:13px;margin-bottom:2px}
-  .gate-step span{display:block;font-size:12px;color:var(--dim);line-height:1.45}
-  .gate-step.now b{color:var(--ok)}
-  .gate-step.later b{color:var(--dim)}
-  .gate-step.now{background:rgba(74,222,128,.05)}
+/* Nav (matches index.html) */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6, 8, 12, 0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.nav-logo { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.02em; }
+.nav-logo:hover { text-decoration: none; color: var(--text); }
+.nav-logo span { color: var(--accent-text); }
+.nav-logo-tm { font-size: 0.55em; vertical-align: super; letter-spacing: 0; margin-left: 1px; color: var(--text-secondary); font-weight: 400; }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent) !important; color: white !important;
+  padding: 8px 20px; border-radius: 6px; font-weight: 500; font-size: 13px; transition: background 0.2s;
+}
+.nav-cta:hover { background: #1d4ed8 !important; }
 
-  /* sections -------------------------------------------------------- */
-  section{padding:40px 0;border-bottom:1px solid var(--line)}
-  section:last-of-type{border-bottom:0}
-  h2{font-size:20px;font-weight:650;margin:0 0 4px;letter-spacing:-.005em}
-  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
-  h3{font-size:13px;font-weight:600;margin:22px 0 8px;color:var(--text)}
-  p{margin:0 0 12px}
-  ol{margin:0 0 4px;padding-left:20px;color:var(--muted)}
-  ol li{margin-bottom:6px}
-  ol li b{color:var(--text);font-weight:600}
+/* Hero */
+.hero { padding: 110px 0 36px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 520px; height: 340px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.6; pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 14px;
+}
+.hero h1 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(28px, 3.6vw, 40px); line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 16px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent-text), #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto 16px; line-height: 1.65;
+}
+.hero .meta {
+  font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+  margin-top: 32px;
+}
 
-  pre{
-    background:var(--panel-2);border:1px solid var(--line);
-    border-left:3px solid var(--accent-dim);
-    border-radius:var(--radius);
-    padding:12px 14px;margin:0 0 12px;overflow-x:auto;
-  }
-  code{
-    font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
-    color:#BFD4EE;
-  }
-  p code,li code,td code{
-    background:var(--panel-2);border:1px solid var(--line);
-    padding:1px 5px;border-radius:3px;font-size:12.5px;
-  }
-  .cmt{color:var(--dim)}
+/* Section structure */
+section.content { padding: 60px 0; }
+section.content .container { max-width: 920px; }
+.section-eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-text); margin-bottom: 12px;
+}
+section.content h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 20px;
+}
+section.content h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em; margin: 32px 0 12px;
+}
+section.content p {
+  font-size: 17px; color: var(--text-secondary); line-height: 1.8;
+  margin-bottom: 16px;
+}
+section.content strong { color: var(--text); font-weight: 600; }
+section.content em { color: var(--text); font-style: italic; }
 
-  .btn{
-    display:inline-block;padding:10px 18px;border-radius:var(--radius);
-    background:var(--accent);color:#08111F;font-weight:650;font-size:14px;
+/* Two-column "at a glance" cards */
+.glance { padding: 40px 0 60px; }
+.glance .container { max-width: 1100px; }
+.glance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.glance-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px;
+}
+.glance-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.glance-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.glance-card-label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 8px;
+}
+.glance-card.mcp-orch .glance-card-label { color: var(--accent-text); }
+.glance-card.agentcore .glance-card-label { color: #ff9900; }
+.glance-card h3 {
+  font-family: var(--serif); font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 16px;
+}
+.glance-card p {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.7;
+  margin-bottom: 16px;
+}
+.glance-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+}
+.glance-card ul li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: 10px; align-items: flex-start;
+}
+.glance-card ul li::before { content: '→'; color: var(--accent-text); flex-shrink: 0; }
+.glance-card.agentcore ul li::before { color: #ff9900; }
+
+/* Comparison table */
+.comparison { padding: 40px 0 60px; }
+.comparison .container { max-width: 1100px; }
+.comparison table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.comparison th, .comparison td {
+  padding: 18px 24px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comparison thead th {
+  background: rgba(255, 255, 255, 0.02);
+  font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-tertiary); font-weight: 500;
+}
+.comparison thead th.col-mag { color: var(--accent-text); }
+.comparison thead th.col-aws { color: #ff9900; }
+.comparison tbody tr:last-child th,
+.comparison tbody tr:last-child td { border-bottom: none; }
+.comparison tbody th {
+  font-family: var(--sans); font-weight: 600; font-size: 14px;
+  color: var(--text); width: 24%;
+}
+.comparison tbody td {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+}
+
+/* Collapsible wrapper for the comparison table */
+.cmp-toggle { margin: 0; }
+.cmp-toggle > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 24px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  transition: border-color 0.2s, background 0.2s;
+}
+.cmp-toggle > summary::-webkit-details-marker { display: none; }
+.cmp-toggle > summary:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+.cmp-toggle > summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.cmp-chevron {
+  flex-shrink: 0; color: var(--text-tertiary); font-size: 13px;
+  transition: transform 0.2s, color 0.2s;
+}
+.cmp-toggle[open] > summary .cmp-chevron { transform: rotate(90deg); color: var(--accent-text); }
+.cmp-label { font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--text); }
+.cmp-count {
+  margin-left: auto; flex-shrink: 0;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary);
+}
+.cmp-toggle .when-open { display: none; }
+.cmp-toggle[open] .when-open { display: inline; }
+.cmp-toggle[open] .when-closed { display: none; }
+.cmp-body { margin-top: 16px; }
+
+/* Pills inside table cells */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-right: 6px; margin-bottom: 4px;
+}
+.pill.good { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+.pill.warn { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.3); }
+.pill.info { background: rgba(96, 165, 250, 0.1); color: var(--accent-text); border: 1px solid rgba(96, 165, 250, 0.3); }
+.pill.neutral { background: rgba(134, 148, 168, 0.1); color: var(--text-secondary); border: 1px solid rgba(134, 148, 168, 0.3); }
+
+/* "Pick X when..." section */
+.pick { padding: 60px 0; }
+.pick .container { max-width: 1100px; }
+.pick h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
+  margin-bottom: 48px; text-align: center;
+}
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.pick-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px;
+}
+.pick-card.mcp-orch { border-color: rgba(37, 99, 235, 0.4); }
+.pick-card.agentcore { border-color: rgba(255, 153, 0, 0.3); }
+.pick-card .label {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 12px;
+}
+.pick-card.mcp-orch .label { color: var(--accent-text); }
+.pick-card.agentcore .label { color: #ff9900; }
+.pick-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  margin-bottom: 24px; letter-spacing: -0.02em;
+}
+.pick-card ul {
+  list-style: none; display: flex; flex-direction: column; gap: 14px;
+}
+.pick-card ul li {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pick-card ul li::before {
+  content: '✓'; color: var(--success); flex-shrink: 0; font-weight: 700;
+}
+.pick-card ul li strong { color: var(--text); font-weight: 600; }
+
+/* Closing CTA */
+.cta { padding: 80px 0; text-align: center; }
+.cta-box {
+  padding: 60px 48px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2); position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%); pointer-events: none;
+}
+.cta h2 {
+  font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 700; margin-bottom: 16px; position: relative; letter-spacing: -0.03em;
+}
+.cta p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 32px; position: relative; }
+.cta-actions { display: flex; gap: 16px; justify-content: center; position: relative; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: white; padding: 12px 28px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: #1d4ed8; text-decoration: none; color: white; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; color: var(--text); padding: 12px 28px; border-radius: 8px;
+  font-weight: 500; font-size: 14px; border: 1px solid var(--border); text-decoration: none;
+  transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { border-color: var(--text-tertiary); text-decoration: none; color: var(--text); }
+
+/* Footer */
+footer { padding: 64px 0 32px; border-top: 1px solid var(--border); margin-top: 48px; }
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px;
+}
+.footer-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+}
+.footer-brand .logo span { color: var(--border-accent); }
+.footer-brand .logo .logo-word { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; max-width: 280px; }
+.footer-col h4 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary); font-weight: 500; margin-bottom: 14px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a { font-size: 13px; color: var(--text-tertiary); text-decoration: none; transition: color 0.2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 24px; border-top: 1px solid var(--border);
+}
+.footer-bottom p { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.footer-bottom .links { display: flex; gap: 20px; }
+.footer-bottom .links a { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
+.footer-bottom .links a:hover { color: var(--text-secondary); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .glance-row, .pick-row { grid-template-columns: 1fr; }
+  .comparison table { font-size: 13px; }
+  .comparison th, .comparison td { padding: 14px 16px; }
+  .comparison tbody th { width: 30%; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ── Mobile (patch-site-mobile) ───────────────────────────────────────── */
+body { overflow-x: clip; }
+.pricing-features li { display: block; position: relative; padding-left: 22px; }
+.pricing-features li::before { position: absolute; left: 0; top: 0; }
+.nav-toggle { display: none; }
+.mag-arch-hint { display: none; }
+@media (max-width: 768px) {
+  .container { padding-left: 20px !important; padding-right: 20px !important; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-left: 8px; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
   }
-  .btn:hover{background:#5C9DE8;text-decoration:none}
-  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-  .btn.ghost:hover{border-color:var(--accent);background:rgba(74,144,226,.07)}
-  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
-
-  .note{
-    background:rgba(74,144,226,.06);border-left:3px solid var(--accent);
-    border-radius:0 var(--radius) var(--radius) 0;
-    padding:12px 15px;margin:18px 0 0;font-size:14px;color:var(--muted);
+  nav .container { gap: 8px; }
+  .nav-links { margin-left: auto; }
+  nav.open .nav-links {
+    position: absolute; top: 64px; left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 20px 20px; max-height: calc(100vh - 64px); overflow-y: auto;
   }
-  .note b{color:var(--text)}
-
-  table{width:100%;border-collapse:collapse;margin:6px 0 0;font-size:14px}
-  th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:top}
-  th{background:var(--panel);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  td:first-child{white-space:nowrap;color:var(--text);font-weight:600}
-  td{color:var(--muted)}
-
-  footer{padding:30px 0 50px;color:var(--dim);font-size:13px}
-  footer a{color:var(--muted)}
-  .soon{color:var(--dim);font-size:13px;margin:14px 0 0}
-
-  @media (max-width:600px){
-    h1{font-size:27px}
-    .top .wrap{padding-top:24px;padding-bottom:34px}
-    .gate-step{flex:1 1 100%;border-right:0;border-bottom:1px solid var(--line)}
-    .gate-step:last-child{border-bottom:0}
+  nav.open .nav-links a:not(.nav-cta) {
+    display: block; padding: 14px 2px; font-size: 16px; color: var(--text);
+    border-bottom: 1px solid var(--border);
   }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  nav.open .nav-links .nav-cta { margin-top: 16px; text-align: center; padding: 12px 20px; font-size: 15px; }
+  .rogue-grid, .install-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer-col { min-width: 0; }
+  .footer-col li { white-space: normal !important; }
+  .mag-arch-card { padding: 16px; }
+  .mag-arch-hint { display: block; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .page-cta, .cta-box { padding: 32px 20px !important; }
+  .page-cta .btn-primary, .page-cta .btn-secondary { margin: 6px 0; }
+  img, svg, video, iframe { max-width: 100%; }
+  .mag-arch-scroll svg { max-width: none; }
+  pre, table { max-width: 100%; }
+}
+</style>
+<style id="mag-solutions-nav">
+.nav-drop { position: relative; }
+.nav-drop-btn { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+  color: var(--text-secondary); transition: color 0.2s; }
+.nav-drop-btn:hover, .nav-drop.on .nav-drop-btn { color: var(--text); }
+.nav-drop-btn span { font-size: 10px; margin-left: 4px; }
+.nav-drop-menu { display: none; position: absolute; top: calc(100% + 14px); left: -12px; min-width: 210px;
+  flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu, .nav-drop.open .nav-drop-menu { display: flex; }
+.nav-links .nav-drop-menu a { display: block; padding: 8px 10px; border-radius: 6px; white-space: nowrap; }
+.nav-links .nav-drop-menu a:hover { background: rgba(255,255,255,.05); }
+@media (max-width: 1180px) { .nav-links { gap: 22px; } }
+@media (max-width: 768px) {
+  .nav-links .nav-drop { display: none; }
+  nav.open .nav-links .nav-drop { display: block; }
+  nav.open .nav-drop-btn { display: block; width: 100%; text-align: left; padding: 14px 2px; font-size: 16px;
+    color: var(--text); border-bottom: 1px solid var(--border); }
+  nav.open .nav-drop-menu { display: flex; position: static; min-width: 0; border: 0; border-radius: 0;
+    box-shadow: none; padding: 0 0 0 14px; background: none; }
+  nav.open .nav-drop-menu::before { display: none; }
+}
+</style>
+<style id="mag-nav-center">
+@media (min-width: 769px) {
+  nav .nav-links { flex: 1; }
+  nav .nav-links > :first-child { margin-left: auto; }
+  nav .nav-links > .nav-cta { margin-left: auto; }
+}
+</style>
+<style id="mag-product-marks">
+/* Platform menu: product marks (2026-11-10 v3) */
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
+.mag-pm svg { width: 22px; height: 22px; flex: none; }
+</style>
+<style id="mag-solution-marks">
+/* Solutions menu: outlined marks (2026-11-10 v3) */
+.nav-drop-menu a.mag-pm { display: flex; align-items: center; gap: 11px; }
+.mag-pm svg { width: 22px; height: 22px; flex: none; }
+</style>
+<style id="mag-ide-page">
+@media (min-width: 769px) { .footer-grid { grid-template-columns: 2fr repeat(6, 1fr); gap: 28px; } }
+.hero .cta-actions { margin-top: 24px; }
+.hero h1 .h1-tm { font-size: 0.32em; font-weight: 500; vertical-align: top; position: relative; top: 0.35em; margin-left: 2px; color: var(--text-secondary); }
+.doc { padding: 36px 0; border-top: 1px solid var(--border); }
+.doc .container { max-width: 760px; }
+.doc h2 { font-family: var(--serif); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; }
+.doc p, .doc li { font-size: 16px; color: var(--text-secondary); line-height: 1.7; }
+.doc p { margin-bottom: 14px; }
+.doc ol { padding-left: 22px; margin-bottom: 16px; }
+.doc li { margin-bottom: 6px; }
+.doc b { color: var(--text); font-weight: 600; }
+.doc pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 16px; margin: 0 0 16px; overflow-x: auto; }
+.doc pre code { font-family: var(--mono); font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.doc :not(pre) > code { font-family: var(--mono); font-size: 0.88em; color: var(--text);
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+.doc .fine { font-size: 14px; color: var(--text-tertiary); }
+.doc .links { display: flex; gap: 20px; flex-wrap: wrap; font-size: 15px; margin-bottom: 16px; }
+.doc table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 15px; }
+.doc th, .doc td { text-align: left; vertical-align: top; padding: 10px 12px; border-top: 1px solid var(--border); }
+.doc thead th { border-top: none; font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 500; }
+.doc td { color: var(--text-secondary); }
+.doc td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
+.doc figure { margin: 0 0 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.doc figure img, .doc video { display: block; width: 100%; height: auto; }
+.doc figcaption { padding: 8px 14px; font-size: 13px; color: var(--text-tertiary); border-top: 1px solid var(--border); }
+.doc video { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+@media (max-width: 600px) { .doc td:first-child { white-space: normal; } }
 </style>
 </head>
 <body>
 
-<header class="top">
-  <div class="wrap">
-    <a class="back" href="/"><span class="arr" aria-hidden="true">&larr;</span> Back to magertron.com</a>
-    <p class="eyebrow">Cursor</p>
-    <h1>Magertron<span class="tm">&#8482;</span> for Cursor</h1>
-    <div class="rule"></div>
-    <p class="lede" style="margin-top:18px">
-      Use the MCP servers your platform has already approved &mdash; and hand it
-      the ones you build. Both directions, from inside the editor.
-    </p>
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>▸</span> magertron<sup class="nav-logo-tm">™</sup></a>
+    <div class="nav-links" onclick="if(event.target.closest('a'))this.closest('nav').classList.remove('open')">
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="/platform.html#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
+          <a href="/ai-assistant.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.7 4.3 4.3 1.7-4.3 1.7L12 16.5l-1.7-4.3-4.3-1.7 4.3-1.7z"/><path d="M17.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fff"/></g></svg><span>AI Assistant</span></a>
+          <a href="/data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
+          <a href="/agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
+          <a href="/solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="14.5" y="4.5" width="5.5" height="5.5" rx="1.4"/><rect x="9.25" y="14.5" width="5.5" height="5.5" rx="1.4"/><circle cx="12" cy="11" r="1.4" fill="#fff"/><path d="M9.5 9.3 11 10.3M14.5 9.3 13 10.3M12 12.4v2.1"/></g></svg><span>AgentSaaS™</span></a>
+          <a href="/solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#fff"/></g></svg><span>ToolScout™</span></a><a href="/agentcolonel.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8.5 12 6l5 2.5"/><path d="M7 12.5 12 10l5 2.5"/><path d="M7 16.5 12 14l5 2.5"/></g></svg><span>AgentColonel™</span></a>          <a href="/czartup/" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5 10 12l-3.5 3.5"/><path d="M12 16h5.5"/></g></svg><span>Czartup™</span></a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Solutions<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="/solutions-banking.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5 12 5.5l7 4"/><path d="M5.5 9.5h13"/><path d="M7.5 11.5v5M12 11.5v5M16.5 11.5v5"/><path d="M5 18.5h14"/></g></svg><span>Banking</span></a>
+          <a href="/solutions-accounts-payable.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h7l3.5 3.5v11.5H7z"/><path d="M14 4.5V8h3.5"/><path d="M9.5 11h5"/><path d="m9.5 15 1.8 1.8 3.4-3.4"/></g></svg><span>Accounts payable</span></a>
+          <a href="/solutions-crm.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5h14"/><path d="M7.5 15.5v-3M11.5 15.5v-5.5M15.5 15.5v-8"/><path d="m6.5 9 3.5-2.5 3 1.5 4.5-3"/></g></svg><span>Sales &amp; CRM</span></a>
+          <a href="/solutions-network-operations.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2"/><circle cx="6.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/><path d="m11 7.8-3.6 7.4M13 7.8l3.6 7.4M8.5 17h7"/></g></svg><span>Network operations</span></a>
+          <a href="/solutions-saas.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17.5h8.5a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 7.3 9.8 3.9 3.9 0 0 0 8 17.5z"/></g></svg><span>Across SaaS platforms</span></a>
+          <a href="/solutions-shadow-ai.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="22.5" height="22.5" rx="5.5" fill="rgba(37,99,235,0.16)" stroke="#2563eb" stroke-width="1.5"/><g fill="none" stroke="#60a5fa" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5"/><path d="m14.2 14.2 4.6 4.6"/><circle cx="10.5" cy="10.5" r="1.4" fill="#60a5fa"/></g></svg><span>Shadow AI discovery</span></a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="/developers.html">Overview</a>
+          <a href="/platform.html#install">Install</a>
+          <a href="/platform.html#cli">CLI</a>
+          <a href="/developer-portal.html">Developer Portal</a>
+          <a href="/api/v1/">API Documentation</a>
+          <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
+          <a href="/developers.html">Build an agent</a>
+          <a href="/vscode/">VS Code</a>
+          <a href="/devin/">Devin</a>
+          <a href="/cursor/">Cursor</a>
+          <a href="/claude-code/">Claude Code</a>
+        </div>
+      </div>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/cost.html">Cost &amp; Reporting</a>
+      <a href="/security.html">Security</a>
+      <a href="https://signup.magertron.com/" class="nav-cta">Try it now </a>
+    </div>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"
+      onclick="var n=this.closest('nav');this.setAttribute('aria-expanded',n.classList.toggle('open'))">&#9776;</button>
+  </div>
+</nav>
 
-    <div class="gate">
-      <div class="gate-step now">
-        <b>1 &middot; Entitled</b>
-        <span>The portal lists the servers your roles can reach. Nothing else.</span>
-      </div>
-      <div class="gate-step later">
-        <b>2 &middot; Configured</b>
-        <span>One file, dropped where Cursor looks. No credential in it.</span>
-      </div>
-      <div class="gate-step later">
-        <b>3 &middot; Governed</b>
-        <span>Every call is authorized and recorded at the gateway, not in your editor.</span>
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Integrations</div>
+    <h1>Magertron<sup class="h1-tm">&trade;</sup> for Cursor</h1>
+    <p>Use the MCP servers your platform approved, and submit the ones you build.</p>
+
+  </div>
+</section>
+
+<section class="doc">
+  <div class="container">
+    <h2>Add your servers</h2>
+    <ol>
+      <li>Open the Developer Portal and choose <b>Add to your IDE</b></li>
+      <li>Download <code>mcp.json</code>, or copy it to merge with yours</li>
+      <li>Save it to <code>~/.cursor/mcp.json</code></li>
+      <li>Restart Cursor</li>
+    </ol>
+    <p>You get every server you&rsquo;re allowed to use, and nothing else. The file holds no credential, so it&rsquo;s safe to commit. Export your portal token as <code>MCP_TOKEN</code> in your shell profile.</p>
+    <p class="fine">Tokens expire on purpose. When calls start failing, mint a new one and restart Cursor.</p>
+  </div>
+</section>
+<section class="doc">
+  <div class="container">
+    <h2>Submit a server you built</h2>
+<pre><code>cursor --install-extension magertron-submit-&lt;version&gt;.vsix</code></pre>
+    <p>Open your project as a folder, right-click the manifest, and choose <b>Magertron: Submit MCP Server for Review</b>. Secret values never leave your machine.</p>
+    <p class="fine">Settings are under Settings &rarr; Extensions &rarr; Magertron.</p>
+    <div class="links">
+      <a href="magertron-submit-0.1.0.vsix" download>Download v0.1.0 (.vsix)</a>
+      <a href="Magertron-Cursor-Integration-Guide.pdf">User guide (PDF)</a>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="container">
+    <div class="cta-box">
+      <h2>No Magertron&trade; yet?</h2>
+      <p>Try it free for 14 days in our cloud, or self-host it in your own cluster.</p>
+      <div class="cta-actions">
+        <a href="https://signup.magertron.com/" class="btn-primary">Start free trial</a>
+        <a href="/platform.html#install" class="btn-secondary">Self-host</a>
       </div>
     </div>
   </div>
-</header>
+</section>
 
-<div class="wrap">
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span>▸</span> <span class="logo-word">magertron<sup class="nav-logo-tm">™</sup></span></div>
+        <p>The spend control plane for enterprise AI agents. Meter, charge back, and cap what your agents cost — in your own cluster.</p>
+      </div>
 
-  <section>
-    <h2>Add your servers</h2>
-    <p class="sub">Open the developer portal at <code>/portal</code> on your platform's address.</p>
-    <ol>
-      <li>Choose <b>Add to your IDE</b> in the toolbar</li>
-      <li><b>Download <code>mcp.json</code></b>, or <b>Copy to merge</b> if you already have one</li>
-      <li>Save it to <code>~/.cursor/mcp.json</code>, or <code>.cursor/mcp.json</code> in a project</li>
-      <li>Restart Cursor</li>
-    </ol>
-    <p style="margin-top:14px">
-      The file lists every server your roles can reach and nothing they cannot.
-      It works in Cursor, VS Code, Claude Desktop and Windsurf alike &mdash; the
-      format is shared, so this is not a Cursor feature that happens to work
-      elsewhere.
-    </p>
-    <div class="note">
-      <b>No credential is in the file.</b> It references
-      <code>${env:MCP_TOKEN}</code>, so it is safe to commit to a repository or
-      paste into a chat. Mint a token in the portal and export it in your shell
-      profile.
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="/platform.html#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="/ai-assistant.html">AI Assistant</a></li>
+          <li><a href="/data-reach.html">AI Data Reach</a></li>
+          <li><a href="/agentczar.html">AgentCzar&trade;</a></li>
+          <li><a href="/solutions-saas.html">AgentSaaS&trade;</a></li>
+          <li><a href="/solutions-shadow-ai.html">ToolScout&trade;</a></li>
+          <li><a href="/agentcolonel.html">AgentColonel&trade;</a></li>
+          <li><a href="/czartup/">Czartup&trade;</a></li>
+          <li><a href="/czartup/#studio">Czartup&trade; Studio</a></li>
+          <li><a href="/developer-portal.html">Developer Portal</a></li>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Solutions</h4>
+        <ul>
+          <li><a href="/solutions-banking.html">Banking</a></li>
+          <li><a href="/solutions-accounts-payable.html">Accounts payable</a></li>
+          <li><a href="/solutions-crm.html">Sales &amp; CRM</a></li>
+          <li><a href="/solutions-network-operations.html">Network operations</a></li>
+          <li><a href="/solutions-saas.html">Across SaaS platforms</a></li>
+          <li><a href="/solutions-shadow-ai.html">Shadow AI discovery</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Integrations</h4>
+        <ul>
+          <li><a href="/integrations.html">Partner Integrations</a></li>
+          <li><a href="/siem-integration.html">SIEM Integration</a></li>
+          <li><a href="https://magertron.com/api/v1/" target="_blank">API Documentation</a></li>
+          <li><a href="/vscode/">VS Code</a></li>
+          <li><a href="/claude-code/">Claude Code</a></li>
+          <li><a href="/cursor/">Cursor</a></li>
+          <li><a href="/devin/">Devin</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/rfp/">AI Governance RFP Template</a></li>
+          <li><a href="/demos.html">Watch</a></li>
+          <li><a href="/developers.html">Build an Agent</a></li>
+          <li><a href="/agentcore-comparison.html">AI Orchestrator vs. AWS AgentCore</a></li>
+          <li><a href="/cloudflare-comparison.html">AI Orchestrator vs. Cloudflare</a></li>
+          <li><a href="/gravitee-comparison.html">AI Orchestrator vs. Gravitee</a></li>
+          <li><a href="/kong-comparison.html">AI Orchestrator vs. Kong</a></li>
+          <li><a href="/solo-comparison.html">AI Orchestrator vs. Solo.io</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="/trust.html">Trust</a></li>
+          <li><a href="/security.html">Security</a></li>
+          <li><a href="/about.html">About</a></li>
+          <li><a href="/faq.html">FAQ</a></li>
+          <li><a href="/compliance.html">Compliance</a></li>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><a href="/terms.html">Terms</a></li>
+          <li><a href="https://blog.magertron.com" target="_blank">Blog</a></li>
+          <li><a href="mailto:sales@magertron.com">Contact</a></li>
+          <li><a href="/alliances.html">Alliance Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/magertron/agent-examples" target="_blank">GitHub · agent-examples</a></li>
+          <li><a href="https://www.linkedin.com/company/magertronc" target="_blank">LinkedIn</a></li>
+        </ul>
+      </div>
     </div>
-  </section>
 
-  <section>
-    <h2>Tokens expire</h2>
-    <p class="sub">On purpose. That is the point of a governed platform.</p>
-    <p>
-      A token that lasts a year keeps working long after somebody's access has
-      been revoked, and outlives every role change in between. Yours does not.
-      When calls start failing, mint a new one and restart your editor.
-    </p>
-    <p style="color:var(--muted);font-size:14px;margin:0">
-      Organisations issuing agent credentials through their own identity
-      provider can exchange those for short-lived platform tokens automatically.
-      Ask your platform team.
-    </p>
-  </section>
-
-  <section>
-    <h2>Submit a server you built</h2>
-    <p class="sub">The other direction, and it uses the extension rather than a config file.</p>
-
-    <div class="btns">
-      <a class="btn" href="magertron-submit-0.1.0.vsix" download>Download v0.1.0 (.vsix)</a>
-      <a class="btn ghost" href="Magertron-Cursor-Integration-Guide.pdf">User guide (PDF)</a>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Magertron. All rights reserved.</p>
+      <div class="links">
+        <a href="mailto:sales@magertron.com">Contact</a>
+      </div>
     </div>
+  </div>
+</footer>
 
-    <h3>From a terminal</h3>
-<pre><code>cursor --install-extension magertron-submit-&lt;version&gt;.vsix</code></pre>
-
-    <p style="margin-top:14px">
-      One extension, both editors. Cursor is a VS Code fork and runs it
-      unchanged &mdash; there is no separate build.
-    </p>
-
-    <div class="note">
-      <b>Open your project as a folder first.</b> The submit command lives on the
-      file explorer's right-click menu, so it appears on a manifest in the tree.
-      Opening a file on its own leaves nothing to right-click, and it looks as
-      though the extension is not installed.
-    </div>
-
-    <div class="note">
-      <b>Settings live under VS Code's pane, not Cursor's own.</b> If a search for
-      <code>magertron</code> finds nothing, look under
-      <b>Settings &rarr; Extensions &rarr; Magertron</b>. Editing
-      <code>~/.config/Cursor/User/settings.json</code> directly is quicker.
-    </div>
-
-    <p style="margin-top:14px">
-      Anything credential-shaped is removed before the manifest leaves your
-      machine. Environment variable <em>names</em> are sent; values are not,
-      including defaults written into the file. Your platform team can see that
-      a server needs a secret without ever seeing the secret.
-    </p>
-  </section>
-
-  <section>
-    <h2>No platform yet?</h2>
-    <p class="sub">Run the orchestrator in your own sandbox and point Cursor at it.</p>
-<pre><code><span class="cmt"># add the chart repository</span>
-helm repo add magertron https://magertron.com/charts
-helm repo update
-
-<span class="cmt"># install into a new namespace</span>
-helm install mcp magertron/mcp-orchestrator \
-  --namespace mcp-system --create-namespace</code></pre>
-    <p style="color:var(--muted);font-size:14px;margin:0">
-      Starts in <b style="color:var(--text)">Free Tier</b>. No license required.
-      More at <a href="/charts">magertron.com/charts</a>.
-    </p>
-    <p class="soon">Also available for <a href="/vscode/">VS Code</a>.</p>
-  </section>
-
-  <footer>
-    <a href="/">magertron.com</a> &middot;
-    <a href="/vscode/">VS Code</a> &middot;
-    <a href="/charts">Helm charts</a> &middot;
-    <a href="https://github.com/magertron/orchestrator">GitHub</a>
-  </footer>
-
-</div>
 <script src="/consent.js" defer></script>
+<script id="mag-nav-close">
+(function () {
+  function closeAll(except) {
+    document.querySelectorAll('.nav-drop.open').forEach(function (d) {
+      if (d !== except) d.classList.remove('open');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var drop = e.target.closest('.nav-drop');
+    if (!drop) {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+      return;
+    }
+    if (e.target.closest('.nav-drop-menu a')) {
+      closeAll(null);
+      e.target.closest('.nav-drop-menu a').blur();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAll(null);
+      if (document.activeElement && document.activeElement.closest('.nav-drop')) document.activeElement.blur();
+    }
+  });
+})();
+</script>
 </body>
 </html>

@@ -432,7 +432,7 @@ body { overflow-x: clip; }
       <div class="nav-drop">
         <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Platform<span>&#9662;</span></button>
         <div class="nav-drop-menu">
-          <a href="index.html#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
+          <a href="platform.html#governed-surfaces" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V6.2M12 14.6v3.2M9.4 12H6.2M14.6 12h3.2"/><circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/><circle cx="5" cy="12" r="1.2" fill="#fff"/><circle cx="19" cy="12" r="1.2" fill="#fff"/></g></svg><span>AI Orchestrator</span></a>
           <a href="ai-assistant.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.7 4.3 4.3 1.7-4.3 1.7L12 16.5l-1.7-4.3-4.3-1.7 4.3-1.7z"/><path d="M17.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fff"/></g></svg><span>AI Assistant</span></a>
           <a href="data-reach.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="4" ry="1.6"/><path d="M5 7.5v8c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6v-8"/><path d="M5 11.5c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"/><path d="M14.5 6.5c3 1 4.5 3.4 4.3 6.2"/><circle cx="18.8" cy="15" r="1.3" fill="#fff"/></g></svg><span>AI Data Reach</span></a>
           <a href="agentczar.html" class="mag-pm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="6" fill="#2563eb"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 18 6.6v4.8c0 4-2.6 6.9-6 8.4-3.4-1.5-6-4.4-6-8.4V6.6z"/><path d="m9.2 12 2 2 3.8-4"/></g></svg><span>AgentCzar™</span></a>
@@ -455,8 +455,8 @@ body { overflow-x: clip; }
         <button type="button" class="nav-drop-btn" aria-haspopup="true" onclick="var d=this.parentNode;document.querySelectorAll('.nav-drop.open').forEach(function(x){if(x!==d)x.classList.remove('open')});d.classList.toggle('open')">Developers<span>&#9662;</span></button>
         <div class="nav-drop-menu">
           <a href="developers.html">Overview</a>
-          <a href="index.html#install">Install</a>
-          <a href="index.html#cli">CLI</a>
+          <a href="platform.html#install">Install</a>
+          <a href="platform.html#cli">CLI</a>
           <a href="developer-portal.html">Developer Portal</a>
           <a href="api/v1/">API Documentation</a>
           <a href="https://github.com/magertron/orchestrator" target="_blank" rel="noopener">GitHub</a>
@@ -497,15 +497,13 @@ body { overflow-x: clip; }
         <div class="glance-card-label">AI Orchestrator</div>
         <h3>The Kubernetes-native AI control plane</h3>
         <p>
-          Self-hosted in your cluster. Deploys MCP servers as pods, routes through Envoy with JWT
-          authentication, meters and rates every tool invocation, and enforces spend budgets inline
-          at the data plane — all without traffic leaving your network.
+          Self-hosted in your cluster. One control plane for MCP servers, LLMs, APIs and streaming events: every call authorized, metered and held to budget, without traffic leaving your network.
         </p>
         <ul>
           <li>Runs in your Kubernetes cluster — any cloud, on-prem, air-gapped</li>
           <li>Free up to 20 servers, no signup, no credit card</li>
           <li>Your data, credentials, and traffic never leave your network</li>
-          <li>Per-tool metering and chargeback into your own cost centers</li>
+          <li>Per-call metering and chargeback for every model, API, stream and tool</li>
         </ul>
       </div>
       <div class="glance-card cloudflare">
@@ -525,26 +523,6 @@ body { overflow-x: clip; }
         </ul>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="content">
-  <div class="container">
-    <div class="section-eyebrow">The framing</div>
-    <h2>Governing MCP at the edge and governing MCP in your cluster are different problems.</h2>
-    <p>
-      Cloudflare's MCP governance is serious work, and it's delivered the way Cloudflare delivers
-      everything: <em>from the edge</em>. Server Portals, AI Gateway spend limits, and Code Mode all
-      govern because your MCP and model traffic route through Cloudflare's network. That's the
-      model's greatest strength — and its sharpest boundary.
-    </p>
-    <p style="line-height: 1.6;">
-      It's a different shape from the enterprise that <em>can't</em> route MCP traffic through a
-      third-party edge — regulated data, air-gapped clusters, internal credentials that can't leave
-      the network. And it answers a different cost question. Cloudflare meters <em>tokens to the
-      model only</em>; AI Orchestrator meters and rates <em>calls to the tools — and their
-      tokens</em>, in your cluster, against your own rate cards. Different layers of the same stack.
-    </p>
   </div>
 </section>
 
@@ -604,13 +582,9 @@ body { overflow-x: clip; }
 <section class="content">
   <div class="container">
     <div class="section-eyebrow">The honest take</div>
-    <h2>One control plane for every MCP server — internal and external.</h2>
+    <h2>One control plane for all AI traffic, internal and external.</h2>
     <p style="line-height: 1.6;">
-      AI Orchestrator governs MCP servers on both sides of the perimeter. Internal servers wrapping
-      systems that can't leave the network, and external servers reaching third-party vendors beyond
-      the enterprise edge — both run through the same control plane, with credentials managed
-      in-cluster across every auth type and every call metered and rated against your own rate cards.
-      Reaching the public internet doesn't mean handing governance to someone else's edge.
+      AI Orchestrator governs MCP servers, LLMs, APIs and streaming events on both sides of the perimeter: internal systems that can&rsquo;t leave the network, and outside vendors beyond your edge. Every call is held to your rules and metered against your own rate cards. Reaching the public internet doesn&rsquo;t mean handing governance to someone else&rsquo;s edge.
     </p>
   </div>
 </section>
@@ -620,12 +594,11 @@ body { overflow-x: clip; }
     <div class="cta-box">
       <h2>See where AI Orchestrator fits in your stack.</h2>
       <p>
-        Talk through your environment, your existing infrastructure, and where MCP governance fits.
-        Or grab the Helm chart and try it yourself.
+        Try it free for 14 days in our cloud, or self-host it in your own cluster.
       </p>
       <div class="cta-actions">
-        <a href="https://signup.magertron.com/" class="btn-primary">Schedule a Demo</a>
-        <a href="https://github.com/magertron/orchestrator" class="btn-secondary" target="_blank">View on GitHub</a>
+        <a href="https://signup.magertron.com/" class="btn-primary">Start free trial</a>
+        <a href="platform.html#install" class="btn-secondary">Self-host</a>
       </div>
     </div>
   </div>
@@ -642,7 +615,7 @@ body { overflow-x: clip; }
       <div class="footer-col">
         <h4>Product</h4>
         <ul>
-          <li><a href="index.html#governed-surfaces">AI Orchestrator</a></li>
+          <li><a href="platform.html#governed-surfaces">AI Orchestrator</a></li>
           <li><a href="ai-assistant.html">AI Assistant</a></li>
           <li><a href="data-reach.html">AI Data Reach</a></li>
           <li><a href="agentczar.html">AgentCzar&trade;</a></li>
@@ -650,7 +623,7 @@ body { overflow-x: clip; }
           <li><a href="solutions-shadow-ai.html">ToolScout&trade;</a></li>
           <li><a href="agentcolonel.html">AgentColonel&trade;</a></li>
           <li><a href="pricing.html">Pricing</a></li>
-          <li><a href="index.html#install">Install</a></li>
+          <li><a href="platform.html#install">Install</a></li>
           <li><a href="developer-portal.html">Developer Portal</a></li>
           <li><a href="https://github.com/magertron/orchestrator" target="_blank">GitHub</a></li>
           <li><a href="https://github.com/magertron/orchestrator#readme" target="_blank">Documentation</a></li>
